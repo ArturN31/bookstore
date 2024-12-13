@@ -1,94 +1,29 @@
 import { InferGetServerSidePropsType } from 'next';
-import { generateBooksArray } from '@/utils/generateBook';
-import { generateReviewsArray } from '@/utils/generateReview';
-import axios from 'axios';
-import { RootLayout } from '@/components/Layout';
-import './globals.css';
+import { RootLayout } from '@/components/layout/Layout';
+import { getBooks, getReviews, seedDatabaseWithBooks, seedDatabaseWithReviews } from '@/utils/dbSeed/seedDatabase';
+import { matchReviewsToBooks, groupReviewsByBookId } from '@/utils/prepBooksArray';
 
-const getBooks = async () => {
-	const booksResponse = await axios.get('http://localhost:3000/api/books');
-	const storedBooks: { books: Book[] } = await booksResponse.data;
-
-	return storedBooks;
-};
-
-const getReviews = async () => {
-	const reviewsResponse = await axios.get('http://localhost:3000/api/reviews');
-	const storedReviews: { reviews: Review[] } = await reviewsResponse.data;
-
-	return storedReviews;
-};
-
-const groupReviewsByBookId = (storedReviews: Review[]) => {
-	const groupedReviews: Record<string, Review[]> = {};
-
-	storedReviews.forEach((review: Review) => {
-		const { book_id } = review;
-		if (!groupedReviews[book_id]) {
-			groupedReviews[book_id] = [];
-		}
-		groupedReviews[book_id].push(review);
-	});
-
-	return groupedReviews;
-};
-
-const matchReviewsToBooks = (groupedReviews: Record<string, Review[]>, books: Book[]): Book[] => {
-	const bookMap = new Map<string, Book>();
-	books.forEach((book) => bookMap.set(book.id, book));
-
-	//iterate over reviews and add them to the corresponding book
-	for (const bookId in groupedReviews) {
-		const book = bookMap.get(bookId);
-		if (book) {
-			book.reviews = groupedReviews[bookId];
-		}
-	}
-
-	return [...bookMap.values()];
-};
-
-const seedDatabaseWithBooks = async () => {
-	const generatedBooks = await generateBooksArray(100);
-	await axios.post('http://localhost:3000/api/books', { books: generatedBooks });
-};
-
-const seedDatabaseWithReviews = async (storedBooks: Book[]) => {
-	const generatedReviews = await generateReviewsArray(storedBooks);
-	await axios.post('http://localhost:3000/api/reviews', { reviews: generatedReviews });
-};
-
-export const getServerSideProps = async () => {
+const seedDatabase = async () => {
 	let storedBooks = await getBooks();
 	let storedReviews = await getReviews();
 
-	//there are no books in db
-	if (storedBooks.books.length === 0) {
-		//seed the db with fake book data
-		await seedDatabaseWithBooks();
+	//there are no books in db - seed the books table
+	if (storedBooks.books.length === 0) seedDatabaseWithBooks(storedBooks);
 
-		//retrieve books from db - updated with id
-		storedBooks = await getBooks();
-	}
-
-	//there are no reviews in db
-	if (storedReviews.reviews.length === 0) {
-		//seed the db with fake reviews
-		await seedDatabaseWithReviews(storedBooks.books);
-
-		//retrieve reviews from db - updated with id
-		storedReviews = await getReviews();
-	}
-
-	//add reviews to books
-	const books = matchReviewsToBooks(groupReviewsByBookId(storedReviews.reviews), storedBooks.books);
-
-	return { props: { books } };
+	//there are no reviews in db - seed the book_reviews table
+	if (storedReviews.reviews.length === 0) seedDatabaseWithReviews(storedBooks, storedReviews);
 };
 
-export default function Home({ books }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-	console.log(books);
+seedDatabase();
 
+// export const getServerSideProps = async () => {
+// 	//add reviews to books
+// 	const books = matchReviewsToBooks(groupReviewsByBookId(storedReviews.reviews), storedBooks.books);
+
+// 	return { props: { books } };
+// };
+
+export default function Home() {
 	return (
 		<RootLayout>
 			<p>MAIN</p>
