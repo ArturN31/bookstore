@@ -6,7 +6,7 @@ import { StoreNavbar } from './StoreNavbar/StoreNavbar';
 
 export const Header = () => {
 	return (
-		<>
+		<nav>
 			<div className='lg:flex grid lg:gap-0 gap-8 lg:justify-between justify-center bg-gunmetal select-none'>
 				<div className='md:flex grid items-center md:gap-5 gap-0 px-5'>
 					<Link
@@ -31,6 +31,6 @@ export const Header = () => {
 			<div className='bg-moonstone'>
 				<StoreNavbar />
 			</div>
-		</>
+		</nav>
 	);
 };

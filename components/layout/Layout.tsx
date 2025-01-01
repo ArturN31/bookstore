@@ -4,10 +4,10 @@ import './../../pages/globals.css';
 
 export const RootLayout = ({ children }: { children: React.JSX.Element }) => {
 	return (
-		<>
+		<main className='min-w-[500px] min-h-screen flex flex-col'>
 			<Header />
-			<main className='p-8'>{children}</main>
+			<div className='p-8 flex-grow'>{children}</div>
 			<Footer />
-		</>
+		</main>
 	);
 };
