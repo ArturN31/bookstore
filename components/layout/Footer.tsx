@@ -27,8 +27,12 @@ export const Footer = () => {
 									className='text-sky-500 hover:text-sky-700'>
 									books4you.contact@example.com
 								</a>,
-							].map((content) => (
-								<li className='grid items-center gap-5'>{content}</li>
+							].map((content, index) => (
+								<li
+									key={index}
+									className='grid items-center gap-5'>
+									{content}
+								</li>
 							))}
 						</ul>
 					</div>
@@ -40,8 +44,8 @@ export const Footer = () => {
 								{ text: 'Privacy Policy', url: '/privacypolicy' },
 								{ text: 'Terms of Service', url: '/tos' },
 								{ text: 'Shipping Information', url: '/shippinginfo' },
-							].map((content) => (
-								<li>
+							].map((content, index) => (
+								<li key={index}>
 									<a
 										href={content.url}
 										className='text-sky-500 hover:text-sky-700'>
@@ -54,8 +58,9 @@ export const Footer = () => {
 				</div>
 
 				<div className='flex justify-center gap-8 items-center'>
-					{[<Linkedin />, <Facebook />, <Instagram />, <Twitter />].map((content) => (
+					{[<Linkedin />, <Facebook />, <Instagram />, <Twitter />].map((content, index) => (
 						<Link
+							key={index}
 							className='border border-gunmetal rounded-full p-2 hover:border-white'
 							style={{ boxShadow: '0px 0px 6px black' }}
 							href='https://www.linkedin.com/'
