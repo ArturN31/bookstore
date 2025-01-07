@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { EmailField } from './EmailField';
 import { PasswordField } from './PasswordField';
+import ReturnPolicy from '@/pages/returnpolicy';
 
 interface SigninForm {
 	email: string;
@@ -9,12 +10,11 @@ interface SigninForm {
 }
 
 interface SigninFormErrors {
-	email: boolean;
 	password: boolean;
 	cnfPassword: boolean;
 }
 
-export const SigninForm = () => {
+export const SignupForm = () => {
 	const [formData, setFormData] = useState<SigninForm>({
 		email: '',
 		password: '',
@@ -24,7 +24,6 @@ export const SigninForm = () => {
 	const [formError, setFormError] = useState('');
 
 	const [formErrors, setFormErrors] = useState<SigninFormErrors>({
-		email: false,
 		password: false,
 		cnfPassword: false,
 	});
@@ -45,7 +44,6 @@ export const SigninForm = () => {
 			cnfPassword: '',
 		});
 		setFormErrors({
-			email: false,
 			password: false,
 			cnfPassword: false,
 		});
@@ -55,16 +53,17 @@ export const SigninForm = () => {
 	const handleFormSubmit = (e: any) => {
 		setFormError('');
 
+		//passwords do not match
 		if (formData.password !== formData.cnfPassword) {
 			setFormError('Passwords do not match');
 			setFormErrors({
-				email: formErrors.email,
 				password: true,
 				cnfPassword: true,
 			});
+			return;
 		}
 
-		//create an account
+		//send details to api
 		console.log(formData);
 	};
 
@@ -72,7 +71,6 @@ export const SigninForm = () => {
 		if (formData.password === formData.cnfPassword) {
 			setFormError('');
 			setFormErrors({
-				email: formErrors.email,
 				password: false,
 				cnfPassword: false,
 			});
@@ -82,16 +80,15 @@ export const SigninForm = () => {
 	return (
 		<form
 			action={handleFormSubmit}
-			className='grid border rounded-lg gap-2 p-5 max-w-[500px] m-auto'
+			className='grid place-self-center border border-black rounded-lg gap-2 p-5'
 			style={{ boxShadow: '0px 2px 6px -2px black' }}>
-			<div>
+			<div className='text-center'>
 				<h1 className='text-2xl'>Create Your Account</h1>
 				<p className='font-light'>Let's get you started! Please enter your information below.</p>
 				{formError ? <p className='font-semibold text-red-500'>{formError}</p> : ''}
 			</div>
 			<EmailField
 				input={formData.email}
-				error={formErrors.email}
 				handleInputChange={handleStateChange}
 			/>
 			<PasswordField
@@ -108,11 +105,11 @@ export const SigninForm = () => {
 				error={formErrors.cnfPassword}
 				handleInputChange={handleStateChange}
 			/>
-			<div className='flex justify-end gap-3'>
+			<div className='flex justify-end gap-3 mt-3'>
 				<button
 					type='submit'
 					className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15'>
-					Submit
+					Sign Up
 				</button>
 				<button
 					type='reset'

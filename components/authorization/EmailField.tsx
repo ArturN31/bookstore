@@ -1,10 +1,8 @@
 export const EmailField = ({
 	input,
-	error,
 	handleInputChange,
 }: {
 	input: string;
-	error: boolean;
 	handleInputChange: (el: string, value: string) => void;
 }) => {
 	const handleInput = (e: any) => {

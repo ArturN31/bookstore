@@ -6,7 +6,7 @@ export const RootLayout = ({ children }: { children: React.JSX.Element }) => {
 	return (
 		<main className='min-w-[500px] min-h-screen flex flex-col'>
 			<Header />
-			<div className='p-8 flex-grow'>{children}</div>
+			<div className='p-8 flex-1'>{children}</div>
 			<Footer />
 		</main>
 	);

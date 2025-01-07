@@ -1,4 +1,4 @@
-import { Eye, EyeClosed } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 
 export const PasswordField = ({
@@ -46,7 +46,7 @@ export const PasswordField = ({
 				<button
 					className='w-fit h-full px-1 border border-black border-l-0 hover:bg-gunmetal/15'
 					onClick={handleVisibility}>
-					{visible ? <Eye /> : <EyeClosed />}
+					{!visible ? <Eye /> : <EyeOff />}
 				</button>
 			</div>
 		</div>
