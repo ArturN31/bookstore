@@ -1,23 +1,10 @@
-'use client';
+import { useRouter } from 'next/router';
+import { useRef, useState } from 'react';
 
-import axios from 'axios';
-import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
-
-export const Genre = () => {
-	const [genres, setGenres] = useState<{ genres: string[] }>();
+export const DropdownList = ({ genres }: { genres: { genres: string[] } }) => {
 	const [open, setOpen] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement | null>(null);
 	const router = useRouter();
-
-	const getGenres = async () => {
-		const genresResponse = await axios.get('http://localhost:3000/api/genres');
-		setGenres(genresResponse.data);
-	};
-
-	useEffect(() => {
-		getGenres();
-	}, []);
 
 	const handleBlur = (e: React.FocusEvent<HTMLButtonElement>) => {
 		if (dropdownRef.current && !dropdownRef.current.contains(e.relatedTarget as Node)) {
@@ -31,7 +18,7 @@ export const Genre = () => {
 	};
 
 	return (
-		<div className='w-fit'>
+		<>
 			<button
 				className={`hover:cursor-pointer hover:underline border-x border-gunmetal font-semibold w-[170px] py-2 ${
 					open ? 'underline' : ''
@@ -66,6 +53,6 @@ export const Genre = () => {
 			) : (
 				''
 			)}
-		</div>
+		</>
 	);
 };

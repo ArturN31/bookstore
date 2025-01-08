@@ -1,5 +1,5 @@
-import { Format } from './Format';
-import { Genre } from './Genre';
+import { Format } from './format/Format';
+import { Genre } from './genre/Genre';
 
 export const StoreNavbar = () => {
 	return (

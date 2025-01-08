@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { Database } from './../../../database.types';
+import { Database } from '../../../database.types';
 
 const SUPABASE_DB_URL = process.env.SUPABASE_DB_URL;
 const SUPABASE_DB_ANON_PUBLIC_KEY = process.env.SUPABASE_DB_ANON_PUBLIC_KEY;

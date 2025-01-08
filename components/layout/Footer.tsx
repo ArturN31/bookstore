@@ -40,10 +40,10 @@ export const Footer = () => {
 					<div className='grid gap-3 items-center text-center'>
 						<ul>
 							{[
-								{ text: 'Return Policy', url: '/returnpolicy' },
-								{ text: 'Privacy Policy', url: '/privacypolicy' },
-								{ text: 'Terms of Service', url: '/tos' },
-								{ text: 'Shipping Information', url: '/shippinginfo' },
+								{ text: 'Return Policy', url: '/info/returnpolicy' },
+								{ text: 'Privacy Policy', url: '/info/privacypolicy' },
+								{ text: 'Terms of Service', url: '/info/tos' },
+								{ text: 'Shipping Information', url: '/info/shippinginfo' },
 							].map((content, index) => (
 								<li key={index}>
 									<a

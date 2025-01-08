@@ -1,23 +1,10 @@
-'use client';
+import { useRouter } from 'next/router';
+import { useRef, useState } from 'react';
 
-import axios from 'axios';
-import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
-
-export const Format = () => {
-	const [formats, setFormats] = useState<{ formats: string[] }>();
+export const DropdownList = ({ formats }: { formats: { formats: string[] } }) => {
 	const [open, setOpen] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement | null>(null);
 	const router = useRouter();
-
-	const getGenres = async () => {
-		const formatsResponse = await axios.get('http://localhost:3000/api/formats');
-		setFormats(formatsResponse.data);
-	};
-
-	useEffect(() => {
-		getGenres();
-	}, []);
 
 	const handleBlur = (e: React.FocusEvent<HTMLButtonElement>) => {
 		if (dropdownRef.current && !dropdownRef.current.contains(e.relatedTarget as Node)) {
@@ -31,7 +18,7 @@ export const Format = () => {
 	};
 
 	return (
-		<div className='w-fit'>
+		<>
 			<button
 				className={`hover:cursor-pointer hover:underline border-x border-gunmetal font-semibold w-[170px] py-2 ${
 					open ? 'underline' : ''
@@ -42,7 +29,6 @@ export const Format = () => {
 				onBlur={handleBlur}>
 				Format
 			</button>
-			{/* Dropdown list */}
 			{open ? (
 				<div
 					className='absolute border grid grid-flow-row-dense grid-cols-2 border-black text-center bg-white p-1 rounded-b-md'
@@ -66,6 +52,6 @@ export const Format = () => {
 			) : (
 				''
 			)}
-		</div>
+		</>
 	);
 };

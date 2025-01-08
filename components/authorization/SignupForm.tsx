@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { EmailField } from './EmailField';
 import { PasswordField } from './PasswordField';
-import ReturnPolicy from '@/pages/returnpolicy';
+import ReturnPolicy from '@/pages/info/returnpolicy';
 
 interface SigninForm {
 	email: string;

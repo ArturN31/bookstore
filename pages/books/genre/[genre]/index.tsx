@@ -7,7 +7,7 @@ export default function GenrePage() {
 	const { genre } = router.query;
 
 	const getBooks = async (genre: any) => {
-		const booksResponse = await axios.post('http://localhost:3000/api/booksByGenre', { genre: genre });
+		const booksResponse = await axios.post('http://localhost:3000/api/getBooks/byGenre', { genre: genre });
 		console.log(booksResponse.data);
 	};
 

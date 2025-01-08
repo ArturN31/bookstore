@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { Database } from './../../../database.types';
+import { Database } from '../../../../database.types';
 
 const SUPABASE_DB_URL = process.env.SUPABASE_DB_URL;
 const SUPABASE_DB_ANON_PUBLIC_KEY = process.env.SUPABASE_DB_ANON_PUBLIC_KEY;
 
 export const POST = async (req: NextRequest) => {
 	const body = await req.json();
-	const { genre }: { genre: string } = body;
+	const { format }: { format: string } = body;
 
 	if (!body) {
 		return NextResponse.json({ message: 'Parameters not passed with the request.' }, { status: 400 });
 	}
 
-	if (!genre) {
-		return NextResponse.json({ message: 'Genre not passed with the request.' }, { status: 400 });
+	if (!format) {
+		return NextResponse.json({ message: 'Format not passed with the request.' }, { status: 400 });
 	}
 
 	if (!SUPABASE_DB_URL || !SUPABASE_DB_ANON_PUBLIC_KEY) {
@@ -32,7 +32,7 @@ export const POST = async (req: NextRequest) => {
 		let books: any = [];
 
 		data.forEach((book) => {
-			if (book.genre === genre) books.push(book);
+			if (book.format === format) books.push(book);
 		});
 
 		return NextResponse.json({ books: books }, { status: 200 });

@@ -7,7 +7,7 @@ export default function FormatPage() {
 	const { format } = router.query;
 
 	const getBooks = async (genre: any) => {
-		const booksResponse = await axios.post('http://localhost:3000/api/booksByFormat', { format: format });
+		const booksResponse = await axios.post('http://localhost:3000/api/getBooks/byFormat', { format: format });
 		console.log(booksResponse.data);
 	};
 
