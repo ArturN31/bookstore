@@ -4,7 +4,9 @@ import { SignupForm } from '@/components/authorization/SignupForm';
 export default function SignIn() {
 	return (
 		<RootLayout>
-			<SignupForm />
+			<div className='grid'>
+				<SignupForm />
+			</div>
 		</RootLayout>
 	);
 }

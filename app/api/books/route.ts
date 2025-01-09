@@ -1,18 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { Database } from './../../../database.types';
-
-const SUPABASE_DB_URL = process.env.SUPABASE_DB_URL;
-const SUPABASE_DB_ANON_PUBLIC_KEY = process.env.SUPABASE_DB_ANON_PUBLIC_KEY;
-const SUPABASE_DB_SERVICE_ROLE_KEY = process.env.SUPABASE_DB_SERVICE_ROLE_KEY;
+import { getSupabaseAnonClient, getSupabaseServiceClient } from '@/utils/dbConnect';
 
 export const GET = async () => {
-	if (!SUPABASE_DB_URL || !SUPABASE_DB_ANON_PUBLIC_KEY) {
-		return NextResponse.json({ message: 'Failed to load database credentials.' }, { status: 500 });
-	}
-
 	try {
-		const supabase = createClient<Database>(SUPABASE_DB_URL, SUPABASE_DB_ANON_PUBLIC_KEY);
+		const supabase = getSupabaseAnonClient();
 		const { data, error } = await supabase.from('books').select('*');
 
 		if (error) {
@@ -37,12 +28,8 @@ export const POST = async (req: NextRequest) => {
 		return NextResponse.json({ message: 'Books not passed with the request.' }, { status: 400 });
 	}
 
-	if (!SUPABASE_DB_URL || !SUPABASE_DB_SERVICE_ROLE_KEY) {
-		return NextResponse.json({ message: 'Failed to load database credentials.' }, { status: 500 });
-	}
-
 	try {
-		const supabase = createClient<Database>(SUPABASE_DB_URL, SUPABASE_DB_SERVICE_ROLE_KEY);
+		const supabase = getSupabaseServiceClient();
 		const { error } = await supabase.from('books').insert(books).select();
 
 		if (error) {

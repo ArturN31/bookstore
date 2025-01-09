@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { EmailField } from './EmailField';
 import { PasswordField } from './PasswordField';
+import axios from 'axios';
 
 interface SigninForm {
 	email: string;
@@ -34,7 +35,6 @@ export const SigninForm = () => {
 		if (formData.email === '' && formData.password === '') return;
 
 		//send details to api
-		console.log(formData);
 	};
 
 	return (

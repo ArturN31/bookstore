@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { EmailField } from './EmailField';
 import { PasswordField } from './PasswordField';
-import ReturnPolicy from '@/pages/info/returnpolicy';
+import axios from 'axios';
 
 interface SigninForm {
 	email: string;
@@ -50,11 +50,26 @@ export const SignupForm = () => {
 		setFormError('');
 	};
 
-	const handleFormSubmit = (e: any) => {
+	const handleFormSubmit = async (e: any) => {
 		setFormError('');
 
-		//passwords do not match
+		//It has to include: lowercase, uppercase letters, digits, and symbols.
+		const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
+
+		if (!regex.test(formData.password) || formData.password.length < 8) {
+			//password is too weak
+			setFormError(
+				'Password has to be minimum 8 characters long and include: lowercase, uppercase letters, digits, and symbols.',
+			);
+			setFormErrors({
+				password: true,
+				cnfPassword: true,
+			});
+			return;
+		}
+
 		if (formData.password !== formData.cnfPassword) {
+			//passwords do not match
 			setFormError('Passwords do not match');
 			setFormErrors({
 				password: true,
@@ -63,11 +78,36 @@ export const SignupForm = () => {
 			return;
 		}
 
-		//send details to api
-		console.log(formData);
+		if (formError !== '') return;
+		else {
+			//send sign up details to api
+			try {
+				const res = await axios.post('http://localhost:3000/api/auth/signup', { formData: formData });
+
+				if (res.data.message === 'User has been added to the database.') {
+					console.log(res);
+					//account has been added
+				}
+			} catch (error: any) {
+				console.log(error);
+
+				if (error.response.data.message) setFormError(error.response.data.message);
+			}
+		}
 	};
 
 	useEffect(() => {
+		const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
+
+		if (regex.test(formData.password) || formData.password.length >= 8) {
+			setFormError('');
+			setFormErrors({
+				password: false,
+				cnfPassword: false,
+			});
+			return;
+		}
+
 		if (formData.password === formData.cnfPassword) {
 			setFormError('');
 			setFormErrors({
@@ -80,7 +120,7 @@ export const SignupForm = () => {
 	return (
 		<form
 			action={handleFormSubmit}
-			className='grid place-self-center border border-black rounded-lg gap-2 p-5'
+			className='grid place-self-center border border-black rounded-lg gap-2 p-5 w-[450px]'
 			style={{ boxShadow: '0px 2px 6px -2px black' }}>
 			<div className='text-center'>
 				<h1 className='text-2xl'>Create Your Account</h1>
