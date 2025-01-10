@@ -82,15 +82,21 @@ export const SignupForm = () => {
 		else {
 			//send sign up details to api
 			try {
-				const res = await axios.post('http://localhost:3000/api/auth/signup', { formData: formData });
+				const signupResponse = await axios.post('http://localhost:3000/api/auth/signup', { signupData: formData });
 
-				if (res.data.message === 'User has been added to the database.') {
-					console.log(res);
+				if (signupResponse.data.message === 'User has been added to the database.') {
 					//account has been added
+					const signinResponse = await axios.post('http://localhost:3000/api/auth/signin', { signinData: formData });
+
+					if (signinResponse.data.message === 'User has been signed in.') {
+						//signin successfull
+
+						//access cookie
+						console.log(signinResponse);
+					}
 				}
 			} catch (error: any) {
 				console.log(error);
-
 				if (error.response.data.message) setFormError(error.response.data.message);
 			}
 		}

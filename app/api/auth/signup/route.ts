@@ -4,18 +4,18 @@ import { getSupabaseAnonClient } from '@/utils/dbConnect';
 export const POST = async (req: NextRequest) => {
 	try {
 		const body = await req.json();
-		const { formData }: { formData: { email: string; password: string } } = body;
+		const { signupData }: { signupData: { email: string; password: string } } = body;
 
 		if (!body) {
 			return NextResponse.json({ message: 'Parameters not passed with the request.' }, { status: 400 });
 		}
 
-		if (!formData.email || !formData.password) {
+		if (!signupData.email || !signupData.password) {
 			return NextResponse.json({ message: 'Sign up details not passed with the request.' }, { status: 400 });
 		}
 
 		const supabase = getSupabaseAnonClient();
-		const { error } = await supabase.auth.signUp({ email: formData.email, password: formData.password });
+		const { error } = await supabase.auth.signUp({ email: signupData.email, password: signupData.password });
 
 		if (error) {
 			if (error.code == 'email_exists')

@@ -9,7 +9,7 @@ export default function SignIn() {
 				<p className='text-center'>
 					New to Books 4 You? Create an account{' '}
 					<a
-						href='/auth/signup'
+						href='/user/auth/signup'
 						className='text-sky-500 hover:text-sky-700'>
 						here
 					</a>

@@ -3,18 +3,18 @@ import { RootLayout } from '@/components/layout/Layout';
 import { getBooks, getReviews, seedDatabaseWithBooks, seedDatabaseWithReviews } from '@/utils/dbSeed/seedDatabase';
 import { matchReviewsToBooks, groupReviewsByBookId } from '@/utils/prepBooksArray';
 
-const seedDatabase = async () => {
-	let storedBooks = await getBooks();
-	let storedReviews = await getReviews();
+// const seedDatabase = async () => {
+// 	let storedBooks = await getBooks();
+// 	let storedReviews = await getReviews();
 
-	//there are no books in db - seed the books table
-	if (storedBooks.books.length === 0) seedDatabaseWithBooks(storedBooks);
+// 	//there are no books in db - seed the books table
+// 	if (storedBooks.books.length === 0) seedDatabaseWithBooks(storedBooks);
 
-	//there are no reviews in db - seed the book_reviews table
-	if (storedReviews.reviews.length === 0) seedDatabaseWithReviews(storedBooks, storedReviews);
-};
+// 	//there are no reviews in db - seed the book_reviews table
+// 	if (storedReviews.reviews.length === 0) seedDatabaseWithReviews(storedBooks, storedReviews);
+// };
 
-seedDatabase();
+// seedDatabase();
 
 // export const getServerSideProps = async () => {
 // 	//add reviews to books

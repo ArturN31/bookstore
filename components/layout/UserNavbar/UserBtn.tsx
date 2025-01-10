@@ -8,7 +8,7 @@ export const UserBtn = () => {
 	const dropdownRef = useRef<HTMLDivElement | null>(null);
 
 	const handleClick = () => {
-		router.push('/auth/signin');
+		router.push('/user/auth/signin');
 	};
 
 	const handleBlur = (e: React.FocusEvent<HTMLButtonElement>) => {
