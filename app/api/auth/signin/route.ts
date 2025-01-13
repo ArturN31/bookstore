@@ -33,16 +33,6 @@ export const POST = async (req: NextRequest) => {
 			return NextResponse.json({ message: 'Failed to sign in.' }, { status: 500 });
 		}
 
-		//JSON object for response
-		const JSONresponse = {
-			message: 'Signed in successfully.',
-			user: {
-				id: data.user.id,
-				email: data.user.email,
-				role: data.user.role,
-			},
-		};
-
 		//set the access token cookie
 		const accessTokenCookie = serialize('access_token', data.session.access_token, {
 			httpOnly: true,
@@ -62,7 +52,7 @@ export const POST = async (req: NextRequest) => {
 		});
 
 		//prep the response
-		const response = new NextResponse(JSON.stringify(JSONresponse), { status: 200 });
+		const response = new NextResponse(JSON.stringify({ message: 'Signed in successfully.' }), { status: 200 });
 		response.headers.append('Set-Cookie', accessTokenCookie);
 		response.headers.append('Set-Cookie', refreshTokenCookie);
 

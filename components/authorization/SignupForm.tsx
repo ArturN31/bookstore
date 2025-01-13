@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { EmailField } from './EmailField';
 import { PasswordField } from './PasswordField';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
 
 interface SigninForm {
@@ -27,6 +28,8 @@ export const SignupForm = () => {
 		password: false,
 		cnfPassword: false,
 	});
+
+	const router = useRouter();
 
 	const handleStateChange = (el: string, value: string) => {
 		setFormData((prevFormData) => {
@@ -79,26 +82,29 @@ export const SignupForm = () => {
 		}
 
 		if (formError !== '') return;
-		else {
-			//send sign up details to api
-			try {
-				const signupResponse = await axios.post('http://localhost:3000/api/auth/signup', { signupData: formData });
 
-				if (signupResponse.data.message === 'User has been added to the database.') {
-					//account has been added
-					const signinResponse = await axios.post('http://localhost:3000/api/auth/signin', { signinData: formData });
+		//send sign up details to api
+		try {
+			const signupResponse = await axios.post('http://localhost:3000/api/auth/signup', { signupData: formData });
 
-					if (signinResponse.data.message === 'User has been signed in.') {
-						//signin successfull
+			if (signupResponse.data.message === 'User has been added to the database.') {
+				//account has been added
+				const signinResponse = await axios.post('http://localhost:3000/api/auth/signin', { signinData: formData });
 
-						//access cookie
-						console.log(signinResponse);
-					}
+				if (signinResponse.data.message === 'Signed in successfully.') {
+					//signin successfull
+					router.push('/user/profile');
+				} else {
+					//handle signin errors
+					setFormError(signinResponse.data.message);
 				}
-			} catch (error: any) {
-				console.log(error);
-				if (error.response.data.message) setFormError(error.response.data.message);
+			} else {
+				//handle signup errors
+				setFormError(signupResponse.data.message);
 			}
+		} catch (error: any) {
+			console.log('Error during sign-up/sign-in:', error);
+			if (error.response.data.message) setFormError(error.response.data.message);
 		}
 	};
 
