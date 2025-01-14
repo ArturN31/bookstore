@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAnonClient } from '@/utils/dbConnect';
-import { serialize } from 'cookie';
+import { createClient } from '@/utils/db/server';
 
 export const POST = async (req: NextRequest) => {
 	try {
@@ -15,8 +14,8 @@ export const POST = async (req: NextRequest) => {
 			return NextResponse.json({ message: 'Sign in details not passed with the request.' }, { status: 400 });
 		}
 
-		const supabase = getSupabaseAnonClient();
-		const { data, error } = await supabase.auth.signInWithPassword({
+		const supabase = await createClient();
+		const { error } = await supabase.auth.signInWithPassword({
 			email: signinData.email,
 			password: signinData.password,
 		});
@@ -33,30 +32,7 @@ export const POST = async (req: NextRequest) => {
 			return NextResponse.json({ message: 'Failed to sign in.' }, { status: 500 });
 		}
 
-		//set the access token cookie
-		const accessTokenCookie = serialize('access_token', data.session.access_token, {
-			httpOnly: true,
-			secure: process.env.NODE_ENV === 'production',
-			maxAge: data.session.expires_in,
-			path: '/',
-			sameSite: 'strict',
-		});
-
-		//set the refresh token cookie
-		const refreshTokenCookie = serialize('refresh_token', data.session.refresh_token, {
-			httpOnly: true,
-			secure: process.env.NODE_ENV === 'production',
-			maxAge: 60 * 60 * 24 * 365,
-			path: '/',
-			sameSite: 'strict',
-		});
-
-		//prep the response
-		const response = new NextResponse(JSON.stringify({ message: 'Signed in successfully.' }), { status: 200 });
-		response.headers.append('Set-Cookie', accessTokenCookie);
-		response.headers.append('Set-Cookie', refreshTokenCookie);
-
-		return response;
+		return NextResponse.json({ message: 'Signed in successfully.' }, { status: 200 });
 	} catch (error) {
 		console.error(error);
 		return NextResponse.json({ message: 'Failed to sign in.' }, { status: 500 });

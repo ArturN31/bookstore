@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAnonClient, getSupabaseServiceClient } from '@/utils/dbConnect';
+import { createClient } from '@/utils/db/server';
 
 export const GET = async () => {
 	try {
-		const supabase = getSupabaseAnonClient();
+		const supabase = await createClient();
 		const { data, error } = await supabase.from('book_reviews').select('*');
 
 		if (error) {
@@ -29,7 +29,7 @@ export const POST = async (req: NextRequest) => {
 	}
 
 	try {
-		const supabase = getSupabaseServiceClient();
+		const supabase = await createClient();
 		const { error } = await supabase.from('book_reviews').insert(reviews).select();
 
 		if (error) {

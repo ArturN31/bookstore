@@ -9,10 +9,10 @@
 		"lint": "next lint"
 	},
 	"dependencies": {
-		"@supabase/supabase-js": "^2.46.2",
+		"@supabase/ssr": "^0.5.2",
+		"@supabase/supabase-js": "^2.47.13",
 		"axios": "^1.7.8",
-		"cookie": "^1.0.2",
-		"lucide-react": "^0.468.0",
+		"lucide-react": "^0.471.1",
 		"next": "^15.1.4",
 		"react": "^19",
 		"react-dom": "^19"

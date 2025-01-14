@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAnonClient } from '@/utils/dbConnect';
+import { createClient } from '@/utils/db/server';
 
 export const POST = async (req: NextRequest) => {
 	try {
@@ -14,7 +14,7 @@ export const POST = async (req: NextRequest) => {
 			return NextResponse.json({ message: 'Sign up details not passed with the request.' }, { status: 400 });
 		}
 
-		const supabase = getSupabaseAnonClient();
+		const supabase = await createClient();
 		const { error } = await supabase.auth.signUp({ email: signupData.email, password: signupData.password });
 
 		if (error) {

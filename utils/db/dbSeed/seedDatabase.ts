@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { generateBooksArray } from '@/utils/dbSeed/generateBook';
-import { generateReviewsArray } from '@/utils/dbSeed/generateReview';
+import { generateBooksArray } from '@/utils/db/dbSeed/generateBook';
+import { generateReviewsArray } from '@/utils/db/dbSeed/generateReview';
 
 export const getBooks = async () => {
 	const booksResponse = await axios.get('http://localhost:3000/api/books');
