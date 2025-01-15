@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { EmailField } from './EmailField';
 import { PasswordField } from './PasswordField';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
 
 interface SigninForm {
 	email: string;
@@ -13,6 +14,8 @@ export const SigninForm = () => {
 		email: '',
 		password: '',
 	});
+
+	const router = useRouter();
 
 	const handleStateChange = (el: string, value: string) => {
 		setFormData((prevFormData) => {
@@ -30,11 +33,23 @@ export const SigninForm = () => {
 		});
 	};
 
-	const handleFormSubmit = (e: any) => {
+	const handleFormSubmit = async (e: any) => {
 		//missing sing in details
 		if (formData.email === '' && formData.password === '') return;
 
 		//send details to api
+		try {
+			const signinResponse = await axios.post('http://localhost:3000/api/auth/signin', { signinData: formData });
+
+			if (signinResponse.data.message === 'Signed in successfully.') {
+				//signin successfull
+				router.push('/user/profile');
+			} else {
+				//handle signin errors
+			}
+		} catch (error) {
+			console.log(error);
+		}
 	};
 
 	return (
