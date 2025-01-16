@@ -1,3 +1,5 @@
+'use client';
+
 import { User } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Dropdown } from './Dropdown';

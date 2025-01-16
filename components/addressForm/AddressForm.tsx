@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { TextField } from './TextField';
 
@@ -32,8 +34,6 @@ export const AddressForm = () => {
 			};
 		});
 	};
-
-	console.log(formData);
 
 	return (
 		<form className='grid border gap-2 p-5'>

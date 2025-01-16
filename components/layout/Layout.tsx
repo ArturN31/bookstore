@@ -1,6 +1,6 @@
 import { Footer } from './Footer';
 import { Header } from './Header';
-import './../../pages/globals.css';
+import './../../app/globals.css';
 
 export const RootLayout = ({ children }: { children: React.JSX.Element }) => {
 	return (

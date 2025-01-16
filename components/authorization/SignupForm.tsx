@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { EmailField } from './EmailField';
 import { PasswordField } from './PasswordField';
