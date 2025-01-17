@@ -1,0 +1,43 @@
+'use server';
+
+import { z } from 'zod';
+
+//setting zod schema for formData object
+const schema = z.object({
+	firstName: z.string().trim().min(1, 'First Name is required'),
+	lastName: z.string().trim().min(1, 'Last Name is required'),
+	dob: z.string().min(1, 'Date of Birth is required'),
+	streetAddress: z.string().min(1, 'Street Address is required'),
+	postcode: z.string().min(1, 'Postcode is required'),
+	city: z.string().min(1, 'City is required'),
+	country: z.string().min(1, 'Country is required'),
+	phoneNumber: z.string().trim().min(1, 'Phone Number is required'),
+});
+
+export async function AddressFormAction(prevState: any, formData: FormData) {
+	//getting values from form fields
+	const fields = {
+		firstName: formData.get('firstName'),
+		lastName: formData.get('lastName'),
+		dob: formData.get('dob'),
+		streetAddress: formData.get('streetAddress'),
+		postcode: formData.get('postcode'),
+		city: formData.get('city'),
+		country: formData.get('country'),
+		phoneNumber: formData.get('phoneNumber'),
+	};
+
+	//validating passed fields
+	const validatedData = schema.safeParse(fields);
+
+	if (!validatedData.success) {
+		//zod validation failed
+		prevState = fields;
+		return {
+			...prevState,
+			validatedData,
+		};
+	}
+
+	//zod validation successful
+}

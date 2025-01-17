@@ -48,3 +48,18 @@ interface Review {
 	review: string;
 	rating: number;
 }
+
+interface User {
+	id: string;
+	created_at: Date;
+	updated_at: Date;
+	first_name: string;
+	second_name: string;
+	date_of_birth: Date;
+	street_address: string;
+	postcode: string;
+	city: string;
+	country: string;
+	phone_number: string;
+	[key: string]: string | Date;
+}
