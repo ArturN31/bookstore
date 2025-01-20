@@ -1,7 +1,7 @@
 'use client';
 
 import { AddressFormAction } from '@/data/actions/AddressForm-actions';
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 
 export const AddressForm = () => {
 	const INITIAL_STATE = {
@@ -16,10 +16,19 @@ export const AddressForm = () => {
 	};
 
 	const [formState, formAction] = useActionState(AddressFormAction, INITIAL_STATE);
+	const [formError, setFormError] = useState('');
 
 	const { firstName, lastName, dob, phoneNumber, streetAddress, postcode, city, country } = formState || {};
 
-	console.log(formState);
+	if (formState.message === 'User data could not be inserted into the database.') {
+		console.log(formState.error);
+		setFormError(formState.message);
+	}
+
+	if (formState.message === 'User data has been inserted into the database.') {
+		//refresh page /user/profile
+		window.location.href = '/user/profile';
+	}
 
 	return (
 		<form
@@ -29,6 +38,7 @@ export const AddressForm = () => {
 			<div>
 				<h1 className='text-2xl'>Tell Us Where to Ship</h1>
 				<p className='font-light'>Enter your shipping address information below.</p>
+				{formError ? <p className='font-semibold text-red-500'>{formError}</p> : ''}
 			</div>
 
 			<div className='grid gap-2'>

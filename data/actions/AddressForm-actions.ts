@@ -1,6 +1,7 @@
 'use server';
 
 import { z } from 'zod';
+import { createClient } from '@/utils/db/server';
 
 //setting zod schema for formData object
 const schema = z.object({
@@ -40,4 +41,35 @@ export async function AddressFormAction(prevState: any, formData: FormData) {
 	}
 
 	//zod validation successful
+	const { firstName, lastName, dob, streetAddress, postcode, city, country, phoneNumber } = validatedData.data;
+
+	const supabase = await createClient();
+
+	const user = await supabase.auth.getUser();
+	const userID = user.data.user?.id;
+
+	const { error } = await supabase.from('users').insert({
+		id: userID,
+		first_name: firstName,
+		last_name: lastName,
+		date_of_birth: dob,
+		street_address: streetAddress,
+		postcode: postcode,
+		city: city,
+		country: country,
+		phone_number: phoneNumber,
+	});
+
+	if (error) {
+		console.log(error);
+		return {
+			...prevState,
+			error: error,
+			message: 'User data could not be inserted into the database.',
+		};
+	}
+
+	return {
+		message: 'User data has been inserted into the database.',
+	};
 }

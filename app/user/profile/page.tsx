@@ -51,7 +51,7 @@ export default async function UserProfile() {
 				<div>
 					<p>Name:</p>
 					<p>
-						{user.first_name} {user.second_name}
+						{user.first_name} {user.last_name}
 					</p>
 				</div>
 
