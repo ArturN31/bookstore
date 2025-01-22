@@ -11,6 +11,8 @@ interface SigninForm {
 	password: string;
 }
 
+//! CHANGE TO SERVER ACTIONS
+
 export const SigninForm = () => {
 	const [formData, setFormData] = useState<SigninForm>({
 		email: '',

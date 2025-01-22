@@ -10,5 +10,6 @@ export const config = {
 		//protected routes - requires sign in
 		//match following request paths
 		'/user/profile',
+		'/user/auth/change_password',
 	],
 };

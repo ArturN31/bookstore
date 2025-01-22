@@ -1,6 +1,11 @@
 import { RootLayout } from '@/components/layout/Layout';
+import { getUserData } from '@/data/user/GetUserData';
 
-export default function ChangePasswordPage() {
+export default async function ChangePasswordPage() {
+	const userData = await getUserData();
+
+	console.log(userData);
+
 	return (
 		<RootLayout>
 			<div>

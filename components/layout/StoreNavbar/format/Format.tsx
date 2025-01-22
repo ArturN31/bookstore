@@ -1,24 +1,32 @@
-'use client';
-
-import axios from 'axios';
 import { DropdownList } from './DropdownList';
-import { useEffect, useState } from 'react';
+import { createClient } from '@/utils/db/server';
 
-export const Format = () => {
-	const [formats, setFormats] = useState({ formats: [] });
-
+export const Format = async () => {
 	const getFormats = async () => {
-		const formatsResponse = await axios.get('http://localhost:3000/api/getBooks/formatTypes');
-		setFormats(formatsResponse.data);
+		try {
+			const supabase = await createClient();
+			const { data, error } = await supabase.from('books').select('format');
+
+			if (error) return { message: 'Failed to retrieve books from database.' };
+			if (!data?.length) return { message: 'No book formats found.' };
+
+			let formats: string[] = [...new Set(data?.map((entry) => entry.format))];
+			return { formats: formats };
+		} catch (error) {
+			console.error(error);
+			return { message: 'Failed to retrieve books from database.' };
+		}
 	};
 
-	useEffect(() => {
-		getFormats();
-	}, []);
+	const formats = await getFormats();
 
-	return (
-		<div className='w-fit'>
-			<DropdownList formats={formats} />
-		</div>
-	);
+	if (formats)
+		return (
+			<div className='w-fit'>
+				<DropdownList
+					formats={formats.formats}
+					message={formats.message}
+				/>
+			</div>
+		);
 };

@@ -17,6 +17,8 @@ interface SigninFormErrors {
 	cnfPassword: boolean;
 }
 
+//! CHANGE TO SERVER ACTIONS
+
 export const SignupForm = () => {
 	const [formData, setFormData] = useState<SigninForm>({
 		email: '',

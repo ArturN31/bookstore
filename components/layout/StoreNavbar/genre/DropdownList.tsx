@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 
-export const DropdownList = ({ genres }: { genres: { genres: string[] } }) => {
+export const DropdownList = ({ genres, message }: { genres: string[] | undefined; message: string | undefined }) => {
 	const [open, setOpen] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement | null>(null);
 	const router = useRouter();
@@ -38,7 +38,7 @@ export const DropdownList = ({ genres }: { genres: { genres: string[] } }) => {
 					ref={dropdownRef}
 					tabIndex={-1}>
 					{/* list choices */}
-					{genres?.genres.sort().map((genre) => {
+					{genres?.sort().map((genre) => {
 						return (
 							<button
 								className=' hover:bg-slate-200 hover:cursor-pointer rounded-sm w-full px-4'
@@ -51,6 +51,7 @@ export const DropdownList = ({ genres }: { genres: { genres: string[] } }) => {
 							</button>
 						);
 					})}
+					{message ? <p>{message}</p> : ''}
 				</div>
 			) : (
 				''

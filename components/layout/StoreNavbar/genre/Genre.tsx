@@ -1,24 +1,32 @@
-'use client';
-
-import axios from 'axios';
-import { useEffect, useState } from 'react';
+import { createClient } from '@/utils/db/server';
 import { DropdownList } from './DropdownList';
 
-export const Genre = () => {
-	const [genres, setGenres] = useState<{ genres: string[] }>({ genres: [] });
-
+export const Genre = async () => {
 	const getGenres = async () => {
-		const genresResponse = await axios.get('http://localhost:3000/api/getBooks/genreTypes');
-		setGenres(genresResponse.data);
+		try {
+			const supabase = await createClient();
+			const { data, error } = await supabase.from('books').select('genre');
+
+			if (error) return { message: 'Failed to retrieve books from database.' };
+			if (!data?.length) return { message: 'No book genres found.' };
+
+			let genres: string[] = [...new Set(data?.map((entry) => entry.genre))];
+			return { genres: genres };
+		} catch (error) {
+			console.error(error);
+			return { message: 'Failed to retrieve books from database.' };
+		}
 	};
 
-	useEffect(() => {
-		getGenres();
-	}, []);
+	const genres = await getGenres();
 
-	return (
-		<div className='w-fit'>
-			<DropdownList genres={genres} />
-		</div>
-	);
+	if (genres)
+		return (
+			<div className='w-fit'>
+				<DropdownList
+					genres={genres.genres}
+					message={genres.message}
+				/>
+			</div>
+		);
 };
