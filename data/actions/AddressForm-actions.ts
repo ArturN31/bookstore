@@ -42,9 +42,7 @@ export async function AddressFormAction(prevState: any, formData: FormData) {
 
 	//zod validation successful
 	const { firstName, lastName, dob, streetAddress, postcode, city, country, phoneNumber } = validatedData.data;
-
 	const supabase = await createClient();
-
 	const user = await supabase.auth.getUser();
 	const userID = user.data.user?.id;
 
