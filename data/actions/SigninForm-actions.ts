@@ -35,6 +35,7 @@ export async function SigninFormAction(prevState: any, formData: FormData) {
 		password: password,
 	});
 
+	//handle errors
 	if (error) {
 		console.log(error);
 		if (error.code == 'invalid_credentials')
@@ -57,6 +58,7 @@ export async function SigninFormAction(prevState: any, formData: FormData) {
 		};
 	}
 
+	//return success
 	return {
 		message: 'Signed in successfully.',
 	};

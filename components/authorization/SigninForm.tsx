@@ -72,7 +72,7 @@ export const SigninForm = () => {
 						name='password'
 						placeholder='Password'
 						defaultValue={password}
-						className='border px-2 py-1 w-full'
+						className='border border-black px-2 py-1 w-full'
 					/>
 					<button
 						className='w-fit h-full px-1 border border-black border-l-0 hover:bg-gunmetal/15'

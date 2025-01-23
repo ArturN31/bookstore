@@ -1,141 +1,79 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { EmailField } from './EmailField';
-import { PasswordField } from './PasswordField';
-import { useRouter } from 'next/navigation';
-import axios from 'axios';
-
-interface SigninForm {
-	email: string;
-	password: string;
-	cnfPassword: string;
-}
-
-interface SigninFormErrors {
-	password: boolean;
-	cnfPassword: boolean;
-}
-
-//! CHANGE TO SERVER ACTIONS
+import { useActionState, useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
+import { SignupFormAction } from '@/data/actions/SignupForm-actions';
 
 export const SignupForm = () => {
-	const [formData, setFormData] = useState<SigninForm>({
+	const INITIAL_STATE = {
 		email: '',
 		password: '',
 		cnfPassword: '',
-	});
+	};
+
+	const [formState, formAction] = useActionState(SignupFormAction, INITIAL_STATE);
 
 	const [formError, setFormError] = useState('');
 
-	const [formErrors, setFormErrors] = useState<SigninFormErrors>({
-		password: false,
-		cnfPassword: false,
-	});
+	const [visiblePassword, setVisiblePassword] = useState(false);
 
-	const router = useRouter();
+	const [visibleCnfPassword, setVisibileCnfPassword] = useState(false);
 
-	const handleStateChange = (el: string, value: string) => {
-		setFormData((prevFormData) => {
-			return {
-				...prevFormData,
-				[el]: value,
-			};
-		});
+	const { email, password, cnfPassword, message } = formState || {};
+
+	//passwords do not match
+	if (
+		formError !== 'Password and Confirm Password do not match.' &&
+		message === 'Password and Confirm Password do not match.'
+	)
+		setFormError(message);
+
+	//email exists
+	if (
+		formError !== 'Failed to insert user into the database as email already exists.' &&
+		message === 'Failed to insert user into the database as email already exists.'
+	)
+		setFormError(message);
+
+	//user exists
+	if (
+		formError !== 'Failed to insert user into the database as it already exists.' &&
+		message === 'Failed to insert user into the database as it already exists.'
+	)
+		setFormError(message);
+
+	//weak password
+	if (
+		formError !==
+			'Failed to insert user into the database as the password is too weak.\nIt has to include: lowercase, uppercase letters, digits, and symbols.' &&
+		message ===
+			'Failed to insert user into the database as the password is too weak.\nIt has to include: lowercase, uppercase letters, digits, and symbols.'
+	)
+		setFormError(message);
+
+	//failed to insert user
+	if (
+		formError !== 'Failed to insert user into the database.' &&
+		message === 'Failed to insert user into the database.'
+	)
+		setFormError(message);
+
+	//user signed up
+	if (message === 'User has been added to the database.') window.location.href = '/user/profile';
+
+	const handlePasswordVisibility = (e: any) => {
+		e.preventDefault();
+		setVisiblePassword(!visiblePassword);
 	};
 
-	const handleFormReset = () => {
-		setFormData({
-			email: '',
-			password: '',
-			cnfPassword: '',
-		});
-		setFormErrors({
-			password: false,
-			cnfPassword: false,
-		});
-		setFormError('');
+	const handleCnfPasswordVisibility = (e: any) => {
+		e.preventDefault();
+		setVisibileCnfPassword(!visibleCnfPassword);
 	};
-
-	const handleFormSubmit = async (e: any) => {
-		setFormError('');
-
-		//It has to include: lowercase, uppercase letters, digits, and symbols.
-		const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
-
-		if (!regex.test(formData.password) || formData.password.length < 8) {
-			//password is too weak
-			setFormError(
-				'Password has to be minimum 8 characters long and include: lowercase, uppercase letters, digits, and symbols.',
-			);
-			setFormErrors({
-				password: true,
-				cnfPassword: true,
-			});
-			return;
-		}
-
-		if (formData.password !== formData.cnfPassword) {
-			//passwords do not match
-			setFormError('Passwords do not match');
-			setFormErrors({
-				password: true,
-				cnfPassword: true,
-			});
-			return;
-		}
-
-		if (formError !== '') return;
-
-		//send sign up details to api
-		try {
-			const signupResponse = await axios.post('http://localhost:3000/api/auth/signup', { signupData: formData });
-
-			if (signupResponse.data.message === 'User has been added to the database.') {
-				//account has been added
-				const signinResponse = await axios.post('http://localhost:3000/api/auth/signin', { signinData: formData });
-
-				if (signinResponse.data.message === 'Signed in successfully.') {
-					//signin successfull
-					router.push('/user/profile');
-				} else {
-					//handle signin errors
-					setFormError(signinResponse.data.message);
-				}
-			} else {
-				//handle signup errors
-				setFormError(signupResponse.data.message);
-			}
-		} catch (error: any) {
-			console.log('Error during sign-up/sign-in:', error);
-			if (error.response.data.message) setFormError(error.response.data.message);
-		}
-	};
-
-	useEffect(() => {
-		const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/;
-
-		if (regex.test(formData.password) || formData.password.length >= 8) {
-			setFormError('');
-			setFormErrors({
-				password: false,
-				cnfPassword: false,
-			});
-			return;
-		}
-
-		if (formData.password === formData.cnfPassword) {
-			setFormError('');
-			setFormErrors({
-				password: false,
-				cnfPassword: false,
-			});
-		}
-	}, [formData]);
 
 	return (
 		<form
-			action={handleFormSubmit}
+			action={formAction}
 			className='grid place-self-center border border-black rounded-lg gap-2 p-5 w-[450px]'
 			style={{ boxShadow: '0px 2px 6px -2px black' }}>
 			<div className='text-center'>
@@ -143,24 +81,68 @@ export const SignupForm = () => {
 				<p className='font-light'>Let's get you started! Please enter your information below.</p>
 				{formError ? <p className='font-semibold text-red-500'>{formError}</p> : ''}
 			</div>
-			<EmailField
-				input={formData.email}
-				handleInputChange={handleStateChange}
-			/>
-			<PasswordField
-				label={formErrors.password ? 'Pasword (x)' : 'Password'}
-				id='password'
-				input={formData.password}
-				error={formErrors.password}
-				handleInputChange={handleStateChange}
-			/>
-			<PasswordField
-				label={formErrors.cnfPassword ? 'Confirm Pasword (x)' : 'Confirm Password'}
-				id='cnfPassword'
-				input={formData.cnfPassword}
-				error={formErrors.cnfPassword}
-				handleInputChange={handleStateChange}
-			/>
+
+			<div className='grid'>
+				<label htmlFor='email'>Email</label>
+				<input
+					required
+					type='email'
+					id='email'
+					name='email'
+					placeholder='Email'
+					defaultValue={email}
+					className='border border-black px-2 py-1'
+				/>
+			</div>
+
+			<div className='grid'>
+				<label
+					htmlFor='Password'
+					className='text-black'>
+					Password
+				</label>
+				<div className='flex items-center'>
+					<input
+						required
+						type={visiblePassword ? 'text' : 'password'}
+						id='password'
+						name='password'
+						placeholder='Password'
+						defaultValue={password}
+						className='border border-black px-2 py-1 w-full'
+					/>
+					<button
+						className='w-fit h-full px-1 border border-black border-l-0 hover:bg-gunmetal/15'
+						onClick={handlePasswordVisibility}>
+						{!visiblePassword ? <Eye /> : <EyeOff />}
+					</button>
+				</div>
+			</div>
+
+			<div className='grid'>
+				<label
+					htmlFor='cnfPassword'
+					className='text-black'>
+					Confirm Password
+				</label>
+				<div className='flex items-center'>
+					<input
+						required
+						type={visibleCnfPassword ? 'text' : 'password'}
+						id='cnfPassword'
+						name='cnfPassword'
+						placeholder='Confirm Password'
+						defaultValue={cnfPassword}
+						className='border border-black px-2 py-1 w-full'
+					/>
+					<button
+						className='w-fit h-full px-1 border border-black border-l-0 hover:bg-gunmetal/15'
+						onClick={handleCnfPasswordVisibility}>
+						{!visibleCnfPassword ? <Eye /> : <EyeOff />}
+					</button>
+				</div>
+			</div>
+
 			<div className='flex justify-end gap-3 mt-3'>
 				<button
 					type='submit'
@@ -169,7 +151,6 @@ export const SignupForm = () => {
 				</button>
 				<button
 					type='reset'
-					onClick={handleFormReset}
 					className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15'>
 					Reset
 				</button>

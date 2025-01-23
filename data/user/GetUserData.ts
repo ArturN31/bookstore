@@ -2,8 +2,6 @@
 
 import { createClient } from '@/utils/db/server';
 
-const supabase = await createClient();
-
 export const getUserDataProperty = async (prop: keyof User) => {
 	try {
 		const supabase = await createClient();
@@ -20,6 +18,7 @@ export const getUserDataProperty = async (prop: keyof User) => {
 
 export const getUserData = async () => {
 	try {
+		const supabase = await createClient();
 		const { data, error } = await supabase
 			.from('users')
 			.select('*')
