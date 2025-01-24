@@ -1,8 +1,8 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
 import { SignupFormAction } from '@/data/actions/SignupForm-actions';
+import { PasswordField } from './PasswordField';
 
 export const SignupForm = () => {
 	const INITIAL_STATE = {
@@ -10,15 +10,8 @@ export const SignupForm = () => {
 		password: '',
 		cnfPassword: '',
 	};
-
 	const [formState, formAction] = useActionState(SignupFormAction, INITIAL_STATE);
-
 	const [formError, setFormError] = useState('');
-
-	const [visiblePassword, setVisiblePassword] = useState(false);
-
-	const [visibleCnfPassword, setVisibileCnfPassword] = useState(false);
-
 	const { email, password, cnfPassword, message } = formState || {};
 
 	//passwords do not match
@@ -45,9 +38,9 @@ export const SignupForm = () => {
 	//weak password
 	if (
 		formError !==
-			'Failed to insert user into the database as the password is too weak.\nIt has to include: lowercase, uppercase letters, digits, and symbols.' &&
+			'Failed to insert user into the database as the password is too weak.\nPassword should be at least 8 characters long.\nIt has to include: lowercase, uppercase letters, digits, and symbols.' &&
 		message ===
-			'Failed to insert user into the database as the password is too weak.\nIt has to include: lowercase, uppercase letters, digits, and symbols.'
+			'Failed to insert user into the database as the password is too weak.\nPassword should be at least 8 characters long.\nIt has to include: lowercase, uppercase letters, digits, and symbols.'
 	)
 		setFormError(message);
 
@@ -60,16 +53,6 @@ export const SignupForm = () => {
 
 	//user signed up
 	if (message === 'User has been added to the database.') window.location.href = '/user/profile';
-
-	const handlePasswordVisibility = (e: any) => {
-		e.preventDefault();
-		setVisiblePassword(!visiblePassword);
-	};
-
-	const handleCnfPasswordVisibility = (e: any) => {
-		e.preventDefault();
-		setVisibileCnfPassword(!visibleCnfPassword);
-	};
 
 	return (
 		<form
@@ -95,53 +78,17 @@ export const SignupForm = () => {
 				/>
 			</div>
 
-			<div className='grid'>
-				<label
-					htmlFor='Password'
-					className='text-black'>
-					Password
-				</label>
-				<div className='flex items-center'>
-					<input
-						required
-						type={visiblePassword ? 'text' : 'password'}
-						id='password'
-						name='password'
-						placeholder='Password'
-						defaultValue={password}
-						className='border border-black px-2 py-1 w-full'
-					/>
-					<button
-						className='w-fit h-full px-1 border border-black border-l-0 hover:bg-gunmetal/15'
-						onClick={handlePasswordVisibility}>
-						{!visiblePassword ? <Eye /> : <EyeOff />}
-					</button>
-				</div>
-			</div>
+			<PasswordField
+				id='password'
+				placeholder='Password'
+				defaultValue={password}
+			/>
 
-			<div className='grid'>
-				<label
-					htmlFor='cnfPassword'
-					className='text-black'>
-					Confirm Password
-				</label>
-				<div className='flex items-center'>
-					<input
-						required
-						type={visibleCnfPassword ? 'text' : 'password'}
-						id='cnfPassword'
-						name='cnfPassword'
-						placeholder='Confirm Password'
-						defaultValue={cnfPassword}
-						className='border border-black px-2 py-1 w-full'
-					/>
-					<button
-						className='w-fit h-full px-1 border border-black border-l-0 hover:bg-gunmetal/15'
-						onClick={handleCnfPasswordVisibility}>
-						{!visibleCnfPassword ? <Eye /> : <EyeOff />}
-					</button>
-				</div>
-			</div>
+			<PasswordField
+				id='cnfPassword'
+				placeholder='Confirm Password'
+				defaultValue={cnfPassword}
+			/>
 
 			<div className='flex justify-end gap-3 mt-3'>
 				<button

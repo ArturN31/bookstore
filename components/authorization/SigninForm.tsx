@@ -2,24 +2,16 @@
 
 import { SigninFormAction } from '@/data/actions/SigninForm-actions';
 import { useActionState, useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { PasswordField } from './PasswordField';
 
 export const SigninForm = () => {
 	const INITIAL_STATE = {
 		email: '',
 		password: '',
 	};
-
 	const [formState, formAction] = useActionState(SigninFormAction, INITIAL_STATE);
 	const [formError, setFormError] = useState('');
-	const [visible, setVisible] = useState(false);
-
-	const handleVisibility = (e: any) => {
-		e.preventDefault();
-		setVisible(!visible);
-	};
-
-	const { email, password, message, error } = formState || {};
+	const { email, password, message } = formState || {};
 
 	if (formError !== 'Sign in credentials not recognised.' && message === 'Sign in credentials not recognised.')
 		setFormError(message);
@@ -37,7 +29,7 @@ export const SigninForm = () => {
 	return (
 		<form
 			action={formAction}
-			className='grid place-self-center border border-black rounded-lg gap-2 p-5'
+			className='grid place-self-center border border-black rounded-lg gap-2 p-5 w-[450px]'
 			style={{ boxShadow: '0px 2px 6px -2px black' }}>
 			<div className='text-center'>
 				<h1 className='text-2xl'>Welcome Back, Bookworm!</h1>
@@ -58,29 +50,11 @@ export const SigninForm = () => {
 				/>
 			</div>
 
-			<div className='grid'>
-				<label
-					htmlFor='Password'
-					className='text-black'>
-					Password
-				</label>
-				<div className='flex items-center'>
-					<input
-						required
-						type={visible ? 'text' : 'password'}
-						id='password'
-						name='password'
-						placeholder='Password'
-						defaultValue={password}
-						className='border border-black px-2 py-1 w-full'
-					/>
-					<button
-						className='w-fit h-full px-1 border border-black border-l-0 hover:bg-gunmetal/15'
-						onClick={handleVisibility}>
-						{!visible ? <Eye /> : <EyeOff />}
-					</button>
-				</div>
-			</div>
+			<PasswordField
+				id='password'
+				placeholder='Password'
+				defaultValue={password}
+			/>
 
 			<div className='flex justify-end gap-3 mt-3'>
 				<button
