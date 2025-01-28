@@ -1,9 +1,10 @@
 'use client';
 
-import { AddressFormAction } from '@/data/actions/AddressForm-actions';
+import { AddressFormInsertAction } from '@/data/actions/AddressFormInsert-actions';
 import { useActionState, useState } from 'react';
+import { TextInput } from './TextInput';
 
-export const AddressForm = () => {
+export const AddressFormInsert = () => {
 	const INITIAL_STATE = {
 		firstName: '',
 		lastName: '',
@@ -15,7 +16,7 @@ export const AddressForm = () => {
 		phoneNumber: '',
 	};
 
-	const [formState, formAction] = useActionState(AddressFormAction, INITIAL_STATE);
+	const [formState, formAction] = useActionState(AddressFormInsertAction, INITIAL_STATE);
 	const [formError, setFormError] = useState('');
 
 	const { firstName, lastName, dob, phoneNumber, streetAddress, postcode, city, country } = formState || {};
@@ -55,20 +56,12 @@ export const AddressForm = () => {
 							defaultValue: lastName,
 						},
 					].map((el) => (
-						<div
-							className='grid'
-							key={el.id}>
-							<label htmlFor={el.id}>{el.label}</label>
-							<input
-								required
-								type='text'
-								id={el.id}
-								name={el.id}
-								placeholder={el.label}
-								defaultValue={el.defaultValue}
-								className='border border-black px-2 py-1'
-							/>
-						</div>
+						<TextInput
+							key={el.id}
+							label={el.label}
+							id={el.id}
+							defaultValue={el.defaultValue}
+						/>
 					))}
 				</div>
 
@@ -83,18 +76,12 @@ export const AddressForm = () => {
 							defaultValue={dob}
 						/>
 					</div>
-					<div className='grid'>
-						<label htmlFor='phoneNumber'>Phone Number</label>
-						<input
-							required
-							type='text'
-							id='phoneNumber'
-							name='phoneNumber'
-							placeholder='Phone Number'
-							defaultValue={phoneNumber}
-							className='border border-black px-2 py-1'
-						/>
-					</div>
+					<TextInput
+						key='phoneNumber'
+						label='Phone Number'
+						id='phoneNumber'
+						defaultValue={phoneNumber}
+					/>
 				</div>
 
 				<div className='flex gap-2'>
@@ -110,22 +97,12 @@ export const AddressForm = () => {
 							defaultValue: postcode,
 						},
 					].map((el) => (
-						<div
-							className='grid'
-							key={el.id}>
-							<label htmlFor={el.id}>{el.label}</label>
-							<input
-								required
-								type='text'
-								id={el.id}
-								name={el.id}
-								placeholder={el.label}
-								defaultValue={el.defaultValue}
-								className={`border border-black px-2 py-1 ${
-									el.id === 'postcode' ? 'uppercase placeholder:normal-case' : ''
-								}`}
-							/>
-						</div>
+						<TextInput
+							key={el.id}
+							label={el.label}
+							id={el.id}
+							defaultValue={el.defaultValue}
+						/>
 					))}
 				</div>
 
@@ -142,20 +119,12 @@ export const AddressForm = () => {
 							defaultValue: country,
 						},
 					].map((el) => (
-						<div
-							className='grid'
-							key={el.id}>
-							<label htmlFor={el.id}>{el.label}</label>
-							<input
-								required
-								type='text'
-								id={el.id}
-								name={el.id}
-								placeholder={el.label}
-								defaultValue={el.defaultValue}
-								className='border border-black px-2 py-1'
-							/>
-						</div>
+						<TextInput
+							key={el.id}
+							label={el.label}
+							id={el.id}
+							defaultValue={el.defaultValue}
+						/>
 					))}
 				</div>
 

@@ -1,9 +1,9 @@
-import { AddressForm } from '@/components/AddressForm';
+import { AddressFormInsert } from '@/components/pages/profile/AddressForm/AddressFormInsert';
 import { RootLayout } from '@/components/layout/Layout';
 import { getUserData, getUserDataProperty } from '@/data/user/GetUserData';
 import { createClient } from '@/utils/db/server';
-import { Pencil } from 'lucide-react';
-import Link from 'next/link';
+import { Navigation } from '@/components/pages/profile/Navigation';
+import { UserDetails } from '@/components/pages/profile/UserDetails';
 
 const getData = async () => {
 	const handleDataUpdate = async () => {
@@ -40,45 +40,24 @@ export default async function UserProfile() {
 						<p className='text-2xl'>Hello there!</p>
 						<p className='text-lg font-light'>It looks like you haven't finished setting up your profile yet.</p>
 					</div>
-					<AddressForm />
+					<AddressFormInsert />
 				</div>
 			</RootLayout>
 		);
-	else
+
+	if (userData && userEmail)
 		return (
 			<RootLayout>
 				<div className='grid gap-5 justify-items-center'>
-					<Link
-						href={'/user/auth/change_password'}
-						className='flex w-fit rounded-md bg-slate-100 hover:bg-slate-200 shadow-[-0px_2px_4px_-2px_#000] hover:shadow-[0px_0px_4px_-2px_#000]'>
-						<div className='border border-black rounded-l-md px-2 py-1 text-lg'>Change Password</div>
-						<div className='border-y border-r border-black rounded-r-md  px-2 py-1'>
-							<Pencil />
-						</div>
-					</Link>
+					<div className='grid gap-5 justify-items-center'>
+						<Navigation />
+					</div>
 
-					<div className='grid grid-cols-3 gap-5'>
-						<div className='border border-black text-center flex flex-col justify-center p-5 rounded-md shadow-[0px_2px_6px_-2px_#000]'>
-							<p className='font-semibold'>Name:</p>
-							<p>
-								{userData.first_name} {userData.last_name}
-							</p>
-						</div>
-
-						<div className='border border-black text-center flex flex-col justify-center p-5 rounded-md shadow-[0px_2px_6px_-2px_#000]'>
-							<p className='font-semibold'>Address:</p>
-							<p>{userData.street_address}</p>
-							<p>{userData.postcode}</p>
-							<p>
-								{userData.city}, {userData.country}
-							</p>
-						</div>
-
-						<div className='border border-black text-center flex flex-col justify-center p-5 rounded-md shadow-[0px_2px_6px_-2px_#000]'>
-							<p className='font-semibold'>Contact details:</p>
-							<p>{userData.phone_number}</p>
-							<p>{userEmail}</p>
-						</div>
+					<div className='flex flex-wrap gap-5 justify-center'>
+						<UserDetails
+							userData={userData}
+							userEmail={userEmail}
+						/>
 					</div>
 				</div>
 			</RootLayout>

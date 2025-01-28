@@ -36,6 +36,7 @@ export const Dropdown = ({ dropdownRef }: { dropdownRef: RefObject<HTMLDivElemen
             User is not signed in: If no valid session is found, the INITIAL_SESSION event will still be emitted, but the session object within the event data will be null or undefined.
             */
 			if (event === 'INITIAL_SESSION' && session) setLoggedIn(true);
+			console.log(event);
 		});
 	}, []);
 
