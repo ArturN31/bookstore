@@ -50,7 +50,7 @@ export const Dropdown = ({ dropdownRef }: { dropdownRef: RefObject<HTMLDivElemen
 			{loggedIn ? (
 				<>
 					<button
-						className={`w-full hover:bg-slate-200 hover:font-semibold hover:rounded-sm ${
+						className={`w-full hover:bg-slate-200 hover:cursor-pointer hover:font-semibold hover:rounded-sm ${
 							pathname === '/user/profile' ? activeRoute : ''
 						}`}
 						onClick={() => {
@@ -59,7 +59,7 @@ export const Dropdown = ({ dropdownRef }: { dropdownRef: RefObject<HTMLDivElemen
 						User Profile
 					</button>
 					<button
-						className='w-full hover:bg-slate-200 hover:font-semibold hover:rounded-sm'
+						className='w-full hover:bg-slate-200 hover:cursor-pointer hover:font-semibold hover:rounded-sm'
 						onClick={() => {
 							handleSignOut();
 						}}>

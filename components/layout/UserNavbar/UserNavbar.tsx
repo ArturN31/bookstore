@@ -6,7 +6,7 @@ export const UserNavbar = () => {
 		<div className='flex gap-3'>
 			<div className='flex items-center relative'>
 				<input
-					className='w-[300px] h-12 px-3 py-2 rounded-md pr-14 focus:outline-yellow'
+					className='w-[300px] bg-white h-12 px-3 py-2 rounded-md pr-14 focus:outline-yellow'
 					type='text'
 					placeholder='Search B4U'
 					name=''

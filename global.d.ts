@@ -55,7 +55,7 @@ interface User {
 	updated_at: Date;
 	first_name: string;
 	last_name: string;
-	date_of_birth: Date;
+	date_of_birth: string;
 	street_address: string;
 	postcode: string;
 	city: string;
