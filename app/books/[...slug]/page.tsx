@@ -1,30 +1,14 @@
 import { RootLayout } from '@/components/layout/Layout';
-import { createClient } from '@/utils/db/server';
-import { PostgrestResponse } from '@supabase/supabase-js';
 import { OutputBook } from '@/components/books/OutputBook';
 import { ChevronRight } from 'lucide-react';
+import { getBookByGroupAndType } from '@/data/books/GetBooksData';
+import { getBookReviews, groupReviewsByBookId, matchReviewsToBooks } from '@/data/books/GetReviewsData';
 
-export default async function RetrieveBooksForGroupsAndTypesPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function BooksByGroupAndTypePage({ params }: { params: Promise<{ slug: string }> }) {
 	const slug = (await params).slug as unknown as string[];
 	const group = slug[0]; //represents the book group - genre/format
 	const type = decodeURIComponent(slug[1]); //represents the type - Adventure/Comedy/Paperback/Hardcover
-
-	const getBooks = async (group: string, type: string) => {
-		const supabase = await createClient();
-		const { data, error }: PostgrestResponse<Book> = await supabase.from('books').select('*').eq(group, type);
-
-		if (error) {
-			console.log(error);
-			return `Could not retrieve books for this group: ${group} and type: ${type}.`;
-		}
-
-		if (data.length < 1) return `There are no books for this group: ${group} and type: ${type}.`;
-
-		return data;
-	};
-
-	const books = await getBooks(group, type);
-	console.log(books);
+	let books = await getBookByGroupAndType(group, type);
 
 	if (typeof books === 'string')
 		return (
@@ -34,6 +18,20 @@ export default async function RetrieveBooksForGroupsAndTypesPage({ params }: { p
 				</div>
 			</RootLayout>
 		);
+
+	if (books.length > 0) {
+		const bookIDs = books.map((book) => {
+			return book.id;
+		});
+		const reviews = await getBookReviews(bookIDs);
+
+		if (reviews.length > 0 && typeof reviews !== 'string') {
+			const reviewsGroupedByBookID = groupReviewsByBookId(reviews);
+			books = matchReviewsToBooks(reviewsGroupedByBookID, books);
+		}
+	}
+
+	console.log(books);
 
 	return (
 		<RootLayout>
@@ -54,7 +52,10 @@ export default async function RetrieveBooksForGroupsAndTypesPage({ params }: { p
 
 				<div className='flex flex-wrap justify-center gap-5'>
 					{books.map((book) => (
-						<OutputBook book={book} />
+						<OutputBook
+							book={book}
+							key={book.id}
+						/>
 					))}
 				</div>
 			</div>

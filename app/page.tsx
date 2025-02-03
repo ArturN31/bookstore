@@ -1,7 +1,7 @@
 import { InferGetServerSidePropsType } from 'next';
 import { RootLayout } from '@/components/layout/Layout';
 import { getBooks, getReviews, seedDatabaseWithBooks, seedDatabaseWithReviews } from '@/utils/db/dbSeed/seedDatabase';
-import { matchReviewsToBooks, groupReviewsByBookId } from '@/utils/prepBooksArray';
+import { matchReviewsToBooks, groupReviewsByBookId } from '@/data/books/GetReviewsData';
 
 // const seedDatabase = async () => {
 // 	let storedBooks = await getBooks();

@@ -30,6 +30,7 @@ interface Book {
 	stock_quantity: number;
 	is_active: boolean;
 	reviews: Review[];
+	[key: string]: any;
 }
 
 interface GeneratedReview {

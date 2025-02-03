@@ -1,3 +1,30 @@
+import { createClient } from '@/utils/db/server';
+import { PostgrestResponse } from '@supabase/supabase-js';
+
+/**
+ * Retrieves reviews for passed book ids.
+ *
+ * @param bookIDs List of book ids to retrieve reviews.
+ *
+ * @returns A promise that resolves to an array of 'Review' objects if successful, or a string error message if not.
+ */
+export const getBookReviews = async (bookIDs: string[]) => {
+	const supabase = await createClient();
+	const { data, error }: PostgrestResponse<Review> = await supabase
+		.from('book_reviews')
+		.select('*')
+		.in('book_id', bookIDs);
+
+	if (error) {
+		console.error('Error retrieving reviews:', error);
+		return 'Failed to retrieve reviews.';
+	}
+
+	if (!data || data.length === 0) return 'No reviews found.';
+
+	return data;
+};
+
 export const groupReviewsByBookId = (storedReviews: Review[]) => {
 	const groupedReviews: Record<string, Review[]> = {};
 
