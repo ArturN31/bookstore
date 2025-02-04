@@ -31,8 +31,6 @@ export default async function BooksByGroupAndTypePage({ params }: { params: Prom
 		}
 	}
 
-	console.log(books);
-
 	return (
 		<RootLayout>
 			<div>

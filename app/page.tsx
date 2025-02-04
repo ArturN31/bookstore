@@ -1,32 +1,46 @@
-import { InferGetServerSidePropsType } from 'next';
 import { RootLayout } from '@/components/layout/Layout';
-import { getBooks, getReviews, seedDatabaseWithBooks, seedDatabaseWithReviews } from '@/utils/db/dbSeed/seedDatabase';
-import { matchReviewsToBooks, groupReviewsByBookId } from '@/data/books/GetReviewsData';
+import { matchReviewsToBooks, groupReviewsByBookId, getBookReviews } from '@/data/books/GetReviewsData';
+import { getAllBooks } from '@/data/books/GetBooksData';
+import { OutputBook } from '@/components/books/OutputBook';
 
-// const seedDatabase = async () => {
-// 	let storedBooks = await getBooks();
-// 	let storedReviews = await getReviews();
+export default async function HomePage() {
+	const getBooks = async () => {
+		const books = await getAllBooks();
+		return books;
+	};
+	let books = await getBooks();
 
-// 	//there are no books in db - seed the books table
-// 	if (storedBooks.books.length === 0) seedDatabaseWithBooks(storedBooks);
+	if (typeof books === 'string')
+		return (
+			<RootLayout>
+				<div>
+					<p>{books}</p>
+				</div>
+			</RootLayout>
+		);
 
-// 	//there are no reviews in db - seed the book_reviews table
-// 	if (storedReviews.reviews.length === 0) seedDatabaseWithReviews(storedBooks, storedReviews);
-// };
+	if (books.length > 0) {
+		const bookIDs = books.map((book) => {
+			return book.id;
+		});
+		const reviews = await getBookReviews(bookIDs);
 
-// seedDatabase();
+		if (reviews.length > 0 && typeof reviews !== 'string') {
+			const reviewsGroupedByBookID = groupReviewsByBookId(reviews);
+			books = matchReviewsToBooks(reviewsGroupedByBookID, books);
+		}
+	}
 
-// export const getServerSideProps = async () => {
-// 	//add reviews to books
-// 	const books = matchReviewsToBooks(groupReviewsByBookId(storedReviews.reviews), storedBooks.books);
-
-// 	return { props: { books } };
-// };
-
-export default function Home() {
 	return (
 		<RootLayout>
-			<p>MAIN</p>
+			<div className='flex flex-wrap justify-center gap-5'>
+				{books.map((book) => (
+					<OutputBook
+						book={book}
+						key={book.id}
+					/>
+				))}
+			</div>
 		</RootLayout>
 	);
 }
