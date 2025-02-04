@@ -1,7 +1,7 @@
 import { RootLayout } from '@/components/layout/Layout';
 import { matchReviewsToBooks, groupReviewsByBookId, getBookReviews } from '@/data/books/GetReviewsData';
 import { getAllBooks } from '@/data/books/GetBooksData';
-import { OutputBook } from '@/components/books/OutputBook';
+import { Books } from '@/components/books/Books';
 
 export default async function HomePage() {
 	const getBooks = async () => {
@@ -33,14 +33,7 @@ export default async function HomePage() {
 
 	return (
 		<RootLayout>
-			<div className='flex flex-wrap justify-center gap-5'>
-				{books.map((book) => (
-					<OutputBook
-						book={book}
-						key={book.id}
-					/>
-				))}
-			</div>
+			<Books books={books} />
 		</RootLayout>
 	);
 }

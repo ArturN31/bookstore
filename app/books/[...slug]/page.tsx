@@ -1,8 +1,8 @@
 import { RootLayout } from '@/components/layout/Layout';
-import { OutputBook } from '@/components/books/OutputBook';
 import { ChevronRight } from 'lucide-react';
 import { getBookByGroupAndType } from '@/data/books/GetBooksData';
 import { getBookReviews, groupReviewsByBookId, matchReviewsToBooks } from '@/data/books/GetReviewsData';
+import { Books } from '@/components/books/Books';
 
 export default async function BooksByGroupAndTypePage({ params }: { params: Promise<{ slug: string }> }) {
 	const slug = (await params).slug as unknown as string[];
@@ -48,14 +48,7 @@ export default async function BooksByGroupAndTypePage({ params }: { params: Prom
 					{type}
 				</p>
 
-				<div className='flex flex-wrap justify-center gap-5'>
-					{books.map((book) => (
-						<OutputBook
-							book={book}
-							key={book.id}
-						/>
-					))}
-				</div>
+				<Books books={books} />
 			</div>
 		</RootLayout>
 	);
