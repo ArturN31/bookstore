@@ -64,3 +64,10 @@ interface User {
 	phone_number: string;
 	[key: string]: string | Date;
 }
+
+interface Wishlist {
+	id: string;
+	created_at: Date;
+	user_id: string;
+	book_id: string;
+}

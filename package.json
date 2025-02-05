@@ -9,6 +9,10 @@
 		"lint": "next lint"
 	},
 	"dependencies": {
+		"@emotion/react": "^11.14.0",
+		"@emotion/styled": "^11.14.0",
+		"@mui/icons-material": "^6.4.3",
+		"@mui/material": "^6.4.3",
 		"@supabase/ssr": "^0.5.2",
 		"@supabase/supabase-js": "^2.47.13",
 		"@tailwindcss/postcss": "^4.0.0",
