@@ -1,4 +1,5 @@
-import { ShoppingCart, Search } from 'lucide-react';
+import SearchIcon from '@mui/icons-material/Search';
+import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import { UserBtn } from './UserBtn';
 
 export const UserNavbar = () => {
@@ -13,12 +14,12 @@ export const UserNavbar = () => {
 					id=''
 				/>
 				<div className='shadow-md h-full w-12 rounded-r-md place-items-center grid bg-yellow hover:bg hover:border hover:border-black hover:cursor-pointer absolute right-0 hover:bg-[#D9AF08]'>
-					<Search />
+					<SearchIcon />
 				</div>
 			</div>
 
 			<div className='shadow-md rounded-full w-12 h-12 place-items-center grid bg-yellow hover:bg-yellow/[0.8] hover:border hover:border-black hover:cursor-pointer'>
-				<ShoppingCart />
+				<ShoppingCartOutlinedIcon />
 			</div>
 			<UserBtn />
 		</div>

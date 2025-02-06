@@ -68,7 +68,7 @@ export const Dropdown = ({ dropdownRef }: { dropdownRef: RefObject<HTMLDivElemen
 				</>
 			) : (
 				<button
-					className={`w-full hover:bg-slate-200 hover:font-semibold hover:rounded-sm ${
+					className={`w-full hover:bg-slate-200 hover:cursor-pointer hover:font-semibold hover:rounded-sm ${
 						pathname === '/user/auth/signin' ? activeRoute : ''
 					}`}
 					onClick={() => {

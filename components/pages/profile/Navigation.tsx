@@ -1,4 +1,5 @@
-import { KeyRound, MapPinHouse } from 'lucide-react';
+import EditLocationOutlinedIcon from '@mui/icons-material/EditLocationOutlined';
+import LockPersonOutlinedIcon from '@mui/icons-material/LockPersonOutlined';
 import Link from 'next/link';
 
 export const Navigation = () => {
@@ -9,7 +10,7 @@ export const Navigation = () => {
 				className='flex w-fit rounded-md bg-slate-100 hover:bg-slate-200 shadow-[-0px_2px_4px_-2px_#000] hover:shadow-[0px_0px_4px_-2px_#000]'>
 				<div className='border border-black rounded-l-md px-2 py-1 text-lg'>Change Password</div>
 				<div className='border-y border-r border-black rounded-r-md  px-2 py-1'>
-					<KeyRound />
+					<LockPersonOutlinedIcon />
 				</div>
 			</Link>
 			<Link
@@ -17,7 +18,7 @@ export const Navigation = () => {
 				className='flex w-fit rounded-md bg-slate-100 hover:bg-slate-200 shadow-[-0px_2px_4px_-2px_#000] hover:shadow-[0px_0px_4px_-2px_#000]'>
 				<div className='border border-black rounded-l-md px-2 py-1 text-lg'>Change Address</div>
 				<div className='border-y border-r border-black rounded-r-md  px-2 py-1'>
-					<MapPinHouse />
+					<EditLocationOutlinedIcon />
 				</div>
 			</Link>
 		</>

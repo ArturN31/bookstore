@@ -1,6 +1,6 @@
 'use client';
 
-import { User } from 'lucide-react';
+import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import { useRef, useState } from 'react';
 import { Dropdown } from './Dropdown';
 
@@ -24,7 +24,7 @@ export const UserBtn = () => {
 					setOpen(!open);
 				}}
 				onBlur={handleBlur}>
-				<User />
+				<PersonOutlineOutlinedIcon />
 			</button>
 			{/* Dropdown */}
 			{open ? <Dropdown dropdownRef={dropdownRef} /> : ''}

@@ -16,7 +16,6 @@ export const BookWishlist = async ({ bookID }: { bookID: string }) => {
 	};
 
 	const isWishlisted = async (bookID: string) => {
-		const userID = await getUserID();
 		const supabase = await createClient();
 		const { data, error }: PostgrestResponse<Wishlist> = await supabase
 			.from('wishlist')
@@ -32,13 +31,18 @@ export const BookWishlist = async ({ bookID }: { bookID: string }) => {
 		return undefined;
 	};
 
-	return (
-		<div>
-			{(await isWishlisted(bookID)) ? (
-				<RemoveFromWishlistForm bookID={bookID} />
-			) : (
-				<AddToWishlistForm bookID={bookID} />
-			)}
-		</div>
-	);
+	const userID = await getUserID();
+
+	if (userID)
+		return (
+			<div>
+				{(await isWishlisted(bookID)) ? (
+					<RemoveFromWishlistForm bookID={bookID} />
+				) : (
+					<AddToWishlistForm bookID={bookID} />
+				)}
+			</div>
+		);
+
+	return <div></div>;
 };

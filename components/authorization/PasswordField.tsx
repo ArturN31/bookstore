@@ -1,4 +1,5 @@
-import { Eye, EyeOff } from 'lucide-react';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import { useState } from 'react';
 
 export const PasswordField = ({
@@ -35,9 +36,9 @@ export const PasswordField = ({
 					className='border border-black px-2 py-1 w-full'
 				/>
 				<button
-					className='w-fit h-full px-1 border border-black border-l-0 hover:bg-gunmetal/15'
+					className='w-fit h-full px-1 border border-black border-l-0 hover:bg-gunmetal/15 hover:cursor-pointer'
 					onClick={handleVisibility}>
-					{!visible ? <Eye /> : <EyeOff />}
+					{!visible ? <VisibilityOutlinedIcon /> : <VisibilityOffOutlinedIcon />}
 				</button>
 			</div>
 		</div>

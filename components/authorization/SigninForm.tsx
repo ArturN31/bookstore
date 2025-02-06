@@ -3,6 +3,7 @@
 import { SigninFormAction } from '@/data/actions/SigninForm-actions';
 import { useActionState, useState } from 'react';
 import { PasswordField } from './PasswordField';
+import { useRouter } from 'next/navigation';
 
 export const SigninForm = () => {
 	const INITIAL_STATE = {
@@ -24,7 +25,10 @@ export const SigninForm = () => {
 
 	if (formError !== 'Failed to sign in.' && message === 'Failed to sign in.') setFormError(message);
 
-	if (message === 'Signed in successfully.') window.location.href = '/user/profile';
+	if (message === 'Signed in successfully.') {
+		const router = useRouter();
+		router.back();
+	}
 
 	return (
 		<form
@@ -59,12 +63,12 @@ export const SigninForm = () => {
 			<div className='flex justify-end gap-3 mt-3'>
 				<button
 					type='submit'
-					className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15'>
+					className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15 hover:cursor-pointer'>
 					Sign In
 				</button>
 				<button
 					type='reset'
-					className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15'>
+					className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15 hover:cursor-pointer'>
 					Reset
 				</button>
 			</div>

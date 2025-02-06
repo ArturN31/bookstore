@@ -93,12 +93,12 @@ export const SignupForm = () => {
 			<div className='flex justify-end gap-3 mt-3'>
 				<button
 					type='submit'
-					className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15'>
+					className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15 hover:cursor-pointer'>
 					Sign Up
 				</button>
 				<button
 					type='reset'
-					className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15'>
+					className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15 hover:cursor-pointer'>
 					Reset
 				</button>
 			</div>

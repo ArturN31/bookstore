@@ -1,5 +1,5 @@
 import { RootLayout } from '@/components/layout/Layout';
-import { ChevronRight } from 'lucide-react';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { getBookByGroupAndType } from '@/data/books/GetBooksData';
 import { getBookReviews, groupReviewsByBookId, matchReviewsToBooks } from '@/data/books/GetReviewsData';
 import { Books } from '@/components/books/Books';
@@ -35,17 +35,8 @@ export default async function BooksByGroupAndTypePage({ params }: { params: Prom
 		<RootLayout>
 			<div>
 				<p className='flex items-center w-fit py-1'>
-					Books{' '}
-					<ChevronRight
-						size={16}
-						strokeWidth={2.5}
-					/>{' '}
-					{String(group).charAt(0).toUpperCase() + String(group).slice(1)}{' '}
-					<ChevronRight
-						size={16}
-						strokeWidth={2.5}
-					/>{' '}
-					{type}
+					Books <KeyboardArrowRightIcon /> {String(group).charAt(0).toUpperCase() + String(group).slice(1)}{' '}
+					<KeyboardArrowRightIcon /> {type}
 				</p>
 
 				<Books books={books} />

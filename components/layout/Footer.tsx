@@ -1,4 +1,8 @@
-import { Facebook, Instagram, Linkedin, Twitter } from 'lucide-react';
+import FacebookIcon from '@mui/icons-material/Facebook';
+import InstagramIcon from '@mui/icons-material/Instagram';
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
+import XIcon from '@mui/icons-material/X';
+
 import Link from 'next/link';
 
 export const Footer = () => {
@@ -57,15 +61,20 @@ export const Footer = () => {
 					</div>
 				</div>
 
-				<div className='flex justify-center gap-8 items-center'>
-					{[<Linkedin />, <Facebook />, <Instagram />, <Twitter />].map((content, index) => (
+				<div className='flex justify-center gap-5'>
+					{[
+						{ icon: <LinkedInIcon />, url: 'https://www.linkedin.com/' },
+						{ icon: <FacebookIcon />, url: 'https://www.facebook.com/' },
+						{ icon: <InstagramIcon />, url: 'https://www.instagram.com/' },
+						{ icon: <XIcon />, url: 'https://x.com/' },
+					].map((social, index) => (
 						<Link
 							key={index}
 							className='border border-gunmetal rounded-full p-2 hover:border-white'
 							style={{ boxShadow: '0px 0px 6px black' }}
-							href='https://www.linkedin.com/'
+							href={social.url}
 							target='_blank'>
-							{content}
+							{social.icon}
 						</Link>
 					))}
 				</div>
