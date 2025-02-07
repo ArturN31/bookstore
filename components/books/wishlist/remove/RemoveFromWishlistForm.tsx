@@ -15,6 +15,7 @@ export const RemoveFromWishlistForm = ({ bookID }: { bookID: string }) => {
 
 	return (
 		<form
+			id='remove-from-wishlist-form'
 			action={RemoveFromWishlist}
 			className='w-fit'>
 			<RemoveFromWishlistButtons />

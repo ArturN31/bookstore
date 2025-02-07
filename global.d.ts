@@ -33,6 +33,10 @@ interface Book {
 	[key: string]: any;
 }
 
+type BookWithWishlistedProp = Book & {
+	wishlisted: boolean;
+};
+
 interface GeneratedReview {
 	book_id: string;
 	user_id: string;

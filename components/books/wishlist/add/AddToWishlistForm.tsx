@@ -32,6 +32,7 @@ export const AddToWishlistForm = ({ bookID }: { bookID: string }) => {
 
 	return (
 		<form
+			id='add-to-wishlist-form'
 			action={AddToWishlist}
 			className='w-fit'>
 			<AddToWishlistButtons />

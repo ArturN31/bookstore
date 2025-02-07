@@ -34,10 +34,13 @@ export default async function BooksByGroupAndTypePage({ params }: { params: Prom
 	return (
 		<RootLayout>
 			<div>
-				<p className='flex items-center w-fit py-1'>
-					Books <KeyboardArrowRightIcon /> {String(group).charAt(0).toUpperCase() + String(group).slice(1)}{' '}
-					<KeyboardArrowRightIcon /> {type}
-				</p>
+				<div className='flex w-fit pb-2'>
+					<p>{String(group).charAt(0).toUpperCase() + String(group).slice(1)} </p>
+
+					<KeyboardArrowRightIcon />
+
+					<p>{type}</p>
+				</div>
 
 				<Books books={books} />
 			</div>

@@ -2,18 +2,23 @@ import Image from 'next/image';
 import { OutputBookRating } from './OutputBookRating';
 import { BookWishlist } from './wishlist/BookWishlist';
 
-export const OutputBook = ({ book, index }: { book: Book; index: number }) => {
-	const fourColsDivider = index % 4 !== 0 ? 'md:border-r' : ''; //divides 4 cols grid - col | col | col | col
-	const twoColsDivider = index % 2 !== 0 ? 'sm:border-r' : ''; //divides 2 cols grid - col | col
-
+export const OutputBook = ({ book, index }: { book: BookWithWishlistedProp | Book; index: number }) => {
 	const bookRatingArray = book.reviews.map((review) => {
 		return review.rating;
 	});
 
 	return (
-		<div className={`flex flex-col px-3  max-w-[300px] ${fourColsDivider} ${twoColsDivider}`}>
+		<div
+			className={`flex flex-col px-3 max-w-[300px] 
+             sm:border-r sm:even:border-r-0 sm:last-of-type:border-r-0 
+             md:border-r md:even:border-r md:nth-[3n]:border-r-0 
+			 xl:not-last-of-type:border-r xl:nth-[4n]:border-r-0
+			 `}>
 			<div className='grid grid-cols-2 pb-1'>
-				<BookWishlist bookID={book.id} />
+				<BookWishlist
+					wishlisted={book.wishlisted}
+					bookID={book.id}
+				/>
 				<OutputBookRating ratings={bookRatingArray} />
 			</div>
 			<div className='bg-black'>
