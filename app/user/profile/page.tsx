@@ -45,7 +45,7 @@ export default async function UserProfile() {
 			</RootLayout>
 		);
 
-	if (userData && userEmail)
+	if (typeof userData !== 'string' && userEmail)
 		return (
 			<RootLayout>
 				<div className='grid gap-5 justify-items-center'>

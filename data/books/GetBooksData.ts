@@ -42,3 +42,23 @@ export const getAllBooks = async () => {
 
 	return data;
 };
+
+/**
+ * Retrieves all of users wishlisted books.
+ *
+ * @param userID
+ *
+ * @returns A promise that resolves to an array of `Book` objects if successful, or a string error message if not.
+ */
+export const getUsersWishlistedBooks = async (userID: string | undefined) => {
+	if (userID) {
+		const supabase = await createClient();
+		const { data, error }: PostgrestResponse<Wishlist> = await supabase
+			.from('wishlist')
+			.select('*')
+			.eq('user_id', userID);
+
+		return data ? data : undefined;
+	}
+	return 'User not logged in.';
+};

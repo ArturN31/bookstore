@@ -1,6 +1,10 @@
 import { createClient } from '@/utils/db/client';
 import { usePathname, useRouter } from 'next/navigation';
 import { RefObject, useEffect, useState } from 'react';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+
+import LogoutIcon from '@mui/icons-material/Logout';
+import LoginIcon from '@mui/icons-material/Login';
 
 export const Dropdown = ({ dropdownRef }: { dropdownRef: RefObject<HTMLDivElement | null> }) => {
 	const [loggedIn, setLoggedIn] = useState(false);
@@ -44,7 +48,7 @@ export const Dropdown = ({ dropdownRef }: { dropdownRef: RefObject<HTMLDivElemen
 
 	return (
 		<div
-			className='my-2 p-1 bg-white border border-black text-center absolute w-[200px] lg:translate-x-[-150px] translate-x-[-150px] sm:translate-x-[-76px] rounded-md'
+			className='my-2 p-1 bg-white border border-black text-center absolute w-[175px] lg:translate-x-[-150px] translate-x-[-150px] sm:translate-x-[-76px] rounded-md'
 			ref={dropdownRef}
 			tabIndex={-1}>
 			{loggedIn ? (
@@ -56,14 +60,31 @@ export const Dropdown = ({ dropdownRef }: { dropdownRef: RefObject<HTMLDivElemen
 						onClick={() => {
 							handleNavigation('/user/profile');
 						}}>
-						User Profile
+						<p className='grid grid-cols-12'>
+							<span className='col-span-10'>User Profile</span>
+							<ManageAccountsIcon />
+						</p>
+					</button>
+					<button
+						className={`w-full hover:bg-slate-200 hover:cursor-pointer hover:font-semibold hover:rounded-sm ${
+							pathname === '/user/wishlist' ? activeRoute : ''
+						}`}
+						onClick={() => {
+							handleNavigation('/user/wishlist');
+						}}>
+						<p className='grid grid-cols-12 justify-items-center'>
+							<span className='col-span-10'>Wishlist</span>
+						</p>
 					</button>
 					<button
 						className='w-full hover:bg-slate-200 hover:cursor-pointer hover:font-semibold hover:rounded-sm'
 						onClick={() => {
 							handleSignOut();
 						}}>
-						Sign Out
+						<p className='grid grid-cols-12 justify-items-center'>
+							<span className='col-span-10'>Sign Out</span>
+							<LogoutIcon />
+						</p>
 					</button>
 				</>
 			) : (
@@ -74,7 +95,10 @@ export const Dropdown = ({ dropdownRef }: { dropdownRef: RefObject<HTMLDivElemen
 					onClick={() => {
 						handleNavigation('/user/auth/signin');
 					}}>
-					Sign In
+					<p className='grid grid-cols-12 justify-items-center'>
+						<span className='col-span-10'>Sign In</span>
+						<LoginIcon />
+					</p>
 				</button>
 			)}
 		</div>

@@ -25,10 +25,7 @@ export const SigninForm = () => {
 
 	if (formError !== 'Failed to sign in.' && message === 'Failed to sign in.') setFormError(message);
 
-	if (message === 'Signed in successfully.') {
-		const router = useRouter();
-		router.back();
-	}
+	if (message === 'Signed in successfully.') window.location.href = '/user/profile';
 
 	return (
 		<form

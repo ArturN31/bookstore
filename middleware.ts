@@ -12,5 +12,6 @@ export const config = {
 		'/user/profile',
 		'/user/profile/change_address',
 		'/user/auth/change_password',
+		'/user/wishlist',
 	],
 };

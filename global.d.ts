@@ -30,12 +30,9 @@ interface Book {
 	stock_quantity: number;
 	is_active: boolean;
 	reviews: Review[];
+	wishlisted: boolean;
 	[key: string]: any;
 }
-
-type BookWithWishlistedProp = Book & {
-	wishlisted: boolean;
-};
 
 interface GeneratedReview {
 	book_id: string;

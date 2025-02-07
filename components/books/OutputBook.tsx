@@ -2,7 +2,7 @@ import Image from 'next/image';
 import { OutputBookRating } from './OutputBookRating';
 import { BookWishlist } from './wishlist/BookWishlist';
 
-export const OutputBook = ({ book, index }: { book: BookWithWishlistedProp | Book; index: number }) => {
+export const OutputBook = ({ book, loggedIn }: { book: Book; loggedIn: boolean }) => {
 	const bookRatingArray = book.reviews.map((review) => {
 		return review.rating;
 	});
@@ -15,10 +15,15 @@ export const OutputBook = ({ book, index }: { book: BookWithWishlistedProp | Boo
 			 xl:not-last-of-type:border-r xl:nth-[4n]:border-r-0
 			 `}>
 			<div className='grid grid-cols-2 pb-1'>
-				<BookWishlist
-					wishlisted={book.wishlisted}
-					bookID={book.id}
-				/>
+				{loggedIn ? (
+					<BookWishlist
+						wishlisted={book.wishlisted}
+						bookID={book.id}
+					/>
+				) : (
+					<div></div>
+				)}
+
 				<OutputBookRating ratings={bookRatingArray} />
 			</div>
 			<div className='bg-black'>
