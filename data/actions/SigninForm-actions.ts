@@ -2,6 +2,8 @@
 
 import { z } from 'zod';
 import { createClient } from '@/utils/db/server';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 const schema = z.object({
 	email: z.string().trim().min(1, 'Email is required'),
@@ -59,7 +61,6 @@ export async function SigninFormAction(prevState: any, formData: FormData) {
 	}
 
 	//return success
-	return {
-		message: 'Signed in successfully.',
-	};
+	revalidatePath('/user/profile');
+	redirect('/user/profile');
 }

@@ -26,11 +26,6 @@ export const AddressFormInsert = () => {
 		setFormError(formState.message);
 	}
 
-	if (formState.message === 'User data has been inserted into the database.') {
-		//refresh page /user/profile
-		window.location.href = '/user/profile';
-	}
-
 	return (
 		<form
 			action={formAction}
@@ -130,12 +125,12 @@ export const AddressFormInsert = () => {
 
 				<div className='flex justify-end gap-3 mt-3'>
 					<button
-						className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15'
+						className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15 hover:cursor-pointer'
 						type='submit'>
 						Submit
 					</button>
 					<button
-						className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15'
+						className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15 hover:cursor-pointer'
 						type='reset'>
 						Reset
 					</button>

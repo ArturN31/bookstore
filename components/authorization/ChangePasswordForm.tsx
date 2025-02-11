@@ -3,28 +3,15 @@
 import { useActionState, useState } from 'react';
 import { ChangePasswordFormAction } from '@/data/actions/ChangePasswordForm-actions';
 import { PasswordField } from './PasswordField';
-import { createClient } from '@/utils/db/client';
-import { useRouter } from 'next/navigation';
 
 export const ChangePasswordForm = () => {
 	const INITIAL_STATE = {
 		password: '',
 	};
-	const router = useRouter();
-	const supabase = createClient();
+
 	const [formState, formAction] = useActionState(ChangePasswordFormAction, INITIAL_STATE);
 	const [formError, setFormError] = useState('');
 	const { password, cnfPassword, message } = formState || {};
-
-	const handleSignOut = async () => {
-		try {
-			const { error } = await supabase.auth.signOut();
-			if (error) console.log(error);
-			router.push('/');
-		} catch (error) {
-			console.log(error);
-		}
-	};
 
 	if (
 		formError !== 'Password and Confirm Password do not match.' &&
@@ -39,8 +26,6 @@ export const ChangePasswordForm = () => {
 			'The password is too weak.\nPassword should be at least 8 characters.\nIt has to include: lowercase, uppercase letters, digits, and symbols.'
 	)
 		setFormError(message);
-
-	if (message === 'Password has been changed.') handleSignOut();
 
 	return (
 		<form
@@ -68,7 +53,7 @@ export const ChangePasswordForm = () => {
 			<div className='grid justify-end mt-3'>
 				<button
 					type='submit'
-					className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15'>
+					className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15 hover:cursor-pointer'>
 					Change password
 				</button>
 			</div>

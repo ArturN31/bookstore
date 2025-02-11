@@ -1,6 +1,7 @@
 'use client';
 
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import BookmarkAddOutlinedIcon from '@mui/icons-material/BookmarkAddOutlined';
+import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import { useState } from 'react';
 
 export const AddToWishlistButtons = () => {
@@ -10,12 +11,16 @@ export const AddToWishlistButtons = () => {
 			onMouseEnter={() => setHover(true)}
 			onMouseLeave={() => setHover(false)}>
 			{hover ? (
-				<button type='submit'>
-					<FavoriteBorderIcon sx={{ color: '#ff0000', stroke: '#ff0000', strokeWidth: 1 }} />
+				<button
+					type='submit'
+					className='hover:cursor-pointer'>
+					<BookmarkAddOutlinedIcon sx={{ color: '#007700' }} />
 				</button>
 			) : (
-				<button type='submit'>
-					<FavoriteBorderIcon />
+				<button
+					type='submit'
+					className='hover:cursor-pointer'>
+					<BookmarkBorderIcon />
 				</button>
 			)}
 		</div>

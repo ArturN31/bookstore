@@ -3,7 +3,6 @@
 import { SigninFormAction } from '@/data/actions/SigninForm-actions';
 import { useActionState, useState } from 'react';
 import { PasswordField } from './PasswordField';
-import { useRouter } from 'next/navigation';
 
 export const SigninForm = () => {
 	const INITIAL_STATE = {
@@ -24,8 +23,6 @@ export const SigninForm = () => {
 		setFormError(message);
 
 	if (formError !== 'Failed to sign in.' && message === 'Failed to sign in.') setFormError(message);
-
-	if (message === 'Signed in successfully.') window.location.href = '/user/profile';
 
 	return (
 		<form

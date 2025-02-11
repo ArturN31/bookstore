@@ -2,6 +2,8 @@
 
 import { z } from 'zod';
 import { createClient } from '@/utils/db/server';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 //setting zod schema for formData object
 const schema = z.object({
@@ -67,7 +69,6 @@ export async function AddressFormInsertAction(prevState: any, formData: FormData
 		};
 	}
 
-	return {
-		message: 'User data has been inserted into the database.',
-	};
+	revalidatePath('/user/profile');
+	redirect('/user/profile');
 }

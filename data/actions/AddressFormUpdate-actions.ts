@@ -2,6 +2,8 @@
 
 import { z } from 'zod';
 import { createClient } from '@/utils/db/server';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 //setting zod schema for formData object
 const schema = z.object({
@@ -57,7 +59,6 @@ export async function AddressFormUpdateAction(prevState: any, formData: FormData
 		};
 	}
 
-	return {
-		message: 'User data was updated.',
-	};
+	revalidatePath('/user/profile');
+	redirect('/user/profile');
 }

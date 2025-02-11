@@ -51,9 +51,6 @@ export const SignupForm = () => {
 	)
 		setFormError(message);
 
-	//user signed up
-	if (message === 'User has been added to the database.') window.location.href = '/user/profile';
-
 	return (
 		<form
 			action={formAction}

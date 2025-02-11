@@ -2,6 +2,8 @@
 
 import { z } from 'zod';
 import { createClient } from '@/utils/db/server';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 const schema = z.object({
 	password: z.string().trim().min(1, 'Password is required'),
@@ -59,5 +61,7 @@ export async function ChangePasswordFormAction(prevState: any, formData: FormDat
 	}
 
 	//return success
-	return { message: 'Password has been changed.' };
+	await supabase.auth.signOut();
+	revalidatePath('/user/profile');
+	redirect('/user/profile');
 }

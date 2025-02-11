@@ -1,47 +1,42 @@
-import { createClient } from '@/utils/db/client';
 import { usePathname, useRouter } from 'next/navigation';
 import { RefObject, useEffect, useState } from 'react';
-import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
-
+import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
+import BookmarkAddedOutlinedIcon from '@mui/icons-material/BookmarkAddedOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
+import { createClient } from '@/utils/db/client';
 
 export const Dropdown = ({ dropdownRef }: { dropdownRef: RefObject<HTMLDivElement | null> }) => {
 	const [loggedIn, setLoggedIn] = useState(false);
-
-	const supabase = createClient();
-	const router = useRouter();
 	const pathname = usePathname();
+	const router = useRouter();
 
 	const handleNavigation = (path: string) => {
 		router.push(path);
 	};
 
 	const handleSignOut = async () => {
-		try {
-			const { error } = await supabase.auth.signOut();
-			if (error) console.log(error);
-			setLoggedIn(false);
-			router.push('/');
-		} catch (error) {
-			console.log(error);
-		}
+		const supabase = createClient();
+		const { error } = await supabase.auth.signOut();
+		if (error) console.log(error);
+		setLoggedIn(false);
+		router.push('/');
+	};
+
+	const isLoggedIn = async () => {
+		const supabase = createClient();
+		const {
+			data: { session },
+		} = await supabase.auth.getSession();
+		return session ? true : false;
+	};
+
+	const handleLoggedInState = async () => {
+		setLoggedIn(await isLoggedIn());
 	};
 
 	useEffect(() => {
-		supabase.auth.onAuthStateChange((event, session) => {
-			if (event === 'SIGNED_IN') setLoggedIn(true);
-
-			/*
-			INITIAL_SESSION - indicates that the Supabase client has finished its initial setup and has checked for any existing user session
-			
-            User is already signed in: If a valid session is found, the INITIAL_SESSION event will be emitted, and you can proceed with actions for a signed-in user.
-
-            User is not signed in: If no valid session is found, the INITIAL_SESSION event will still be emitted, but the session object within the event data will be null or undefined.
-            */
-			if (event === 'INITIAL_SESSION' && session) setLoggedIn(true);
-			console.log(event);
-		});
+		handleLoggedInState();
 	}, []);
 
 	const activeRoute = 'bg-slate-100 font-semibold';
@@ -53,39 +48,38 @@ export const Dropdown = ({ dropdownRef }: { dropdownRef: RefObject<HTMLDivElemen
 			tabIndex={-1}>
 			{loggedIn ? (
 				<>
-					<button
-						className={`w-full hover:bg-slate-200 hover:cursor-pointer hover:font-semibold hover:rounded-sm ${
-							pathname === '/user/profile' ? activeRoute : ''
-						}`}
-						onClick={() => {
-							handleNavigation('/user/profile');
-						}}>
-						<p className='grid grid-cols-12'>
-							<span className='col-span-10'>User Profile</span>
-							<ManageAccountsIcon />
-						</p>
-					</button>
-					<button
-						className={`w-full hover:bg-slate-200 hover:cursor-pointer hover:font-semibold hover:rounded-sm ${
-							pathname === '/user/wishlist' ? activeRoute : ''
-						}`}
-						onClick={() => {
-							handleNavigation('/user/wishlist');
-						}}>
-						<p className='grid grid-cols-12 justify-items-center'>
-							<span className='col-span-10'>Wishlist</span>
-						</p>
-					</button>
-					<button
-						className='w-full hover:bg-slate-200 hover:cursor-pointer hover:font-semibold hover:rounded-sm'
-						onClick={() => {
-							handleSignOut();
-						}}>
-						<p className='grid grid-cols-12 justify-items-center'>
-							<span className='col-span-10'>Sign Out</span>
-							<LogoutIcon />
-						</p>
-					</button>
+					{[
+						{
+							pathname: '/user/profile',
+							fn: () => handleNavigation('/user/profile'),
+							icon: <ManageAccountsOutlinedIcon />,
+							text: 'User Profile',
+						},
+						{
+							pathname: '/user/wishlist',
+							fn: () => handleNavigation('/user/wishlist'),
+							icon: <BookmarkAddedOutlinedIcon />,
+							text: 'Wishlist',
+						},
+						{
+							pathname: '',
+							fn: () => handleSignOut(),
+							icon: <LogoutIcon />,
+							text: 'Sign Out',
+						},
+					].map((el) => (
+						<button
+							key={el.text}
+							className={`w-full hover:bg-slate-200 hover:cursor-pointer hover:font-semibold hover:rounded-sm ${
+								pathname === el.pathname ? activeRoute : ''
+							}`}
+							onClick={el.fn}>
+							<div className='flex'>
+								<p className='grow'>{el.text}</p>
+								{el.icon}
+							</div>
+						</button>
+					))}
 				</>
 			) : (
 				<button
@@ -95,10 +89,10 @@ export const Dropdown = ({ dropdownRef }: { dropdownRef: RefObject<HTMLDivElemen
 					onClick={() => {
 						handleNavigation('/user/auth/signin');
 					}}>
-					<p className='grid grid-cols-12 justify-items-center'>
-						<span className='col-span-10'>Sign In</span>
+					<div className='flex'>
+						<p className='grow'>Sign In</p>
 						<LoginIcon />
-					</p>
+					</div>
 				</button>
 			)}
 		</div>

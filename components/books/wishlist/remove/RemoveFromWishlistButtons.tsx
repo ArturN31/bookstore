@@ -1,7 +1,7 @@
 'use client';
 
-import HeartBrokenIcon from '@mui/icons-material/HeartBroken';
-import FavoriteIcon from '@mui/icons-material/Favorite';
+import BookmarkAddedOutlinedIcon from '@mui/icons-material/BookmarkAddedOutlined';
+import BookmarkRemoveOutlinedIcon from '@mui/icons-material/BookmarkRemoveOutlined';
 import { useState } from 'react';
 
 export const RemoveFromWishlistButtons = () => {
@@ -11,16 +11,16 @@ export const RemoveFromWishlistButtons = () => {
 			onMouseEnter={() => setHover(true)}
 			onMouseLeave={() => setHover(false)}>
 			{hover ? (
-				<button type='submit'>
-					<HeartBrokenIcon
-						sx={{
-							color: '#000',
-						}}
-					/>
+				<button
+					type='submit'
+					className='hover:cursor-pointer'>
+					<BookmarkRemoveOutlinedIcon sx={{ color: '#FF0000' }} />
 				</button>
 			) : (
-				<button type='submit'>
-					<FavoriteIcon sx={{ color: '#ff0000' }} />
+				<button
+					type='submit'
+					className='hover:cursor-pointer'>
+					<BookmarkAddedOutlinedIcon />
 				</button>
 			)}
 		</div>
