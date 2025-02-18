@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { OutputBookRating } from './OutputBookRating';
+import { OutputBookRating } from './book/OutputBookRating';
 import { BookWishlist } from './wishlist/BookWishlist';
 import Link from 'next/link';
 

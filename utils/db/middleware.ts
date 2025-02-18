@@ -1,6 +1,15 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+function isSessionExpired(expiresAt: number | null) {
+	// Handle potential null expiresAt
+	if (expiresAt === null || typeof expiresAt !== 'number') {
+		return true;
+	}
+	const now = Math.floor(Date.now() / 1000);
+	return expiresAt < now;
+}
+
 export async function updateSession(request: NextRequest) {
 	let supabaseResponse = NextResponse.next({
 		request,
@@ -15,11 +24,29 @@ export async function updateSession(request: NextRequest) {
 					return request.cookies.getAll();
 				},
 				setAll(cookiesToSet) {
-					cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
+					console.log('Cookies to set:', cookiesToSet);
+
+					cookiesToSet.forEach(({ name, value, options }) => {
+						console.log(
+							`Setting cookie: <span class="math-inline">\{name\}\=</span>{value} (options: ${JSON.stringify(
+								options,
+							)})`,
+						);
+						request.cookies.set(name, value);
+					});
+
 					supabaseResponse = NextResponse.next({
 						request,
 					});
-					cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options));
+
+					cookiesToSet.forEach(({ name, value, options }) => {
+						console.log(
+							`Setting cookie on response: <span class="math-inline">\{name\}\=</span>{value} (options: ${JSON.stringify(
+								options,
+							)})`,
+						);
+						supabaseResponse.cookies.set(name, value, options);
+					});
 				},
 			},
 		},
@@ -40,6 +67,34 @@ export async function updateSession(request: NextRequest) {
 		const url = request.nextUrl.clone();
 		url.pathname = '/user/auth/signin';
 		return NextResponse.redirect(url);
+	}
+
+	const {
+		data: { session },
+	} = await supabase.auth.getSession();
+
+	if (session && session.expires_at) {
+		const now = Math.floor(Date.now() / 1000);
+		const timeUntilExpiry = session.expires_at - now;
+
+		const refreshThreshold = 600; // 10 min
+
+		if (timeUntilExpiry < refreshThreshold) {
+			// Refresh if close to expiring or already expired
+			console.log('Access token close to expiring or expired. Attempting refresh.');
+
+			const { error } = await supabase.auth.refreshSession(session);
+
+			if (error) {
+				console.error('Session refresh failed:', error);
+			} else {
+				console.log('Session refresh successful!');
+			}
+		} else {
+			console.log('Access token is valid.');
+			console.log(`expires: ${session.expires_at} date:${new Date(session.expires_at * 1000)}`);
+			console.log(`now: ${new Date()}`);
+		}
 	}
 
 	// IMPORTANT: You *must* return the supabaseResponse object as it is.

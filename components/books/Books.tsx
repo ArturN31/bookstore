@@ -1,6 +1,7 @@
 import { OutputBook } from './OutputBook';
 import { addReviewsToBooks, addUsersWishlistedBooks } from '@/data/books/utils';
 import { createClient } from '@/utils/db/server';
+import { BookCard } from './book/BookCard';
 
 export const Books = async ({ books }: { books: Book[] }) => {
 	if (typeof books !== 'string' && books.length > 0) {
@@ -22,7 +23,7 @@ export const Books = async ({ books }: { books: Book[] }) => {
 			return (
 				<div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] max-w-screen md:max-w-[800px] xl:max-w-[1000px] place-self-center gap-y-5'>
 					{booksWithUsersWishlist.map((book) => (
-						<OutputBook
+						<BookCard
 							loggedIn={loggedIn}
 							book={book}
 							key={book.id}
