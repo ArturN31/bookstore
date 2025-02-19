@@ -6,7 +6,7 @@ import { PostgrestResponse } from '@supabase/supabase-js';
 /**
  * Retrieves books from the database based on the specified group and type.
  *
- * @param group The book group (e.g., genre or format).
+ * @param group The book group (e.g., genre, format, author).
  * @param type The specific type within the group (e.g., Adventure, Comedy, Paperback, Hardcover).
  * @returns A promise that resolves to an array of `Book` objects if successful, or a string error message if not.
  */

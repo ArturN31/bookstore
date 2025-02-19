@@ -1,4 +1,4 @@
-import { OutputBook } from '@/components/books/OutputBook';
+import { BookCard } from '@/components/books/bookCard/BookCard';
 import { RootLayout } from '@/components/layout/Layout';
 import { getAllBooks } from '@/data/books/GetBooksData';
 import { addReviewsToBooks, addUsersWishlistedBooks } from '@/data/books/utils';
@@ -33,7 +33,7 @@ export default async function UsersWishlist() {
 						{booksWithUsersWishlist.map((book, index) => {
 							if (book.wishlisted) {
 								return (
-									<OutputBook
+									<BookCard
 										loggedIn={loggedIn}
 										book={book}
 										key={book.id}

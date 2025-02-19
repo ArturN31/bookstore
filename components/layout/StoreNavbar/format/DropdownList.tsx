@@ -33,7 +33,7 @@ export const DropdownList = ({ formats, message }: { formats: string[] | undefin
 			</button>
 			{open ? (
 				<div
-					className='absolute border grid grid-flow-row-dense grid-cols-2 border-black text-center bg-white p-1 rounded-b-md'
+					className='absolute border grid grid-flow-row-dense grid-cols-2 border-black text-center bg-white p-1 rounded-b-md z-40'
 					ref={dropdownRef}
 					tabIndex={-1}>
 					{/* list choices */}

@@ -1,15 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-function isSessionExpired(expiresAt: number | null) {
-	// Handle potential null expiresAt
-	if (expiresAt === null || typeof expiresAt !== 'number') {
-		return true;
-	}
-	const now = Math.floor(Date.now() / 1000);
-	return expiresAt < now;
-}
-
 export async function updateSession(request: NextRequest) {
 	let supabaseResponse = NextResponse.next({
 		request,

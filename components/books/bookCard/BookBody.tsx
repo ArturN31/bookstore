@@ -2,26 +2,19 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 
 export const BookBody = ({ book }: { book: Book }) => {
 	const [hovered, setHovered] = useState(false);
-	const [divWidth, setDivWidth] = useState(0);
-	const ref = useRef<HTMLDivElement>(null); // Specify the type!
 
 	const handleHover = () => {
 		setHovered(!hovered);
 	};
 
-	useEffect(() => {
-		setDivWidth(ref.current?.offsetWidth || 0);
-	}, [ref]);
-
 	return (
 		<div
 			className='relative w-full'
-			style={{ paddingBottom: hovered ? '100%' : 0 }} // or paddingBottom: '100%'
-			ref={ref}>
+			style={{ paddingBottom: hovered ? '100%' : 0 }}>
 			<Link
 				onMouseEnter={() => {
 					handleHover();

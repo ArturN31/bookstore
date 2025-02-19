@@ -43,7 +43,7 @@ export const Dropdown = ({ dropdownRef }: { dropdownRef: RefObject<HTMLDivElemen
 
 	return (
 		<div
-			className='my-2 p-1 bg-white border border-black text-center absolute w-[175px] lg:translate-x-[-150px] translate-x-[-150px] sm:translate-x-[-76px] rounded-md'
+			className='my-2 p-1 bg-white border border-black text-center absolute w-[175px] lg:translate-x-[-150px] translate-x-[-150px] sm:translate-x-[-76px] rounded-md z-40'
 			ref={dropdownRef}
 			tabIndex={-1}>
 			{loggedIn ? (

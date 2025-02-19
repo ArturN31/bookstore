@@ -1,4 +1,4 @@
-import { BookWishlist } from '../wishlist/BookWishlist';
+import { BookWishlist } from './wishlist/BookWishlist';
 import { OutputBookRating } from './OutputBookRating';
 
 export const BookHeader = ({
