@@ -13,6 +13,7 @@ export const BookCard = ({ book, loggedIn }: { book: Book; loggedIn: boolean }) 
 				wishlisted={book.wishlisted}
 				bookID={book.id}
 				reviews={book.reviews}
+				stock={book.stock_quantity}
 			/>
 			<BookBody book={book} />
 		</div>

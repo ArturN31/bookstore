@@ -10,12 +10,11 @@ import { BookDescription } from '@/components/books/bookPage/BookDescription';
 export default async function BookById({ params }: { params: Promise<{ slug: string }> }) {
 	const slug = (await params).slug as unknown as string;
 	const book = await getBook(slug);
-	console.log(book);
 
 	if (typeof book !== 'string') {
 		return (
 			<RootLayout>
-				<div className='grid gap-5'>
+				<div className='grid gap-5 max-w-[1000px] m-auto'>
 					<div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3'>
 						<BookImg
 							image={book.image_url}
@@ -32,7 +31,10 @@ export default async function BookById({ params }: { params: Promise<{ slug: str
 							genre={book.genre}
 						/>
 
-						<BookCart price={book.price} />
+						<BookCart
+							price={book.price}
+							bookID={book.id}
+						/>
 					</div>
 
 					<hr />

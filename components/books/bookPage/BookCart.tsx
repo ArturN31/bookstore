@@ -1,24 +1,18 @@
-export const BookCart = ({ price }: { price: string }) => {
-	const SelectOptions = () => {
-		const rows = [];
-		for (let i = 0; i <= 10; i++) {
-			rows.push(<option>{i}</option>);
-		}
-		return rows;
-	};
+import { CartForm } from './CartForm/CartForm';
 
+export const BookCart = ({ price, bookID }: { price: string; bookID: string }) => {
 	return (
-		<div className='sm:col-span-2 md:col-span-1 grid gap-2 text-center border p-5 items-center'>
+		<div className='sm:col-span-2 md:col-span-1 grid text-center p-5 items-center border rounded-md shadow-[0px_2px_6px_-2px_#000]'>
 			<p>Price: {price}</p>
 
-			<select>
-				<SelectOptions />
-			</select>
+			<CartForm bookID={bookID} />
 
-			<button>Add to Cart</button>
-			<hr />
-			<p>Sent in 24h</p>
-			<hr />
+			<hr className='h-px border-t-0 bg-transparent bg-gradient-to-r from-transparent via-neutral-500 to-transparent opacity-25' />
+
+			<p>Parcel dispatched in 24h</p>
+
+			<hr className='h-px border-t-0 bg-transparent bg-gradient-to-r from-transparent via-neutral-500 to-transparent opacity-25' />
+
 			<p>Delivery to the bookstore &#163;0</p>
 		</div>
 	);

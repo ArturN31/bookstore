@@ -21,13 +21,17 @@ export const Books = async ({ books }: { books: Book[] }) => {
 
 			return (
 				<div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] max-w-screen md:max-w-[800px] xl:max-w-[1000px] place-self-center gap-y-5'>
-					{booksWithUsersWishlist.map((book) => (
-						<BookCard
-							loggedIn={loggedIn}
-							book={book}
-							key={book.id}
-						/>
-					))}
+					{booksWithUsersWishlist.map((book) =>
+						book.is_active ? (
+							<BookCard
+								loggedIn={loggedIn}
+								book={book}
+								key={book.id}
+							/>
+						) : (
+							''
+						),
+					)}
 				</div>
 			);
 		}
@@ -35,13 +39,17 @@ export const Books = async ({ books }: { books: Book[] }) => {
 		//outputs books without wishlist
 		return (
 			<div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] max-w-screen md:max-w-[800px] xl:max-w-[1000px] place-self-center gap-y-5'>
-				{books.map((book) => (
-					<BookCard
-						loggedIn={false}
-						book={book}
-						key={book.id}
-					/>
-				))}
+				{books.map((book) =>
+					book.is_active ? (
+						<BookCard
+							loggedIn={false}
+							book={book}
+							key={book.id}
+						/>
+					) : (
+						''
+					),
+				)}
 			</div>
 		);
 	}

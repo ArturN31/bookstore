@@ -16,7 +16,7 @@ export const BookMainDetails = ({
 	genre: string;
 }) => {
 	return (
-		<div className='grid border p-5 text-center items-center'>
+		<div className='grid p-5 text-center items-center border rounded-md shadow-[0px_2px_6px_-2px_#000]'>
 			{stock <= 25 ? (
 				<p className='bg-red-500 w-fit h-fit rounded-full grid items-center px-4 py-1 text-white m-auto'>Low stock</p>
 			) : (
@@ -25,7 +25,7 @@ export const BookMainDetails = ({
 			<div>
 				<p className='text-lg font-semibold'>{title}</p>
 				<p>
-					by{' '}
+					<span>by </span>
 					<a
 						className='hover:cursor-pointer text-sky-500 hover:text-sky-700'
 						href={`/books/author/${author}`}>
@@ -34,12 +34,12 @@ export const BookMainDetails = ({
 				</p>
 			</div>
 
-			<hr />
+			<hr className='h-px border-t-0 bg-transparent bg-gradient-to-r from-transparent via-neutral-500 to-transparent opacity-25' />
 
 			<div>
-				<p className='font-light'>{publicationDate}</p>
+				<p>Published: {publicationDate}</p>
 				<p>
-					by{' '}
+					<span>Publisher: </span>
 					<a
 						className='hover:cursor-pointer text-sky-500 hover:text-sky-700'
 						href={`/books/publisher/${publisher}`}>
@@ -47,6 +47,7 @@ export const BookMainDetails = ({
 					</a>
 				</p>
 				<p>
+					<span>Format: </span>
 					<a
 						href={`/books/format/${format}`}
 						className='hover:cursor-pointer text-sky-500 hover:text-sky-700'>
@@ -54,6 +55,7 @@ export const BookMainDetails = ({
 					</a>
 				</p>
 				<p>
+					<span>Genre: </span>
 					<a
 						href={`/books/genre/${genre}`}
 						className='hover:cursor-pointer text-sky-500 hover:text-sky-700'>
