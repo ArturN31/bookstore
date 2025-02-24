@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getUserDataProperty } from '../user/GetUserData';
-import { addItemToUsersCart, createUsersCart, getUsersCartID } from '../user/GetCartData';
+import { addItemToUsersCart, createUsersCart, getUsersCartID } from '../cart/GetCartData';
 
 export async function CartFormInsert(formData: FormData) {
 	//getting values from form fields

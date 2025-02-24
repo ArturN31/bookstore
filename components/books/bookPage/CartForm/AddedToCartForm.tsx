@@ -1,6 +1,6 @@
-import { CartFormInsert } from '@/data/actions/CartFormInsert';
+import { CartFormUpdate } from '@/data/actions/CartFormUpdate';
 
-export const CartForm = ({ bookID }: { bookID: string }) => {
+export const AddedToCartForm = ({ bookID, quantity }: { bookID: string; quantity: number }) => {
 	const SelectOptions = () => {
 		const rows = [];
 		for (let i = 1; i <= 10; i++) {
@@ -12,7 +12,7 @@ export const CartForm = ({ bookID }: { bookID: string }) => {
 	return (
 		<form
 			className='flex gap-2 justify-center'
-			action={CartFormInsert}>
+			action={CartFormUpdate}>
 			<input
 				type='hidden'
 				name='book-id'
@@ -20,13 +20,14 @@ export const CartForm = ({ bookID }: { bookID: string }) => {
 			/>
 
 			<select
+				defaultValue={quantity}
 				name='book-quantity'
 				className='border w-fit hover:cursor-pointer focus:outline-1 px-2 py-1 rounded-md'>
 				<SelectOptions />
 			</select>
 
 			<button className='border w-fit hover:cursor-pointer hover:bg-black/[0.05] px-2 py-1 rounded-md'>
-				Add to Cart
+				Update Cart
 			</button>
 		</form>
 	);
