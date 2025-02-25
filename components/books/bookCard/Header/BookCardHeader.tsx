@@ -1,7 +1,7 @@
 import { BookWishlist } from './wishlist/BookWishlist';
-import { OutputBookRating } from './OutputBookRating';
+import { OutputBookRating } from './BookRating';
 
-export const BookHeader = ({
+export const BookCardHeader = ({
 	loggedIn,
 	wishlisted,
 	bookID,

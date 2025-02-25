@@ -3,10 +3,13 @@ import { PostgrestResponse } from '@supabase/supabase-js';
 
 export const getUsersCartID = async (userID: string) => {
 	const supabase = await createClient();
-	let { data: shopping_carts, error } = await supabase.from('shopping_carts').select('id').eq('user_id', userID);
+	let { data: shopping_carts, error }: PostgrestResponse<{ id: string }> = await supabase
+		.from('shopping_carts')
+		.select('id')
+		.eq('user_id', userID);
 	if (error) {
 		console.error('Error fetching cart id:', error);
-		return false;
+		return null;
 	}
 	return shopping_carts && shopping_carts.length > 0 ? shopping_carts[0].id : null;
 };
@@ -19,7 +22,7 @@ export const createUsersCart = async (userID: string) => {
 		.select();
 	if (error) {
 		console.error('Error creating cart:', error);
-		return false;
+		return null;
 	}
 	if (data) return 'Cart created.';
 	else return null;
@@ -33,7 +36,7 @@ export const addItemToUsersCart = async (cartID: string, bookID: string, bookQua
 		.select();
 	if (error) {
 		console.error('Error adding cart items:', error);
-		return false;
+		return null;
 	}
 	if (data) return 'Item added to cart.';
 	else null;
@@ -49,7 +52,7 @@ export const updateItemInUsersCart = async (cartID: string, bookID: string, book
 		.select();
 	if (error) {
 		console.error('Error updating cart item:', error);
-		return false;
+		return null;
 	}
 	if (data) return 'Cart item updated.';
 	else null;
@@ -65,7 +68,7 @@ export const removeItemFromUsersCart = async (cartID: string, bookID: string) =>
 		.select();
 	if (error) {
 		console.error('Error removing cart item:', error);
-		return false;
+		return null;
 	}
 	if (data) return 'Cart item removed.';
 	else null;
@@ -92,6 +95,30 @@ export const isAddedToCart = async (cartID: string, bookID: string) => {
 		return true;
 	} else {
 		return false;
+	}
+};
+
+export const booksAddedToCart = async (cartID: string) => {
+	const supabase = await createClient();
+	let {
+		data,
+		error,
+	}: PostgrestResponse<{
+		id: number;
+		created_at: string;
+		updated_at: string;
+		cart_id: string;
+		book_id: string;
+		quantity: number;
+	}> = await supabase.from('shopping_cart_items').select('*').eq('cart_id', cartID);
+	if (error) {
+		console.error('Error fetching cart item:', error);
+		return null;
+	}
+	if (data && data.length > 0) {
+		return data;
+	} else {
+		return null;
 	}
 };
 

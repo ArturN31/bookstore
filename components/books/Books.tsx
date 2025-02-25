@@ -1,56 +1,52 @@
-import { addReviewsToBooks, addUsersWishlistedBooks } from '@/data/books/utils';
-import { createClient } from '@/utils/db/server';
+import { addReviewsToBooks, addUsersCartItemsToBooks, addUsersWishlistedBooks } from '@/data/books/utils';
 import { BookCard } from './bookCard/BookCard';
+import { getUserDataProperty } from '@/data/user/GetUserData';
+import { getUsersCartID } from '@/data/cart/GetCartData';
 
-export const Books = async ({ books }: { books: Book[] }) => {
-	if (typeof books !== 'string' && books.length > 0) {
-		const booksWithReviews = await addReviewsToBooks(books);
-		if (booksWithReviews && typeof booksWithReviews !== 'string' && booksWithReviews.length > 0)
-			books = booksWithReviews;
+interface BooksProps {
+	books: Book[];
+}
 
-		//outputs books with wishlist
-		const booksWithUsersWishlist = await addUsersWishlistedBooks(books);
-		if (booksWithUsersWishlist) {
-			const supabase = await createClient();
-			const {
-				data: { user },
-				error,
-			} = await supabase.auth.getUser();
-
-			const loggedIn = user && !error ? true : false;
-
-			return (
-				<div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] max-w-screen md:max-w-[800px] xl:max-w-[1000px] place-self-center gap-y-5'>
-					{booksWithUsersWishlist.map((book) =>
-						book.is_active ? (
-							<BookCard
-								loggedIn={loggedIn}
-								book={book}
-								key={book.id}
-							/>
-						) : (
-							''
-						),
-					)}
-				</div>
-			);
-		}
-
-		//outputs books without wishlist
-		return (
-			<div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] max-w-screen md:max-w-[800px] xl:max-w-[1000px] place-self-center gap-y-5'>
-				{books.map((book) =>
-					book.is_active ? (
-						<BookCard
-							loggedIn={false}
-							book={book}
-							key={book.id}
-						/>
-					) : (
-						''
-					),
-				)}
-			</div>
-		);
+export const Books = async ({ books }: BooksProps) => {
+	//empty/invalid books
+	if (!Array.isArray(books) || books.length === 0) {
+		return null;
 	}
+
+	let booksWithReviews = await addReviewsToBooks(books);
+
+	//fallback to original books if reviews fail
+	if (!Array.isArray(booksWithReviews) || booksWithReviews.length === 0) booksWithReviews = books;
+
+	const booksWithWishlist = await addUsersWishlistedBooks(booksWithReviews);
+
+	//default to books with wishlisted prop if cart logic fails
+	let booksWithCart = booksWithWishlist;
+
+	const userID = await getUserDataProperty('id');
+	const loggedIn = !!userID;
+	let cartID: string | null = null;
+
+	if (loggedIn && booksWithWishlist) {
+		booksWithCart = await addUsersCartItemsToBooks(booksWithWishlist);
+		cartID = await getUsersCartID(userID);
+	}
+
+	return (
+		<div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] max-w-screen md:max-w-[800px] xl:max-w-[1000px] place-self-center gap-y-5'>
+			{booksWithCart &&
+				booksWithCart.map((book) => {
+					if (!book.is_active) return null; // Skip inactive books directly
+
+					return (
+						<BookCard
+							key={book.id}
+							book={book}
+							loggedIn={loggedIn}
+							cartID={cartID}
+						/>
+					);
+				})}
+		</div>
+	);
 };

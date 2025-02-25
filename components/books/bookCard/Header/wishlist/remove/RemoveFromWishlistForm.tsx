@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/db/server';
-import { RemoveFromWishlistButtons } from '../remove/RemoveFromWishlistButtons';
+import { RemoveFromWishlistButtons } from './RemoveFromWishlistButtons';
 import { revalidatePath } from 'next/cache';
 
 export const RemoveFromWishlistForm = ({ bookID }: { bookID: string }) => {

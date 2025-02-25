@@ -1,3 +1,4 @@
+import { booksAddedToCart, getUsersCartID } from '../cart/GetCartData';
 import { getUserDataProperty } from '../user/GetUserData';
 import { getUsersWishlistedBooks } from './GetBooksData';
 import { getBookReviews, groupReviewsByBookId, matchReviewsToBooks } from './GetReviewsData';
@@ -40,6 +41,37 @@ export const addUsersWishlistedBooks = async (books: Book[]) => {
 				} as Book;
 			});
 			return updatedBooks;
+		}
+	}
+};
+
+export const addUsersCartItemsToBooks = async (books: Book[]) => {
+	const userID = await getUserDataProperty('id');
+
+	if (userID) {
+		const cartID = await getUsersCartID(userID);
+
+		if (cartID) {
+			const cartItems = await booksAddedToCart(cartID);
+
+			if (cartItems) {
+				const updatedBooks = books.map((book) => {
+					let addedToCart = false;
+
+					cartItems.filter((cartItem) => {
+						if (book.id === cartItem.book_id) {
+							addedToCart = true;
+							return;
+						}
+					});
+
+					return {
+						...book,
+						addedToCart: addedToCart,
+					} as Book;
+				});
+				return updatedBooks;
+			}
 		}
 	}
 };

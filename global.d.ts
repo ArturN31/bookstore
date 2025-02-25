@@ -31,6 +31,7 @@ interface Book {
 	is_active: boolean;
 	reviews: Review[];
 	wishlisted: boolean;
+	addedToCart: boolean;
 	[key: string]: any;
 }
 
