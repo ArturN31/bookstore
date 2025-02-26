@@ -1,10 +1,15 @@
-import { CartFormUpdate } from '@/data/actions/CartFormUpdate';
+'use client';
+
+import { CartFormUpdate } from '@/data/actions/CartForm/CartFormUpdate';
+import { usePathname } from 'next/navigation';
 
 export const AddedToCartForm = ({ bookID, quantity }: { bookID: string; quantity: number }) => {
+	const pathname = usePathname();
+
 	const SelectOptions = () => {
 		const rows = [];
 		for (let i = 1; i <= 10; i++) {
-			rows.push(<option>{i}</option>);
+			rows.push(<option key={i}>{i}</option>);
 		}
 		return rows;
 	};
@@ -17,6 +22,11 @@ export const AddedToCartForm = ({ bookID, quantity }: { bookID: string; quantity
 				type='hidden'
 				name='book-id'
 				value={bookID}
+			/>
+			<input
+				type='hidden'
+				name='pathname'
+				value={pathname}
 			/>
 
 			<select

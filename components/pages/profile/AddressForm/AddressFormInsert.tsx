@@ -1,6 +1,6 @@
 'use client';
 
-import { AddressFormInsertAction } from '@/data/actions/AddressFormInsert-actions';
+import { AddressFormInsertAction } from '@/data/actions/AddressForm/AddressFormInsert-actions';
 import { useActionState, useState } from 'react';
 import { TextInput } from './TextInput';
 

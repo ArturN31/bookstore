@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { SignupFormAction } from '@/data/actions/SignupForm-actions';
+import { SignupFormAction } from '@/data/actions/auth/SignupForm-actions';
 import { PasswordField } from './PasswordField';
 
 export const SignupForm = () => {

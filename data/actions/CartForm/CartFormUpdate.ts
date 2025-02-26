@@ -1,8 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getUsersCartID, updateItemInUsersCart } from '../cart/GetCartData';
-import { getUserDataProperty } from '../user/GetUserData';
+import { getUsersCartID, updateItemInUsersCart } from '@/data/cart/GetCartData';
+import { getUserDataProperty } from '@/data/user/GetUserData';
 import { redirect } from 'next/navigation';
 
 export async function CartFormUpdate(formData: FormData) {
@@ -10,6 +10,7 @@ export async function CartFormUpdate(formData: FormData) {
 	const fields = {
 		bookQuantity: formData.get('book-quantity'),
 		bookId: formData.get('book-id'),
+		pathname: formData.get('pathname') as string,
 	};
 	const userID = await getUserDataProperty('id');
 
@@ -25,11 +26,9 @@ export async function CartFormUpdate(formData: FormData) {
 		const bookQuantity = fields.bookQuantity as string;
 		const updateItemRes = await updateItemInUsersCart(cart, bookId, parseInt(bookQuantity));
 
-		console.log(updateItemRes);
-
-		if (typeof updateItemRes === 'string') {
-			revalidatePath(`/book/${bookId}`);
-			redirect(`/book/${bookId}`);
+		if (typeof updateItemRes === 'string' && fields.pathname) {
+			revalidatePath(fields.pathname);
+			redirect(fields.pathname);
 		}
 	}
 }

@@ -12,7 +12,10 @@ export default async function HomePage() {
 	if (typeof books !== 'string')
 		return (
 			<RootLayout>
-				<Books books={books} />
+				<Books
+					books={books}
+					type='all'
+				/>
 			</RootLayout>
 		);
 }

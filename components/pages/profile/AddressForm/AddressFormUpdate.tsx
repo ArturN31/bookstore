@@ -1,6 +1,6 @@
 'use client';
 
-import { AddressFormUpdateAction } from '@/data/actions/AddressFormUpdate-actions';
+import { AddressFormUpdateAction } from '@/data/actions/AddressForm/AddressFormUpdate-actions';
 import { useActionState, useState } from 'react';
 import { TextInput } from './TextInput';
 

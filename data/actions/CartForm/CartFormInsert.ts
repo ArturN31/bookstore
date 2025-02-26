@@ -2,14 +2,15 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { getUserDataProperty } from '../user/GetUserData';
-import { addItemToUsersCart, createUsersCart, getUsersCartID } from '../cart/GetCartData';
+import { getUserDataProperty } from '@/data/user/GetUserData';
+import { addItemToUsersCart, createUsersCart, getUsersCartID } from '@/data/cart/GetCartData';
 
 export async function CartFormInsert(formData: FormData) {
 	//getting values from form fields
 	const fields = {
 		bookQuantity: formData.get('book-quantity'),
 		bookId: formData.get('book-id'),
+		pathname: formData.get('pathname') as string,
 	};
 	const userID = await getUserDataProperty('id');
 
@@ -34,9 +35,9 @@ export async function CartFormInsert(formData: FormData) {
 		const bookQuantity = fields.bookQuantity as string;
 		const addItemRes = await addItemToUsersCart(cart, bookId, parseInt(bookQuantity));
 
-		if (typeof addItemRes === 'string') {
-			revalidatePath(`/book/${bookId}`);
-			redirect(`/book/${bookId}`);
+		if (typeof addItemRes === 'string' && fields.pathname) {
+			revalidatePath(fields.pathname);
+			redirect(fields.pathname);
 		}
 	}
 }

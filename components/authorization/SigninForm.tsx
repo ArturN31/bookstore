@@ -1,6 +1,6 @@
 'use client';
 
-import { SigninFormAction } from '@/data/actions/SigninForm-actions';
+import { SigninFormAction } from '@/data/actions/auth/SigninForm-actions';
 import { useActionState, useState } from 'react';
 import { PasswordField } from './PasswordField';
 

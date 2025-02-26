@@ -1,15 +1,7 @@
 import { BookCardHeader } from './Header/BookCardHeader';
 import { BookCardBody } from './Body/BookCardBody';
 
-export const BookCard = async ({
-	book,
-	loggedIn,
-	cartID,
-}: {
-	book: Book;
-	loggedIn: boolean;
-	cartID: string | null;
-}) => {
+export const BookCard = async ({ book, loggedIn }: { book: Book; loggedIn: boolean }) => {
 	return (
 		<div
 			className='flex flex-col px-3 py-2 max-w-[300px] 
@@ -23,10 +15,7 @@ export const BookCard = async ({
 				reviews={book.reviews}
 				stock={book.stock_quantity}
 			/>
-			<BookCardBody
-				book={book}
-				cartID={cartID}
-			/>
+			<BookCardBody book={book} />
 		</div>
 	);
 };

@@ -1,10 +1,15 @@
-import { CartFormInsert } from '@/data/actions/CartFormInsert';
+'use client';
+
+import { CartFormInsert } from '@/data/actions/CartForm/CartFormInsert';
+import { usePathname } from 'next/navigation';
 
 export const AddToCartForm = ({ bookID }: { bookID: string }) => {
+	const pathname = usePathname();
+
 	const SelectOptions = () => {
 		const rows = [];
 		for (let i = 1; i <= 10; i++) {
-			rows.push(<option>{i}</option>);
+			rows.push(<option key={i}>{i}</option>);
 		}
 		return rows;
 	};
@@ -17,6 +22,12 @@ export const AddToCartForm = ({ bookID }: { bookID: string }) => {
 				type='hidden'
 				name='book-id'
 				value={bookID}
+			/>
+
+			<input
+				type='hidden'
+				name='pathname'
+				value={pathname}
 			/>
 
 			<select

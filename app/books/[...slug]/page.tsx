@@ -21,7 +21,10 @@ export default async function BooksByGroupAndTypePage({ params }: { params: Prom
 						<p>{type}</p>
 					</div>
 
-					<Books books={books} />
+					<Books
+						books={books}
+						type='all'
+					/>
 				</div>
 			</RootLayout>
 		);

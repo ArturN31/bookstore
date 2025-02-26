@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
-import { AddToCartCardForm } from './AddToCartForm';
+import { AddToCartCardForm } from './AddToCartCardForm';
 import { RemoveFromCartCardForm } from './RemoveFromCartCardForm';
 
-export const BookCardBody = ({ book, cartID }: { book: Book; cartID: string | null }) => {
+export const BookCardBody = ({ book }: { book: Book }) => {
 	const [hovered, setHovered] = useState(false);
 
 	const handleHover = () => {
@@ -49,17 +49,7 @@ export const BookCardBody = ({ book, cartID }: { book: Book; cartID: string | nu
 				{hovered && (
 					<div className='grid justify-center gap-3 p-3 bg-gunmetal text-white'>
 						<p className='text-xs font-light text-center'>{book.format}</p>
-						{book.addedToCart ? (
-							<RemoveFromCartCardForm
-								cartID={cartID}
-								bookID={book.id}
-							/>
-						) : (
-							<AddToCartCardForm
-								cartID={cartID}
-								bookID={book.id}
-							/>
-						)}
+						{book.addedToCart ? <RemoveFromCartCardForm bookID={book.id} /> : <AddToCartCardForm bookID={book.id} />}
 					</div>
 				)}
 			</div>
