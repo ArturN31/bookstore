@@ -8,7 +8,9 @@ export const getUsersCartID = async (userID: string) => {
 		.select('id')
 		.eq('user_id', userID);
 	if (error) {
-		console.error('Error fetching cart id:', error);
+		if (error.message === `invalid input syntax for type uuid: "User not logged in."`) return null;
+
+		console.log(error);
 		return null;
 	}
 	return shopping_carts && shopping_carts.length > 0 ? shopping_carts[0].id : null;
@@ -21,7 +23,7 @@ export const createUsersCart = async (userID: string) => {
 		.insert([{ user_id: userID }])
 		.select();
 	if (error) {
-		console.error('Error creating cart:', error);
+		console.log('Error creating cart:', error);
 		return null;
 	}
 	if (data) return 'Cart created.';
@@ -35,7 +37,7 @@ export const addItemToUsersCart = async (cartID: string, bookID: string, bookQua
 		.insert([{ cart_id: cartID, book_id: bookID, quantity: bookQuantity }])
 		.select();
 	if (error) {
-		console.error('Error adding cart items:', error);
+		console.log('Error adding cart items:', error);
 		return null;
 	}
 	if (data) return 'Item added to cart.';
@@ -51,7 +53,7 @@ export const updateItemInUsersCart = async (cartID: string, bookID: string, book
 		.eq('book_id', bookID)
 		.select();
 	if (error) {
-		console.error('Error updating cart item:', error);
+		console.log('Error updating cart item:', error);
 		return null;
 	}
 	if (data) return 'Cart item updated.';
@@ -67,7 +69,7 @@ export const removeItemFromUsersCart = async (cartID: string, bookID: string) =>
 		.eq('book_id', bookID)
 		.select();
 	if (error) {
-		console.error('Error removing cart item:', error);
+		console.log('Error removing cart item:', error);
 		return null;
 	}
 	if (data) return 'Cart item removed.';
@@ -88,7 +90,7 @@ export const isAddedToCart = async (cartID: string, bookID: string) => {
 		quantity: number;
 	}> = await supabase.from('shopping_cart_items').select('*').eq('cart_id', cartID).eq('book_id', bookID);
 	if (error) {
-		console.error('Error fetching cart item:', error);
+		console.log('Error fetching cart item:', error);
 		return false;
 	}
 	if (data && data.length > 0) {
@@ -112,7 +114,7 @@ export const booksAddedToCart = async (cartID: string) => {
 		quantity: number;
 	}> = await supabase.from('shopping_cart_items').select('*').eq('cart_id', cartID);
 	if (error) {
-		console.error('Error fetching cart item:', error);
+		console.log('Error fetching cart item:', error);
 		return null;
 	}
 	if (data && data.length > 0) {
@@ -136,12 +138,12 @@ export const getCartItemData = async (cartID: string, bookID: string) => {
 		quantity: number;
 	}> = await supabase.from('shopping_cart_items').select('*').eq('cart_id', cartID).eq('book_id', bookID);
 	if (error) {
-		console.error('Error fetching cart item:', error);
-		return false;
+		console.log('Error fetching cart item:', error);
+		return null;
 	}
 	if (data && data.length > 0) {
 		return data;
 	} else {
-		return false;
+		return null;
 	}
 };

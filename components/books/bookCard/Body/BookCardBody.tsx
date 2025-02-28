@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { AddToCartCardForm } from './AddToCartCardForm';
 import { RemoveFromCartCardForm } from './RemoveFromCartCardForm';
 
-export const BookCardBody = ({ book }: { book: Book }) => {
+export const BookCardBody = ({ book, loggedIn }: { book: Book; loggedIn: boolean }) => {
 	const [hovered, setHovered] = useState(false);
 
 	const handleHover = () => {
@@ -49,7 +49,17 @@ export const BookCardBody = ({ book }: { book: Book }) => {
 				{hovered && (
 					<div className='grid justify-center gap-3 p-3 bg-gunmetal text-white'>
 						<p className='text-xs font-light text-center'>{book.format}</p>
-						{book.addedToCart ? <RemoveFromCartCardForm bookID={book.id} /> : <AddToCartCardForm bookID={book.id} />}
+						{book.addedToCart ? (
+							<RemoveFromCartCardForm
+								bookID={book.id}
+								loggedIn={loggedIn}
+							/>
+						) : (
+							<AddToCartCardForm
+								bookID={book.id}
+								loggedIn={loggedIn}
+							/>
+						)}
 					</div>
 				)}
 			</div>

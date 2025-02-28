@@ -1,11 +1,11 @@
 import { RootLayout } from '@/components/layout/Layout';
 import { getBook } from '@/data/book/GetBookData';
-import { BookImg } from '@/components/books/bookPage/BookImg';
-import { BookMainDetails } from '@/components/books/bookPage/BookMainDetails';
-import { BookCart } from '@/components/books/bookPage/BookCart';
-import { BookSecondaryDetails } from '@/components/books/bookPage/BookSecondaryDetails';
-import { BookReviews } from '@/components/books/bookPage/BookReviews';
-import { BookDescription } from '@/components/books/bookPage/BookDescription';
+import { BookImg } from '@/components/pages/book/BookImg';
+import { BookMainDetails } from '@/components/pages/book/BookMainDetails';
+import { BookCart } from '@/components/pages/book/BookCart';
+import { BookSecondaryDetails } from '@/components/pages/book/BookSecondaryDetails';
+import { BookReviews } from '@/components/pages/book/BookReviews';
+import { BookDescription } from '@/components/pages/book/BookDescription';
 
 export default async function BookById({ params }: { params: Promise<{ slug: string }> }) {
 	const slug = (await params).slug as unknown as string;

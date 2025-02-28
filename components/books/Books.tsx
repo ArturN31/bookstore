@@ -1,6 +1,6 @@
 import { addReviewsToBooks, addUsersCartItemsToBooks, addUsersWishlistedBooks } from '@/data/books/utils';
 import { BookCard } from './bookCard/BookCard';
-import { getUserDataProperty } from '@/data/user/GetUserData';
+import { getUserDataProperty, isLoggedIn } from '@/data/user/GetUserData';
 
 export const Books = async ({ books, type }: { books: Book[]; type: 'all' | 'wishlisted' }) => {
 	//empty/invalid books
@@ -17,7 +17,7 @@ export const Books = async ({ books, type }: { books: Book[]; type: 'all' | 'wis
 	}
 
 	const userID = await getUserDataProperty('id');
-	const loggedIn = !!userID;
+	const loggedIn = await isLoggedIn(userID);
 
 	return (
 		<div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] max-w-screen md:max-w-[800px] xl:max-w-[1000px] place-self-center gap-y-5'>

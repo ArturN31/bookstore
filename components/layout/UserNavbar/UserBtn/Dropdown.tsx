@@ -1,13 +1,18 @@
 import { usePathname, useRouter } from 'next/navigation';
-import { RefObject, useEffect, useState } from 'react';
+import { RefObject } from 'react';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
 import BookmarkAddedOutlinedIcon from '@mui/icons-material/BookmarkAddedOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
-import { createClient } from '@/utils/db/client';
+import { logout } from '@/data/user/GetUserData';
 
-export const Dropdown = ({ dropdownRef }: { dropdownRef: RefObject<HTMLDivElement | null> }) => {
-	const [loggedIn, setLoggedIn] = useState(false);
+export const Dropdown = ({
+	dropdownRef,
+	loggedIn,
+}: {
+	dropdownRef: RefObject<HTMLDivElement | null>;
+	loggedIn: boolean;
+}) => {
 	const pathname = usePathname();
 	const router = useRouter();
 
@@ -16,28 +21,9 @@ export const Dropdown = ({ dropdownRef }: { dropdownRef: RefObject<HTMLDivElemen
 	};
 
 	const handleSignOut = async () => {
-		const supabase = createClient();
-		const { error } = await supabase.auth.signOut();
-		if (error) console.log(error);
-		setLoggedIn(false);
-		router.push('/');
+		const res = await logout();
+		res && handleNavigation('/');
 	};
-
-	const isLoggedIn = async () => {
-		const supabase = createClient();
-		const {
-			data: { session },
-		} = await supabase.auth.getSession();
-		return session ? true : false;
-	};
-
-	const handleLoggedInState = async () => {
-		setLoggedIn(await isLoggedIn());
-	};
-
-	useEffect(() => {
-		handleLoggedInState();
-	}, []);
 
 	const activeRoute = 'bg-slate-100 font-semibold';
 

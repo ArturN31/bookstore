@@ -15,7 +15,10 @@ export const BookCard = async ({ book, loggedIn }: { book: Book; loggedIn: boole
 				reviews={book.reviews}
 				stock={book.stock_quantity}
 			/>
-			<BookCardBody book={book} />
+			<BookCardBody
+				book={book}
+				loggedIn={loggedIn}
+			/>
 		</div>
 	);
 };

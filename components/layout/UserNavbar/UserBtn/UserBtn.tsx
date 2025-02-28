@@ -4,7 +4,7 @@ import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined
 import { useRef, useState } from 'react';
 import { Dropdown } from './Dropdown';
 
-export const UserBtn = () => {
+export const UserBtn = ({ loggedIn }: { loggedIn: boolean }) => {
 	const [open, setOpen] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -27,7 +27,14 @@ export const UserBtn = () => {
 				<PersonOutlineOutlinedIcon />
 			</button>
 			{/* Dropdown */}
-			{open ? <Dropdown dropdownRef={dropdownRef} /> : ''}
+			{open ? (
+				<Dropdown
+					dropdownRef={dropdownRef}
+					loggedIn={loggedIn}
+				/>
+			) : (
+				''
+			)}
 		</div>
 	);
 };
