@@ -32,8 +32,8 @@ export const AddressFormInsert = () => {
 			className='grid place-self-center border border-black rounded-lg gap-2 p-5'
 			style={{ boxShadow: '0px 2px 6px -2px black' }}>
 			<div>
-				<h1 className='text-2xl'>Tell Us Where to Ship</h1>
-				<p className='font-light'>Enter your shipping address information below.</p>
+				<h1 className='text-xl font-semibold'>Enter Your Shipping Address</h1>
+				<p className='text-gray-600'>For fast and accurate delivery, please fill in the details below.</p>
 				{formError ? <p className='font-semibold text-red-500'>{formError}</p> : ''}
 			</div>
 

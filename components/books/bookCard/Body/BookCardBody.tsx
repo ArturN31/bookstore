@@ -6,7 +6,15 @@ import { useState } from 'react';
 import { AddToCartCardForm } from './AddToCartCardForm';
 import { RemoveFromCartCardForm } from './RemoveFromCartCardForm';
 
-export const BookCardBody = ({ book, loggedIn }: { book: Book; loggedIn: boolean }) => {
+export const BookCardBody = ({
+	book,
+	loggedIn,
+	profileExists,
+}: {
+	book: Book;
+	loggedIn: boolean;
+	profileExists: boolean;
+}) => {
 	const [hovered, setHovered] = useState(false);
 
 	const handleHover = () => {
@@ -53,11 +61,13 @@ export const BookCardBody = ({ book, loggedIn }: { book: Book; loggedIn: boolean
 							<RemoveFromCartCardForm
 								bookID={book.id}
 								loggedIn={loggedIn}
+								profileExists={profileExists}
 							/>
 						) : (
 							<AddToCartCardForm
 								bookID={book.id}
 								loggedIn={loggedIn}
+								profileExists={profileExists}
 							/>
 						)}
 					</div>

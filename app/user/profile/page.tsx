@@ -32,13 +32,14 @@ export default async function UserProfile() {
 	const { userData, userEmail, channel } = await getData();
 	channel.unsubscribe();
 
-	if (!userData)
+	if (userData === 'Profile not existing.' || !userData)
 		return (
 			<RootLayout>
 				<div className='grid gap-5'>
 					<div className='text-center'>
-						<p className='text-2xl'>Hello there!</p>
-						<p className='text-lg font-light'>It looks like you haven't finished setting up your profile yet.</p>
+						<p className='text-2xl'>Hi there!</p>
+						<p className='font-light'>Just a quick heads-up: your profile setup isn't quite finished.</p>
+						<p className='font-light'>Completing it will give you full access to everything our store has to offer.</p>
 					</div>
 					<AddressFormInsert />
 				</div>

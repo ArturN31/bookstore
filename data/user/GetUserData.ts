@@ -25,6 +25,8 @@ export const getUserData = async () => {
 			.select('*')
 			.eq('id', await getUserDataProperty('id'))
 			.single();
+
+		if (error?.details === 'The result contains 0 rows') return 'Profile not existing.';
 		if (error) return 'User not logged in.';
 		return data as User;
 	} catch (error) {

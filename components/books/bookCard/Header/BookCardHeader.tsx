@@ -7,12 +7,14 @@ export const BookCardHeader = ({
 	bookID,
 	reviews,
 	stock,
+	profileExists,
 }: {
 	loggedIn: boolean;
 	wishlisted: boolean;
 	bookID: string;
 	reviews: Review[];
 	stock: number;
+	profileExists: boolean;
 }) => {
 	const bookRatingArray = reviews.map((review) => {
 		return review.rating;
@@ -20,7 +22,7 @@ export const BookCardHeader = ({
 
 	return (
 		<div className={`grid ${stock <= 25 ? 'grid-cols-3' : 'grid-cols-2'} pb-1`}>
-			{loggedIn ? (
+			{loggedIn && profileExists ? (
 				<BookWishlist
 					wishlisted={wishlisted}
 					bookID={bookID}

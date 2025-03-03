@@ -1,11 +1,19 @@
 import { CartFormRemove } from '@/data/actions/CartForm/CartFormRemove';
 import { usePathname } from 'next/navigation';
 
-export const RemoveFromCartCardForm = ({ bookID, loggedIn }: { bookID: string; loggedIn: boolean }) => {
+export const RemoveFromCartCardForm = ({
+	bookID,
+	loggedIn,
+	profileExists,
+}: {
+	bookID: string;
+	loggedIn: boolean;
+	profileExists: boolean;
+}) => {
 	const pathname = usePathname();
 
 	return (
-		<form action={loggedIn ? CartFormRemove : undefined}>
+		<form action={loggedIn && profileExists ? CartFormRemove : undefined}>
 			<input
 				type='hidden'
 				name='book-id'
@@ -19,8 +27,10 @@ export const RemoveFromCartCardForm = ({ bookID, loggedIn }: { bookID: string; l
 			/>
 
 			<button
-				className={`border px-2 py-1 ${!loggedIn ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-				disabled={!loggedIn}>
+				className={`border px-2 py-1 ${
+					!loggedIn || !profileExists ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+				}`}
+				disabled={!loggedIn || !profileExists}>
 				Remove from cart
 			</button>
 		</form>
