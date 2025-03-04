@@ -35,10 +35,10 @@ export const getAllBooks = async () => {
 
 	if (error) {
 		console.error('Error retrieving books:', error);
-		return 'Failed to retrieve books.';
+		return null;
 	}
 
-	if (!data || data.length === 0) return 'No books found.';
+	if (!data || data.length === 0) return null;
 
 	return data;
 };

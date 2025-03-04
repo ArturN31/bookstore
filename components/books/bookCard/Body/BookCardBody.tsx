@@ -23,7 +23,7 @@ export const BookCardBody = ({
 
 	return (
 		<div
-			className={`relative border grid ${hovered && 'min-h-[calc(100%+30px)] z-40'}`}
+			className={`relative border grid ${hovered && 'min-h-[calc(100%+30px)]'}`}
 			onMouseEnter={() => {
 				handleHover();
 			}}
