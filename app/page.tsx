@@ -9,7 +9,7 @@ export default async function HomePage() {
 	};
 	let books = await getBooks();
 
-	if (typeof books !== 'string')
+	if (books)
 		return (
 			<RootLayout>
 				<Books

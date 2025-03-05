@@ -22,7 +22,7 @@ export const DropdownList = ({ genres, message }: { genres: string[] | undefined
 	return (
 		<>
 			<button
-				className={`hover:cursor-pointer hover:underline border-x border-gunmetal font-semibold w-[170px] py-2 ${
+				className={`hover:cursor-pointer hover:underline border-x border-gunmetal font-semibold py-2 px-6 ${
 					open ? 'underline' : ''
 				}`}
 				onClick={() => {
@@ -34,7 +34,7 @@ export const DropdownList = ({ genres, message }: { genres: string[] | undefined
 			{/* Dropdown list */}
 			{open ? (
 				<div
-					className='absolute border grid grid-flow-row-dense grid-cols-3 border-black text-center bg-white p-1 rounded-b-md z-40'
+					className='absolute border grid grid-flow-row-dense grid-cols-3 border-black text-center bg-white p-1 rounded-b-md z-40 translate-y-[40px] md:translate-x-[97px] translate-x-[0px]'
 					ref={dropdownRef}
 					tabIndex={-1}>
 					{/* list choices */}

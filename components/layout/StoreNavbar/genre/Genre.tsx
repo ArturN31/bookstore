@@ -23,11 +23,9 @@ export const Genre = async () => {
 
 	if (genres)
 		return (
-			<div className='w-fit'>
-				<DropdownList
-					genres={genres.genres}
-					message={genres.message}
-				/>
-			</div>
+			<DropdownList
+				genres={genres.genres}
+				message={genres.message}
+			/>
 		);
 };

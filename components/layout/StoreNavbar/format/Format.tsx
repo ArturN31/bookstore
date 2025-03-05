@@ -23,11 +23,9 @@ export const Format = async () => {
 
 	if (formats)
 		return (
-			<div className='w-fit'>
-				<DropdownList
-					formats={formats.formats}
-					message={formats.message}
-				/>
-			</div>
+			<DropdownList
+				formats={formats.formats}
+				message={formats.message}
+			/>
 		);
 };

@@ -8,10 +8,12 @@ export const UserNavbar = async () => {
 	const loggedIn = await isLoggedIn(userID);
 
 	return (
-		<div className='flex gap-3'>
+		<div className='grid gap-3 sm:auto-cols-auto sm:grid-flow-col grid-cols-1'>
 			<SearchBar />
-			<CartBtn />
-			<UserBtn loggedIn={loggedIn} />
+			<div className='flex gap-3 justify-center'>
+				<CartBtn />
+				<UserBtn loggedIn={loggedIn} />
+			</div>
 		</div>
 	);
 };

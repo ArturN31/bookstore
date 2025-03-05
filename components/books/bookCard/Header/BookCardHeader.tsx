@@ -2,20 +2,20 @@ import { BookWishlist } from './wishlist/BookWishlist';
 import { OutputBookRating } from './BookRating';
 
 export const BookCardHeader = ({
-	loggedIn,
-	wishlisted,
-	bookID,
-	reviews,
-	stock,
-	profileExists,
+	bookCardHeaderParams,
 }: {
-	loggedIn: boolean;
-	wishlisted: boolean;
-	bookID: string;
-	reviews: Review[];
-	stock: number;
-	profileExists: boolean;
+	bookCardHeaderParams: {
+		loggedIn: boolean;
+		wishlisted: boolean;
+		bookID: string;
+		reviews: Review[];
+		stock: number;
+		profileExists: boolean;
+		wishlistedBooksAmount: number;
+	};
 }) => {
+	const { loggedIn, wishlisted, bookID, reviews, stock, profileExists, wishlistedBooksAmount } = bookCardHeaderParams;
+
 	const bookRatingArray = reviews.map((review) => {
 		return review.rating;
 	});
@@ -26,6 +26,7 @@ export const BookCardHeader = ({
 				<BookWishlist
 					wishlisted={wishlisted}
 					bookID={bookID}
+					wishlistedBooksAmount={wishlistedBooksAmount}
 				/>
 			) : (
 				<div></div>

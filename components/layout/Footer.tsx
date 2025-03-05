@@ -17,7 +17,7 @@ export const Footer = () => {
 					</p>
 				</div>
 
-				<div className='grid grid-flow-col auto-cols-fr gap-5'>
+				<div className='grid grid-cols-1 gap-10 md:grid-flow-col md:auto-cols-fr md:gap-5'>
 					<div className='grid items-center'>
 						<ul className='grid gap-2 text-center'>
 							{[

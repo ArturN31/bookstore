@@ -2,7 +2,13 @@ import { createClient } from '@/utils/db/server';
 import { AddToWishlistButtons } from './AddToWishlistButtons';
 import { revalidatePath } from 'next/cache';
 
-export const AddToWishlistForm = ({ bookID }: { bookID: string }) => {
+export const AddToWishlistForm = ({
+	bookID,
+	wishlistedBooksAmount,
+}: {
+	bookID: string;
+	wishlistedBooksAmount: number;
+}) => {
 	const getUserID = async () => {
 		'use server';
 
@@ -35,7 +41,7 @@ export const AddToWishlistForm = ({ bookID }: { bookID: string }) => {
 			id='add-to-wishlist-form'
 			action={AddToWishlist}
 			className='w-fit'>
-			<AddToWishlistButtons />
+			<AddToWishlistButtons wishlistedBooksAmount={wishlistedBooksAmount} />
 		</form>
 	);
 };

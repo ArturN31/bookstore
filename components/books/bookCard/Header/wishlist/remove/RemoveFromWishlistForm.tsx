@@ -2,7 +2,13 @@ import { createClient } from '@/utils/db/server';
 import { RemoveFromWishlistButtons } from './RemoveFromWishlistButtons';
 import { revalidatePath } from 'next/cache';
 
-export const RemoveFromWishlistForm = ({ bookID }: { bookID: string }) => {
+export const RemoveFromWishlistForm = ({
+	bookID,
+	wishlistedBooksAmount,
+}: {
+	bookID: string;
+	wishlistedBooksAmount: number;
+}) => {
 	const RemoveFromWishlist = async () => {
 		'use server';
 
@@ -18,7 +24,7 @@ export const RemoveFromWishlistForm = ({ bookID }: { bookID: string }) => {
 			id='remove-from-wishlist-form'
 			action={RemoveFromWishlist}
 			className='w-fit'>
-			<RemoveFromWishlistButtons />
+			<RemoveFromWishlistButtons wishlistedBooksAmount={wishlistedBooksAmount} />
 		</form>
 	);
 };
