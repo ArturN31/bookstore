@@ -3,7 +3,7 @@
 import { CartFormInsert } from '@/data/actions/CartForm/CartFormInsert';
 import { usePathname } from 'next/navigation';
 
-export const AddToCartForm = ({ bookID }: { bookID: string }) => {
+export const AddToCartForm = ({ bookID, booksInCartAmount }: { bookID: string; booksInCartAmount: number }) => {
 	const pathname = usePathname();
 
 	const SelectOptions = () => {
@@ -15,30 +15,40 @@ export const AddToCartForm = ({ bookID }: { bookID: string }) => {
 	};
 
 	return (
-		<form
-			className='flex gap-2 justify-center'
-			action={CartFormInsert}>
-			<input
-				type='hidden'
-				name='book-id'
-				value={bookID}
-			/>
+		<>
+			<form
+				className='flex gap-2 justify-center'
+				action={booksInCartAmount <= 10 ? CartFormInsert : undefined}>
+				<input
+					type='hidden'
+					name='book-id'
+					value={bookID}
+				/>
 
-			<input
-				type='hidden'
-				name='pathname'
-				value={pathname}
-			/>
+				<input
+					type='hidden'
+					name='pathname'
+					value={pathname}
+				/>
 
-			<select
-				name='book-quantity'
-				className='border w-fit hover:cursor-pointer focus:outline-1 px-2 py-1 rounded-md'>
-				<SelectOptions />
-			</select>
+				<select
+					name='book-quantity'
+					className={`border w-fit focus:outline-1 px-2 py-1 rounded-md ${
+						booksInCartAmount >= 10 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+					}`}
+					disabled={booksInCartAmount >= 10}>
+					<SelectOptions />
+				</select>
 
-			<button className='border w-fit hover:cursor-pointer hover:bg-black/[0.05] px-2 py-1 rounded-md'>
-				Add to Cart
-			</button>
-		</form>
+				<button
+					className={`border w-fit hover:bg-black/[0.05] px-2 py-1 rounded-md ${
+						booksInCartAmount >= 10 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+					}`}
+					disabled={booksInCartAmount >= 10}>
+					Add to Cart
+				</button>
+			</form>
+			{booksInCartAmount >= 10 && <p>Cart is full.</p>}
+		</>
 	);
 };

@@ -22,11 +22,14 @@ export const Books = async ({ books, type }: { books: Book[]; type: 'all' | 'wis
 	const profileExists = typeof userData === 'string' ? false : true;
 	const wishlistedBooks = booksOutput.filter((book) => book.is_active).filter((book) => book.wishlisted);
 	const wishlistedBooksAmount = wishlistedBooks.length;
+	const booksInCart = booksOutput.filter((book) => book.is_active).filter((book) => book.addedToCart);
+	const booksInCartAmount = booksInCart.length;
 
 	const bookCardParams = {
 		loggedIn: loggedIn,
 		profileExists: profileExists,
 		wishlistedBooksAmount: wishlistedBooksAmount,
+		booksInCartAmount: booksInCartAmount,
 	};
 
 	return (

@@ -10,10 +10,12 @@ export const BookCardBody = ({
 	book,
 	loggedIn,
 	profileExists,
+	booksInCartAmount,
 }: {
 	book: Book;
 	loggedIn: boolean;
 	profileExists: boolean;
+	booksInCartAmount: number;
 }) => {
 	const [hovered, setHovered] = useState(false);
 
@@ -70,6 +72,7 @@ export const BookCardBody = ({
 								bookID={id}
 								loggedIn={loggedIn}
 								profileExists={profileExists}
+								booksInCartAmount={booksInCartAmount}
 							/>
 						)}
 					</div>

@@ -6,9 +6,14 @@ export const BookCard = async ({
 	bookCardParams,
 }: {
 	book: Book;
-	bookCardParams: { loggedIn: boolean; profileExists: boolean; wishlistedBooksAmount: number };
+	bookCardParams: {
+		loggedIn: boolean;
+		profileExists: boolean;
+		wishlistedBooksAmount: number;
+		booksInCartAmount: number;
+	};
 }) => {
-	const { loggedIn, profileExists, wishlistedBooksAmount } = bookCardParams;
+	const { loggedIn, profileExists, wishlistedBooksAmount, booksInCartAmount } = bookCardParams;
 	const bookCardHeaderParams = {
 		loggedIn: loggedIn,
 		profileExists: profileExists,
@@ -30,6 +35,7 @@ export const BookCard = async ({
 				book={book}
 				loggedIn={loggedIn}
 				profileExists={profileExists}
+				booksInCartAmount={booksInCartAmount}
 			/>
 		</div>
 	);

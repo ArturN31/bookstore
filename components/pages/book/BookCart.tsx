@@ -4,7 +4,15 @@ import { AddedToCartForm } from './CartForm/AddedToCartForm';
 import { getCartItemData, getUsersCartID, isAddedToCart } from '@/data/cart/GetCartData';
 import { RemoveFromCartForm } from './CartForm/RemoveFromCartForm';
 
-export const BookCart = async ({ price, bookID }: { price: string; bookID: string }) => {
+export const BookCart = async ({
+	price,
+	bookID,
+	booksInCartAmount,
+}: {
+	price: string;
+	bookID: string;
+	booksInCartAmount: number;
+}) => {
 	const userID = await getUserDataProperty('id');
 	const loggedIn = await isLoggedIn(userID);
 
@@ -26,7 +34,10 @@ export const BookCart = async ({ price, bookID }: { price: string; bookID: strin
 						<RemoveFromCartForm bookID={bookID} />
 					</div>
 				) : (
-					<AddToCartForm bookID={bookID} />
+					<AddToCartForm
+						bookID={bookID}
+						booksInCartAmount={booksInCartAmount}
+					/>
 				)
 			) : (
 				<>

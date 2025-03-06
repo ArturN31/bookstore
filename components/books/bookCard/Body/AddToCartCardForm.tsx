@@ -5,15 +5,17 @@ export const AddToCartCardForm = ({
 	bookID,
 	loggedIn,
 	profileExists,
+	booksInCartAmount,
 }: {
 	bookID: string;
 	loggedIn: boolean;
 	profileExists: boolean;
+	booksInCartAmount: number;
 }) => {
 	const pathname = usePathname();
 
 	return (
-		<form action={loggedIn && profileExists ? CartFormInsert : undefined}>
+		<form action={loggedIn && profileExists && booksInCartAmount <= 10 ? CartFormInsert : undefined}>
 			<input
 				type='hidden'
 				name='book-quantity'
@@ -31,9 +33,9 @@ export const AddToCartCardForm = ({
 			/>
 			<button
 				className={`border px-2 py-1  ${
-					!loggedIn || !profileExists ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+					!loggedIn || !profileExists || booksInCartAmount === 10 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
 				}`}
-				disabled={!loggedIn || !profileExists}>
+				disabled={!loggedIn || !profileExists || booksInCartAmount >= 10}>
 				Add to cart
 			</button>
 		</form>
