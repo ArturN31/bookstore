@@ -9,7 +9,6 @@ export const getUsersCartID = async (userID: string) => {
 		.eq('user_id', userID);
 	if (error) {
 		if (error.message === `invalid input syntax for type uuid: "User not logged in."`) return null;
-
 		console.log(error);
 		return null;
 	}

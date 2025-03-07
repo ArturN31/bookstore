@@ -1,7 +1,7 @@
 'use client';
 
 import { AddressFormUpdateAction } from '@/data/actions/AddressForm/AddressFormUpdate-actions';
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { TextInput } from './TextInput';
 
 export const AddressFormUpdate = () => {
@@ -10,17 +10,20 @@ export const AddressFormUpdate = () => {
 		postcode: '',
 		city: '',
 		country: '',
+		message: null,
+		error: null,
 	};
-
 	const [formState, formAction] = useActionState(AddressFormUpdateAction, INITIAL_STATE);
-	const [formError, setFormError] = useState('');
+	const [formError, setFormError] = useState<string | null>(null);
+	const { streetAddress, postcode, city, country, message } = formState || {};
 
-	const { streetAddress, postcode, city, country } = formState || {};
-
-	if (formState.message === 'User data could not be updated.') {
-		console.log(formState.error);
-		setFormError(formState.message);
-	}
+	useEffect(() => {
+		if (message) {
+			setFormError(message);
+		} else {
+			setFormError(null);
+		}
+	}, [message]);
 
 	return (
 		<form

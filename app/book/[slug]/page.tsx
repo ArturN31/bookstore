@@ -6,37 +6,24 @@ import { BookCart } from '@/components/pages/book/BookCart';
 import { BookSecondaryDetails } from '@/components/pages/book/BookSecondaryDetails';
 import { BookReviews } from '@/components/pages/book/BookReviews';
 import { BookDescription } from '@/components/pages/book/BookDescription';
-import { getAllBooks } from '@/data/books/GetBooksData';
-import { addReviewsToBooks, addUsersCartItemsToBooks, addUsersWishlistedBooks } from '@/data/books/utils';
+import { booksAddedToCart, getUsersCartID } from '@/data/cart/GetCartData';
+import { getUserDataProperty } from '@/data/user/GetUserData';
 
 export default async function BookById({ params }: { params: Promise<{ slug: string }> }) {
 	const slug = (await params).slug as unknown as string;
 	const book = await getBook(slug);
-
-	const getBooks = async () => {
-		const books = await getAllBooks();
-		return books;
-	};
-	let books = await getBooks();
-
-	let booksOutput = books;
-	let booksInCart = [];
+	const userID = await getUserDataProperty('id');
 	let booksInCartAmount = 0;
 
-	if (booksOutput) {
-		try {
-			booksOutput = await addReviewsToBooks(booksOutput);
-			booksOutput = await addUsersWishlistedBooks(booksOutput);
-			booksOutput = await addUsersCartItemsToBooks(booksOutput);
-			booksInCart = booksOutput.filter((book) => book.is_active).filter((book) => book.addedToCart);
-			booksInCartAmount = booksInCart.length;
-		} catch (error) {
-			console.error('Error processing books:', error);
-			//TODO: Handle the error (e.g., display an error message)
+	if (userID) {
+		const cartID = await getUsersCartID(userID);
+		if (cartID) {
+			const booksInCart = await booksAddedToCart(cartID);
+			if (booksInCart) booksInCartAmount = booksInCart.length;
 		}
 	}
 
-	if (typeof book !== 'string') {
+	if (book) {
 		return (
 			<RootLayout>
 				<div className='grid gap-5 max-w-[1000px] m-auto'>
@@ -85,4 +72,10 @@ export default async function BookById({ params }: { params: Promise<{ slug: str
 			</RootLayout>
 		);
 	}
+
+	return (
+		<RootLayout>
+			<p>Could not retrieve book data.</p>
+		</RootLayout>
+	);
 }

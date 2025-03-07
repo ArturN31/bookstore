@@ -14,18 +14,17 @@ export const BookCart = async ({
 	booksInCartAmount: number;
 }) => {
 	const userID = await getUserDataProperty('id');
-	const loggedIn = await isLoggedIn(userID);
-
-	const cart = userID ? await getUsersCartID(userID) : null;
-	const addedToCart = cart ? await isAddedToCart(cart, bookID) : false;
-	const cartItem = cart && addedToCart ? await getCartItemData(cart, bookID) : null;
+	const loggedIn = userID ? await isLoggedIn(userID) : false;
+	const cartID = userID ? await getUsersCartID(userID) : null;
+	const isBookInCart = cartID ? await isAddedToCart(cartID, bookID) : false;
+	const cartItem = cartID && isBookInCart ? await getCartItemData(cartID, bookID) : null;
 
 	return (
 		<div className='sm:col-span-2 md:col-span-1 grid text-center p-5 items-center border rounded-md shadow-[0px_2px_6px_-2px_#000]'>
 			<p>Price: {price}</p>
 
 			{loggedIn ? (
-				addedToCart && cartItem ? (
+				isBookInCart && cartItem ? (
 					<div className='grid m-auto gap-2'>
 						<AddedToCartForm
 							bookID={bookID}

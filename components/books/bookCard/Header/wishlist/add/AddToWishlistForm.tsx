@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/db/server';
 import { AddToWishlistButtons } from './AddToWishlistButtons';
 import { revalidatePath } from 'next/cache';
+import { getUserDataProperty } from '@/data/user/GetUserData';
 
 export const AddToWishlistForm = ({
 	bookID,
@@ -9,21 +10,15 @@ export const AddToWishlistForm = ({
 	bookID: string;
 	wishlistedBooksAmount: number;
 }) => {
-	const getUserID = async () => {
-		'use server';
-
-		const supabase = await createClient();
-		const {
-			data: { user },
-			error,
-		} = await supabase.auth.getUser();
-		return user?.id;
-	};
-
 	const AddToWishlist = async () => {
 		'use server';
+		const userID = await getUserDataProperty('id');
 
-		const userID = await getUserID();
+		if (!userID) {
+			console.log("User ID not found, can't add to wishlist.");
+			return;
+		}
+
 		const supabase = await createClient();
 		const { error } = await supabase.from('wishlist').insert([
 			{
@@ -32,7 +27,7 @@ export const AddToWishlistForm = ({
 			},
 		]);
 
-		if (error) console.log(error);
+		if (error) console.log('Error adding to wishlist:', error);
 		revalidatePath('/');
 	};
 

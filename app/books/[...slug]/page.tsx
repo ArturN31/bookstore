@@ -9,7 +9,7 @@ export default async function BooksByGroupAndTypePage({ params }: { params: Prom
 	const type = decodeURIComponent(slug[1]); //represents the type - Adventure/Comedy/Paperback/Hardcover
 	let books = await getBookByGroupAndType(group, type);
 
-	if (typeof books !== 'string')
+	if (books)
 		return (
 			<RootLayout>
 				<div>
@@ -28,4 +28,10 @@ export default async function BooksByGroupAndTypePage({ params }: { params: Prom
 				</div>
 			</RootLayout>
 		);
+
+	return (
+		<RootLayout>
+			<p>Cannot retrieve books.</p>
+		</RootLayout>
+	);
 }

@@ -4,7 +4,7 @@ import BookmarkAddedOutlinedIcon from '@mui/icons-material/BookmarkAddedOutlined
 import BookmarkRemoveOutlinedIcon from '@mui/icons-material/BookmarkRemoveOutlined';
 import { useState } from 'react';
 
-export const RemoveFromWishlistButtons = ({ wishlistedBooksAmount }: { wishlistedBooksAmount: number }) => {
+export const RemoveFromWishlistButtons = () => {
 	const [hover, setHover] = useState(false);
 	return (
 		<div

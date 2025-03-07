@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { getUserDataProperty } from '@/data/user/GetUserData';
 
 //setting zod schema for formData object
 const schema = z.object({
@@ -14,32 +15,45 @@ const schema = z.object({
 });
 
 export async function AddressFormUpdateAction(prevState: any, formData: FormData) {
-	//getting values from form fields
-	const fields = {
-		streetAddress: formData.get('streetAddress'),
-		postcode: formData.get('postcode'),
-		city: formData.get('city'),
-		country: formData.get('country'),
-	};
+	const streetAddress = formData.get('streetAddress') as string | null;
+	const postcode = formData.get('postcode') as string | null;
+	const city = formData.get('city') as string | null;
+	const country = formData.get('country') as string | null;
 
-	//validating passed fields
-	const validatedData = schema.safeParse(fields);
+	const validatedData = schema.safeParse({
+		streetAddress,
+		postcode,
+		city,
+		country,
+	});
 
 	if (!validatedData.success) {
 		//zod validation failed
-		prevState = fields;
+		prevState = {
+			streetAddress,
+			postcode,
+			city,
+			country,
+		};
 		return {
 			...prevState,
 			validatedData,
 		};
 	}
 
-	//zod validation successful
-	const { streetAddress, postcode, city, country } = validatedData.data;
-	const supabase = await createClient();
-	const user = await supabase.auth.getUser();
-	const userID = user.data.user?.id;
+	const userID = await getUserDataProperty('id');
 
+	if (!userID) {
+		return {
+			streetAddress,
+			postcode,
+			city,
+			country,
+			message: 'User not authenticated',
+		};
+	}
+
+	const supabase = await createClient();
 	const { error } = await supabase
 		.from('users')
 		.update({
@@ -51,10 +65,13 @@ export async function AddressFormUpdateAction(prevState: any, formData: FormData
 		.eq('id', userID);
 
 	if (error) {
-		console.log(error);
+		console.log('Address form update error:', error);
 		return {
-			...prevState,
-			error: error,
+			streetAddress,
+			postcode,
+			city,
+			country,
+			error,
 			message: 'User data could not be updated.',
 		};
 	}

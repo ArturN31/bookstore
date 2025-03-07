@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { getUserDataProperty } from '@/data/user/GetUserData';
 
 //setting zod schema for formData object
 const schema = z.object({
@@ -18,53 +19,84 @@ const schema = z.object({
 });
 
 export async function AddressFormInsertAction(prevState: any, formData: FormData) {
-	//getting values from form fields
-	const fields = {
-		firstName: formData.get('firstName'),
-		lastName: formData.get('lastName'),
-		dob: formData.get('dob'),
-		streetAddress: formData.get('streetAddress'),
-		postcode: formData.get('postcode'),
-		city: formData.get('city'),
-		country: formData.get('country'),
-		phoneNumber: formData.get('phoneNumber'),
-	};
+	const firstName = formData.get('firstName') as string | null;
+	const lastName = formData.get('lastName') as string | null;
+	const dob = formData.get('dob') as string | null;
+	const streetAddress = formData.get('streetAddress') as string | null;
+	const postcode = formData.get('postcode') as string | null;
+	const city = formData.get('city') as string | null;
+	const country = formData.get('country') as string | null;
+	const phoneNumber = formData.get('phoneNumber') as string | null;
 
-	//validating passed fields
-	const validatedData = schema.safeParse(fields);
+	const validatedData = schema.safeParse({
+		firstName,
+		lastName,
+		dob,
+		streetAddress,
+		postcode,
+		city,
+		country,
+		phoneNumber,
+	});
 
 	if (!validatedData.success) {
-		//zod validation failed
-		prevState = fields;
+		prevState = {
+			firstName,
+			lastName,
+			dob,
+			streetAddress,
+			postcode,
+			city,
+			country,
+			phoneNumber,
+		};
 		return {
 			...prevState,
 			validatedData,
 		};
 	}
 
-	//zod validation successful
-	const { firstName, lastName, dob, streetAddress, postcode, city, country, phoneNumber } = validatedData.data;
-	const supabase = await createClient();
-	const user = await supabase.auth.getUser();
-	const userID = user.data.user?.id;
+	const userID = await getUserDataProperty('id');
 
+	if (!userID) {
+		return {
+			firstName,
+			lastName,
+			dob,
+			streetAddress,
+			postcode,
+			city,
+			country,
+			phoneNumber,
+			message: 'User not authenticated',
+		};
+	}
+
+	const supabase = await createClient();
 	const { error } = await supabase.from('users').insert({
 		id: userID,
-		first_name: firstName,
-		last_name: lastName,
-		date_of_birth: dob,
-		street_address: streetAddress,
-		postcode: postcode,
-		city: city,
-		country: country,
-		phone_number: phoneNumber,
+		first_name: validatedData.data.firstName,
+		last_name: validatedData.data.lastName,
+		date_of_birth: validatedData.data.dob,
+		street_address: validatedData.data.streetAddress,
+		postcode: validatedData.data.postcode,
+		city: validatedData.data.city,
+		country: validatedData.data.country,
+		phone_number: validatedData.data.phoneNumber,
 	});
 
 	if (error) {
-		console.log(error);
+		console.error('Address form insert error:', error);
 		return {
-			...prevState,
-			error: error,
+			firstName,
+			lastName,
+			dob,
+			streetAddress,
+			postcode,
+			city,
+			country,
+			phoneNumber,
+			error,
 			message: 'User data could not be inserted into the database.',
 		};
 	}

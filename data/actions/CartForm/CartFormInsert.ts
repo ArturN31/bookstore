@@ -6,12 +6,9 @@ import { getUserDataProperty } from '@/data/user/GetUserData';
 import { addItemToUsersCart, createUsersCart, getUsersCartID } from '@/data/cart/GetCartData';
 
 export async function CartFormInsert(formData: FormData) {
-	//getting values from form fields
-	const fields = {
-		bookQuantity: formData.get('book-quantity'),
-		bookId: formData.get('book-id'),
-		pathname: formData.get('pathname') as string,
-	};
+	const bookQuantity = formData.get('book-quantity') as string | null;
+	const bookId = formData.get('book-id') as string | null;
+	const pathname = formData.get('pathname') as string | null;
 	const userID = await getUserDataProperty('id');
 
 	if (!userID) {
@@ -19,25 +16,20 @@ export async function CartFormInsert(formData: FormData) {
 		return;
 	}
 
-	//check if shopping cart exists in shopping_carts table
-	let cart = await getUsersCartID(userID);
+	let cartID = await getUsersCartID(userID);
 
-	//cart does not exist
-	if (cart === null) {
-		let createCartRes = await createUsersCart(userID);
-		if (typeof createCartRes === 'string') cart = await getUsersCartID(userID);
+	if (!cartID) {
+		const createCartResult = await createUsersCart(userID);
+		if (typeof createCartResult === 'string') cartID = await getUsersCartID(userID);
 	}
 
-	//cart exists
-	//add passed book to shopping_cart_items table
-	if (cart && fields.bookId && fields.bookQuantity) {
-		const bookId = fields.bookId as string;
-		const bookQuantity = fields.bookQuantity as string;
-		const addItemRes = await addItemToUsersCart(cart, bookId, parseInt(bookQuantity));
+	if (cartID && bookId && bookQuantity && pathname) {
+		const parsedQuantity = parseInt(bookQuantity, 10);
+		const addItemResult = await addItemToUsersCart(cartID, bookId, parsedQuantity);
 
-		if (typeof addItemRes === 'string' && fields.pathname) {
-			revalidatePath(fields.pathname);
-			redirect(fields.pathname);
+		if (typeof addItemResult === 'string') {
+			revalidatePath(pathname);
+			redirect(pathname);
 		}
 	}
 }

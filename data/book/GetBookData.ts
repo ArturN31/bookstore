@@ -14,10 +14,10 @@ export const getBook = async (bookID: string) => {
 
 	if (error) {
 		console.error('Error retrieving book:', error);
-		return 'Failed to retrieve book.';
+		return null;
 	}
 
-	if (!data || data.length === 0) return 'Book not found.';
+	if (!data || data.length === 0) return null;
 
 	return data[0];
 };

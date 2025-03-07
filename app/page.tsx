@@ -18,4 +18,10 @@ export default async function HomePage() {
 				/>
 			</RootLayout>
 		);
+
+	return (
+		<RootLayout>
+			<p>Cannot retrieve books.</p>
+		</RootLayout>
+	);
 }

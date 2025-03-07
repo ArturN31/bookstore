@@ -12,64 +12,69 @@ const schema = z.object({
 });
 
 export async function SignupFormAction(prevState: any, formData: FormData) {
-	//getting values from form fields
-	const fields = {
-		email: formData.get('email'),
-		password: formData.get('password'),
-		cnfPassword: formData.get('cnfPassword'),
-	};
+	const email = formData.get('email') as string | null;
+	const password = formData.get('password') as string | null;
+	const cnfPassword = formData.get('cnfPassword') as string | null;
 
-	if (fields.password !== fields.cnfPassword) {
-		//passwords do not match
-		prevState = fields;
+	if (password !== cnfPassword) {
+		prevState = { password, cnfPassword };
 		return {
 			...prevState,
 			message: 'Password and Confirm Password do not match.',
 		};
 	}
 
-	//validating passed fields
-	const validatedData = schema.safeParse(fields);
+	const validatedData = schema.safeParse({ email, password, cnfPassword });
 
 	if (!validatedData.success) {
-		//zod validation failed
-		prevState = fields;
+		prevState = { password, cnfPassword };
 		return {
 			...prevState,
 			validatedData,
 		};
 	}
 
-	//zod and custom validation successful - attempt to sign up
-	const { email, password } = validatedData.data;
 	const supabase = await createClient();
-	const { error } = await supabase.auth.signUp({ email: email, password: password });
+	const { error } = await supabase.auth.signUp({
+		email: validatedData.data.email,
+		password: validatedData.data.password,
+	});
 
-	//handle errors
 	if (error) {
-		if (error.code == 'email_exists')
+		console.log('Signup error:', error);
+		if (error.code === 'email_exists') {
 			return {
-				...prevState,
-				error: error,
+				email,
+				password,
+				cnfPassword,
+				error,
 				message: 'Failed to insert user into the database as email already exists.',
 			};
-		if (error.code == 'user_already_exists')
+		}
+		if (error.code === 'user_already_exists') {
 			return {
-				...fields,
-				error: error,
+				email,
+				password,
+				cnfPassword,
+				error,
 				message: 'Failed to insert user into the database as it already exists.',
 			};
-		if (error.code == 'weak_password')
+		}
+		if (error.code === 'weak_password') {
 			return {
-				...fields,
-				error: error,
+				email,
+				password,
+				cnfPassword,
+				error,
 				message:
 					'Failed to insert user into the database as the password is too weak.\nPassword should be at least 8 characters long.\nIt has to include: lowercase, uppercase letters, digits, and symbols.',
 			};
-
+		}
 		return {
-			...prevState,
-			error: error,
+			email,
+			password,
+			cnfPassword,
+			error,
 			message: 'Failed to insert user into the database.',
 		};
 	}

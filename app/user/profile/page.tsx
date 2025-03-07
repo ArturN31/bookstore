@@ -5,34 +5,53 @@ import { createClient } from '@/utils/db/server';
 import { Navigation } from '@/components/pages/profile/Navigation';
 import { UserDetails } from '@/components/pages/profile/UserDetails';
 
-const getData = async () => {
-	const handleDataUpdate = async () => {
-		userData = await getUserData();
-		userEmail = await getUserDataProperty('email');
-	};
-
-	//get data
+const fetchData = async () => {
 	let userData = await getUserData();
 	let userEmail = await getUserDataProperty('email');
+	return { userData, userEmail };
+};
 
-	//updates user data when data is inserted into the users table
-	//reloads the ui on successfull entry of data from the AddressForm
+const subscribeToUserChanges = async (onDataUpdate: () => Promise<void>) => {
 	const supabase = await createClient();
 	const channel = supabase
 		.channel('custom-insert-channel')
-		.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'users' }, async (payload) => {
-			await handleDataUpdate();
+		.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'users' }, async () => {
+			await onDataUpdate();
 		})
 		.subscribe();
-
-	return { userData, userEmail, channel };
+	return channel;
 };
 
 export default async function UserProfile() {
-	const { userData, userEmail, channel } = await getData();
-	channel.unsubscribe();
+	let { userData, userEmail } = await fetchData();
 
-	if (userData === 'Profile not existing.' || !userData)
+	const handleDataUpdate = async () => {
+		const newData = await fetchData();
+		userData = newData.userData;
+		userEmail = newData.userEmail;
+	};
+
+	const channel = await subscribeToUserChanges(handleDataUpdate);
+
+	try {
+		if (userData && userEmail) {
+			return (
+				<RootLayout>
+					<div className='grid gap-5 justify-items-center'>
+						<div className='grid gap-5 justify-items-center'>
+							<Navigation />
+						</div>
+						<div className='flex flex-wrap gap-5 justify-center'>
+							<UserDetails
+								userData={userData}
+								userEmail={userEmail}
+							/>
+						</div>
+					</div>
+				</RootLayout>
+			);
+		}
+
 		return (
 			<RootLayout>
 				<div className='grid gap-5'>
@@ -45,22 +64,9 @@ export default async function UserProfile() {
 				</div>
 			</RootLayout>
 		);
-
-	if (typeof userData !== 'string' && userEmail)
-		return (
-			<RootLayout>
-				<div className='grid gap-5 justify-items-center'>
-					<div className='grid gap-5 justify-items-center'>
-						<Navigation />
-					</div>
-
-					<div className='flex flex-wrap gap-5 justify-center'>
-						<UserDetails
-							userData={userData}
-							userEmail={userEmail}
-						/>
-					</div>
-				</div>
-			</RootLayout>
-		);
+	} finally {
+		if (channel) {
+			channel.unsubscribe();
+		}
+	}
 }

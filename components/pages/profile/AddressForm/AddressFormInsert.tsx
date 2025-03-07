@@ -1,7 +1,7 @@
 'use client';
 
 import { AddressFormInsertAction } from '@/data/actions/AddressForm/AddressFormInsert-actions';
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { TextInput } from './TextInput';
 
 export const AddressFormInsert = () => {
@@ -14,17 +14,20 @@ export const AddressFormInsert = () => {
 		city: '',
 		country: '',
 		phoneNumber: '',
+		message: null,
+		error: null,
 	};
-
 	const [formState, formAction] = useActionState(AddressFormInsertAction, INITIAL_STATE);
-	const [formError, setFormError] = useState('');
+	const [formError, setFormError] = useState<string | null>(null);
+	const { firstName, lastName, dob, phoneNumber, streetAddress, postcode, city, country, message } = formState || {};
 
-	const { firstName, lastName, dob, phoneNumber, streetAddress, postcode, city, country } = formState || {};
-
-	if (formState.message === 'User data could not be inserted into the database.') {
-		console.log(formState.error);
-		setFormError(formState.message);
-	}
+	useEffect(() => {
+		if (message) {
+			setFormError(message);
+		} else {
+			setFormError(null);
+		}
+	}, [message]);
 
 	return (
 		<form

@@ -7,49 +7,53 @@ import { getAllBooks } from '@/data/books/GetBooksData';
 
 export const SearchBar = () => {
 	const [input, setInput] = useState('');
-	const [hovered, setHovered] = useState(false);
-	const [books, setBooks] = useState<Book[]>([]);
+	const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+	const [searchResults, setSearchResults] = useState<Book[]>([]);
 
-	const handleInput = (e: ChangeEvent<HTMLInputElement>) => {
+	const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
 		const { value } = e.target;
 		setInput(value);
-		setHovered(true);
+		setIsDropdownVisible(true);
 	};
 
-	const fetchBooks = async (val: string) => {
+	const fetchAndFilterBooks = async (searchTerm: string) => {
 		try {
 			const allBooks = await getAllBooks();
-			if (allBooks) {
-				const filteredBooks = allBooks
-					.filter((book: Book) => book.is_active)
-					.filter((book: Book) => book.title.toLowerCase().includes(val.toLowerCase()))
-					.slice(0, 10);
-				setBooks(filteredBooks);
-				setHovered(true);
-			}
+			if (!allBooks) return null;
+
+			const filteredBooks = allBooks
+				.filter((book: Book) => book.is_active)
+				.filter((book: Book) => book.title.toLowerCase().includes(searchTerm.toLowerCase()))
+				.slice(0, 10);
+
+			setSearchResults(filteredBooks);
+			setIsDropdownVisible(true);
 		} catch (error) {
 			console.error('Error fetching books:', error);
 		}
 	};
 
-	useEffect(() => {
-		const timeoutId = setTimeout(() => {
-			fetchBooks(input);
-		}, 300);
+	const handleMouseEnter = () => setIsDropdownVisible(true);
+	const handleMouseLeave = () => setIsDropdownVisible(false);
 
-		return () => clearTimeout(timeoutId);
+	useEffect(() => {
+		const delaySearch = setTimeout(() => {
+			fetchAndFilterBooks(input);
+		}, 1000);
+
+		return () => clearTimeout(delaySearch);
 	}, [input]);
 
 	return (
 		<div
 			className='grid relative'
-			onMouseEnter={() => setHovered(true)}
-			onMouseLeave={() => setHovered(false)}>
+			onMouseEnter={handleMouseEnter}
+			onMouseLeave={handleMouseLeave}>
 			<SearchInput
 				input={input}
-				handleInput={handleInput}
+				handleInput={handleInputChange}
 			/>
-			{input && hovered && <SearchOutput books={books} />}
+			{input && isDropdownVisible && <SearchOutput books={searchResults} />}
 		</div>
 	);
 };

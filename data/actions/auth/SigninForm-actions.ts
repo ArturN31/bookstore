@@ -11,56 +11,51 @@ const schema = z.object({
 });
 
 export async function SigninFormAction(prevState: any, formData: FormData) {
-	//getting values from form fields
-	const fields = {
-		email: formData.get('email'),
-		password: formData.get('password'),
-	};
+	const email = formData.get('email') as string | null;
+	const password = formData.get('password') as string | null;
 
-	//validating passed fields
-	const validatedData = schema.safeParse(fields);
+	const validatedData = schema.safeParse({ email, password });
 
 	if (!validatedData.success) {
-		//zod validation failed
-		prevState = fields;
+		prevState = { email, password };
 		return {
 			...prevState,
 			validatedData,
 		};
 	}
 
-	//zod validation successful attempt to sign in
-	const { email, password } = validatedData.data;
 	const supabase = await createClient();
 	const { error } = await supabase.auth.signInWithPassword({
-		email: email,
-		password: password,
+		email: validatedData.data.email,
+		password: validatedData.data.password,
 	});
 
-	//handle errors
 	if (error) {
-		console.log(error);
-		if (error.code == 'invalid_credentials')
+		console.log('Signin error:', error);
+		if (error.code === 'invalid_credentials') {
 			return {
-				...prevState,
-				error: error,
-				message: 'Sign in credentials not recognised.',
+				email,
+				password,
+				error,
+				message: 'Sign in credentials not recognized.',
 			};
-		if (error.code == 'user_not_found')
+		}
+		if (error.code === 'user_not_found') {
 			return {
-				...prevState,
-				error: error,
+				email,
+				password,
+				error,
 				message: 'User to which the request relates no longer exists.',
 			};
-
+		}
 		return {
-			...prevState,
-			error: error,
+			email,
+			password,
+			error,
 			message: 'Failed to sign in.',
 		};
 	}
 
-	//return success
 	revalidatePath('/user/profile');
 	redirect('/user/profile');
 }

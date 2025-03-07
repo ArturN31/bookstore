@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { SignupFormAction } from '@/data/actions/auth/SignupForm-actions';
 import { PasswordField } from './PasswordField';
 
@@ -9,47 +9,30 @@ export const SignupForm = () => {
 		email: '',
 		password: '',
 		cnfPassword: '',
+		message: null,
+		error: null,
 	};
 	const [formState, formAction] = useActionState(SignupFormAction, INITIAL_STATE);
-	const [formError, setFormError] = useState('');
-	const { email, password, cnfPassword, message } = formState || {};
+	const [formError, setFormError] = useState<string | null>(null);
+	const { email, password, cnfPassword, message, error } = formState || {};
 
-	//passwords do not match
-	if (
-		formError !== 'Password and Confirm Password do not match.' &&
-		message === 'Password and Confirm Password do not match.'
-	)
-		setFormError(message);
-
-	//email exists
-	if (
-		formError !== 'Failed to insert user into the database as email already exists.' &&
-		message === 'Failed to insert user into the database as email already exists.'
-	)
-		setFormError(message);
-
-	//user exists
-	if (
-		formError !== 'Failed to insert user into the database as it already exists.' &&
-		message === 'Failed to insert user into the database as it already exists.'
-	)
-		setFormError(message);
-
-	//weak password
-	if (
-		formError !==
-			'Failed to insert user into the database as the password is too weak.\nPassword should be at least 8 characters long.\nIt has to include: lowercase, uppercase letters, digits, and symbols.' &&
-		message ===
-			'Failed to insert user into the database as the password is too weak.\nPassword should be at least 8 characters long.\nIt has to include: lowercase, uppercase letters, digits, and symbols.'
-	)
-		setFormError(message);
-
-	//failed to insert user
-	if (
-		formError !== 'Failed to insert user into the database.' &&
-		message === 'Failed to insert user into the database.'
-	)
-		setFormError(message);
+	useEffect(() => {
+		if (message) {
+			setFormError(message);
+		} else if (error && error.code === 'weak_password') {
+			setFormError(
+				'Failed to insert user into the database as the password is too weak. Password should be at least 8 characters long and include lowercase, uppercase letters, digits, and symbols.',
+			);
+		} else if (error && error.code === 'email_exists') {
+			setFormError('Failed to insert user into the database as email already exists.');
+		} else if (error && error.code === 'user_already_exists') {
+			setFormError('Failed to insert user into the database as it already exists.');
+		} else if (error) {
+			setFormError('Failed to insert user into the database.');
+		} else {
+			setFormError(null);
+		}
+	}, [message, error]);
 
 	return (
 		<form

@@ -6,12 +6,9 @@ import { getUserDataProperty } from '@/data/user/GetUserData';
 import { redirect } from 'next/navigation';
 
 export async function CartFormUpdate(formData: FormData) {
-	//getting values from form fields
-	const fields = {
-		bookQuantity: formData.get('book-quantity'),
-		bookId: formData.get('book-id'),
-		pathname: formData.get('pathname') as string,
-	};
+	const bookQuantity = formData.get('book-quantity') as string | null;
+	const bookId = formData.get('book-id') as string | null;
+	const pathname = formData.get('pathname') as string | null;
 	const userID = await getUserDataProperty('id');
 
 	if (!userID) {
@@ -19,16 +16,15 @@ export async function CartFormUpdate(formData: FormData) {
 		return;
 	}
 
-	let cart = await getUsersCartID(userID);
+	let cartID = await getUsersCartID(userID);
 
-	if (cart && fields.bookId && fields.bookQuantity) {
-		const bookId = fields.bookId as string;
-		const bookQuantity = fields.bookQuantity as string;
-		const updateItemRes = await updateItemInUsersCart(cart, bookId, parseInt(bookQuantity));
+	if (cartID && bookId && bookQuantity && pathname) {
+		const parsedQuantity = parseInt(bookQuantity, 10);
+		const updateItemResult = await updateItemInUsersCart(cartID, bookId, parsedQuantity);
 
-		if (typeof updateItemRes === 'string' && fields.pathname) {
-			revalidatePath(fields.pathname);
-			redirect(fields.pathname);
+		if (typeof updateItemResult === 'string') {
+			revalidatePath(pathname);
+			redirect(pathname);
 		}
 	}
 }

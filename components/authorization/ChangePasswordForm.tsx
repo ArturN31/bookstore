@@ -1,31 +1,34 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { ChangePasswordFormAction } from '@/data/actions/ChangePasswordForm-actions';
 import { PasswordField } from './PasswordField';
 
 export const ChangePasswordForm = () => {
 	const INITIAL_STATE = {
 		password: '',
+		cnfPassword: '',
+		message: null,
+		error: null,
 	};
 
 	const [formState, formAction] = useActionState(ChangePasswordFormAction, INITIAL_STATE);
-	const [formError, setFormError] = useState('');
-	const { password, cnfPassword, message } = formState || {};
+	const [formError, setFormError] = useState<string | null>(null);
+	const { password, cnfPassword, message, error } = formState || {};
 
-	if (
-		formError !== 'Password and Confirm Password do not match.' &&
-		message === 'Password and Confirm Password do not match.'
-	)
-		setFormError(message);
-
-	if (
-		formError !==
-			'The password is too weak.\nPassword should be at least 8 characters.\nIt has to include: lowercase, uppercase letters, digits, and symbols.' &&
-		message ===
-			'The password is too weak.\nPassword should be at least 8 characters.\nIt has to include: lowercase, uppercase letters, digits, and symbols.'
-	)
-		setFormError(message);
+	useEffect(() => {
+		if (message) {
+			setFormError(message);
+		} else if (error && error.code === 'weak_password') {
+			setFormError(
+				'The password is too weak. Password should be at least 8 characters long and include lowercase, uppercase letters, digits, and symbols.',
+			);
+		} else if (error) {
+			setFormError('Could not update user password.');
+		} else {
+			setFormError(null);
+		}
+	}, [message, error]);
 
 	return (
 		<form

@@ -24,7 +24,7 @@ export const RemoveFromWishlistForm = ({
 			id='remove-from-wishlist-form'
 			action={RemoveFromWishlist}
 			className='w-fit'>
-			<RemoveFromWishlistButtons wishlistedBooksAmount={wishlistedBooksAmount} />
+			<RemoveFromWishlistButtons />
 		</form>
 	);
 };

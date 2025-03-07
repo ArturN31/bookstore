@@ -21,4 +21,10 @@ export default async function UsersWishlist() {
 			</RootLayout>
 		);
 	}
+
+	return (
+		<RootLayout>
+			<p>Cannot retrieve books.</p>
+		</RootLayout>
+	);
 }

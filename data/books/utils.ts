@@ -10,18 +10,13 @@ import { getBookReviews, groupReviewsByBookId, matchReviewsToBooks } from './Get
  * @returns A promise that resolves to an array of `Book` objects if successful, or fallback to original books if reviews logic fails.
  */
 export const addReviewsToBooks = async (books: Book[]) => {
-	const bookIDs = books.map((book) => {
-		return book.id;
-	});
+	const bookIDs = books.map((book) => book.id);
 	const reviews = await getBookReviews(bookIDs);
 
-	if (reviews.length > 0 && typeof reviews !== 'string') {
-		const reviewsGroupedByBookID = groupReviewsByBookId(reviews);
-		books = matchReviewsToBooks(reviewsGroupedByBookID, books);
-		return books;
-	}
+	if (typeof reviews === 'string' || reviews.length === 0) return books;
 
-	return books;
+	const reviewsGroupedByBookID = groupReviewsByBookId(reviews);
+	return matchReviewsToBooks(reviewsGroupedByBookID, books);
 };
 
 /**
@@ -32,30 +27,17 @@ export const addReviewsToBooks = async (books: Book[]) => {
  */
 export const addUsersWishlistedBooks = async (books: Book[]) => {
 	const userID = await getUserDataProperty('id');
+	if (!userID) return books;
 
-	if (userID) {
-		const usersWishlistedBooks = await getUsersWishlistedBooks(userID);
+	const usersWishlistedBooks = await getUsersWishlistedBooks(userID);
+	if (!usersWishlistedBooks) return books;
 
-		if (usersWishlistedBooks && usersWishlistedBooks !== 'User not logged in.') {
-			const updatedBooks = books.map((book) => {
-				let isWishlisted = false;
-
-				usersWishlistedBooks.filter((wishlistedBook) => {
-					if (book.id === wishlistedBook.book_id) {
-						isWishlisted = true;
-						return;
-					}
-				});
-
-				return {
-					...book,
-					wishlisted: isWishlisted,
-				} as Book;
-			});
-			return updatedBooks;
-		}
-	}
-	return books;
+	const wishlistedBookIds = new Set(usersWishlistedBooks.map((item) => item.book_id));
+	const updatedBooks = books.map((book) => ({
+		...book,
+		wishlisted: wishlistedBookIds.has(book.id),
+	}));
+	return updatedBooks;
 };
 
 /**
@@ -66,32 +48,18 @@ export const addUsersWishlistedBooks = async (books: Book[]) => {
  */
 export const addUsersCartItemsToBooks = async (books: Book[]) => {
 	const userID = await getUserDataProperty('id');
+	if (!userID) return books;
 
-	if (userID) {
-		const cartID = await getUsersCartID(userID);
+	const cartID = await getUsersCartID(userID);
+	if (!cartID) return books;
 
-		if (cartID) {
-			const cartItems = await booksAddedToCart(cartID);
+	const cartItems = await booksAddedToCart(cartID);
+	if (!cartItems) return books;
 
-			if (cartItems) {
-				const updatedBooks = books.map((book) => {
-					let addedToCart = false;
-
-					cartItems.filter((cartItem) => {
-						if (book.id === cartItem.book_id) {
-							addedToCart = true;
-							return;
-						}
-					});
-
-					return {
-						...book,
-						addedToCart: addedToCart,
-					} as Book;
-				});
-				return updatedBooks;
-			}
-		}
-	}
-	return books;
+	const cartItemBookIds = new Set(cartItems.map((item) => item.book_id));
+	const updatedBooks = books.map((book) => ({
+		...book,
+		addedToCart: cartItemBookIds.has(book.id),
+	}));
+	return updatedBooks;
 };

@@ -11,52 +11,45 @@ const schema = z.object({
 });
 
 export async function ChangePasswordFormAction(prevState: any, formData: FormData) {
-	//getting values from form fields
-	const fields = {
-		password: formData.get('password'),
-		cnfPassword: formData.get('cnfPassword'),
-	};
+	const password = formData.get('password') as string | null;
+	const cnfPassword = formData.get('cnfPassword') as string | null;
 
-	if (fields.password !== fields.cnfPassword) {
-		//passwords do not match
-		prevState = fields;
+	if (password !== cnfPassword) {
+		prevState = { password, cnfPassword };
 		return {
 			...prevState,
 			message: 'Password and Confirm Password do not match.',
 		};
 	}
 
-	//validating passed fields
-	const validatedData = schema.safeParse(fields);
+	const validatedData = schema.safeParse({ password, cnfPassword });
 
 	if (!validatedData.success) {
-		//zod validation failed
-		prevState = fields;
+		prevState = { password, cnfPassword };
 		return {
 			...prevState,
 			validatedData,
 		};
 	}
 
-	//zod validation successful attempt to change password
-	const { password } = validatedData.data;
 	const supabase = await createClient();
-	const { error } = await supabase.auth.updateUser({ password: password });
+	const { error } = await supabase.auth.updateUser({ password: validatedData.data.password });
 
-	//handle errors
 	if (error) {
-		if (error.code == 'weak_password')
+		if (error.code === 'weak_password') {
 			return {
-				...fields,
-				error: error,
+				password,
+				cnfPassword,
+				error,
 				message:
 					'The password is too weak.\nPassword should be at least 8 characters long.\nIt has to include: lowercase, uppercase letters, digits, and symbols.',
 			};
-
+		}
 		return {
-			...prevState,
-			error: error,
-			message: 'Could not update users password.',
+			password,
+			cnfPassword,
+			error,
+			message: 'Could not update user password.',
 		};
 	}
 

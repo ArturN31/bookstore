@@ -4,34 +4,26 @@ import { createClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 
 export const getUserDataProperty = async (prop: keyof User) => {
-	try {
-		const supabase = await createClient();
-		let {
-			data: { user },
-			error,
-		} = await supabase.auth.getUser();
-		if (error) return 'User not logged in.';
-		if (user) return user[prop as keyof typeof user] as string;
-	} catch (error) {
-		console.log(error);
-	}
+	const supabase = await createClient();
+	let {
+		data: { user },
+		error,
+	} = await supabase.auth.getUser();
+	if (error) return null;
+	if (!user) return null;
+	return user[prop as keyof typeof user] as string;
 };
 
 export const getUserData = async () => {
-	try {
-		const supabase = await createClient();
-		const { data, error } = await supabase
-			.from('users')
-			.select('*')
-			.eq('id', await getUserDataProperty('id'))
-			.single();
-
-		if (error?.details === 'The result contains 0 rows') return 'Profile not existing.';
-		if (error) return 'User not logged in.';
-		return data as User;
-	} catch (error) {
+	const supabase = await createClient();
+	const userID = await getUserDataProperty('id');
+	const { data, error } = await supabase.from('users').select('*').eq('id', userID).single();
+	if (error?.details === 'The result contains 0 rows') return null;
+	if (error) {
 		console.log(error);
+		return null;
 	}
+	return data as User;
 };
 
 export const logout = async () => {

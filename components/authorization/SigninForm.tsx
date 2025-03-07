@@ -1,28 +1,27 @@
 'use client';
 
 import { SigninFormAction } from '@/data/actions/auth/SigninForm-actions';
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { PasswordField } from './PasswordField';
 
 export const SigninForm = () => {
 	const INITIAL_STATE = {
 		email: '',
 		password: '',
+		message: null,
+		error: null,
 	};
 	const [formState, formAction] = useActionState(SigninFormAction, INITIAL_STATE);
-	const [formError, setFormError] = useState('');
-	const { email, password, message } = formState || {};
+	const [formError, setFormError] = useState<string | null>(null);
+	const { email, password, message, error } = formState || {};
 
-	if (formError !== 'Sign in credentials not recognised.' && message === 'Sign in credentials not recognised.')
-		setFormError(message);
-
-	if (
-		formError !== 'User to which the request relates no longer exists.' &&
-		message === 'User to which the request relates no longer exists.'
-	)
-		setFormError(message);
-
-	if (formError !== 'Failed to sign in.' && message === 'Failed to sign in.') setFormError(message);
+	useEffect(() => {
+		if (message) {
+			setFormError(message);
+		} else {
+			setFormError(null);
+		}
+	}, [message]);
 
 	return (
 		<form

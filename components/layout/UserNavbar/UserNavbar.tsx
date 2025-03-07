@@ -5,7 +5,7 @@ import { getUserDataProperty, isLoggedIn } from '@/data/user/GetUserData';
 
 export const UserNavbar = async () => {
 	const userID = await getUserDataProperty('id');
-	const loggedIn = await isLoggedIn(userID);
+	const loggedIn = userID ? await isLoggedIn(userID) : false;
 
 	return (
 		<div className='grid gap-3 sm:auto-cols-auto sm:grid-flow-col grid-cols-1'>
