@@ -19,7 +19,7 @@ export const Books = async ({ books, type }: { books: Book[]; type: 'all' | 'wis
 	const userID = await getUserDataProperty('id');
 	const loggedIn = userID ? await isLoggedIn(userID) : false;
 	const userData = await getUserData();
-	const profileExists = typeof userData !== 'string';
+	const profileExists = userData ? true : false;
 
 	//add wishlisted books to Book[]
 	const wishlistedBooks = booksOutput.filter((book) => book.is_active && book.wishlisted);

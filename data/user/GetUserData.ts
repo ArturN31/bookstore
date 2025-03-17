@@ -9,6 +9,7 @@ export const getUserDataProperty = async (prop: keyof User) => {
 		data: { user },
 		error,
 	} = await supabase.auth.getUser();
+
 	if (error) return null;
 	if (!user) return null;
 	return user[prop as keyof typeof user] as string;
@@ -18,11 +19,7 @@ export const getUserData = async () => {
 	const supabase = await createClient();
 	const userID = await getUserDataProperty('id');
 	const { data, error } = await supabase.from('users').select('*').eq('id', userID).single();
-	if (error?.details === 'The result contains 0 rows') return null;
-	if (error) {
-		console.log(error);
-		return null;
-	}
+	if (error) return null;
 	return data as User;
 };
 

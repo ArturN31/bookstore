@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
-import { AddToCartCardForm } from './AddToCartCardForm';
-import { RemoveFromCartCardForm } from './RemoveFromCartCardForm';
+import { AddToCartCardForm } from './CartForm/AddToCartCardForm';
+import { RemoveFromCartCardForm } from './CartForm/RemoveFromCartCardForm';
 
 export const BookCardBody = ({
 	book,

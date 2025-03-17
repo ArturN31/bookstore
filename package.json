@@ -13,7 +13,7 @@
 		"@emotion/styled": "^11.14.0",
 		"@mui/icons-material": "^6.4.3",
 		"@mui/material": "^6.4.3",
-		"@supabase/ssr": "^0.5.2",
+		"@supabase/ssr": "^0.6.1",
 		"@supabase/supabase-js": "^2.47.13",
 		"@tailwindcss/postcss": "^4.0.0",
 		"axios": "^1.7.8",
