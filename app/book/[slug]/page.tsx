@@ -6,7 +6,7 @@ import { BookCart } from '@/components/pages/book/BookCart';
 import { BookSecondaryDetails } from '@/components/pages/book/BookSecondaryDetails';
 import { BookReviews } from '@/components/pages/book/BookReviews';
 import { BookDescription } from '@/components/pages/book/BookDescription';
-import { booksAddedToCart, getUsersCartID } from '@/data/cart/GetCartData';
+import { getBooksAddedToCart, getUsersCartID } from '@/data/cart/GetCartData';
 import { getUserDataProperty } from '@/data/user/GetUserData';
 
 export default async function BookById({ params }: { params: Promise<{ slug: string }> }) {
@@ -18,7 +18,7 @@ export default async function BookById({ params }: { params: Promise<{ slug: str
 	if (userID) {
 		const cartID = await getUsersCartID(userID);
 		if (cartID) {
-			const booksInCart = await booksAddedToCart(cartID);
+			const booksInCart = await getBooksAddedToCart(cartID);
 			if (booksInCart) booksInCartAmount = booksInCart.length;
 		}
 	}

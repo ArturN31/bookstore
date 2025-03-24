@@ -93,13 +93,13 @@ export const isAddedToCart = async (cartID: string, bookID: string) => {
 		return false;
 	}
 	if (data && data.length > 0) {
-		return true;
+		return data;
 	} else {
 		return false;
 	}
 };
 
-export const booksAddedToCart = async (cartID: string) => {
+export const getBooksAddedToCart = async (cartID: string) => {
 	const supabase = await createClient();
 	let {
 		data,
@@ -112,30 +112,6 @@ export const booksAddedToCart = async (cartID: string) => {
 		book_id: string;
 		quantity: number;
 	}> = await supabase.from('shopping_cart_items').select('*').eq('cart_id', cartID);
-	if (error) {
-		console.log('Error fetching cart item:', error);
-		return null;
-	}
-	if (data && data.length > 0) {
-		return data;
-	} else {
-		return null;
-	}
-};
-
-export const getCartItemData = async (cartID: string, bookID: string) => {
-	const supabase = await createClient();
-	let {
-		data,
-		error,
-	}: PostgrestResponse<{
-		id: number;
-		created_at: string;
-		updated_at: string;
-		cart_id: string;
-		book_id: string;
-		quantity: number;
-	}> = await supabase.from('shopping_cart_items').select('*').eq('cart_id', cartID).eq('book_id', bookID);
 	if (error) {
 		console.log('Error fetching cart item:', error);
 		return null;

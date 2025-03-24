@@ -1,4 +1,4 @@
-import { booksAddedToCart, getUsersCartID } from '../cart/GetCartData';
+import { getBooksAddedToCart, getUsersCartID } from '../cart/GetCartData';
 import { getUserDataProperty } from '../user/GetUserData';
 import { getUsersWishlistedBooks } from './GetBooksData';
 import { getBookReviews, groupReviewsByBookId, matchReviewsToBooks } from './GetReviewsData';
@@ -53,7 +53,7 @@ export const addUsersCartItemsToBooks = async (books: Book[]) => {
 	const cartID = await getUsersCartID(userID);
 	if (!cartID) return books;
 
-	const cartItems = await booksAddedToCart(cartID);
+	const cartItems = await getBooksAddedToCart(cartID);
 	if (!cartItems) return books;
 
 	const cartItemBookIds = new Set(cartItems.map((item) => item.book_id));

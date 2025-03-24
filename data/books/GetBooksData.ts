@@ -8,7 +8,7 @@ import { PostgrestResponse } from '@supabase/supabase-js';
  *
  * @param group The book group (e.g., genre, format, author).
  * @param type The specific type within the group (e.g., Adventure, Comedy, Paperback, Hardcover).
- * @returns A promise that resolves to an array of `Book` objects if successful, or a string error message if not.
+ * @returns A promise that resolves to an array of `Book` objects if successful, or null.
  */
 export const getBookByGroupAndType = async (group: string, type: string) => {
 	const supabase = await createClient();
@@ -24,7 +24,7 @@ export const getBookByGroupAndType = async (group: string, type: string) => {
 /**
  * Retrieves all books from the database.
  *
- * @returns A promise that resolves to an array of `Book` objects if successful, or a string error message if not.
+ * @returns A promise that resolves to an array of `Book` objects if successful, or null.
  */
 export const getAllBooks = async () => {
 	const supabase = await createClient();
@@ -42,7 +42,7 @@ export const getAllBooks = async () => {
  *
  * @param userID
  *
- * @returns A promise that resolves to an array of `Book` objects if successful, or a string error message if not.
+ * @returns A promise that resolves to an array of `Book` objects if successful, or null.
  */
 export const getUsersWishlistedBooks = async (userID: string) => {
 	const supabase = await createClient();
@@ -55,4 +55,17 @@ export const getUsersWishlistedBooks = async (userID: string) => {
 		return null;
 	}
 	return data;
+};
+
+/**
+ * Retrieves all of users wishlisted books.
+ *
+ * @param bookIDs
+ *
+ * @returns A promise that resolves to an array of `Book` objects if successful, or null.
+ */
+export const getBooksInCart = async (bookIDs: string[]) => {
+	const allBooks = await getAllBooks();
+	const booksInCart = allBooks ? allBooks.filter((book) => bookIDs.includes(book.id)) : null;
+	return booksInCart;
 };
