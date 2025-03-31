@@ -20,6 +20,7 @@
 		"next": "^15.2.3",
 		"react": "^19",
 		"react-dom": "^19",
+		"use-debounce": "^10.0.4",
 		"zod": "^3.24.1"
 	},
 	"devDependencies": {

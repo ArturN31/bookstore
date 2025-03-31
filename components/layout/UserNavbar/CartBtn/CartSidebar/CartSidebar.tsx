@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction } from 'react';
 import { CartSummary } from './CartSummary';
 import { CartHeader } from './CartHeader';
-import { CartItem } from './CartItem';
+import { CartItem } from './CartItem/CartItem';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 
 export const CartSidebar = ({
