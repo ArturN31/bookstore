@@ -15,14 +15,30 @@ export async function CartFormRemove(formData: FormData) {
 		return;
 	}
 
+	if (!bookId) {
+		console.log('Book ID is missing.');
+		return;
+	}
+
+	if (!pathname) {
+		console.log('Pathname is missing.');
+		return;
+	}
+
 	let cartID = await getUsersCartID(userID);
 
-	if (cartID && bookId && pathname) {
+	if (cartID) {
 		const removeItemResult = await removeItemFromUsersCart(cartID, bookId);
 
-		if (typeof removeItemResult === 'string') {
-			revalidatePath(pathname);
-			redirect(pathname);
+		if (!removeItemResult) {
+			console.log(`Failed to remove item ${bookId} from cart ${cartID}`);
+			return;
 		}
+
+		revalidatePath(pathname);
+		redirect(pathname);
+	} else {
+		console.log(`Could not retrieve cart ID for user ${userID}`);
+		return;
 	}
 }

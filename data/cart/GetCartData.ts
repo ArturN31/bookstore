@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/db/server';
 import { PostgrestResponse } from '@supabase/supabase-js';
+import { revalidatePath } from 'next/cache';
 
 export const getUsersCartID = async (userID: string) => {
 	const supabase = await createClient();
@@ -25,7 +26,7 @@ export const createUsersCart = async (userID: string) => {
 		console.log('Error creating cart:', error);
 		return null;
 	}
-	if (data) return 'Cart created.';
+	if (data) return true;
 	else return null;
 };
 
@@ -39,7 +40,7 @@ export const addItemToUsersCart = async (cartID: string, bookID: string, bookQua
 		console.log('Error adding cart items:', error);
 		return null;
 	}
-	if (data) return 'Item added to cart.';
+	if (data) return true;
 	else null;
 };
 
@@ -55,7 +56,7 @@ export const updateItemInUsersCart = async (cartID: string, bookID: string, book
 		console.log('Error updating cart item:', error);
 		return null;
 	}
-	if (data) return 'Cart item updated.';
+	if (data) return true;
 	else null;
 };
 
@@ -71,7 +72,7 @@ export const removeItemFromUsersCart = async (cartID: string, bookID: string) =>
 		console.log('Error removing cart item:', error);
 		return null;
 	}
-	if (data) return 'Cart item removed.';
+	if (data) return true;
 	else null;
 };
 

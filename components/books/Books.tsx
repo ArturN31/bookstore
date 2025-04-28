@@ -12,8 +12,7 @@ export const Books = async ({ books, type }: { books: Book[]; type: 'all' | 'wis
 		booksOutput = await addUsersWishlistedBooks(booksOutput);
 		booksOutput = await addUsersCartItemsToBooks(booksOutput);
 	} catch (error) {
-		console.error('Error processing books:', error);
-		//TODO: Handle the error (e.g., display an error message)
+		console.log('Error processing books:', error);
 	}
 
 	const userID = await getUserDataProperty('id');

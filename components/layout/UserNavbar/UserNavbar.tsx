@@ -1,9 +1,9 @@
 import { SearchBar } from './SearchBar/SearchBar';
-import { CartBtn } from './CartBtn/CartBtn';
 import { UserBtn } from './UserBtn/UserBtn';
 import { getUserDataProperty, isLoggedIn } from '@/data/user/GetUserData';
 import { getBooksAddedToCart, getUsersCartID } from '@/data/cart/GetCartData';
 import { getBooksInCart } from '@/data/books/GetBooksData';
+import { ClientCartManager } from './ClientCartManager';
 
 export const UserNavbar = async () => {
 	const userID = await getUserDataProperty('id');
@@ -32,7 +32,7 @@ export const UserNavbar = async () => {
 		<div className='grid gap-3 sm:auto-cols-auto sm:grid-flow-col grid-cols-1'>
 			<SearchBar />
 			<div className='flex gap-3 justify-center'>
-				<CartBtn books={books} />
+				<ClientCartManager />
 				<UserBtn loggedIn={loggedIn} />
 			</div>
 		</div>

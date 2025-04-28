@@ -1,8 +1,4 @@
-export const CartSummary = ({
-	books,
-}: {
-	books: { id: string; title: string; price: string; image_url: string; quantity: number }[];
-}) => {
+export const CartSummary = ({ books }: { books: Book[] }) => {
 	const cartItemsAmount = books ? books.reduce((sum, book) => sum + book.quantity, 0) : 0;
 	const cartTotal = books
 		? books.reduce((sum, book) => sum + book.quantity * parseFloat(book.price.slice(1)), 0).toFixed(2)

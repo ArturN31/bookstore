@@ -4,20 +4,23 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useCallback } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 import { CartFormUpdate } from '@/data/actions/CartForm/CartFormUpdate';
-import { CartFormRemove } from '@/data/actions/CartForm/CartFormRemove'; // Import the new server action
+import { CartFormRemove } from '@/data/actions/CartForm/CartFormRemove';
 import { useTransition } from 'react';
 
 export const CartItemQuantityControls = ({
 	quantity: initialQuantity,
 	title,
 	bookID,
+	books,
+	setBooks,
 }: {
 	quantity: number;
 	title: string;
 	bookID: string;
+	books: Book[];
+	setBooks: React.Dispatch<React.SetStateAction<Book[]>>;
 }) => {
 	const pathname = usePathname();
-	const router = useRouter(); // Import useRouter
 	const [localQuantity, setLocalQuantity] = useState(initialQuantity);
 	const [isPendingUpdate, startUpdateTransition] = useTransition();
 	const [isPendingRemove, startRemoveTransition] = useTransition();
@@ -25,14 +28,15 @@ export const CartItemQuantityControls = ({
 	const handleUpdate = useCallback(
 		(newQuantity: number) => {
 			startUpdateTransition(async () => {
+				setBooks((prevBooks) =>
+					prevBooks.map((book) => (book.id === bookID ? { ...book, quantity: newQuantity } : book)),
+				);
+
 				const formData = new FormData();
 				formData.append('book-quantity', String(newQuantity));
 				formData.append('book-id', bookID);
 				formData.append('pathname', pathname);
-				const result = await CartFormUpdate(formData);
-				if (typeof result === 'string') {
-					console.log('Failed to update cart:', result);
-				}
+				await CartFormUpdate(formData);
 			});
 		},
 		[bookID, pathname, startUpdateTransition],
@@ -42,17 +46,14 @@ export const CartItemQuantityControls = ({
 
 	const handleRemove = useCallback(() => {
 		startRemoveTransition(async () => {
+			setBooks((prevBooks) => prevBooks.filter((book) => book.id !== bookID));
+
 			const formData = new FormData();
 			formData.append('book-id', bookID);
 			formData.append('pathname', pathname);
-			const result = await CartFormRemove(formData);
-			if (typeof result === 'string') {
-				console.log('Failed to remove item:', result);
-			} else {
-				router.refresh();
-			}
+			await CartFormRemove(formData);
 		});
-	}, [bookID, pathname, router, startRemoveTransition]);
+	}, [bookID, pathname, startRemoveTransition]);
 
 	const decrement = () => {
 		if (localQuantity > 1) {

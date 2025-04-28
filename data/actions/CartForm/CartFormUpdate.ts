@@ -13,28 +13,28 @@ export async function CartFormUpdate(formData: FormData): Promise<string | void>
 
 	if (!userID) {
 		console.log('Could not retrieve users id.');
-		return 'Could not retrieve user ID.';
+		return;
 	}
 
 	if (!bookId) {
 		console.log('Book ID is missing.');
-		return 'Book ID is missing.';
+		return;
 	}
 
 	if (!bookQuantityStr) {
 		console.log('Book quantity is missing.');
-		return 'Book quantity is missing.';
+		return;
 	}
 
 	const bookQuantity = parseInt(bookQuantityStr, 10);
 	if (isNaN(bookQuantity) || bookQuantity < 0) {
 		console.log(`Invalid book quantity: ${bookQuantityStr}`);
-		return 'Invalid book quantity.';
+		return;
 	}
 
 	if (!pathname) {
 		console.log('Pathname is missing.');
-		return 'Pathname is missing.';
+		return;
 	}
 
 	const cartID = await getUsersCartID(userID);
@@ -42,15 +42,14 @@ export async function CartFormUpdate(formData: FormData): Promise<string | void>
 	if (cartID) {
 		const updateItemResult = await updateItemInUsersCart(cartID, bookId, bookQuantity);
 
-		if (typeof updateItemResult === 'string') {
-			revalidatePath(pathname);
-			redirect(pathname);
+		if (!updateItemResult) {
+			console.log(`Failed to update item ${bookId} in cart ${cartID}`);
+			return;
 		}
 
-		console.log(`Failed to update item ${bookId} in cart ${cartID}`);
-		return `Failed to update item in cart.`;
+		return;
 	} else {
 		console.log(`Could not retrieve cart ID for user ${userID}`);
-		return 'Could not retrieve cart.';
+		return;
 	}
 }

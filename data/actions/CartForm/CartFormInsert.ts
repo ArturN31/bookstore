@@ -20,14 +20,14 @@ export async function CartFormInsert(formData: FormData) {
 
 	if (!cartID) {
 		const createCartResult = await createUsersCart(userID);
-		if (typeof createCartResult === 'string') cartID = await getUsersCartID(userID);
+		if (createCartResult) cartID = await getUsersCartID(userID);
 	}
 
 	if (cartID && bookId && bookQuantity && pathname) {
 		const parsedQuantity = parseInt(bookQuantity, 10);
 		const addItemResult = await addItemToUsersCart(cartID, bookId, parsedQuantity);
 
-		if (typeof addItemResult === 'string') {
+		if (addItemResult) {
 			revalidatePath(pathname);
 			redirect(pathname);
 		}

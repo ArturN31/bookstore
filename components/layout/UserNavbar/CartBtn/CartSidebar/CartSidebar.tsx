@@ -6,10 +6,14 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 
 export const CartSidebar = ({
 	books,
+	openCart,
 	setOpenCart,
+	setBooks,
 }: {
-	books: { id: string; title: string; price: string; image_url: string; quantity: number }[];
+	books: Book[];
+	openCart: boolean;
 	setOpenCart: Dispatch<SetStateAction<boolean>>;
+	setBooks: React.Dispatch<React.SetStateAction<Book[]>>;
 }) => {
 	const handleCloseCart = () => {
 		setOpenCart(false);
@@ -17,16 +21,23 @@ export const CartSidebar = ({
 
 	return (
 		<div
-			tabIndex={-1}
 			aria-modal='true'
-			role='dialog'>
+			role='dialog'
+			className={`fixed top-0 right-0 z-50 h-full bg-white border-l border-black overflow-y-auto transform transition-transform duration-1000 ease-in-out ${
+				openCart ? 'translate-x-0' : 'translate-x-full'
+			}`}
+			style={{ width: 'auto', maxWidth: '90vw', minWidth: '300px' }}>
 			<CartHeader handleCloseCart={handleCloseCart} />
 			<div className='overflow-y-auto flex-grow'>
 				{books && books.length > 0 ? (
 					<ul className='space-y-4 p-4'>
 						{books.map((book) => (
 							<li key={book.id}>
-								<CartItem book={book} />
+								<CartItem
+									book={book}
+									books={books}
+									setBooks={setBooks}
+								/>
 							</li>
 						))}
 					</ul>
