@@ -3,6 +3,7 @@ import { CartSummary } from './CartSummary';
 import { CartHeader } from './CartHeader';
 import { CartItem } from './CartItem/CartItem';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import { useRouter } from 'next/navigation';
 
 export const CartSidebar = ({
 	books,
@@ -13,8 +14,10 @@ export const CartSidebar = ({
 	books: Book[];
 	openCart: boolean;
 	setOpenCart: Dispatch<SetStateAction<boolean>>;
-	setBooks: React.Dispatch<React.SetStateAction<Book[]>>;
+	setBooks: Dispatch<SetStateAction<Book[]>>;
 }) => {
+	const router = useRouter();
+
 	const handleCloseCart = () => {
 		setOpenCart(false);
 	};
@@ -28,14 +31,13 @@ export const CartSidebar = ({
 			}`}
 			style={{ width: 'auto', maxWidth: '90vw', minWidth: '300px' }}>
 			<CartHeader handleCloseCart={handleCloseCart} />
-			<div className='overflow-y-auto flex-grow'>
+			<div className='flex-grow'>
 				{books && books.length > 0 ? (
 					<ul className='space-y-4 p-4'>
 						{books.map((book) => (
 							<li key={book.id}>
 								<CartItem
 									book={book}
-									books={books}
 									setBooks={setBooks}
 								/>
 							</li>
@@ -53,7 +55,9 @@ export const CartSidebar = ({
 				<div className='bg-gray-100'>
 					<CartSummary books={books} />
 					<div className='border-y p-4'>
-						<button className='w-full bg-gunmetal/[0.9] hover:bg-gunmetal text-white font-semibold py-3 rounded-md transition-colors duration-200'>
+						<button
+							className='w-full bg-gunmetal/[0.9] hover:bg-gunmetal text-white font-semibold py-3 rounded-md transition-colors duration-200 cursor-pointer'
+							onClick={() => router.push('/checkout')}>
 							Proceed to Checkout
 						</button>
 					</div>

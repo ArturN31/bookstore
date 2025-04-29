@@ -1,7 +1,7 @@
 import RemoveIcon from '@mui/icons-material/Remove';
 import AddIcon from '@mui/icons-material/Add';
-import { usePathname, useRouter } from 'next/navigation';
-import { useState, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
+import { useState, useCallback, SetStateAction, Dispatch } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 import { CartFormUpdate } from '@/data/actions/CartForm/CartFormUpdate';
 import { CartFormRemove } from '@/data/actions/CartForm/CartFormRemove';
@@ -11,14 +11,12 @@ export const CartItemQuantityControls = ({
 	quantity: initialQuantity,
 	title,
 	bookID,
-	books,
 	setBooks,
 }: {
 	quantity: number;
 	title: string;
 	bookID: string;
-	books: Book[];
-	setBooks: React.Dispatch<React.SetStateAction<Book[]>>;
+	setBooks: Dispatch<SetStateAction<Book[]>>;
 }) => {
 	const pathname = usePathname();
 	const [localQuantity, setLocalQuantity] = useState(initialQuantity);

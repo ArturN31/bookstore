@@ -4,11 +4,9 @@ import { CartItemRemove } from './CartItemRemove';
 
 export const CartItem = ({
 	book,
-	books,
 	setBooks,
 }: {
 	book: Book;
-	books: Book[];
 	setBooks: React.Dispatch<React.SetStateAction<Book[]>>;
 }) => {
 	return (
@@ -19,7 +17,6 @@ export const CartItem = ({
 			/>
 			<CartItemContent
 				book={book}
-				books={books}
 				setBooks={setBooks}
 			/>
 		</div>

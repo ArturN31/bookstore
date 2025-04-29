@@ -3,11 +3,9 @@ import { CartItemQuantityControls } from './CartItemQuantityControls';
 
 export const CartItemContent = ({
 	book,
-	books,
 	setBooks,
 }: {
 	book: Book;
-	books: Book[];
 	setBooks: React.Dispatch<React.SetStateAction<Book[]>>;
 }) => {
 	const subtotal = (parseFloat(book.price.slice(1)) * book.quantity).toFixed(2);
@@ -36,7 +34,6 @@ export const CartItemContent = ({
 						quantity={book.quantity}
 						title={book.title}
 						bookID={book.id}
-						books={books}
 						setBooks={setBooks}
 					/>
 				</div>
