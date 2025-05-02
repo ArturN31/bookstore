@@ -1,7 +1,6 @@
-import { createClient } from '@/utils/db/server';
 import { AddToWishlistButtons } from './AddToWishlistButtons';
-import { revalidatePath } from 'next/cache';
-import { getUserDataProperty } from '@/data/user/GetUserData';
+import { WishlistFormInsert } from '@/data/actions/WishlistForm/WishlistFormInsert';
+import { usePathname } from 'next/navigation';
 
 export const AddToWishlistForm = ({
 	bookID,
@@ -10,32 +9,23 @@ export const AddToWishlistForm = ({
 	bookID: string;
 	wishlistedBooksAmount: number;
 }) => {
-	const AddToWishlist = async () => {
-		'use server';
-		const userID = await getUserDataProperty('id');
-
-		if (!userID) {
-			console.log("User ID not found, can't add to wishlist.");
-			return;
-		}
-
-		const supabase = await createClient();
-		const { error } = await supabase.from('wishlist').insert([
-			{
-				user_id: userID,
-				book_id: bookID,
-			},
-		]);
-
-		if (error) console.log('Error adding to wishlist:', error);
-		revalidatePath('/');
-	};
+	const pathname = usePathname();
 
 	return (
 		<form
 			id='add-to-wishlist-form'
-			action={AddToWishlist}
+			action={WishlistFormInsert}
 			className='w-fit'>
+			<input
+				type='hidden'
+				name='book-id'
+				value={bookID}
+			/>
+			<input
+				type='hidden'
+				name='pathname'
+				value={pathname}
+			/>
 			<AddToWishlistButtons wishlistedBooksAmount={wishlistedBooksAmount} />
 		</form>
 	);

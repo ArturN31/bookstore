@@ -2,7 +2,7 @@ import { AddToWishlistForm } from './add/AddToWishlistForm';
 import { RemoveFromWishlistForm } from './remove/RemoveFromWishlistForm';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 
-export const BookWishlist = async ({
+export const BookWishlist = ({
 	wishlisted,
 	bookID,
 	wishlistedBooksAmount,
@@ -15,10 +15,7 @@ export const BookWishlist = async ({
 		<div>
 			{wishlistedBooksAmount <= 10 ? (
 				wishlisted ? (
-					<RemoveFromWishlistForm
-						bookID={bookID}
-						wishlistedBooksAmount={wishlistedBooksAmount}
-					/>
+					<RemoveFromWishlistForm bookID={bookID} />
 				) : (
 					<AddToWishlistForm
 						bookID={bookID}
@@ -26,10 +23,7 @@ export const BookWishlist = async ({
 					/>
 				)
 			) : wishlisted ? (
-				<RemoveFromWishlistForm
-					bookID={bookID}
-					wishlistedBooksAmount={wishlistedBooksAmount}
-				/>
+				<RemoveFromWishlistForm bookID={bookID} />
 			) : (
 				<button
 					type='submit'

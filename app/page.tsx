@@ -1,5 +1,5 @@
 import { RootLayout } from '@/components/layout/Layout';
-import { Books } from '@/components/books/Books';
+import { GetBooks } from '@/components/books/GetBooks';
 import { getAllBooks } from '@/data/books/GetBooksData';
 
 export default async function HomePage() {
@@ -12,7 +12,7 @@ export default async function HomePage() {
 	if (books)
 		return (
 			<RootLayout>
-				<Books
+				<GetBooks
 					books={books}
 					type='all'
 				/>

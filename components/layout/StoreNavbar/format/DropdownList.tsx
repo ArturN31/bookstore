@@ -22,9 +22,7 @@ export const DropdownList = ({ formats, message }: { formats: string[] | undefin
 	return (
 		<>
 			<button
-				className={`hover:cursor-pointer hover:underline border-x border-gunmetal font-semibold py-2 px-6 ${
-					open ? 'underline' : ''
-				}`}
+				className={`hover:cursor-pointer hover:underline font-semibold py-2 px-6 ${open ? 'underline' : ''}`}
 				onClick={() => {
 					setOpen(!open);
 				}}
@@ -33,14 +31,13 @@ export const DropdownList = ({ formats, message }: { formats: string[] | undefin
 			</button>
 			{open ? (
 				<div
-					className='absolute border grid grid-flow-row-dense grid-cols-2 border-black text-center bg-white p-1 rounded-b-md z-40 translate-y-[40px] translate-x-[34px] md:translate-x-[195px]'
+					className='absolute border border-gray-300 rounded-md shadow-md bg-white z-40 mt-1 min-w-[150px] max-h-[250px] overflow-y-auto'
 					ref={dropdownRef}
 					tabIndex={-1}>
-					{/* list choices */}
 					{formats?.sort().map((format) => {
 						return (
 							<button
-								className=' hover:bg-slate-200 hover:cursor-pointer rounded-sm w-full px-4'
+								className='block w-full text-left text-gray-700 px-4 py-2 hover:bg-gray-100 focus:outline-none'
 								key={format}
 								onClick={(e) => {
 									handleChoice(e);

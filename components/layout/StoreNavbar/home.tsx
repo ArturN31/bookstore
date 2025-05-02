@@ -14,7 +14,7 @@ export const Home = () => {
 			onClick={() => {
 				handleClick();
 			}}
-			className='hover:cursor-pointer hover:underline border-x border-gunmetal font-semibold py-2 px-6'>
+			className='hover:cursor-pointer hover:underline font-semibold py-2 px-6'>
 			Home
 		</button>
 	);

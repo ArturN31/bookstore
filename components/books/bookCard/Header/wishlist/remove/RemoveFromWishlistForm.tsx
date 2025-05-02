@@ -1,29 +1,25 @@
-import { createClient } from '@/utils/db/server';
 import { RemoveFromWishlistButtons } from './RemoveFromWishlistButtons';
-import { revalidatePath } from 'next/cache';
+import { usePathname } from 'next/navigation';
+import { WishlistFormRemove } from '@/data/actions/WishlistForm/WishlistFormRemove';
 
-export const RemoveFromWishlistForm = ({
-	bookID,
-	wishlistedBooksAmount,
-}: {
-	bookID: string;
-	wishlistedBooksAmount: number;
-}) => {
-	const RemoveFromWishlist = async () => {
-		'use server';
-
-		const supabase = await createClient();
-		const { error } = await supabase.from('wishlist').delete().eq('book_id', bookID);
-
-		if (error) console.log(error);
-		revalidatePath('/');
-	};
+export const RemoveFromWishlistForm = ({ bookID }: { bookID: string }) => {
+	const pathname = usePathname();
 
 	return (
 		<form
 			id='remove-from-wishlist-form'
-			action={RemoveFromWishlist}
+			action={WishlistFormRemove}
 			className='w-fit'>
+			<input
+				type='hidden'
+				name='book-id'
+				value={bookID}
+			/>
+			<input
+				type='hidden'
+				name='pathname'
+				value={pathname}
+			/>
 			<RemoveFromWishlistButtons />
 		</form>
 	);

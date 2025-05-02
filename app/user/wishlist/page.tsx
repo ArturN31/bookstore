@@ -1,4 +1,4 @@
-import { Books } from '@/components/books/Books';
+import { Books } from '@/components/books/GetBooks';
 import { RootLayout } from '@/components/layout/Layout';
 import { getAllBooks } from '@/data/books/GetBooksData';
 

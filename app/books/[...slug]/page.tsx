@@ -1,7 +1,7 @@
 import { RootLayout } from '@/components/layout/Layout';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { getBookByGroupAndType } from '@/data/books/GetBooksData';
-import { Books } from '@/components/books/Books';
+import { GetBooks } from '@/components/books/GetBooks';
 
 export default async function BooksByGroupAndTypePage({ params }: { params: Promise<{ slug: string }> }) {
 	const slug = (await params).slug as unknown as string[];
@@ -21,7 +21,7 @@ export default async function BooksByGroupAndTypePage({ params }: { params: Prom
 						<p>{type}</p>
 					</div>
 
-					<Books
+					<GetBooks
 						books={books}
 						type='all'
 					/>

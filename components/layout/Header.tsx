@@ -2,7 +2,7 @@ import Image from 'next/image';
 import logo from './../../public/logo.jpg';
 import { UserNavbar } from './UserNavbar/UserNavbar';
 import Link from 'next/link';
-import { StoreNavbar } from './StoreNavbar/StoreNavbar';
+import { FilterBar } from './StoreNavbar/FilterBar';
 
 export const Header = () => {
 	return (
@@ -29,7 +29,7 @@ export const Header = () => {
 				</div>
 			</div>
 			<div className='bg-moonstone'>
-				<StoreNavbar />
+				<FilterBar />
 			</div>
 		</nav>
 	);

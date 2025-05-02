@@ -1,7 +1,7 @@
 import { BookCardHeader } from './Header/BookCardHeader';
 import { BookCardBody } from './Body/BookCardBody';
 
-export const BookCard = async ({
+export const BookCard = ({
 	book,
 	bookCardParams,
 }: {
