@@ -2,6 +2,7 @@
 
 import { useBookFilter } from '@/providers/BookFilterProvider';
 import { BookCard } from './bookCard/BookCard';
+import { sortBooks } from '@/data/books/BookSortBy';
 
 export const BooksFiltering = ({
 	books,
@@ -27,10 +28,14 @@ export const BooksFiltering = ({
 			if (type === 'wishlisted') {
 				return book.wishlisted;
 			}
-			return true; //keep all active books for 'all' type
+			return true; //keep all active books
 		}
 		return false; //exclude inactive books
 	});
+
+	//accessing sort by context
+	const { filterType } = useBookFilter();
+	const sortedBooks = sortBooks(filteredBooks, filterType);
 
 	const bookCardParams = {
 		loggedIn: loggedIn,
@@ -39,12 +44,9 @@ export const BooksFiltering = ({
 		booksInCartAmount: booksInCartAmount,
 	};
 
-	const { filterType } = useBookFilter();
-	console.log(filterType);
-
 	return (
 		<div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] max-w-screen md:max-w-[800px] xl:max-w-[1000px] place-self-center gap-y-5'>
-			{filteredBooks.map((book) => (
+			{sortedBooks?.map((book) => (
 				<BookCard
 					key={book.id}
 					book={book}

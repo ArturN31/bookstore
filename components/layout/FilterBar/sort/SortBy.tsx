@@ -15,7 +15,8 @@ export const SortBy = () => {
 		'Price: High to Low',
 		'Release Date: Newest to Oldest',
 		'Release Date: Oldest to Newest',
-		'Avg. customer review',
+		'Highest Avg. customer rating',
+		'Lowest Avg. customer rating',
 		'Best Sellers',
 	] as const;
 

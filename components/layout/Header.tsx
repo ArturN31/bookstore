@@ -2,7 +2,7 @@ import Image from 'next/image';
 import logo from './../../public/logo.jpg';
 import { UserNavbar } from './UserNavbar/UserNavbar';
 import Link from 'next/link';
-import { FilterBar } from './StoreNavbar/FilterBar';
+import { FilterBar } from './FilterBar/FilterBar';
 
 export const Header = () => {
 	return (
