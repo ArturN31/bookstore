@@ -11,6 +11,9 @@ import { PostgrestResponse } from '@supabase/supabase-js';
  * @returns A promise that resolves to an array of `Book` objects if successful, or null.
  */
 export const getBookByGroupAndType = async (group: string, type: string) => {
+	console.log(group);
+	console.log(type);
+
 	const supabase = await createClient();
 	const { data, error }: PostgrestResponse<Book> = await supabase.from('books').select('*').eq(group, type);
 	if (error) {

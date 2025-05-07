@@ -51,6 +51,14 @@ interface Review {
 	user_id: string;
 	review: string;
 	rating: number;
+	username: string;
+}
+
+interface PaginatedReviewsResult {
+	data: Review[] | null;
+	total: number | null;
+	totalPages: number | null;
+	currentPage: number;
 }
 
 interface User {

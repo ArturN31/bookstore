@@ -1,16 +1,24 @@
 import { RootLayout } from '@/components/layout/Layout';
 import { getBook } from '@/data/book/GetBookData';
-import { BookImg } from '@/components/pages/book/BookImg';
-import { BookMainDetails } from '@/components/pages/book/BookMainDetails';
-import { BookCart } from '@/components/pages/book/BookCart';
-import { BookSecondaryDetails } from '@/components/pages/book/BookSecondaryDetails';
-import { BookReviews } from '@/components/pages/book/BookReviews';
-import { BookDescription } from '@/components/pages/book/BookDescription';
+import { BookImg } from '@/components/pages/book/Layout/BookImg';
+import { BookMainDetails } from '@/components/pages/book/Layout/BookMainDetails';
+import { BookCart } from '@/components/pages/book/Cart/BookCart';
+import { BookSecondaryDetails } from '@/components/pages/book/Layout/BookSecondaryDetails';
+import { BookReviews } from '@/components/pages/book/Reviews/BookReviews';
+import { BookDescription } from '@/components/pages/book/Layout/BookDescription';
 import { getBooksAddedToCart, getUsersCartID } from '@/data/cart/GetCartData';
 import { getUserDataProperty } from '@/data/user/GetUserData';
+import { getBookReviewsByBookId } from '@/data/books/GetReviewsData';
+import { ReviewPagination } from '@/components/pages/book/Reviews/ReviewPagination';
 
-export default async function BookById({ params }: { params: Promise<{ slug: string }> }) {
-	const slug = (await params).slug as unknown as string;
+export default async function BookById({
+	params,
+	searchParams,
+}: {
+	params: Promise<{ slug: string }>;
+	searchParams: Promise<{ reviewPagination?: string }>;
+}) {
+	const slug = (await params).slug;
 	const book = await getBook(slug);
 	const userID = await getUserDataProperty('id');
 	let booksInCartAmount = 0;
@@ -22,6 +30,12 @@ export default async function BookById({ params }: { params: Promise<{ slug: str
 			if (booksInCart) booksInCartAmount = booksInCart.length;
 		}
 	}
+
+	const reviewsPaginationPage = parseInt((await searchParams).reviewPagination || '1');
+	const REVIEWS_PER_PAGE = 5;
+	const reviewsData = book?.id
+		? await getBookReviewsByBookId(book.id, reviewsPaginationPage, REVIEWS_PER_PAGE)
+		: { data: null, total: 0, totalPages: 0, currentPage: 1 };
 
 	if (book) {
 		return (
@@ -67,7 +81,11 @@ export default async function BookById({ params }: { params: Promise<{ slug: str
 
 					<hr />
 
-					<BookReviews />
+					<BookReviews
+						reviewsData={reviewsData}
+						slug={slug}
+						page={reviewsPaginationPage}
+					/>
 				</div>
 			</RootLayout>
 		);

@@ -18,12 +18,12 @@ type BookFilterContextType = {
 };
 
 const BookFilterContext = createContext<BookFilterContextType>({
-	filterType: 'Best Sellers',
+	filterType: 'Title: A-Z',
 	toggleFilter: () => {},
 });
 
 export const BookFilterProvider = ({ children }: { children: React.ReactNode }) => {
-	const [filterType, setFilter] = useState<(typeof FilterTypes)[number]>('Best Sellers');
+	const [filterType, setFilter] = useState<(typeof FilterTypes)[number]>('Title: A-Z');
 
 	const contextValue = useMemo(
 		() => ({

@@ -1,4 +1,4 @@
-import { Books } from '@/components/books/GetBooks';
+import { GetBooks } from '@/components/books/GetBooks';
 import { RootLayout } from '@/components/layout/Layout';
 import { getAllBooks } from '@/data/books/GetBooksData';
 
@@ -13,7 +13,7 @@ export default async function UsersWishlist() {
 		return (
 			<RootLayout>
 				<div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] max-w-screen md:max-w-[800px] xl:max-w-[1000px] place-self-center gap-y-5'>
-					<Books
+					<GetBooks
 						books={books}
 						type='wishlisted'
 					/>

@@ -13,7 +13,7 @@ export const addReviewsToBooks = async (books: Book[]) => {
 	const bookIDs = books.map((book) => book.id);
 	const reviews = await getBookReviews(bookIDs);
 
-	if (typeof reviews === 'string' || reviews.length === 0) return books;
+	if (!reviews) return books;
 
 	const reviewsGroupedByBookID = groupReviewsByBookId(reviews);
 	return matchReviewsToBooks(reviewsGroupedByBookID, books);
