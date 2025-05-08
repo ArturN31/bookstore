@@ -5,6 +5,7 @@ import BookmarkAddedOutlinedIcon from '@mui/icons-material/BookmarkAddedOutlined
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
 import { logout } from '@/data/user/GetUserData';
+import { useUserState } from '@/providers/UserProvider';
 
 export const Dropdown = ({
 	dropdownRef,
@@ -13,6 +14,7 @@ export const Dropdown = ({
 	dropdownRef: RefObject<HTMLDivElement | null>;
 	loggedIn: boolean;
 }) => {
+	const { username } = useUserState();
 	const pathname = usePathname();
 	const router = useRouter();
 
@@ -32,6 +34,7 @@ export const Dropdown = ({
 			className='my-2 p-1 bg-white border border-black text-center absolute w-[175px] lg:translate-x-[-150px] translate-x-[-60px] rounded-md z-40'
 			ref={dropdownRef}
 			tabIndex={-1}>
+			{username && <p>Hello {username}</p>}
 			{loggedIn ? (
 				<>
 					{[

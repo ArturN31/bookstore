@@ -73,6 +73,7 @@ interface User {
 	city: string;
 	country: string;
 	phone_number: string;
+	username: string;
 	[key: string]: string | Date;
 }
 

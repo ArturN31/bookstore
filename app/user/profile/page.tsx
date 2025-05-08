@@ -2,8 +2,7 @@ import { AddressFormInsert } from '@/components/pages/profile/AddressForm/Addres
 import { RootLayout } from '@/components/layout/Layout';
 import { getUserData, getUserDataProperty } from '@/data/user/GetUserData';
 import { createClient } from '@/utils/db/server';
-import { Navigation } from '@/components/pages/profile/Navigation';
-import { UserDetails } from '@/components/pages/profile/UserDetails';
+import { UserProfilePage } from '@/components/pages/profile/UserProfilePage';
 
 const fetchData = async () => {
 	let userData = await getUserData();
@@ -37,17 +36,10 @@ export default async function UserProfile() {
 		if (userData && userEmail) {
 			return (
 				<RootLayout>
-					<div className='grid gap-5 justify-items-center'>
-						<div className='grid gap-5 justify-items-center'>
-							<Navigation />
-						</div>
-						<div className='flex flex-wrap gap-5 justify-center'>
-							<UserDetails
-								userData={userData}
-								userEmail={userEmail}
-							/>
-						</div>
-					</div>
+					<UserProfilePage
+						userData={userData}
+						userEmail={userEmail}
+					/>
 				</RootLayout>
 			);
 		}
