@@ -1,13 +1,12 @@
 import { SearchBar } from './SearchBar/SearchBar';
 import { UserBtn } from './UserBtn/UserBtn';
-import { getUserDataProperty, isLoggedIn } from '@/data/user/GetUserData';
+import { getUserDataProperty } from '@/data/user/GetUserData';
 import { getBooksAddedToCart, getUsersCartID } from '@/data/cart/GetCartData';
 import { getBooksInCart } from '@/data/books/GetBooksData';
 import { ClientCartManager } from './ClientCartManager';
 
 export const UserNavbar = async () => {
 	const userID = await getUserDataProperty('id');
-	const loggedIn = userID ? await isLoggedIn(userID) : false;
 	const cartID = userID ? await getUsersCartID(userID) : null;
 	const booksAddedToCart = cartID ? await getBooksAddedToCart(cartID) : null;
 	const bookIds = booksAddedToCart?.map((book) => book.book_id);
@@ -33,7 +32,7 @@ export const UserNavbar = async () => {
 			<SearchBar />
 			<div className='flex gap-3 justify-center'>
 				<ClientCartManager />
-				<UserBtn loggedIn={loggedIn} />
+				<UserBtn />
 			</div>
 		</div>
 	);

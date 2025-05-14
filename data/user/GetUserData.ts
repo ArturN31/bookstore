@@ -31,14 +31,8 @@ export const logout = async () => {
 			console.log(error);
 			return false;
 		}
-
-		revalidatePath('/');
 		return true;
 	} catch (error) {
 		console.log(error);
 	}
-};
-
-export const isLoggedIn = async (userID: string | undefined) => {
-	return typeof userID === 'string' && userID !== 'User not logged in.' ? true : false;
 };

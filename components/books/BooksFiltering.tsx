@@ -7,12 +7,10 @@ import { sortBooks } from '@/data/books/BookSortBy';
 export const BooksFiltering = ({
 	books,
 	type,
-	loggedIn,
 	profileExists,
 }: {
 	books: Book[];
 	type: 'all' | 'wishlisted';
-	loggedIn: boolean;
 	profileExists: boolean;
 }) => {
 	//add wishlisted books to Book[]
@@ -38,7 +36,6 @@ export const BooksFiltering = ({
 	const sortedBooks = sortBooks(filteredBooks, filterType);
 
 	const bookCardParams = {
-		loggedIn: loggedIn,
 		profileExists: profileExists,
 		wishlistedBooksAmount: wishlistedBooksAmount,
 		booksInCartAmount: booksInCartAmount,

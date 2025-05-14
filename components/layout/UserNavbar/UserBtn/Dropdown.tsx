@@ -1,5 +1,5 @@
 import { usePathname, useRouter } from 'next/navigation';
-import { RefObject } from 'react';
+import { Dispatch, RefObject, SetStateAction } from 'react';
 import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
 import BookmarkAddedOutlinedIcon from '@mui/icons-material/BookmarkAddedOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -9,12 +9,12 @@ import { useUserState } from '@/providers/UserProvider';
 
 export const Dropdown = ({
 	dropdownRef,
-	loggedIn,
+	setOpen,
 }: {
 	dropdownRef: RefObject<HTMLDivElement | null>;
-	loggedIn: boolean;
+	setOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
-	const { username } = useUserState();
+	const { username, loggedIn, toggleLoggedIn, setUsername } = useUserState();
 	const pathname = usePathname();
 	const router = useRouter();
 
@@ -24,7 +24,13 @@ export const Dropdown = ({
 
 	const handleSignOut = async () => {
 		const res = await logout();
-		res && handleNavigation('/');
+
+		if (res) {
+			setOpen(false);
+			toggleLoggedIn(false);
+			setUsername('');
+			handleNavigation('/');
+		}
 	};
 
 	const activeRoute = 'bg-slate-100 font-semibold';

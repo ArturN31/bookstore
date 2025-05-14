@@ -1,16 +1,10 @@
 import { CartFormRemove } from '@/data/actions/CartForm/CartFormRemove';
+import { useUserState } from '@/providers/UserProvider';
 import { usePathname } from 'next/navigation';
 
-export const RemoveFromCartCardForm = ({
-	bookID,
-	loggedIn,
-	profileExists,
-}: {
-	bookID: string;
-	loggedIn: boolean;
-	profileExists: boolean;
-}) => {
+export const RemoveFromCartCardForm = ({ bookID, profileExists }: { bookID: string; profileExists: boolean }) => {
 	const pathname = usePathname();
+	const { loggedIn } = useUserState();
 
 	return (
 		<form action={loggedIn && profileExists ? CartFormRemove : undefined}>

@@ -7,15 +7,13 @@ export const BookCard = ({
 }: {
 	book: Book;
 	bookCardParams: {
-		loggedIn: boolean;
 		profileExists: boolean;
 		wishlistedBooksAmount: number;
 		booksInCartAmount: number;
 	};
 }) => {
-	const { loggedIn, profileExists, wishlistedBooksAmount, booksInCartAmount } = bookCardParams;
+	const { profileExists, wishlistedBooksAmount, booksInCartAmount } = bookCardParams;
 	const bookCardHeaderParams = {
-		loggedIn: loggedIn,
 		profileExists: profileExists,
 		wishlisted: book.wishlisted,
 		bookID: book.id,
@@ -33,7 +31,6 @@ export const BookCard = ({
 			<BookCardHeader bookCardHeaderParams={bookCardHeaderParams} />
 			<BookCardBody
 				book={book}
-				loggedIn={loggedIn}
 				profileExists={profileExists}
 				booksInCartAmount={booksInCartAmount}
 			/>

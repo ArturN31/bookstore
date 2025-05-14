@@ -1,5 +1,5 @@
 import { addReviewsToBooks, addUsersCartItemsToBooks, addUsersWishlistedBooks } from '@/data/books/utils';
-import { getUserData, getUserDataProperty, isLoggedIn } from '@/data/user/GetUserData';
+import { getUserData } from '@/data/user/GetUserData';
 import { BooksFiltering } from './BooksFiltering';
 
 export const GetBooks = async ({ books, type }: { books: Book[]; type: 'all' | 'wishlisted' }) => {
@@ -15,8 +15,6 @@ export const GetBooks = async ({ books, type }: { books: Book[]; type: 'all' | '
 		console.log('Error processing books:', error);
 	}
 
-	const userID = await getUserDataProperty('id');
-	const loggedIn = userID ? await isLoggedIn(userID) : false;
 	const userData = await getUserData();
 	const profileExists = userData ? true : false;
 
@@ -24,7 +22,6 @@ export const GetBooks = async ({ books, type }: { books: Book[]; type: 'all' | '
 		<BooksFiltering
 			books={booksOutput}
 			type={type}
-			loggedIn={loggedIn}
 			profileExists={profileExists}
 		/>
 	);

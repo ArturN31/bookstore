@@ -8,12 +8,10 @@ import { RemoveFromCartCardForm } from './CartForm/RemoveFromCartCardForm';
 
 export const BookCardBody = ({
 	book,
-	loggedIn,
 	profileExists,
 	booksInCartAmount,
 }: {
 	book: Book;
-	loggedIn: boolean;
 	profileExists: boolean;
 	booksInCartAmount: number;
 }) => {
@@ -64,13 +62,11 @@ export const BookCardBody = ({
 						{addedToCart ? (
 							<RemoveFromCartCardForm
 								bookID={id}
-								loggedIn={loggedIn}
 								profileExists={profileExists}
 							/>
 						) : (
 							<AddToCartCardForm
 								bookID={id}
-								loggedIn={loggedIn}
 								profileExists={profileExists}
 								booksInCartAmount={booksInCartAmount}
 							/>

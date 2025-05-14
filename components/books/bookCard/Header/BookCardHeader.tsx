@@ -1,11 +1,11 @@
 import { BookWishlist } from './wishlist/BookWishlist';
 import { OutputBookRating } from './BookRating';
+import { useUserState } from '@/providers/UserProvider';
 
 export const BookCardHeader = ({
 	bookCardHeaderParams,
 }: {
 	bookCardHeaderParams: {
-		loggedIn: boolean;
 		wishlisted: boolean;
 		bookID: string;
 		reviews: Review[];
@@ -14,7 +14,8 @@ export const BookCardHeader = ({
 		wishlistedBooksAmount: number;
 	};
 }) => {
-	const { loggedIn, wishlisted, bookID, reviews, stock, profileExists, wishlistedBooksAmount } = bookCardHeaderParams;
+	const { wishlisted, bookID, reviews, stock, profileExists, wishlistedBooksAmount } = bookCardHeaderParams;
+	const { loggedIn } = useUserState();
 
 	const bookRatingArray = reviews.map((review) => {
 		return review.rating;

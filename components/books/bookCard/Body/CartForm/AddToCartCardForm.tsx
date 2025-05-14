@@ -1,18 +1,18 @@
 import { CartFormInsert } from '@/data/actions/CartForm/CartFormInsert';
+import { useUserState } from '@/providers/UserProvider';
 import { usePathname } from 'next/navigation';
 
 export const AddToCartCardForm = ({
 	bookID,
-	loggedIn,
 	profileExists,
 	booksInCartAmount,
 }: {
 	bookID: string;
-	loggedIn: boolean;
 	profileExists: boolean;
 	booksInCartAmount: number;
 }) => {
 	const pathname = usePathname();
+	const { loggedIn } = useUserState();
 
 	return (
 		<div className='grid gap-2'>
