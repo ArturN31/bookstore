@@ -68,7 +68,7 @@ export async function updateSession(request: NextRequest) {
 		const now = Math.floor(Date.now() / 1000);
 		const timeUntilExpiry = session.expires_at - now;
 
-		const refreshThreshold = 600; // 10 min
+		const refreshThreshold = 60; // 1 min
 
 		if (timeUntilExpiry < refreshThreshold) {
 			// Refresh if close to expiring or already expired

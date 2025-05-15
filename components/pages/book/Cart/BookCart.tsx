@@ -3,7 +3,6 @@ import { AddToCartForm } from './CartForm/AddToCartForm';
 import { AddedToCartForm } from './CartForm/AddedToCartForm';
 import { getUsersCartID, isAddedToCart } from '@/data/cart/GetCartData';
 import { RemoveFromCartForm } from './CartForm/RemoveFromCartForm';
-import { useUserState } from '@/providers/UserProvider';
 
 export const BookCart = async ({
 	price,
@@ -17,13 +16,12 @@ export const BookCart = async ({
 	const userID = await getUserDataProperty('id');
 	const cartID = userID ? await getUsersCartID(userID) : null;
 	const isBookInCart = cartID ? await isAddedToCart(cartID, bookID) : null;
-	const { loggedIn } = useUserState();
 
 	return (
 		<div className='sm:col-span-2 md:col-span-1 grid text-center p-5 items-center border rounded-md shadow-[0px_2px_6px_-2px_#000]'>
 			<p>Price: {price}</p>
 
-			{loggedIn ? (
+			{userID ? (
 				isBookInCart ? (
 					<div className='grid m-auto gap-2'>
 						<AddedToCartForm

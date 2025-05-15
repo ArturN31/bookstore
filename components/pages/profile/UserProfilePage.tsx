@@ -1,8 +1,11 @@
 'use client';
 
 import { useUserState } from '@/providers/UserProvider';
-import { Navigation } from './Navigation';
+import { QuickActions } from './QuickActions';
 import { UserDetails } from './UserDetails';
+import Link from 'next/link';
+
+import { Edit } from '@mui/icons-material';
 
 export const UserProfilePage = ({ userData, userEmail }: { userData: User; userEmail: string }) => {
 	const { username } = useUserState();
@@ -16,7 +19,7 @@ export const UserProfilePage = ({ userData, userEmail }: { userData: User; userE
 							<p className='text-lg text-gray-700 font-semibold mb-1'>Welcome back,</p>
 							<p className='text-xl text-indigo-600 font-bold'>{username}!</p>
 						</div>
-						<Navigation />
+						<QuickActions />
 					</div>
 					<UserDetails
 						userData={userData}

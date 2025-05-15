@@ -14,7 +14,7 @@ export const Dropdown = ({
 	dropdownRef: RefObject<HTMLDivElement | null>;
 	setOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
-	const { username, loggedIn, toggleLoggedIn, setUsername } = useUserState();
+	const { username, loggedIn, toggleLoggedIn, clearUsername } = useUserState();
 	const pathname = usePathname();
 	const router = useRouter();
 
@@ -28,7 +28,7 @@ export const Dropdown = ({
 		if (res) {
 			setOpen(false);
 			toggleLoggedIn(false);
-			setUsername('');
+			clearUsername();
 			handleNavigation('/');
 		}
 	};

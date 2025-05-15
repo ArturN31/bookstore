@@ -8,7 +8,7 @@ import { Session } from '@supabase/supabase-js';
 type UserProvider = {
 	username: string;
 	loggedIn: boolean;
-	setUsername: (newUsername: string) => void;
+	clearUsername: () => void;
 	toggleLoggedIn: (newState: boolean) => void;
 	loading: boolean;
 	error: string | null;
@@ -17,7 +17,7 @@ type UserProvider = {
 const UserContext = createContext<UserProvider>({
 	username: '',
 	loggedIn: false,
-	setUsername: () => {},
+	clearUsername: () => {},
 	toggleLoggedIn: () => {},
 	loading: false,
 	error: null,
@@ -84,8 +84,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 		() => ({
 			username,
 			loggedIn,
-			setUsername: (newUsername: string) => {
-				setUsername(newUsername);
+			clearUsername: () => {
+				setUsername('');
 			},
 			toggleLoggedIn: (newState: boolean) => {
 				setLoggedIn(newState);

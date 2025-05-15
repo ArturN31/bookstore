@@ -1,7 +1,6 @@
 'use server';
 
 import { createClient } from '@/utils/db/server';
-import { revalidatePath } from 'next/cache';
 
 export const getUserDataProperty = async (prop: keyof User) => {
 	const supabase = await createClient();
