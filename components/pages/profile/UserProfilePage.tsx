@@ -3,9 +3,6 @@
 import { useUserState } from '@/providers/UserProvider';
 import { QuickActions } from './QuickActions';
 import { UserDetails } from './UserDetails';
-import Link from 'next/link';
-
-import { Edit } from '@mui/icons-material';
 
 export const UserProfilePage = ({ userData, userEmail }: { userData: User; userEmail: string }) => {
 	const { username } = useUserState();

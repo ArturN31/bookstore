@@ -8,14 +8,31 @@ import { getUserDataProperty } from '@/data/user/GetUserData';
 
 //setting zod schema for formData object
 const schema = z.object({
-	firstName: z.string().trim().min(1, 'First Name is required'),
-	lastName: z.string().trim().min(1, 'Last Name is required'),
-	dob: z.string().min(1, 'Date of Birth is required'),
-	streetAddress: z.string().min(1, 'Street Address is required'),
-	postcode: z.string().min(1, 'Postcode is required'),
-	city: z.string().min(1, 'City is required'),
-	country: z.string().min(1, 'Country is required'),
-	phoneNumber: z.string().trim().min(1, 'Phone Number is required'),
+	firstName: z.string().trim().min(1, 'First Name is required').max(50, 'First Name cannot exceed 50 characters'),
+	lastName: z.string().trim().min(1, 'Last Name is required').max(50, 'Last Name cannot exceed 50 characters'),
+	dob: z
+		.string()
+		.min(1, 'Date of Birth is required')
+		.refine((value) => !isNaN(Date.parse(value)), { message: 'Date of Birth must be a valid date' }),
+	streetAddress: z
+		.string()
+		.trim()
+		.min(1, 'Street Address is required')
+		.max(100, 'Street Address cannot exceed 100 characters'),
+	postcode: z
+		.string()
+		.min(1, 'Postcode is required')
+		.regex(/^[A-Za-z0-9]{3,10}$/, 'Postcode must be alphanumeric and between 3-10 characters'),
+	city: z.string().trim().min(1, 'City is required').max(50, 'City cannot exceed 50 characters'),
+	country: z.string().trim().min(1, 'Country is required').max(50, 'Country cannot exceed 50 characters'),
+	phoneNumber: z
+		.string()
+		.trim()
+		.min(1, 'Phone Number is required')
+		.regex(
+			/^\+?[0-9\s-]{7,20}$/,
+			'Phone Number must be between 7-20 characters and contain only digits, spaces, hyphens, and an optional leading "+" for country code',
+		),
 });
 
 export async function AddressFormInsertAction(prevState: any, formData: FormData) {
@@ -27,6 +44,22 @@ export async function AddressFormInsertAction(prevState: any, formData: FormData
 	const city = formData.get('city') as string | null;
 	const country = formData.get('country') as string | null;
 	const phoneNumber = formData.get('phoneNumber') as string | null;
+	const reset = formData.get('reset') as string | null;
+
+	if (reset)
+		return {
+			firstName: '',
+			lastName: '',
+			dob: '',
+			streetAddress: '',
+			postcode: '',
+			city: '',
+			country: '',
+			phoneNumber: '',
+			message: undefined,
+			error: undefined,
+			validationErrors: undefined,
+		};
 
 	const validatedData = schema.safeParse({
 		firstName,
@@ -40,7 +73,7 @@ export async function AddressFormInsertAction(prevState: any, formData: FormData
 	});
 
 	if (!validatedData.success) {
-		prevState = {
+		return {
 			firstName,
 			lastName,
 			dob,
@@ -49,10 +82,8 @@ export async function AddressFormInsertAction(prevState: any, formData: FormData
 			city,
 			country,
 			phoneNumber,
-		};
-		return {
-			...prevState,
-			validatedData,
+			validationErrors: validatedData.error.issues,
+			message: 'Please correct the errors below.',
 		};
 	}
 
@@ -68,12 +99,12 @@ export async function AddressFormInsertAction(prevState: any, formData: FormData
 			city,
 			country,
 			phoneNumber,
-			message: 'User not authenticated',
+			message: 'User not authenticated. Please log in again.',
 		};
 	}
 
 	const supabase = await createClient();
-	const { error } = await supabase.from('users').insert({
+	const { error: supabaseError } = await supabase.from('users').insert({
 		id: userID,
 		first_name: validatedData.data.firstName,
 		last_name: validatedData.data.lastName,
@@ -85,8 +116,8 @@ export async function AddressFormInsertAction(prevState: any, formData: FormData
 		phone_number: validatedData.data.phoneNumber,
 	});
 
-	if (error) {
-		console.error('Address form insert error:', error);
+	if (supabaseError) {
+		console.error('Address form insert error:', supabaseError);
 		return {
 			firstName,
 			lastName,
@@ -96,7 +127,7 @@ export async function AddressFormInsertAction(prevState: any, formData: FormData
 			city,
 			country,
 			phoneNumber,
-			error,
+			error: supabaseError,
 			message: 'User data could not be inserted into the database.',
 		};
 	}

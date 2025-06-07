@@ -6,19 +6,51 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getUserDataProperty } from '@/data/user/GetUserData';
 
+export type AddressFormState = {
+	streetAddress: string | null;
+	postcode: string | null;
+	city: string | null;
+	country: string | null;
+	validationErrors?: z.ZodIssue[];
+	message?: string;
+	error?: any;
+};
+
 //setting zod schema for formData object
 const schema = z.object({
-	streetAddress: z.string().min(1, 'Street Address is required'),
-	postcode: z.string().min(1, 'Postcode is required'),
-	city: z.string().min(1, 'City is required'),
-	country: z.string().min(1, 'Country is required'),
+	streetAddress: z
+		.string()
+		.trim()
+		.min(1, 'Street Address is required')
+		.max(100, 'Street Address cannot exceed 100 characters'),
+	postcode: z
+		.string()
+		.min(1, 'Postcode is required')
+		.regex(/^[A-Za-z0-9]{3,10}$/, 'Postcode must be alphanumeric and between 3-10 characters'),
+	city: z.string().trim().min(1, 'City is required').max(50, 'City cannot exceed 50 characters'),
+	country: z.string().trim().min(1, 'Country is required').max(50, 'Country cannot exceed 50 characters'),
 });
 
-export async function AddressFormUpdateAction(prevState: any, formData: FormData) {
+export async function AddressFormUpdateAction(
+	prevState: AddressFormState | undefined,
+	formData: FormData,
+): Promise<AddressFormState> {
 	const streetAddress = formData.get('streetAddress') as string | null;
 	const postcode = formData.get('postcode') as string | null;
 	const city = formData.get('city') as string | null;
 	const country = formData.get('country') as string | null;
+	const reset = formData.get('reset') as string | null;
+
+	if (reset)
+		return {
+			streetAddress: '',
+			postcode: '',
+			city: '',
+			country: '',
+			message: undefined,
+			error: undefined,
+			validationErrors: undefined,
+		};
 
 	const validatedData = schema.safeParse({
 		streetAddress,
@@ -28,16 +60,13 @@ export async function AddressFormUpdateAction(prevState: any, formData: FormData
 	});
 
 	if (!validatedData.success) {
-		//zod validation failed
-		prevState = {
+		return {
 			streetAddress,
 			postcode,
 			city,
 			country,
-		};
-		return {
-			...prevState,
-			validatedData,
+			validationErrors: validatedData.error.issues,
+			message: 'Please correct the errors below.',
 		};
 	}
 
@@ -49,12 +78,12 @@ export async function AddressFormUpdateAction(prevState: any, formData: FormData
 			postcode,
 			city,
 			country,
-			message: 'User not authenticated',
+			message: 'User not authenticated. Please log in again.',
 		};
 	}
 
 	const supabase = await createClient();
-	const { error } = await supabase
+	const { error: supabaseError } = await supabase
 		.from('users')
 		.update({
 			street_address: streetAddress,
@@ -64,15 +93,16 @@ export async function AddressFormUpdateAction(prevState: any, formData: FormData
 		})
 		.eq('id', userID);
 
-	if (error) {
-		console.log('Address form update error:', error);
+	if (supabaseError) {
+		console.log('Address form update error:', supabaseError);
+
 		return {
 			streetAddress,
 			postcode,
 			city,
 			country,
-			error,
-			message: 'User data could not be updated.',
+			error: supabaseError,
+			message: 'Failed to update Address. Please try again later.',
 		};
 	}
 

@@ -4,10 +4,10 @@ import { z } from 'zod';
 import { createClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { getUserDataProperty } from '@/data/user/GetUserData';
+import { getUserData, getUserDataProperty } from '@/data/user/GetUserData';
 
 export type UsernameFormState = {
-	username?: string | null;
+	username: string | null;
 	validationErrors?: z.ZodIssue[];
 	message?: string;
 	error?: any;
@@ -28,6 +28,16 @@ export async function UsernameFormUpdateAction(
 	formData: FormData,
 ): Promise<UsernameFormState> {
 	const username = formData.get('username') as string | null;
+	const reset = formData.get('reset') as string | null;
+
+	if (reset)
+		return {
+			username: '',
+			message: undefined,
+			error: undefined,
+			validationErrors: undefined,
+			isUsernameTaken: false,
+		};
 
 	const validatedData = schema.safeParse({
 		username,
@@ -48,6 +58,16 @@ export async function UsernameFormUpdateAction(
 		return {
 			username,
 			message: 'User not authenticated. Please log in again.',
+			isUsernameTaken: false,
+		};
+	}
+
+	const userData = await getUserData();
+
+	if (userData?.username === username) {
+		return {
+			username,
+			message: 'Provided username is the same as current one.',
 			isUsernameTaken: false,
 		};
 	}

@@ -69,6 +69,19 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
 		fetchInitialUser();
 
+		//listen for user table changes
+		const channel = supabase
+			.channel('custom-insert-channel')
+			.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'users' }, async (payload) => {
+				console.log('New user inserted:', payload);
+				const {
+					data: { session },
+				} = await supabase.auth.getSession();
+				await handleSessionChange(session);
+			})
+			.subscribe();
+
+		//listen for auth state changes
 		const {
 			data: { subscription },
 		} = supabase.auth.onAuthStateChange((event, session) => {
@@ -77,7 +90,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 			}
 		});
 
-		return () => subscription?.unsubscribe();
+		return () => {
+			subscription?.unsubscribe();
+			channel.unsubscribe();
+		};
 	}, [supabase]);
 
 	const contextValue = useMemo(

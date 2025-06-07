@@ -1,13 +1,16 @@
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import { useState } from 'react';
+import KeyIcon from '@mui/icons-material/Key';
 
 export const PasswordField = ({
 	id,
+	label,
 	placeholder,
 	defaultValue,
 }: {
 	id: string;
+	label: string;
 	placeholder: string;
 	defaultValue: string;
 }) => {
@@ -22,10 +25,13 @@ export const PasswordField = ({
 		<div className='grid'>
 			<label
 				htmlFor={id}
-				className='text-black'>
-				{placeholder}
+				className='inline-block text-gray-700 font-medium text-sm rounded-sm transition-colors duration-200 focus-within:bg-blue-100 focus-within:text-blue-700 px-1'>
+				{label}
 			</label>
-			<div className='flex items-center'>
+			<div className='relative flex items-center'>
+				<div className='absolute top-2 pl-3 flex items-center pointer-events-none text-gray-400'>
+					<KeyIcon aria-hidden='true' />
+				</div>
 				<input
 					required
 					type={visible ? 'text' : 'password'}
@@ -33,10 +39,11 @@ export const PasswordField = ({
 					name={id}
 					placeholder={placeholder}
 					defaultValue={defaultValue}
-					className='border border-black px-2 py-1 w-full'
+					className='block w-full h-full pl-10 border border-gray-300 rounded-l-md py-2 focus:outline-none focus:border-blue-500 text-sm'
+					aria-describedby={`${id}-helper`}
 				/>
 				<button
-					className='w-fit h-full px-1 border border-black border-l-0 hover:bg-gunmetal/15 hover:cursor-pointer'
+					className='block w-fit px-1 border border-l-0 border-gray-300 rounded-r-md py-2 text-sm hover:cursor-pointer'
 					onClick={handleVisibility}>
 					{!visible ? <VisibilityOutlinedIcon /> : <VisibilityOffOutlinedIcon />}
 				</button>

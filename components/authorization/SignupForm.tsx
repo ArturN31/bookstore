@@ -1,87 +1,107 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect, useState, useTransition } from 'react';
 import { SignupFormAction } from '@/data/actions/auth/SignupForm-actions';
-import { PasswordField } from './PasswordField';
+import { PasswordField } from '../formItems/PasswordField';
+import { FormBtns } from '../formItems/FormBtns';
+import { EmailField } from '../formItems/EmailField';
+import { FormErrors } from '../formItems/FormErrors';
 
 export const SignupForm = () => {
 	const INITIAL_STATE = {
 		email: '',
 		password: '',
 		cnfPassword: '',
-		message: null,
-		error: null,
+		message: undefined,
+		error: undefined,
+		validationErrors: undefined,
 	};
 	const [formState, formAction] = useActionState(SignupFormAction, INITIAL_STATE);
 	const [formError, setFormError] = useState<string | null>(null);
-	const { email, password, cnfPassword, message, error } = formState || {};
+	const [isTransitioningSubmit, startTransitionSubmit] = useTransition();
+	const [isTransitioningReset, startTransitionReset] = useTransition();
+	const { email, password, cnfPassword, message, validationErrors } = formState || {};
 
 	useEffect(() => {
 		if (message) {
 			setFormError(message);
-		} else if (error && error.code === 'weak_password') {
-			setFormError(
-				'Failed to insert user into the database as the password is too weak. Password should be at least 8 characters long and include lowercase, uppercase letters, digits, and symbols.',
-			);
-		} else if (error && error.code === 'email_exists') {
-			setFormError('Failed to insert user into the database as email already exists.');
-		} else if (error && error.code === 'user_already_exists') {
-			setFormError('Failed to insert user into the database as it already exists.');
-		} else if (error) {
-			setFormError('Failed to insert user into the database.');
 		} else {
 			setFormError(null);
 		}
-	}, [message, error]);
+	}, [message]);
+
+	const handleReset = async () => {
+		const emailElement = document.getElementById('email') as HTMLInputElement | null;
+		const passwordElement = document.getElementById('password') as HTMLInputElement | null;
+		const cnfPasswordElement = document.getElementById('cnfPassword') as HTMLInputElement | null;
+
+		if (emailElement && passwordElement && cnfPasswordElement) {
+			emailElement.value = '';
+			passwordElement.value = '';
+			cnfPasswordElement.value = '';
+			const form = document.getElementById('username-form') as HTMLFormElement;
+			if (form) {
+				startTransitionReset(async () => {
+					const newForm = new FormData(form);
+					newForm.append('reset', 'yes');
+					await formAction(newForm);
+				});
+			}
+		}
+	};
+
+	const handleSubmit = async (event: React.FormEvent) => {
+		event.preventDefault();
+		const form = event.currentTarget as HTMLFormElement;
+		startTransitionSubmit(async () => {
+			await formAction(new FormData(form));
+		});
+	};
 
 	return (
-		<form
-			action={formAction}
-			className='grid place-self-center border border-black rounded-lg gap-2 p-5 w-[450px]'
-			style={{ boxShadow: '0px 2px 6px -2px black' }}>
-			<div className='text-center'>
-				<h1 className='text-2xl'>Create Your Account</h1>
-				<p className='font-light'>Let's get you started! Please enter your information below.</p>
-				{formError ? <p className='font-semibold text-red-500'>{formError}</p> : ''}
-			</div>
+		<div className='relative grid place-self-center w-full max-w-md'>
+			<form
+				action={formAction}
+				onSubmit={handleSubmit}
+				className='grid place-self-center bg-white shadow-md rounded-lg gap-5 p-8 w-full max-w-md border-t-8 border-gunmetal'
+				style={{ boxShadow: '0px 2px 6px -2px black' }}>
+				<div className='pb-5 border-b border-gray-200'>
+					<h1 className='text-xl font-semibold text-gray-800 mb-1'>Create Your Account</h1>
+					<p className='font-light text-gray-600 text-sm'>
+						Let's get you started! Please enter your information below.
+					</p>
+				</div>
 
-			<div className='grid'>
-				<label htmlFor='email'>Email</label>
-				<input
-					required
-					type='email'
-					id='email'
-					name='email'
-					placeholder='Email'
-					defaultValue={email}
-					className='border border-black px-2 py-1'
+				<FormErrors
+					formError={formError}
+					validationErrors={validationErrors}
+					isUsernameTaken={undefined}
 				/>
-			</div>
 
-			<PasswordField
-				id='password'
-				placeholder='Password'
-				defaultValue={password}
-			/>
+				<div className='grid gap-3'>
+					<EmailField email={email ?? ''} />
 
-			<PasswordField
-				id='cnfPassword'
-				placeholder='Confirm Password'
-				defaultValue={cnfPassword}
-			/>
+					<PasswordField
+						id='password'
+						label='Password'
+						placeholder='Password'
+						defaultValue={password ?? ''}
+					/>
 
-			<div className='flex justify-end gap-3 mt-3'>
-				<button
-					type='submit'
-					className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15 hover:cursor-pointer'>
-					Sign Up
-				</button>
-				<button
-					type='reset'
-					className='border border-black rounded-md px-2 py-1 hover:bg-gunmetal/15 hover:cursor-pointer'>
-					Reset
-				</button>
-			</div>
-		</form>
+					<PasswordField
+						id='cnfPassword'
+						label='Confirm Password'
+						placeholder='Confirm Password'
+						defaultValue={cnfPassword ?? ''}
+					/>
+
+					<FormBtns
+						isTransitioningSubmit={isTransitioningSubmit}
+						isTransitioningReset={isTransitioningReset}
+						handleReset={handleReset}
+					/>
+				</div>
+			</form>
+		</div>
 	);
 };

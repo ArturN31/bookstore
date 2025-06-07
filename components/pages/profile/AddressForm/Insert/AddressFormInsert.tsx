@@ -1,25 +1,32 @@
 'use client';
 
+import { AddressFormInsertAction } from '@/data/actions/AddressForm/AddressFormInsert-actions';
 import { useActionState, useEffect, useState, useTransition } from 'react';
-import { ChangePasswordFormAction } from '@/data/actions/auth/ChangePasswordForm-actions';
-import { PasswordField } from '../formItems/PasswordField';
-import { FormErrors } from '../formItems/FormErrors';
-import { FormBtns } from '../formItems/FormBtns';
+import { TextInput } from '../TextInput';
+import { FormInputs } from './FormInputs';
+import { FormBtns } from '../../../../formItems/FormBtns';
+import { FormErrors } from '../../../../formItems/FormErrors';
 
-export const ChangePasswordForm = () => {
+export const AddressFormInsert = () => {
 	const INITIAL_STATE = {
-		password: '',
-		cnfPassword: '',
+		firstName: '',
+		lastName: '',
+		dob: '',
+		streetAddress: '',
+		postcode: '',
+		city: '',
+		country: '',
+		phoneNumber: '',
 		message: undefined,
 		error: undefined,
 		validationErrors: undefined,
 	};
-
-	const [formState, formAction] = useActionState(ChangePasswordFormAction, INITIAL_STATE);
+	const [formState, formAction] = useActionState(AddressFormInsertAction, INITIAL_STATE);
 	const [formError, setFormError] = useState<string | null>(null);
 	const [isTransitioningSubmit, startTransitionSubmit] = useTransition();
 	const [isTransitioningReset, startTransitionReset] = useTransition();
-	const { password, cnfPassword, message, validationErrors } = formState || {};
+	const { firstName, lastName, dob, phoneNumber, streetAddress, postcode, city, country, message, validationErrors } =
+		formState || {};
 
 	useEffect(() => {
 		if (message) {
@@ -30,12 +37,10 @@ export const ChangePasswordForm = () => {
 	}, [message]);
 
 	const handleReset = async () => {
-		const passwordElement = document.getElementById('password') as HTMLInputElement | null;
-		const cnfPasswordElement = document.getElementById('cnfPassword') as HTMLInputElement | null;
-		if (passwordElement && cnfPasswordElement) {
-			passwordElement.value = '';
-			cnfPasswordElement.value = '';
-			const form = document.getElementById('change-username-form') as HTMLFormElement;
+		const inputElement = document.getElementById('username') as HTMLInputElement | null;
+		if (inputElement) {
+			inputElement.value = '';
+			const form = document.getElementById('username-form') as HTMLFormElement;
 			if (form) {
 				startTransitionReset(async () => {
 					const newForm = new FormData(form);
@@ -57,15 +62,16 @@ export const ChangePasswordForm = () => {
 	return (
 		<div className='relative grid place-self-center w-full max-w-md'>
 			<form
-				id='change-username-form'
+				id='insert-address-form'
 				action={formAction}
 				onSubmit={handleSubmit}
 				className='grid place-self-center bg-white shadow-md rounded-lg gap-5 p-8 w-full max-w-md border-t-8 border-gunmetal'
 				style={{ boxShadow: '0px 2px 6px -2px black' }}>
 				<div className='pb-5 border-b border-gray-200'>
-					<p className='text-xl font-semibold text-gray-800 mb-1'>Let's Update Your Password!</p>
-					<p className='font-light text-gray-600 text-sm'>Keep your account safe with a new, strong password.</p>
-					<p className='font-light text-gray-600 text-sm'>Make it easy to remember but hard to crack!</p>
+					<h1 className='text-xl font-semibold text-gray-800 mb-1'>Enter Your Shipping Address</h1>
+					<p className='font-light text-gray-600 text-sm'>
+						For fast and accurate delivery, please fill in the details below.
+					</p>
 				</div>
 
 				<FormErrors
@@ -75,18 +81,17 @@ export const ChangePasswordForm = () => {
 				/>
 
 				<div className='grid gap-3'>
-					<PasswordField
-						id='password'
-						label='Password'
-						placeholder='Enter Password'
-						defaultValue={password ?? ''}
+					<FormInputs
+						firstName={firstName}
+						lastName={lastName}
+						dob={dob}
+						phoneNumber={phoneNumber}
+						streetAddress={streetAddress}
+						postcode={postcode}
+						city={city}
+						country={country}
 					/>
-					<PasswordField
-						id='cnfPassword'
-						label='Confirm Password'
-						placeholder='Confirm Password'
-						defaultValue={cnfPassword ?? ''}
-					/>
+
 					<FormBtns
 						isTransitioningSubmit={isTransitioningSubmit}
 						isTransitioningReset={isTransitioningReset}

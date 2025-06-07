@@ -1,4 +1,4 @@
-import { AddressFormInsert } from '@/components/pages/profile/AddressForm/AddressFormInsert';
+import { AddressFormInsert } from '@/components/pages/profile/AddressForm/Insert/AddressFormInsert';
 import { RootLayout } from '@/components/layout/Layout';
 import { getUserData, getUserDataProperty } from '@/data/user/GetUserData';
 import { createClient } from '@/utils/db/server';
