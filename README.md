@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Online Bookstore
 
-## Getting Started
+## Overview
 
-First, run the development server:
+This project is an online bookstore designed to improve development skills while exploring modern web technologies. Built using **Next.js, TypeScript, Tailwind CSS, and Supabase**, it adopts a **server-side rendering (SSR) approach** for optimized security and SEO. The bookstore integrates essential functionalities such as authentication, shopping cart management, wishlist tracking, book filtering, and dynamic search capabilities.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Bookstore Functionality
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Book Browsing and Search**: Users can explore books through a search bar with partial matching and filtering.
+- **Filtering Options**: Books can be sorted by title, price, release date, customer ratings, and best sellers.
+- **Wishlist System**: Users can add or remove books from their wishlist, stored persistently in the database.
+- **Shopping Cart**: Features an animated sidebar where users can modify item quantities and remove selections. The cart persists across sessions.
+- **Book Details Page**: Includes a comprehensive view of book descriptions, ratings, and user reviews.
+- **Paginated Reviews**: Displays dynamically loaded user reviews with a rating scale from one to five.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Authentication and User Management
 
-## Learn More
+- **Supabase Authentication**: Implements sign-up, login, and password management with strict validation.
+- **Profile Management**: Users can update their username, address, and password directly within the app.
+- **First-Time Login Flow**: Requires users to complete their address setup before gaining access to wishlist and cart functionalities.
+- **Session Persistence**: Authentication state is tracked using a provider to optimise real-time updates and limit API calls.
 
-To learn more about Next.js, take a look at the following resources:
+### Real-Time Updates and Security
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **User Session Tracking**: Uses Supabase real-time listeners to maintain authentication state.
+- **Row-Level Security (RLS)**: Protects user data by restricting database access based on authentication rules.
+- **Persistent Wishlist and Cart Data**: Ensures user selections are stored securely within Supabase tables.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Technology Stack
 
-## Deploy on Vercel
+This bookstore leverages a combination of modern frontend and backend technologies to provide a seamless experience:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Frontend**: Next.js with TypeScript and Tailwind CSS for styling and responsive design.
+- **Backend & Database**: Supabase for relational data management, authentication, and real-time updates.
+- **State Management**: React hooks to efficiently manage application logic and interactions.
+- **Security and Validation**: Supabase authentication with Zod for server-side validation.
+- **Performance Optimization**: Uses SSR, caching strategies, and memoization techniques to enhance load times.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Database Structure
+
+The bookstore operates on a structured relational database, storing data across multiple tables, including:
+
+- **Books and Reviews**: Stores book metadata, pricing, and user-generated reviews.
+- **Users**: Manages authentication and profile data.
+- **Shopping Cart and Wishlist**: Tracks user selections across multiple sessions.
+- **Orders and Discounts**: Handles checkout processes and promotions.
