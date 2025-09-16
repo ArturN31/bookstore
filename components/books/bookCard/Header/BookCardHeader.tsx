@@ -1,6 +1,7 @@
 import { BookWishlist } from './wishlist/BookWishlist';
-import { OutputBookRating } from './BookRating';
+import { BookRating } from './BookRating';
 import { useUserState } from '@/providers/UserProvider';
+import { Chip } from '@mui/material';
 
 export const BookCardHeader = ({
 	bookCardHeaderParams,
@@ -10,32 +11,38 @@ export const BookCardHeader = ({
 		bookID: string;
 		reviews: Review[];
 		stock: number;
-		profileExists: boolean;
 		wishlistedBooksAmount: number;
 	};
 }) => {
-	const { wishlisted, bookID, reviews, stock, profileExists, wishlistedBooksAmount } = bookCardHeaderParams;
-	const { loggedIn } = useUserState();
-
-	const bookRatingArray = reviews.map((review) => {
-		return review.rating;
-	});
+	const { wishlisted, bookID, reviews, stock, wishlistedBooksAmount } =
+		bookCardHeaderParams;
+	const { loggedIn, profileExists } = useUserState();
 
 	return (
 		<div className={`grid ${stock <= 25 ? 'grid-cols-3' : 'grid-cols-2'} pb-1`}>
-			{loggedIn && profileExists ? (
+			{loggedIn && profileExists && (
 				<BookWishlist
 					wishlisted={wishlisted}
 					bookID={bookID}
 					wishlistedBooksAmount={wishlistedBooksAmount}
 				/>
-			) : (
-				<div></div>
 			)}
 
-			{stock <= 25 ? <p className='text-red-500 px-2 m-auto text-sm'>Low stock</p> : ''}
+			{stock <= 25 && (
+				<Chip
+					label={`${stock} left`}
+					color='error'
+					size='small'
+					sx={{
+						width: 'fit-content',
+						display: 'grid',
+						placeSelf: 'center',
+						padding: '2px',
+					}}
+				/>
+			)}
 
-			<OutputBookRating ratings={bookRatingArray} />
+			<BookRating reviews={reviews} />
 		</div>
 	);
 };

@@ -32,8 +32,11 @@ interface Book {
 	reviews: Review[];
 	rating?: number | null;
 	wishlisted: boolean;
-	addedToCart: boolean;
 	[key: string]: any;
+}
+
+interface CartItem extends Book {
+	quantity: number;
 }
 
 interface GeneratedReview {

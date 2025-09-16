@@ -1,35 +1,49 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { getUserDataProperty } from '@/data/user/GetUserData';
-import { addItemToUsersCart, createUsersCart, getUsersCartID } from '@/data/cart/GetCartData';
+import {
+	addItemToUsersCart,
+	createUsersCart,
+	getUsersCartID,
+} from '@/data/cart/GetCartData';
 
-export async function CartFormInsert(formData: FormData) {
-	const bookQuantity = formData.get('book-quantity') as string | null;
+export async function CartFormInsert(
+	prevState: { success: boolean; message: string },
+	formData: FormData,
+) {
 	const bookId = formData.get('book-id') as string | null;
-	const pathname = formData.get('pathname') as string | null;
+	const bookQuantityStr = formData.get('book-quantity') as string | null;
 	const userID = await getUserDataProperty('id');
 
 	if (!userID) {
 		console.log('Could not retrieve users id.');
-		return;
+		return { success: false, message: 'Could not retrieve users id.' };
+	}
+
+	if (!bookId) {
+		console.log('Book ID is missing.');
+		return { success: false, message: 'Book ID is missing.' };
+	}
+
+	if (!bookQuantityStr) {
+		console.log('Book quantity is missing.');
+		return { success: false, message: 'Book quantity is missing.' };
+	}
+
+	const bookQuantity = parseInt(bookQuantityStr, 10);
+	if (isNaN(bookQuantity) || bookQuantity < 0) {
+		console.log(`Invalid book quantity: ${bookQuantityStr}`);
+		return { success: false, message: `Invalid book quantity: ${bookQuantityStr}` };
 	}
 
 	let cartID = await getUsersCartID(userID);
-
 	if (!cartID) {
 		const createCartResult = await createUsersCart(userID);
 		if (createCartResult) cartID = await getUsersCartID(userID);
+	} else {
+		const addItemResult = await addItemToUsersCart(cartID, bookId, bookQuantity);
+		if (!addItemResult) return { success: false, message: 'Error adding to cart.' };
 	}
 
-	if (cartID && bookId && bookQuantity && pathname) {
-		const parsedQuantity = parseInt(bookQuantity, 10);
-		const addItemResult = await addItemToUsersCart(cartID, bookId, parsedQuantity);
-
-		if (addItemResult) {
-			revalidatePath(pathname);
-			redirect(pathname);
-		}
-	}
+	return { success: true, message: 'Item added successfully.' };
 }

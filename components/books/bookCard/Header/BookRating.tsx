@@ -1,8 +1,12 @@
 import StarRateRoundedIcon from '@mui/icons-material/StarRateRounded';
 
-export const OutputBookRating = ({ ratings }: { ratings: number[] }) => {
-	const ratingsTotal = ratings.reduce((total, value) => total + value, 0);
-	const rating = ratings.length > 0 ? (ratingsTotal / ratings.length).toPrecision(3) : 0;
+export const BookRating = ({ reviews }: { reviews: Review[] }) => {
+	const bookRatings = reviews.map((review) => {
+		return review.rating;
+	});
+	const ratingsTotal = bookRatings.reduce((total, value) => total + value, 0);
+	const rating =
+		bookRatings.length > 0 ? (ratingsTotal / bookRatings.length).toPrecision(3) : 0;
 
 	return (
 		<p className='flex items-center justify-end select-none'>

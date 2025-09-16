@@ -2,22 +2,17 @@
 
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import { useState } from 'react';
-import { CartSidebar } from './CartSidebar/CartSidebar';
+import { CartSidebar } from '@/components/CartSidebar/CartSidebar';
+import { useCartState } from '@/providers/CartProvider';
 
-export const CartBtn = ({
-	books,
-	setBooks,
-}: {
-	books: Book[];
-	setBooks: React.Dispatch<React.SetStateAction<Book[]>>;
-}) => {
+export const CartBtn = () => {
 	const [openCart, setOpenCart] = useState(false);
+
+	const { cartBooksAmount } = useCartState();
 
 	const handleCartVisibility = () => {
 		setOpenCart(!openCart);
 	};
-
-	const cartItemsAmount = books ? books.reduce((sum, book) => sum + book.quantity, 0) : 0;
 
 	return (
 		<>
@@ -26,15 +21,15 @@ export const CartBtn = ({
 				onClick={handleCartVisibility}>
 				<ShoppingCartOutlinedIcon />
 				<div
-					className={`absolute translate-4 bg-red-500 rounded-full ${cartItemsAmount < 10 ? 'px-[6px]' : 'px-[3px]'}`}>
-					<p className='text-sm text-white'>{cartItemsAmount}</p>
+					className={`absolute translate-4 bg-red-500 rounded-full ${
+						cartBooksAmount < 10 ? 'px-[6px]' : 'px-[3px]'
+					}`}>
+					<p className='text-sm text-white'>{cartBooksAmount}</p>
 				</div>
 			</button>
 			<CartSidebar
-				books={books}
 				openCart={openCart}
 				setOpenCart={setOpenCart}
-				setBooks={setBooks}
 			/>
 		</>
 	);

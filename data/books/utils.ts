@@ -1,7 +1,10 @@
-import { getBooksAddedToCart, getUsersCartID } from '../cart/GetCartData';
 import { getUserDataProperty } from '../user/GetUserData';
 import { getUsersWishlistedBooks } from './GetBooksData';
-import { getBookReviews, groupReviewsByBookId, matchReviewsToBooks } from './GetReviewsData';
+import {
+	getBookReviews,
+	groupReviewsByBookId,
+	matchReviewsToBooks,
+} from './GetReviewsData';
 
 /**
  * Adds reviews to books.
@@ -36,30 +39,6 @@ export const addUsersWishlistedBooks = async (books: Book[]) => {
 	const updatedBooks = books.map((book) => ({
 		...book,
 		wishlisted: wishlistedBookIds.has(book.id),
-	}));
-	return updatedBooks;
-};
-
-/**
- * Adds addedToCart prop with value true to books that are added to cart by the user.
- * @param books
- *
- * @returns A promise that resolves to an array of `Book` objects if successful, or fallback to original books if cart logic fails.
- */
-export const addUsersCartItemsToBooks = async (books: Book[]) => {
-	const userID = await getUserDataProperty('id');
-	if (!userID) return books;
-
-	const cartID = await getUsersCartID(userID);
-	if (!cartID) return books;
-
-	const cartItems = await getBooksAddedToCart(cartID);
-	if (!cartItems) return books;
-
-	const cartItemBookIds = new Set(cartItems.map((item) => item.book_id));
-	const updatedBooks = books.map((book) => ({
-		...book,
-		addedToCart: cartItemBookIds.has(book.id),
 	}));
 	return updatedBooks;
 };

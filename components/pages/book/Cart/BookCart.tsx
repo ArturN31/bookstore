@@ -1,40 +1,28 @@
-import { getUserDataProperty } from '@/data/user/GetUserData';
-import { AddToCartForm } from './CartForm/AddToCartForm';
-import { AddedToCartForm } from './CartForm/AddedToCartForm';
-import { getUsersCartID, isAddedToCart } from '@/data/cart/GetCartData';
-import { RemoveFromCartForm } from './CartForm/RemoveFromCartForm';
+'use client';
 
-export const BookCart = async ({
-	price,
-	bookID,
-	booksInCartAmount,
-}: {
-	price: string;
-	bookID: string;
-	booksInCartAmount: number;
-}) => {
-	const userID = await getUserDataProperty('id');
-	const cartID = userID ? await getUsersCartID(userID) : null;
-	const isBookInCart = cartID ? await isAddedToCart(cartID, bookID) : null;
+import { AddToCartForm } from '@/components/CartForm/AddToCartForm';
+import { RemoveFromCartForm } from '@/components/CartForm/RemoveFromCartForm';
+import { useUserState } from '@/providers/UserProvider';
+import { useCartState } from '@/providers/CartProvider';
+import { ChangeQuantityForm } from '@/components/CartForm/ChangeQuantityForm';
+
+export const BookCart = ({ book }: { book: Book }) => {
+	const { loggedIn, profileExists } = useUserState();
+	const { cartBooks } = useCartState();
+	const bookInCart = cartBooks.filter((cartBook) => cartBook.id === book.id);
 
 	return (
-		<div className='sm:col-span-2 md:col-span-1 grid text-center p-5 items-center border rounded-md shadow-[0px_2px_6px_-2px_#000]'>
-			<p>Price: {price}</p>
+		<div className='sm:col-span-2 md:col-span-1 grid text-center p-5 items-center border border-black rounded-md shadow-[0px_2px_6px_-2px_#000] bg-gunmetal text-white'>
+			<p>Price: {book.price}</p>
 
-			{userID ? (
-				isBookInCart ? (
+			{loggedIn && profileExists ? (
+				bookInCart.length > 0 ? (
 					<div className='grid m-auto gap-2'>
-						<AddedToCartForm
-							bookID={bookID}
-							quantity={isBookInCart[0].quantity}
-						/>
-						<RemoveFromCartForm bookID={bookID} />
+						<ChangeQuantityForm book={bookInCart[0]} />
+						<RemoveFromCartForm bookID={book.id} />
 					</div>
 				) : (
-					<AddToCartForm
-						bookID={bookID}
-						booksInCartAmount={booksInCartAmount}
-					/>
+					<AddToCartForm bookID={book.id} />
 				)
 			) : (
 				<>

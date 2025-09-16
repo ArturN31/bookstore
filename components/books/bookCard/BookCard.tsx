@@ -3,18 +3,12 @@ import { BookCardBody } from './Body/BookCardBody';
 
 export const BookCard = ({
 	book,
-	bookCardParams,
+	wishlistedBooksAmount,
 }: {
 	book: Book;
-	bookCardParams: {
-		profileExists: boolean;
-		wishlistedBooksAmount: number;
-		booksInCartAmount: number;
-	};
+	wishlistedBooksAmount: number;
 }) => {
-	const { profileExists, wishlistedBooksAmount, booksInCartAmount } = bookCardParams;
 	const bookCardHeaderParams = {
-		profileExists: profileExists,
 		wishlisted: book.wishlisted,
 		bookID: book.id,
 		reviews: book.reviews,
@@ -29,11 +23,7 @@ export const BookCard = ({
              md:border-r md:even:border-r md:nth-[3n]:border-r-0 
 			 xl:not-last-of-type:border-r xl:nth-[4n]:border-r-0'>
 			<BookCardHeader bookCardHeaderParams={bookCardHeaderParams} />
-			<BookCardBody
-				book={book}
-				profileExists={profileExists}
-				booksInCartAmount={booksInCartAmount}
-			/>
+			<BookCardBody book={book} />
 		</div>
 	);
 };
