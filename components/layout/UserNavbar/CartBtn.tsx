@@ -4,6 +4,7 @@ import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import { useState } from 'react';
 import { CartSidebar } from '@/components/CartSidebar/CartSidebar';
 import { useCartState } from '@/providers/CartProvider';
+import { IconButton, Badge } from '@mui/material';
 
 export const CartBtn = () => {
 	const [openCart, setOpenCart] = useState(false);
@@ -14,19 +15,49 @@ export const CartBtn = () => {
 		setOpenCart(!openCart);
 	};
 
+	const cartButtonLabel = `Shopping cart with ${cartBooksAmount} items`;
+
 	return (
 		<>
-			<button
-				className='shadow-md rounded-full w-12 h-12 place-items-center grid bg-yellow hover:bg-yellow/[0.8] hover:border hover:border-black hover:cursor-pointer'
-				onClick={handleCartVisibility}>
+			<IconButton
+				data-testid='cart-button'
+				onClick={handleCartVisibility}
+				aria-label={cartButtonLabel}
+				sx={{
+					boxShadow: '0 4px 6px -1px black',
+					borderRadius: 'calc(infinity * 1px)',
+					width: '48px',
+					height: '48px',
+					display: 'grid',
+					placeItems: 'center',
+					backgroundColor: '#f7cb15',
+					cursor: 'pointer',
+					':hover': {
+						backgroundColor: '#f7cb1580',
+						border: '1px solid black',
+					},
+				}}>
 				<ShoppingCartOutlinedIcon />
-				<div
-					className={`absolute translate-4 bg-red-500 rounded-full ${
-						cartBooksAmount < 10 ? 'px-[6px]' : 'px-[3px]'
-					}`}>
-					<p className='text-sm text-white'>{cartBooksAmount}</p>
-				</div>
-			</button>
+				<Badge
+					badgeContent={cartBooksAmount}
+					color='error'
+					sx={{
+						'& .MuiBadge-badge': {
+							width: '20px',
+							height: '20px',
+							borderRadius: '50%',
+							padding: '0',
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'center',
+							backgroundColor: '#fb2c36',
+							top: '-27.5px',
+							right: '-20px',
+							fontSize: '0.75rem',
+						},
+					}}
+				/>
+			</IconButton>
 			<CartSidebar
 				openCart={openCart}
 				setOpenCart={setOpenCart}

@@ -7,13 +7,16 @@ import Link from 'next/link';
 
 export const Footer = () => {
 	return (
-		<div className='flex bg-gunmetal text-white p-8'>
+		<div
+			className='flex bg-gunmetal text-white p-8'
+			data-testid='footer'>
 			<div className='grid gap-5 m-auto max-w-[850px]'>
 				<div className='grid items-center text-center'>
-					<p>
-						We want to provide readers with a convenient and affordable way to access a vast library of digital books.
-						We strive to offer a diverse selection of genres, exclusive titles, and exceptional customer service,
-						ensuring a seamless and enjoyable reading experience for all.
+					<p data-testid='footer-mission'>
+						We want to provide readers with a convenient and affordable way to access a
+						vast library of digital books. We strive to offer a diverse selection of
+						genres, exclusive titles, and exceptional customer service, ensuring a
+						seamless and enjoyable reading experience for all.
 					</p>
 				</div>
 
@@ -21,12 +24,13 @@ export const Footer = () => {
 					<div className='grid items-center'>
 						<ul className='grid gap-2 text-center'>
 							{[
-								<div>
+								<div data-testid='footer-address'>
 									<p>West Highland Way, Milngavie</p>
 									<p>Glasgow, G62 6PB</p>
 								</div>,
-								<p>+44 7911 123456</p>,
+								<p data-testid='footer-number'>+44 7911 123456</p>,
 								<a
+									data-testid='footer-email'
 									href='mailto:books4you.contact@b4u.com'
 									className='text-sky-500 hover:text-sky-700'>
 									books4you.contact@example.com
@@ -51,6 +55,9 @@ export const Footer = () => {
 							].map((content, index) => (
 								<li key={index}>
 									<a
+										data-testid={`footer-${content.text
+											.toLocaleLowerCase()
+											.replaceAll(' ', '-')}`}
 										href={content.url}
 										className='text-sky-500 hover:text-sky-700'>
 										{content.text}
@@ -63,13 +70,26 @@ export const Footer = () => {
 
 				<div className='flex justify-center gap-5'>
 					{[
-						{ icon: <LinkedInIcon />, url: 'https://www.linkedin.com/' },
-						{ icon: <FacebookIcon />, url: 'https://www.facebook.com/' },
-						{ icon: <InstagramIcon />, url: 'https://www.instagram.com/' },
-						{ icon: <XIcon />, url: 'https://x.com/' },
+						{
+							text: 'LinkedIn',
+							icon: <LinkedInIcon />,
+							url: 'https://www.linkedin.com/',
+						},
+						{
+							text: 'Facebook',
+							icon: <FacebookIcon />,
+							url: 'https://www.facebook.com/',
+						},
+						{
+							text: 'Instagram',
+							icon: <InstagramIcon />,
+							url: 'https://www.instagram.com/',
+						},
+						{ text: 'x', icon: <XIcon />, url: 'https://x.com/' },
 					].map((social, index) => (
 						<Link
 							key={index}
+							data-testid={`footer-${social.text.toLocaleLowerCase()}`}
 							className='border border-gunmetal rounded-full p-2 hover:border-white'
 							style={{ boxShadow: '0px 0px 6px black' }}
 							href={social.url}
@@ -80,7 +100,9 @@ export const Footer = () => {
 				</div>
 
 				<div className='grid justify-center font-thin text-center'>
-					<p>Books 4 You &copy; {new Date().getFullYear()}</p>
+					<p data-testid='footer-copyright'>
+						Books 4 You &copy; {new Date().getFullYear()}
+					</p>
 				</div>
 			</div>
 		</div>

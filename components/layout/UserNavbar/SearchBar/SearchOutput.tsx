@@ -4,11 +4,19 @@ export const SearchOutput = ({ books }: { books: Book[] }) => {
 	const router = useRouter();
 
 	if (books.length === 0) {
-		return <div className='bg-white rounded-md border absolute mt-12 w-full z-40 p-4 text-center'>No books found.</div>;
+		return (
+			<div
+				data-testid='searchbar-searchoutput'
+				className='bg-white rounded-md border absolute mt-12 w-full z-40 p-4 text-center'>
+				No books found.
+			</div>
+		);
 	}
 
 	return (
-		<div className='bg-white rounded-md border absolute mt-12 w-full z-40 shadow-md'>
+		<div
+			data-testid='searchbar-searchoutput'
+			className='bg-white rounded-md border absolute mt-12 w-full z-40 shadow-md'>
 			{books.map((book) => (
 				<button
 					key={book.id}

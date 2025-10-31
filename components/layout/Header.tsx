@@ -6,10 +6,11 @@ import { FilterBar } from './FilterBar/FilterBar';
 
 export const Header = () => {
 	return (
-		<nav>
+		<nav data-testid='header'>
 			<div className='lg:flex grid lg:gap-0 gap-8 lg:justify-between justify-center bg-gunmetal select-none'>
 				<div className='md:flex grid items-center md:gap-5 gap-0 px-5'>
 					<Link
+						data-testid='header-logo'
 						className='rounded-full hover:cursor-pointer'
 						href='/'>
 						<Image

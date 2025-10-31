@@ -45,8 +45,10 @@ export const BookFilterProvider = ({ children }: { children: React.ReactNode }) 
 	const contextValue = useMemo(
 		() => ({
 			filterType,
-			toggleFilter: (choice: (typeof FilterTypes)[number]) => {
-				setFilter(choice);
+			toggleFilter: (choice: string) => {
+				if (FilterTypes.includes(choice as (typeof FilterTypes)[number])) {
+					setFilter(choice as (typeof FilterTypes)[number]);
+				}
 			},
 		}),
 		[filterType],

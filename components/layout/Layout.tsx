@@ -3,14 +3,20 @@ import { Header } from './Header';
 import './../../app/globals.css';
 import { Providers } from '@/providers/Providers';
 
-export const RootLayout = ({ children }: { children: React.JSX.Element }) => {
+export const RootLayout = ({ children }: { children: React.ReactNode }) => {
 	return (
 		<Providers>
-			<main className='min-h-screen flex flex-col'>
+			<div
+				className='min-h-screen flex flex-col'
+				data-testid='root-layout-wrapper'>
 				<Header />
-				<div className='p-8 flex-1'>{children}</div>
+				<main
+					className='p-8 flex-1'
+					data-testid='main-content'>
+					{children}
+				</main>
 				<Footer />
-			</main>
+			</div>
 		</Providers>
 	);
 };

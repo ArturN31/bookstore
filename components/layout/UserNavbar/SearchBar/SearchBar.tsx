@@ -19,17 +19,25 @@ export const SearchBar = () => {
 	const fetchAndFilterBooks = async (searchTerm: string) => {
 		try {
 			const allBooks = await getAllBooks();
-			if (!allBooks) return null;
+			if (!allBooks) {
+				setSearchResults([]);
+				setIsDropdownVisible(true);
+				return;
+			}
 
 			const filteredBooks = allBooks
 				.filter((book: Book) => book.is_active)
-				.filter((book: Book) => book.title.toLowerCase().includes(searchTerm.toLowerCase()))
+				.filter((book: Book) =>
+					book.title.toLowerCase().includes(searchTerm.toLowerCase()),
+				)
 				.slice(0, 10);
 
 			setSearchResults(filteredBooks);
 			setIsDropdownVisible(true);
 		} catch (error) {
-			console.error('Error fetching books:', error);
+			console.log('Error fetching books:', error);
+			setSearchResults([]);
+			setIsDropdownVisible(true);
 		}
 	};
 
@@ -37,15 +45,18 @@ export const SearchBar = () => {
 	const handleMouseLeave = () => setIsDropdownVisible(false);
 
 	useEffect(() => {
-		const delaySearch = setTimeout(() => {
-			fetchAndFilterBooks(input);
-		}, 1000);
+		if (input) {
+			const delaySearch = setTimeout(() => {
+				fetchAndFilterBooks(input);
+			}, 1000);
 
-		return () => clearTimeout(delaySearch);
+			return () => clearTimeout(delaySearch);
+		}
 	}, [input]);
 
 	return (
 		<div
+			data-testid='searchbar'
 			className='grid relative'
 			onMouseEnter={handleMouseEnter}
 			onMouseLeave={handleMouseLeave}>
