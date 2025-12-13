@@ -18,6 +18,7 @@ export const EmailField = ({ email }: { email: string }) => {
 					type='email'
 					id='email'
 					name='email'
+					data-testid='email-field'
 					placeholder='Email'
 					defaultValue={email}
 					className='block w-full pl-10 border border-gray-300 rounded-md py-2 focus:outline-none focus:border-blue-500 text-sm'

@@ -34,7 +34,7 @@ export const getBook = async (bookID: string) => {
  * @param type The specific type within the group (e.g., Adventure, Comedy, Paperback, Hardcover).
  * @returns A promise that resolves to an array of `Book` objects if successful, or null.
  */
-export const getBookByGroupAndType = async (group: string, type: string) => {
+export const getBooksByGroupAndType = async (group: string, type: string) => {
 	const supabase = await createClient();
 	const { data, error }: PostgrestResponse<Book> = await supabase
 		.from('books')

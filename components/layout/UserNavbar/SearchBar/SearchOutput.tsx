@@ -1,7 +1,23 @@
 import { useRouter } from 'next/navigation';
 
-export const SearchOutput = ({ books }: { books: Book[] }) => {
+export const SearchOutput = ({
+	books,
+	errorMessage,
+}: {
+	books: Book[];
+	errorMessage: string | null;
+}) => {
 	const router = useRouter();
+
+	if (errorMessage) {
+		return (
+			<div
+				data-testid='searchbar-searchoutput-error'
+				className='bg-white rounded-md border border-red-500 absolute mt-12 w-full z-40 p-4 text-center text-red-600'>
+				{errorMessage}
+			</div>
+		);
+	}
 
 	if (books.length === 0) {
 		return (

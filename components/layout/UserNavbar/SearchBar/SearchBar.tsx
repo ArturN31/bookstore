@@ -9,18 +9,24 @@ export const SearchBar = () => {
 	const [input, setInput] = useState('');
 	const [isDropdownVisible, setIsDropdownVisible] = useState(false);
 	const [searchResults, setSearchResults] = useState<Book[]>([]);
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 	const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
 		const { value } = e.target;
 		setInput(value);
 		setIsDropdownVisible(true);
+		setErrorMessage(null);
 	};
 
 	const fetchAndFilterBooks = async (searchTerm: string) => {
+		setSearchResults([]);
+		setErrorMessage(null);
+
 		try {
 			const allBooks = await getAllBooks();
+
 			if (!allBooks) {
-				setSearchResults([]);
+				setErrorMessage('No books available to search.');
 				setIsDropdownVisible(true);
 				return;
 			}
@@ -35,7 +41,14 @@ export const SearchBar = () => {
 			setSearchResults(filteredBooks);
 			setIsDropdownVisible(true);
 		} catch (error) {
-			console.log('Error fetching books:', error);
+			const message =
+				error instanceof Error
+					? error.message
+					: 'An unknown error occurred while fetching books.';
+
+			setErrorMessage(
+				`Failed to retrieve books. Please try again later. Details: ${message}`,
+			);
 			setSearchResults([]);
 			setIsDropdownVisible(true);
 		}
@@ -51,6 +64,9 @@ export const SearchBar = () => {
 			}, 1000);
 
 			return () => clearTimeout(delaySearch);
+		} else {
+			setSearchResults([]);
+			setErrorMessage(null);
 		}
 	}, [input]);
 
@@ -64,7 +80,12 @@ export const SearchBar = () => {
 				input={input}
 				handleInput={handleInputChange}
 			/>
-			{input && isDropdownVisible && <SearchOutput books={searchResults} />}
+			{input && isDropdownVisible && (
+				<SearchOutput
+					books={searchResults}
+					errorMessage={errorMessage}
+				/>
+			)}
 		</div>
 	);
 };

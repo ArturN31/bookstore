@@ -25,11 +25,12 @@ const customJestConfig = {
         global: {
             branches: 100,
             functions: 100,
-            lines: 98, // allows for a small percentage of non-executable lines (imports/CSS)
+            lines: 98,
             statements: 100,
         },
     },
     moduleNameMapper: {
+        '^@/(.*)$': '<rootDir>/$1',
         '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     },
 };

@@ -1,5 +1,4 @@
-import { RootLayout } from '@/components/layout/Layout';
-import { GetBooks } from '@/components/books/GetBooks';
+import { OutputBooks } from '@/components/books/OutputBooks';
 import { getAllBooks } from '@/data/books/GetBooksData';
 
 export default async function HomePage() {
@@ -11,17 +10,11 @@ export default async function HomePage() {
 
 	if (books)
 		return (
-			<RootLayout>
-				<GetBooks
-					books={books}
-					type='all'
-				/>
-			</RootLayout>
+			<OutputBooks
+				books={books}
+				type='all'
+			/>
 		);
 
-	return (
-		<RootLayout>
-			<p>Cannot retrieve books.</p>
-		</RootLayout>
-	);
+	return <p>Cannot retrieve books.</p>;
 }

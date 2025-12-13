@@ -1,6 +1,6 @@
 import { handleSortbyChoice, SortBy } from '../../../components/layout/FilterBar/SortBy';
 import { useBookFilter } from '../../../providers/BookFilterProvider';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 
 jest.mock('../../../providers/BookFilterProvider');
 const mockToggleFilter = jest.fn();
@@ -36,17 +36,21 @@ describe('FilterBar - SortBy', () => {
 		expect(mockToggleFilter).not.toHaveBeenCalled();
 	});
 
-	it('should call toggleFilter with the correct value when a list item is clicked', () => {
+	it('should call toggleFilter with the correct value when a list item is clicked', async () => {
 		render(<SortBy />);
 
 		const sortButton = screen.getByTestId('popover-sort-by-btn');
-		fireEvent.click(sortButton);
+		await act(async () => {
+			await fireEvent.click(sortButton);
+		});
 
 		const sortChoice = 'Price: Low to High';
 		const listItemButton = screen.getByTestId(
 			`popover-sort-by-choice-${sortChoice.toLocaleLowerCase().replaceAll(' ', '-')}`,
 		);
-		fireEvent.click(listItemButton);
+		await act(async () => {
+			await fireEvent.click(listItemButton);
+		});
 
 		expect(mockToggleFilter).toHaveBeenCalledWith(sortChoice);
 	});

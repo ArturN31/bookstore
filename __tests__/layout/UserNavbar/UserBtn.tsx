@@ -1,5 +1,5 @@
 import { UserBtn } from '@/components/layout/UserNavbar/UserBtn';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import * as UserData from '../../../data/user/GetUserData';
 
 const mockRouterPush = jest.fn();
@@ -49,10 +49,14 @@ describe('layout - UserNavbar - UserBtn', () => {
 		expect(popoverBtn).toBeInTheDocument();
 	});
 
-	it('Should navigate to sign in page on click (not logged in)', () => {
+	it('Should navigate to sign in page on click (not logged in)', async () => {
 		render(<UserBtn />);
-		fireEvent.click(screen.getByTestId('popover-icon-btn'));
-		fireEvent.click(screen.getByTestId('popover-icon-choice-sign-in'));
+		await act(async () => {
+			await fireEvent.click(screen.getByTestId('popover-icon-btn'));
+		});
+		await act(async () => {
+			await fireEvent.click(screen.getByTestId('popover-icon-choice-sign-in'));
+		});
 		expect(mockRouterPush).toHaveBeenCalledWith('/user/auth/signin');
 	});
 
@@ -64,11 +68,15 @@ describe('layout - UserNavbar - UserBtn', () => {
 		expect(mockRouterPush).toHaveBeenCalledWith('/user/profile');
 	});
 
-	it('Should navigate to wishlist page on click (logged in required)', () => {
+	it('Should navigate to wishlist page on click (logged in required)', async () => {
 		mockUseUserState.mockReturnValue(defaultLoggedInState);
 		render(<UserBtn />);
-		fireEvent.click(screen.getByTestId('popover-icon-btn'));
-		fireEvent.click(screen.getByTestId('popover-icon-choice-wishlist'));
+		await act(async () => {
+			await fireEvent.click(screen.getByTestId('popover-icon-btn'));
+		});
+		await act(async () => {
+			await fireEvent.click(screen.getByTestId('popover-icon-choice-wishlist'));
+		});
 		expect(mockRouterPush).toHaveBeenCalledWith('/user/wishlist');
 	});
 

@@ -27,7 +27,7 @@ export const CartSidebar = ({
 			className={`fixed top-0 right-0 z-50 h-full bg-white
 				border-l border-black overflow-y-auto 
 				transform transition-transform duration-1000 ease-in-out 
-				w-auto max-w-[90vw] min-w-[300px] ${openCart ? 'translate-x-0' : 'translate-x-full'}`}>
+				w-auto max-w-[90vw] min-w-75 ${openCart ? 'translate-x-0' : 'translate-x-full'}`}>
 			<CartHeader handleCloseCart={handleCloseCart} />
 
 			{!cartBooks && (

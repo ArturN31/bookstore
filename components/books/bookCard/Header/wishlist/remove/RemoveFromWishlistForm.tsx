@@ -1,6 +1,6 @@
 import { RemoveFromWishlistButtons } from './RemoveFromWishlistButtons';
 import { usePathname } from 'next/navigation';
-import { WishlistFormRemove } from '@/data/actions/WishlistForm/WishlistFormRemove';
+import { WishlistRemoveAction } from '@/data/actions/WishlistForm/WishlistRemoveAction';
 
 export const RemoveFromWishlistForm = ({ bookID }: { bookID: string }) => {
 	const pathname = usePathname();
@@ -8,7 +8,7 @@ export const RemoveFromWishlistForm = ({ bookID }: { bookID: string }) => {
 	return (
 		<form
 			id='remove-from-wishlist-form'
-			action={WishlistFormRemove}
+			action={WishlistRemoveAction}
 			className='w-fit'>
 			<input
 				type='hidden'

@@ -18,7 +18,7 @@ export const BookCart = ({ book }: { book: Book }) => {
 			{loggedIn && profileExists ? (
 				bookInCart.length > 0 ? (
 					<div className='grid m-auto gap-2'>
-						<ChangeQuantityForm book={bookInCart[0]} />
+						<ChangeQuantityForm bookID={bookInCart[0].id} />
 						<RemoveFromCartForm bookID={book.id} />
 					</div>
 				) : (
@@ -39,11 +39,11 @@ export const BookCart = ({ book }: { book: Book }) => {
 				</>
 			)}
 
-			<hr className='h-px border-t-0 bg-transparent bg-gradient-to-r from-transparent via-neutral-500 to-transparent opacity-25' />
+			<hr className='h-px border-t-0 bg-transparent bg-linear-to-r from-transparent via-neutral-500 to-transparent opacity-25' />
 
 			<p>Parcel dispatched in 24h</p>
 
-			<hr className='h-px border-t-0 bg-transparent bg-gradient-to-r from-transparent via-neutral-500 to-transparent opacity-25' />
+			<hr className='h-px border-t-0 bg-transparent bg-linear-to-r from-transparent via-neutral-500 to-transparent opacity-25' />
 
 			<p>Delivery to the bookstore &#163;0</p>
 		</div>

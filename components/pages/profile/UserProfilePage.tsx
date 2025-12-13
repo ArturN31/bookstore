@@ -4,11 +4,19 @@ import { useUserState } from '@/providers/UserProvider';
 import { QuickActions } from './QuickActions';
 import { UserDetails } from './UserDetails';
 
-export const UserProfilePage = ({ userData, userEmail }: { userData: User; userEmail: string }) => {
+export const UserProfilePage = ({
+	userData,
+	userEmail,
+}: {
+	userData: User;
+	userEmail: string;
+}) => {
 	const { username } = useUserState();
 
 	return (
-		<div className='bg-gray-100 py-10'>
+		<div
+			className='bg-gray-100 py-10'
+			data-testid='user-profile-info'>
 			<div className='px-8 space-y-8'>
 				<div className='w-fit flex flex-col gap-8 place-self-center'>
 					<div className='flex gap-8'>

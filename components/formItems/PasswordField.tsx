@@ -37,6 +37,7 @@ export const PasswordField = ({
 					type={visible ? 'text' : 'password'}
 					id={id}
 					name={id}
+					data-testid={`${id}-field`}
 					placeholder={placeholder}
 					defaultValue={defaultValue}
 					className='block w-full h-full pl-10 border border-gray-300 rounded-l-md py-2 focus:outline-none focus:border-blue-500 text-sm'

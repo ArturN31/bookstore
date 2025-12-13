@@ -1,5 +1,5 @@
 import { AddToWishlistButtons } from './AddToWishlistButtons';
-import { WishlistFormInsert } from '@/data/actions/WishlistForm/WishlistFormInsert';
+import { WishlistInsertAction } from '@/data/actions/WishlistForm/WishlistInsertAction';
 import { usePathname } from 'next/navigation';
 
 export const AddToWishlistForm = ({
@@ -14,7 +14,7 @@ export const AddToWishlistForm = ({
 	return (
 		<form
 			id='add-to-wishlist-form'
-			action={WishlistFormInsert}
+			action={WishlistInsertAction}
 			className='w-fit'>
 			<input
 				type='hidden'

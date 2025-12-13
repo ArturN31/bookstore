@@ -16,6 +16,7 @@ export const FormBtns = ({
 				{isTransitioningSubmit ? 'Saving...' : 'Save'}
 			</button>
 			<button
+				data-testid='reset-btn'
 				type='reset'
 				onClick={handleReset}
 				className='border border-gray-300 hover:bg-gray-100 text-black font-semibold rounded-md px-5 py-2 focus:outline-none focus:ring-2 focus-ring-gray-300 transition-colors duration-200 text-sm disabled:opacity-50 cursor-pointer'
