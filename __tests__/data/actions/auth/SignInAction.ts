@@ -48,15 +48,15 @@ describe('APP - Auth - SignIn', () => {
 
         expect(result.validationErrors).toBeDefined();
         expect(result.message).toBe('Please correct the errors below.');
-        expect(result.email).toBe('invalid-email');
+        expect(result.email).toBe('');
     });
 
     it('should return null for email and password if they are missing from formData', async () => {
         const formData = new FormData();
         const result = await SignInAction(undefined, formData);
 
-        expect(result.email).toBeNull();
-        expect(result.password).toBeNull();
+        expect(result.email).toBe('');
+        expect(result.password).toBe('');
         expect(result.validationErrors).toBeDefined();
     });
 
@@ -73,8 +73,8 @@ describe('APP - Auth - SignIn', () => {
         const formData = new FormData();
         const result = await SignInAction(undefined, formData);
 
-        expect(result.email).toBeNull();
-        expect(result.password).toBeNull();
+        expect(result.email).toBe('');
+        expect(result.password).toBe('');
         expect(result.error).toBeDefined();
 
         spy.mockRestore();

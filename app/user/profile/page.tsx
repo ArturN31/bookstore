@@ -1,11 +1,9 @@
 import { getUserData } from '@/data/user/GetUserData';
-import { createBackendClient } from '@/utils/db/server';
-import { AddressForm } from '../../../components/pages/user/profile/AddressForm/AddressForm';
-import { UserProfilePage } from '../../../components/pages/user/profile/UserProfilePage/UserProfilePage';
+import { AddressForm } from '@/components/pages/user/profile/AddressForm/AddressForm';
+import { UserProfilePage } from '@/components/pages/user/profile/UserProfilePage/UserProfilePage';
 
 export default async function ProfilePage() {
-    const supabase = await createBackendClient();
-    const userData = await getUserData(supabase);
+    const userData = await getUserData();
 
     if (!userData)
         return (

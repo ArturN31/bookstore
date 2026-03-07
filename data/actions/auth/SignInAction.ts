@@ -39,8 +39,8 @@ export async function SignInAction(
 
     if (!validated.success)
         return {
-            email: rawData.email || null,
-            password: rawData.password || null,
+            email: '',
+            password: '',
             validationErrors: validated.error.issues,
             message: 'Please correct the errors below.',
         };
@@ -50,8 +50,8 @@ export async function SignInAction(
 
     if (authError)
         return {
-            email: rawData.email || null,
-            password: rawData.password || null,
+            email: '',
+            password: '',
             error: authError,
             message:
                 AUTH_ERROR_MESSAGES[authError.code || ''] ||
@@ -59,7 +59,7 @@ export async function SignInAction(
                 'Failed to sign in.',
         };
 
-    const dbUser = await getUserData(supabase);
+    const dbUser = await getUserData();
 
     revalidatePath('/', 'layout');
 

@@ -40,8 +40,8 @@ export const UserProvider = ({ initialUser, initialWishlist, children }: UserPro
                 dispatch({ type: 'START_LOADING' });
 
                 const [userData, wishlistData] = await Promise.all([
-                    getUserData(supabase),
-                    getUserWishlist(supabase, userId),
+                    getUserData(),
+                    getUserWishlist(userId),
                 ]);
 
                 if (activeUserId.current === userId) {
@@ -67,7 +67,7 @@ export const UserProvider = ({ initialUser, initialWishlist, children }: UserPro
         if (!activeUserId.current) return;
 
         try {
-            const userData = await getUserData(supabase);
+            const userData = await getUserData();
 
             dispatch({
                 type: 'UPDATE_PROFILE',
@@ -89,7 +89,7 @@ export const UserProvider = ({ initialUser, initialWishlist, children }: UserPro
         if (!activeUserId.current) return;
 
         try {
-            const wishlistData = await getUserWishlist(supabase, activeUserId.current);
+            const wishlistData = await getUserWishlist(activeUserId.current);
             dispatch({ type: 'UPDATE_WISHLIST', payload: wishlistData ?? [] });
         } catch (err) {
             dispatch({ type: 'SET_ERROR', payload: 'Could not update wishlist.' });

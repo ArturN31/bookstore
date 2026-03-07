@@ -33,7 +33,7 @@ export async function WishlistAction(
 
     const { bookId, actionType } = validated.data;
     const supabase = await createBackendClient();
-    const user = await getUserData(supabase);
+    const user = await getUserData();
 
     if (!user)
         return {

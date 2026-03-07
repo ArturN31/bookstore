@@ -1,6 +1,10 @@
+'use server';
+
+import { createBackendClient } from '@/utils/db/server';
 import { PostgrestResponse, PostgrestSingleResponse, SupabaseClient } from '@supabase/supabase-js';
 
-export const getUsersCartID = async (supabase: SupabaseClient, userID: string) => {
+export const getUsersCartID = async (userID: string) => {
+    const supabase = await createBackendClient();
     let { data: shopping_carts, error }: PostgrestResponse<{ id: string }> = await supabase
         .from('shopping_carts')
         .select('id')
@@ -14,7 +18,8 @@ export const getUsersCartID = async (supabase: SupabaseClient, userID: string) =
     return shopping_carts?.[0]?.id || null;
 };
 
-export const createUsersCart = async (supabase: SupabaseClient, userID: string) => {
+export const createUsersCart = async (userID: string) => {
+    const supabase = await createBackendClient();
     const { data, error } = await supabase
         .from('shopping_carts')
         .insert([{ user_id: userID }])
@@ -27,12 +32,8 @@ export const createUsersCart = async (supabase: SupabaseClient, userID: string) 
     else return null;
 };
 
-export const addItemToUsersCart = async (
-    supabase: SupabaseClient,
-    cartID: string,
-    bookID: string,
-    bookQuantity: number,
-) => {
+export const addItemToUsersCart = async (cartID: string, bookID: string, bookQuantity: number) => {
+    const supabase = await createBackendClient();
     const { data, error } = await supabase
         .from('shopping_cart_items')
         .insert([{ cart_id: cartID, book_id: bookID, quantity: bookQuantity }])
@@ -46,11 +47,11 @@ export const addItemToUsersCart = async (
 };
 
 export const updateItemInUsersCart = async (
-    supabase: SupabaseClient,
     cartID: string,
     bookID: string,
     bookQuantity: number,
 ) => {
+    const supabase = await createBackendClient();
     const { data, error } = await supabase
         .from('shopping_cart_items')
         .update([{ quantity: bookQuantity }])
@@ -65,11 +66,8 @@ export const updateItemInUsersCart = async (
     else null;
 };
 
-export const removeItemFromUsersCart = async (
-    supabase: SupabaseClient,
-    cartID: string,
-    bookID: string,
-) => {
+export const removeItemFromUsersCart = async (cartID: string, bookID: string) => {
+    const supabase = await createBackendClient();
     const { data, error } = await supabase
         .from('shopping_cart_items')
         .delete()
@@ -84,7 +82,9 @@ export const removeItemFromUsersCart = async (
     else null;
 };
 
-export const getCartData = async (supabase: SupabaseClient, userID: string) => {
+export const getCartData = async (userID: string) => {
+    const supabase = await createBackendClient();
+
     type UsersCart = {
         cartID: string;
         cartItems: {

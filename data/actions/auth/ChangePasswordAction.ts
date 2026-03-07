@@ -33,8 +33,8 @@ export async function ChangePasswordAction(
 
     if (!validated.success)
         return {
-            password: rawData.password || null,
-            cnfPassword: rawData.cnfPassword || null,
+            password: '',
+            cnfPassword: '',
             validationErrors: validated.error.issues,
             message: 'Please correct the errors below.',
         };
@@ -47,8 +47,8 @@ export async function ChangePasswordAction(
 
     if (authError || !user)
         return {
-            password: rawData.password || null,
-            cnfPassword: rawData.cnfPassword || null,
+            password: '',
+            cnfPassword: '',
             message: 'Authentication failed. Please log in.',
         };
 
@@ -57,12 +57,12 @@ export async function ChangePasswordAction(
     });
 
     if (supabaseError) {
-        const isReauth = supabaseError.message.toLowerCase().includes('reauthentication');
+        const isReauth = supabaseError.message?.toLowerCase().includes('reauthentication');
         const isWeak = supabaseError.code === 'weak_password';
 
         return {
-            password: rawData.password || null,
-            cnfPassword: rawData.cnfPassword || null,
+            password: '',
+            cnfPassword: '',
             error: supabaseError,
             message: isReauth
                 ? 'Security timeout: Please sign out and back in to change your password.'

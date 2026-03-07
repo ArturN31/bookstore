@@ -1,11 +1,9 @@
 import { AddressForm } from '@/components/pages/user/profile/AddressForm/AddressForm';
 import { getUserData } from '@/data/user/GetUserData';
-import { createBackendClient } from '@/utils/db/server';
 import { redirect } from 'next/navigation';
 
 export default async function ChangeAddressPage() {
-    const supabase = await createBackendClient();
-    const userData = await getUserData(supabase);
+    const userData = await getUserData();
 
     if (!userData) {
         redirect('/');

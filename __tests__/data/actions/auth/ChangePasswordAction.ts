@@ -48,7 +48,7 @@ describe('ChangePasswordAction', () => {
 
         expect(result.message).toBe('Please correct the errors below.');
         expect(result.validationErrors).toBeDefined();
-        expect(result.password).toBe('short');
+        expect(result.password).toBe('');
     });
 
     it('should return error if authentication fails', async () => {
@@ -118,8 +118,8 @@ describe('ChangePasswordAction', () => {
 
         const result = await ChangePasswordAction(undefined, formData);
 
-        expect(result.password).toBeNull();
-        expect(result.cnfPassword).toBeNull();
+        expect(result.password).toBe('');
+        expect(result.cnfPassword).toBe('');
         expect(result.message).toBe('Please correct the errors below.');
     });
 
@@ -137,7 +137,7 @@ describe('ChangePasswordAction', () => {
         const result = await ChangePasswordAction(undefined, formData);
 
         expect(result.message).toBe('Authentication failed. Please log in.');
-        expect(result.password).toBeNull();
+        expect(result.password).toBe('');
 
         mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: '123' } }, error: null });
         mockSupabase.auth.updateUser.mockResolvedValue({
@@ -147,7 +147,7 @@ describe('ChangePasswordAction', () => {
         const result2 = await ChangePasswordAction(undefined, formData);
 
         expect(result2.error).toBeDefined();
-        expect(result2.password).toBeNull();
+        expect(result2.password).toBe('');
 
         zodSpy.mockRestore();
     });

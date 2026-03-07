@@ -20,9 +20,9 @@ export const SessionProviderWrapper = async ({ children }: { children: React.Rea
 
     if (user) {
         const [userData, wishlistData, cartData] = await Promise.all([
-            getUserData(supabase),
-            getUserWishlist(supabase, user.id),
-            getCartData(supabase, user.id),
+            getUserData(),
+            getUserWishlist(user.id),
+            getCartData(user.id),
         ]);
 
         initialUser = userData ? mapUserData(userData) : { ...DEFAULT_USER, id: user.id };

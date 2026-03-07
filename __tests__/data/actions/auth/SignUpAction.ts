@@ -42,8 +42,8 @@ describe('APP - Auth - SignUpAction', () => {
         const result = await SignUpAction(undefined, formData);
 
         expect(result.validationErrors).toBeDefined();
-        expect(result.email).toBeNull();
-        expect(result.password).toBeNull();
+        expect(result.email).toBe('');
+        expect(result.password).toBe('');
         expect(result.message).toBe('Please correct the errors below.');
     });
 
@@ -77,8 +77,8 @@ describe('APP - Auth - SignUpAction', () => {
         const result = await SignUpAction(undefined, formData);
 
         expect(result.message).toBe('Failed to create account.');
-        expect(result.email).toBeNull();
-        expect(result.password).toBeNull();
+        expect(result.email).toBe('');
+        expect(result.password).toBe('');
 
         spy.mockRestore();
     });

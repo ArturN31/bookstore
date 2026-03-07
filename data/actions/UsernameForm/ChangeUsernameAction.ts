@@ -57,7 +57,7 @@ export async function ChangeUsernameAction(
         };
     }
 
-    const user = await getUserData(supabase);
+    const user = await getUserData();
 
     if (!user) {
         return {

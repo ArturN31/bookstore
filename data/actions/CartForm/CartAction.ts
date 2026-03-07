@@ -1,7 +1,6 @@
 'use server';
 
 import { z } from 'zod';
-import { createBackendClient } from '@/utils/db/server';
 import { getUserData } from '@/data/user/GetUserData';
 import {
     addItemToUsersCart,
@@ -40,40 +39,35 @@ export async function CartAction(
         };
 
     const { bookId, bookQuantity, actionType } = validated.data;
-    const supabase = await createBackendClient();
-    const user = await getUserData(supabase);
+
+    const user = await getUserData();
 
     if (!user) return { success: false, message: 'You must be logged in to manage your cart.' };
 
     try {
-        let cartID = await getUsersCartID(supabase, user.id);
+        let cartID = await getUsersCartID(user.id);
 
         if (!cartID) {
-            const createCartResult = await createUsersCart(supabase, user.id);
+            const createCartResult = await createUsersCart(user.id);
             if (!createCartResult) throw new Error('Failed to create cart');
-            cartID = await getUsersCartID(supabase, user.id);
+            cartID = await getUsersCartID(user.id);
         }
 
         if (!cartID) return { success: false, message: 'Could not resolve cart.' };
 
         switch (actionType) {
             case 'INSERT':
-                const insertOk = await addItemToUsersCart(supabase, cartID, bookId, bookQuantity);
+                const insertOk = await addItemToUsersCart(cartID, bookId, bookQuantity);
                 if (!insertOk) return { success: false, message: 'Error adding to cart.' };
                 break;
 
             case 'UPDATE':
-                const updateOk = await updateItemInUsersCart(
-                    supabase,
-                    cartID,
-                    bookId,
-                    bookQuantity,
-                );
+                const updateOk = await updateItemInUsersCart(cartID, bookId, bookQuantity);
                 if (!updateOk) return { success: false, message: 'Failed to update quantity.' };
                 break;
 
             case 'REMOVE':
-                const removeOk = await removeItemFromUsersCart(supabase, cartID, bookId);
+                const removeOk = await removeItemFromUsersCart(cartID, bookId);
                 if (!removeOk) return { success: false, message: 'Failed to remove item.' };
                 break;
         }

@@ -25,7 +25,7 @@ export const CartProvider = ({ initialCart, children }: CartProviderProps) => {
         try {
             dispatch({ type: 'START_LOADING' });
 
-            const { cartID, books, error } = await getCartData(supabase, user.id);
+            const { cartID, books, error } = await getCartData(user.id);
 
             if (error) throw error;
 

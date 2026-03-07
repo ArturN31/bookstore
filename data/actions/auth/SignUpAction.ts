@@ -41,9 +41,9 @@ export async function SignUpAction(
 
     if (!validated.success)
         return {
-            email: rawData.email || null,
-            password: rawData.password || null,
-            cnfPassword: rawData.cnfPassword || null,
+            email: '',
+            password: '',
+            cnfPassword: '',
             validationErrors: validated.error.issues,
             message: 'Please correct the errors below.',
         };
@@ -56,9 +56,9 @@ export async function SignUpAction(
 
     if (authError)
         return {
-            email: rawData.email || null,
-            password: rawData.password || null,
-            cnfPassword: rawData.cnfPassword || null,
+            email: '',
+            password: '',
+            cnfPassword: '',
             error: authError,
             message:
                 SIGNUP_ERROR_MESSAGES[authError.code || ''] ||
@@ -68,6 +68,5 @@ export async function SignUpAction(
 
     revalidatePath('/', 'layout');
     revalidatePath('/user/profile');
-
     redirect('/user/profile');
 }
