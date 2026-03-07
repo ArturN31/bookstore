@@ -1,5 +1,5 @@
-import { ReviewCard } from './ReviewCard/ReviewCard';
-import { ReviewPagination } from './ReviewPagination';
+import { ReviewCard } from '@/components/pages/book/Reviews/ReviewCard/ReviewCard';
+import { ReviewPagination } from '@/components/pages/book/Reviews/ReviewPagination';
 
 export const BookReviews = ({
     reviewsData,

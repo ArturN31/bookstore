@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { CartItemQuantityControls } from './CartItemQuantityControls';
+import { CartItemQuantityControls } from '@/components/CartSidebar/CartItem/CartItemQuantityControls';
 import { useCartState } from '@/providers/cart/utils/useCart';
 import { useMemo } from 'react';
 

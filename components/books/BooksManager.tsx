@@ -3,12 +3,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useBookFilter } from '@/providers/BookFilterProvider';
-import { BookCard } from './bookCard/BookCard';
 import {
     fetchBooksWithReviews,
     FetchBooksResponse,
     FetchBooksFilters,
 } from '@/data/books/GetBooksData';
+import { BookCard } from '@/components/books/bookCard/BookCard';
 
 interface BooksManagerProps {
     initialData: FetchBooksResponse;

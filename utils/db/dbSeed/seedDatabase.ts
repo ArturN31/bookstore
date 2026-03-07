@@ -1,9 +1,9 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { generateBooksArray } from '@/utils/db/dbSeed/generateBook';
 import { generateReviewsArray } from '@/utils/db/dbSeed/generateReview';
-import { generateOrdersAndItems } from './generateOrders';
-import { generateDiscounts } from './generateDiscounts';
-import { generateMockUsersArray, MockUserSetup } from './generateUsers';
+import { generateOrdersAndItems } from '@/utils/db/dbSeed/generateOrders';
+import { generateDiscounts } from '@/utils/db/dbSeed/generateDiscounts';
+import { generateMockUsersArray, MockUserSetup } from '@/utils/db/dbSeed/generateUsers';
 
 const DEV_CONFIG = {
     BOOK_COUNT: 100,

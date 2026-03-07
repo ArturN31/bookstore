@@ -1,5 +1,5 @@
-import { UserState, UserAction, INITIAL_USER_STATE } from './UserContext';
-import { mapUserData } from './utils/UserMapper';
+import { UserState, UserAction, INITIAL_USER_STATE } from '@/providers/user/UserContext';
+import { mapUserData } from '@/providers/user/utils/UserMapper';
 
 export function userReducer(state: UserState, action: UserAction): UserState {
     switch (action.type) {

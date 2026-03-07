@@ -1,9 +1,9 @@
-import { Header } from './Header';
-import { Footer } from './Footer';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
 import { Suspense } from 'react';
-import { SessionProviderWrapper } from './SessionProviderWrapper';
+import { SessionProviderWrapper } from '@/components/layout/SessionProviderWrapper';
 import { BookFilterProvider } from '@/providers/BookFilterProvider';
-import { LayoutSkeleton } from './LayoutSkeleton';
+import { LayoutSkeleton } from '@/components/layout/LayoutSkeleton';
 
 export const RootLayoutContent = ({ children }: { children: React.ReactNode }) => {
     return (

@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker/locale/en_GB';
-import { testUserIds } from './generateReview';
+import { testUserIds } from '@/utils/db/dbSeed/generateReview';
 
 const PAYMENT_METHODS: PaymentMethod[] = [
     'Credit Card',

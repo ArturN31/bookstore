@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction } from 'react';
-import { CartSummary } from './CartSummary';
-import { CartHeader } from './CartHeader';
-import { CartItem } from './CartItem/CartItem';
+import { CartSummary } from '@/components/CartSidebar/CartSummary';
+import { CartHeader } from '@/components/CartSidebar/CartHeader';
+import { CartItem } from '@/components/CartSidebar/CartItem/CartItem';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { useRouter } from 'next/navigation';
 import { useCartState } from '@/providers/cart/utils/useCart';

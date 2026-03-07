@@ -1,7 +1,7 @@
 'use client';
 
-import { CartProvider } from './cart/CartProvider';
-import { UserProvider } from './user/UserProvider';
+import { CartProvider } from '@/providers/cart/CartProvider';
+import { UserProvider } from '@/providers/user/UserProvider';
 import { SnackbarProvider } from 'notistack';
 
 interface SessionData {

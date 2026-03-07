@@ -1,8 +1,8 @@
 'use client';
 
-import { SearchOutput } from './SearchOutput';
+import { SearchOutput } from '@/components/layout/UserNavbar/SearchBar/SearchOutput';
 import { ChangeEvent, useEffect, useState } from 'react';
-import { SearchInput } from './SearchInput';
+import { SearchInput } from '@/components/layout/UserNavbar/SearchBar/SearchInput';
 import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
 import { useRouter } from 'next/navigation';
 

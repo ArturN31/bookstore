@@ -9,7 +9,7 @@ import { addressSchema, fullUserSchema } from '@/data/schemas/addressSchema';
 import { FormBtns } from '@/components/formItems/FormBtns';
 import { FormErrors } from '@/components/formItems/FormErrors';
 import { TextInput } from '@/components/formItems/TextInput';
-import { UserPersonalFields } from './UserPersonalFields';
+import { UserPersonalFields } from '@/components/pages/user/profile/AddressForm/UserPersonalFields';
 
 interface AddressFormProps {
     mode: 'add' | 'update';

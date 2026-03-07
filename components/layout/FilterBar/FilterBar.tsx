@@ -1,10 +1,19 @@
 import dynamic from 'next/dynamic';
 
-import { Home } from './Home';
+import { Home } from '@/components/layout/FilterBar/Home';
 
-const Genre = dynamic(() => import('./Genre').then((mod) => mod.Genre), { ssr: true });
-const Format = dynamic(() => import('./Format').then((mod) => mod.Format), { ssr: true });
-const SortBy = dynamic(() => import('./SortBy').then((mod) => mod.SortBy), { ssr: true });
+const Genre = dynamic(
+    () => import('@/components/layout/FilterBar/Genre').then((mod) => mod.Genre),
+    { ssr: true },
+);
+const Format = dynamic(
+    () => import('@/components/layout/FilterBar/Format').then((mod) => mod.Format),
+    { ssr: true },
+);
+const SortBy = dynamic(
+    () => import('@/components/layout/FilterBar/SortBy').then((mod) => mod.SortBy),
+    { ssr: true },
+);
 
 export const FilterBar = () => {
     return (

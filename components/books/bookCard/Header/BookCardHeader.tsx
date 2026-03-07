@@ -1,7 +1,7 @@
 import { useUserState } from '@/providers/user/utils/useUser';
 import { Chip } from '@mui/material';
-import { BookRating } from './BookRating';
-import { WishlistActionForm } from './WishlistActionForm';
+import { BookRating } from '@/components/books/bookCard/Header/BookRating';
+import { WishlistActionForm } from '@/components/books/bookCard/Header/WishlistActionForm';
 
 export const BookCardHeader = ({ book }: { book: Book }) => {
     const { loggedIn, profileExists } = useUserState();

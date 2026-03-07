@@ -1,7 +1,7 @@
 'use client';
 
 import { useContext } from 'react';
-import { UserActionsContext, UserStateContext } from '../UserContext';
+import { UserActionsContext, UserStateContext } from '@/providers/user/UserContext';
 
 export const useUserState = () => {
     const context = useContext(UserStateContext);

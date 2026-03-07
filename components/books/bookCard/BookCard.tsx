@@ -1,5 +1,5 @@
-import { BookCardHeader } from './Header/BookCardHeader';
-import { BookCardBody } from './Body/BookCardBody';
+import { BookCardHeader } from '@/components/books/bookCard/Header/BookCardHeader';
+import { BookCardBody } from '@/components/books/bookCard/Body/BookCardBody';
 
 export const BookCard = ({ book }: { book: Book }) => {
     return (

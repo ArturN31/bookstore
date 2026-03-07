@@ -1,8 +1,8 @@
 import Image from 'next/image';
-import logo from './../../public/logo.jpg';
-import { UserNavbar } from './UserNavbar/UserNavbar';
+import logo from '@/public/logo.jpg';
+import { UserNavbar } from '@/components/layout/UserNavbar/UserNavbar';
 import Link from 'next/link';
-import { FilterBar } from './FilterBar/FilterBar';
+import { FilterBar } from '@/components/layout/FilterBar/FilterBar';
 
 export const Header = () => {
     return (

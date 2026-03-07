@@ -1,5 +1,5 @@
-import { CartItemContent } from './CartItemContent';
-import { CartItemRemove } from './CartItemRemove';
+import { CartItemContent } from '@/components/CartSidebar/CartItem/CartItemContent';
+import { CartItemRemove } from '@/components/CartSidebar/CartItem/CartItemRemove';
 
 export const CartItem = ({ book }: { book: Book }) => {
     return (

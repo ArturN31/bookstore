@@ -1,11 +1,11 @@
 'use client';
 import React, { useReducer, useMemo, useCallback } from 'react';
 import { createFrontendClient } from '@/utils/db/client';
-import { CartStateContext, CartActionsContext } from './CartContext';
-import { cartReducer } from './CartReducer';
-import { useUserState } from '../user/utils/useUser';
-import { createInitialCartState } from './utils/CartMapper';
-import { useCartListeners } from './utils/useCartListeners';
+import { CartStateContext, CartActionsContext } from '@/providers/cart/CartContext';
+import { cartReducer } from '@/providers/cart/CartReducer';
+import { useUserState } from '@/providers/user/utils/useUser';
+import { createInitialCartState } from '@/providers/cart/utils/CartMapper';
+import { useCartListeners } from '@/providers/cart/utils/useCartListeners';
 import { getCartData } from '@/data/cart/GetCartData';
 
 interface CartProviderProps {

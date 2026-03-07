@@ -3,10 +3,10 @@ import React, { useReducer, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createFrontendClient } from '@/utils/db/client';
 import { User as SupabaseUser } from '@supabase/supabase-js';
-import { UserStateContext, UserActionsContext } from './UserContext';
-import { userReducer } from './UserReducer';
-import { createInitialState } from './utils/UserMapper';
-import { useUserListeners } from './utils/useUserListeners';
+import { UserStateContext, UserActionsContext } from '@/providers/user/UserContext';
+import { userReducer } from '@/providers/user/UserReducer';
+import { createInitialState } from '@/providers/user/utils/UserMapper';
+import { useUserListeners } from '@/providers/user/utils/useUserListeners';
 import { getUserData, getUserWishlist } from '@/data/user/GetUserData';
 
 interface UserProviderProps {

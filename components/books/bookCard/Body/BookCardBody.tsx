@@ -1,6 +1,6 @@
 'use client';
 
-import { BookCardBodyContent } from './BookCardBodyContent';
+import { BookCardBodyContent } from '@/components/books/bookCard/Body/BookCardBodyContent';
 import { Card } from '@mui/material';
 import { useRouter } from 'next/navigation';
 

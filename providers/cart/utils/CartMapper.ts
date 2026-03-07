@@ -1,4 +1,4 @@
-import { INITIAL_CART_STATE } from '../CartContext';
+import { INITIAL_CART_STATE } from '@/providers/cart/CartContext';
 
 /**
  * Transforms raw book data and totals into a valid Cart state.
