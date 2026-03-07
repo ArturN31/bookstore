@@ -1,54 +1,56 @@
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
-import { useState } from 'react';
+import { useState, ChangeEvent, MouseEvent } from 'react';
 import KeyIcon from '@mui/icons-material/Key';
 
-export const PasswordField = ({
-	id,
-	label,
-	placeholder,
-	defaultValue,
-}: {
-	id: string;
-	label: string;
-	placeholder: string;
-	defaultValue: string;
-}) => {
-	const [visible, setVisible] = useState(false);
+interface PasswordFieldProps {
+    id: string;
+    label: string;
+    placeholder: string;
+    value: string;
+    onChange: (e: ChangeEvent<HTMLInputElement>) => void;
+}
 
-	const handleVisibility = (e: any) => {
-		e.preventDefault();
-		setVisible(!visible);
-	};
+export const PasswordField = ({ id, label, placeholder, value, onChange }: PasswordFieldProps) => {
+    const [visible, setVisible] = useState(false);
 
-	return (
-		<div className='grid'>
-			<label
-				htmlFor={id}
-				className='inline-block text-gray-700 font-medium text-sm rounded-sm transition-colors duration-200 focus-within:bg-blue-100 focus-within:text-blue-700 px-1'>
-				{label}
-			</label>
-			<div className='relative flex items-center'>
-				<div className='absolute top-2 pl-3 flex items-center pointer-events-none text-gray-400'>
-					<KeyIcon aria-hidden='true' />
-				</div>
-				<input
-					required
-					type={visible ? 'text' : 'password'}
-					id={id}
-					name={id}
-					data-testid={`${id}-field`}
-					placeholder={placeholder}
-					defaultValue={defaultValue}
-					className='block w-full h-full pl-10 border border-gray-300 rounded-l-md py-2 focus:outline-none focus:border-blue-500 text-sm'
-					aria-describedby={`${id}-helper`}
-				/>
-				<button
-					className='block w-fit px-1 border border-l-0 border-gray-300 rounded-r-md py-2 text-sm hover:cursor-pointer'
-					onClick={handleVisibility}>
-					{!visible ? <VisibilityOutlinedIcon /> : <VisibilityOffOutlinedIcon />}
-				</button>
-			</div>
-		</div>
-	);
+    const handleVisibility = (e: MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        setVisible(!visible);
+    };
+
+    return (
+        <div className="grid">
+            <label
+                htmlFor={id}
+                className="inline-block rounded-sm px-1 text-sm font-medium text-gray-700 transition-colors duration-200 focus-within:bg-blue-100 focus-within:text-blue-700"
+            >
+                {label}
+            </label>
+            <div className="relative flex items-center">
+                <div className="pointer-events-none absolute top-2 flex items-center pl-3 text-gray-400">
+                    <KeyIcon aria-hidden="true" />
+                </div>
+                <input
+                    required
+                    type={visible ? 'text' : 'password'}
+                    id={id}
+                    name={id}
+                    data-testid={`${id}-field`}
+                    placeholder={placeholder}
+                    value={value}
+                    onChange={onChange}
+                    className="block h-full w-full rounded-l-md border border-gray-300 py-2 pl-10 text-sm focus:border-blue-500 focus:outline-none"
+                    aria-describedby={`${id}-helper`}
+                />
+                <button
+                    type="button"
+                    className="block w-fit rounded-r-md border border-l-0 border-gray-300 px-1 py-2 text-sm hover:cursor-pointer"
+                    onClick={handleVisibility}
+                >
+                    {!visible ? <VisibilityOutlinedIcon /> : <VisibilityOffOutlinedIcon />}
+                </button>
+            </div>
+        </div>
+    );
 };

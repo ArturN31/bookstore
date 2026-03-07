@@ -1,133 +1,34 @@
-import { FormBtns } from '@/components/formItems/FormBtns';
-import { FormErrors } from '@/components/formItems/FormErrors';
-import { TextInput } from '@/components/formItems/TextInput';
-import {
-	ChangeAddressFormState,
-	ChangeAddressAction,
-} from '@/data/actions/AddressForm/ChangeAddressAction';
-import { useActionState, useEffect, useState, useTransition } from 'react';
+import { AddressForm } from '@/components/pages/user/profile/AddressForm/AddressForm';
+import { getUserData } from '@/data/user/GetUserData';
+import { createBackendClient } from '@/utils/db/server';
+import { redirect } from 'next/navigation';
 
-export default function ChangeAddressPage() {
-	const INITIAL_STATE: ChangeAddressFormState = {
-		streetAddress: '',
-		postcode: '',
-		city: '',
-		country: '',
-		message: undefined,
-		error: undefined,
-		validationErrors: undefined,
-	};
-	const [formState, formAction] = useActionState(ChangeAddressAction, INITIAL_STATE);
-	const [formError, setFormError] = useState<string | null>(null);
-	const [isTransitioningSubmit, startTransitionSubmit] = useTransition();
-	const [isTransitioningReset, startTransitionReset] = useTransition();
-	const { streetAddress, postcode, city, country, message, validationErrors } = formState;
+export default async function ChangeAddressPage() {
+    const supabase = await createBackendClient();
+    const userData = await getUserData(supabase);
 
-	useEffect(() => {
-		if (message) {
-			setFormError(message);
-		} else {
-			setFormError(null);
-		}
-	}, [message]);
+    if (!userData) {
+        redirect('/');
+        return null;
+    }
 
-	const handleReset = async () => {
-		const streetElement = document.getElementById(
-			'streetAddress',
-		) as HTMLInputElement | null;
-		const postcodeElement = document.getElementById(
-			'postcode',
-		) as HTMLInputElement | null;
-		const cityElement = document.getElementById('city') as HTMLInputElement | null;
-		const countryElement = document.getElementById('country') as HTMLInputElement | null;
+    const formattedData = {
+        firstName: userData.first_name,
+        lastName: userData.last_name,
+        dob: userData.date_of_birth,
+        streetAddress: userData.street_address,
+        postcode: userData.postcode,
+        city: userData.city,
+        country: userData.country,
+        phoneNumber: userData.phone_number,
+    };
 
-		if (streetElement && postcodeElement && cityElement && countryElement) {
-			streetElement.value = '';
-			postcodeElement.value = '';
-			cityElement.value = '';
-			countryElement.value = '';
-
-			const form = document.getElementById('change-address-form') as HTMLFormElement;
-			if (form) {
-				startTransitionReset(async () => {
-					const newForm = new FormData(form);
-					newForm.append('reset', 'yes');
-					await formAction(newForm);
-				});
-			}
-		}
-	};
-
-	const handleSubmit = async (event: React.FormEvent) => {
-		event.preventDefault();
-		const form = event.currentTarget as HTMLFormElement;
-		startTransitionSubmit(async () => {
-			await formAction(new FormData(form));
-		});
-	};
-
-	return (
-		<div className='relative grid place-self-center w-full max-w-md'>
-			<form
-				id='change-address-form'
-				data-testid='change-address-form'
-				action={formAction}
-				onSubmit={handleSubmit}
-				className='grid place-self-center bg-white shadow-md rounded-lg gap-5 p-8 w-full max-w-md border-t-8 border-gunmetal'
-				style={{ boxShadow: '0px 2px 6px -2px black' }}>
-				<div className='pb-5 border-b border-gray-200'>
-					<h1 className='text-xl font-semibold text-gray-800 mb-1'>
-						Let's Update Your Address!
-					</h1>
-					<p className='font-light text-gray-600 text-sm'>
-						Update your shipping address information below.
-					</p>
-				</div>
-
-				<div className='grid gap-3'>
-					<FormErrors
-						formError={formError}
-						isUsernameTaken={undefined}
-						validationErrors={validationErrors}
-					/>
-
-					<div className='flex justify-between gap-3'>
-						<TextInput
-							key='streetAddress'
-							label='Street Address'
-							id='streetAddress'
-							defaultValue={streetAddress ?? ''}
-						/>
-						<TextInput
-							key='postcode'
-							label='Postcode'
-							id='postcode'
-							defaultValue={postcode ?? ''}
-						/>
-					</div>
-
-					<div className='flex justify-between gap-3'>
-						<TextInput
-							key='city'
-							label='City'
-							id='city'
-							defaultValue={city ?? ''}
-						/>
-						<TextInput
-							key='country'
-							label='Country'
-							id='country'
-							defaultValue={country ?? ''}
-						/>
-					</div>
-
-					<FormBtns
-						isTransitioningSubmit={isTransitioningSubmit}
-						isTransitioningReset={isTransitioningReset}
-						handleReset={handleReset}
-					/>
-				</div>
-			</form>
-		</div>
-	);
+    return (
+        <div className="relative grid w-full max-w-md place-self-center">
+            <AddressForm
+                mode="update"
+                initialData={formattedData}
+            />
+        </div>
+    );
 }

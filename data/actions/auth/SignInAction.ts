@@ -1,83 +1,72 @@
 'use server';
 
 import { z } from 'zod';
-import { createClient } from '@/utils/db/server';
+import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { getUserData } from '@/data/user/GetUserData';
+import { signInSchema } from '@/data/schemas/authSchemas';
 
 export type SignInFormState = {
-	email: string | null;
-	password: string | null;
-	validationErrors?: z.ZodIssue[];
-	message?: string;
-	error?: any;
+    email: string | null;
+    password: string | null;
+    validationErrors?: z.core.$ZodIssue[];
+    message?: string;
+    error?: any;
 };
 
-const schema = z.object({
-	email: z.string().trim().min(1, 'Email is required').email('Invalid email format'),
-	password: z.string().trim(),
-});
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+    invalid_credentials: 'Sign in credentials not recognized.',
+    user_not_found: 'User to which the request relates no longer exists.',
+};
 
 export async function SignInAction(
-	prevState: SignInFormState | undefined,
-	formData: FormData,
+    prevState: SignInFormState | undefined,
+    formData: FormData,
 ): Promise<SignInFormState> {
-	const email = formData.get('email') as string | null;
-	const password = formData.get('password') as string | null;
-	const reset = formData.get('reset') as string | null;
+    const rawData = Object.fromEntries(formData.entries()) as Record<string, string>;
 
-	if (reset)
-		return {
-			email: '',
-			password: '',
-			message: undefined,
-			error: undefined,
-			validationErrors: undefined,
-		};
+    if (rawData.reset)
+        return {
+            email: '',
+            password: '',
+            message: undefined,
+            error: undefined,
+            validationErrors: undefined,
+        };
 
-	const validatedData = schema.safeParse({ email, password });
+    const validated = signInSchema.safeParse(rawData);
 
-	if (!validatedData.success) {
-		return {
-			email,
-			password,
-			validationErrors: validatedData.error.issues,
-			message: 'Please correct the errors below.',
-		};
-	}
+    if (!validated.success)
+        return {
+            email: rawData.email || null,
+            password: rawData.password || null,
+            validationErrors: validated.error.issues,
+            message: 'Please correct the errors below.',
+        };
 
-	const supabase = await createClient();
-	const { error: supabaseError } = await supabase.auth.signInWithPassword({
-		email: validatedData.data.email,
-		password: validatedData.data.password,
-	});
+    const supabase = await createBackendClient();
+    const { error: authError } = await supabase.auth.signInWithPassword(validated.data);
 
-	if (supabaseError) {
-		console.log('Signin error:', supabaseError);
-		if (supabaseError.code === 'invalid_credentials') {
-			return {
-				email,
-				password,
-				error: supabaseError,
-				message: 'Sign in credentials not recognized.',
-			};
-		}
-		if (supabaseError.code === 'user_not_found') {
-			return {
-				email,
-				password,
-				error: supabaseError,
-				message: 'User to which the request relates no longer exists.',
-			};
-		}
-		return {
-			email,
-			password,
-			error: supabaseError,
-			message: 'Failed to sign in.',
-		};
-	}
+    if (authError)
+        return {
+            email: rawData.email || null,
+            password: rawData.password || null,
+            error: authError,
+            message:
+                AUTH_ERROR_MESSAGES[authError.code || ''] ||
+                authError.message ||
+                'Failed to sign in.',
+        };
 
-	revalidatePath('/user/profile');
-	redirect('/user/profile');
+    const dbUser = await getUserData(supabase);
+
+    revalidatePath('/', 'layout');
+
+    if (!dbUser) redirect('/user/profile');
+
+    const returnTo = rawData.returnTo;
+    if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) redirect(returnTo);
+
+    redirect('/');
 }

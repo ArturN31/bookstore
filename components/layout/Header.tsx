@@ -5,33 +5,39 @@ import Link from 'next/link';
 import { FilterBar } from './FilterBar/FilterBar';
 
 export const Header = () => {
-	return (
-		<nav data-testid='header'>
-			<div className='lg:flex grid lg:gap-0 gap-8 lg:justify-between justify-center bg-gunmetal select-none'>
-				<div className='md:flex grid items-center md:gap-5 gap-0 px-5'>
-					<Link
-						data-testid='header-logo'
-						className='rounded-full hover:cursor-pointer'
-						href='/'>
-						<Image
-							className='m-auto rounded-full'
-							src={logo}
-							width={150}
-							alt='Books 4 You Logo'
-						/>
-					</Link>
-					<div className='text-3xl text-white text-center'>
-						<p>Easy Reading,</p>
-						<p>Endless Possibilities.</p>
-					</div>
-				</div>
-				<div className='grid items-center px-8 lg:pb-0 pb-8'>
-					<UserNavbar />
-				</div>
-			</div>
-			<div className='bg-moonstone'>
-				<FilterBar />
-			</div>
-		</nav>
-	);
+    return (
+        <nav data-testid="header">
+            <div className="bg-gunmetal grid justify-center gap-8 select-none lg:flex lg:justify-between lg:gap-0">
+                <div className="grid items-center gap-0 px-5 md:flex md:gap-5">
+                    <Link
+                        data-testid="header-logo"
+                        aria-label="Books 4 You Home"
+                        className="flex shrink-0 rounded-full hover:cursor-pointer"
+                        href="/"
+                    >
+                        <Image
+                            className="m-auto rounded-full"
+                            src={logo}
+                            width={150}
+                            height={150}
+                            alt="Books 4 You Logo"
+                            priority
+                            fetchPriority="high"
+                            decoding="sync"
+                        />
+                    </Link>
+                    <div className="text-center text-3xl text-white">
+                        <p>Easy Reading,</p>
+                        <p>Endless Possibilities.</p>
+                    </div>
+                </div>
+                <div className="grid items-center px-8 pb-8 lg:pb-0">
+                    <UserNavbar />
+                </div>
+            </div>
+            <div className="bg-moonstone">
+                <FilterBar />
+            </div>
+        </nav>
+    );
 };

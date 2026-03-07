@@ -1,29 +1,36 @@
 import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
+import { ChangeEvent } from 'react';
 
-export const EmailField = ({ email }: { email: string }) => {
-	return (
-		<div className='relative grid place-self-center w-full max-w-md'>
-			<label
-				htmlFor='email'
-				className='inline-block text-gray-700 font-medium text-sm rounded-sm transition-colors duration-200 focus-within:bg-blue-100 focus-within:text-blue-700 px-1'>
-				Email
-			</label>
+interface EmailFieldProps {
+    email: string;
+    onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
+}
 
-			<div className='relative'>
-				<div className='absolute top-2 pl-3 flex items-center pointer-events-none text-gray-400'>
-					<AlternateEmailIcon aria-hidden='true' />
-				</div>
-				<input
-					required
-					type='email'
-					id='email'
-					name='email'
-					data-testid='email-field'
-					placeholder='Email'
-					defaultValue={email}
-					className='block w-full pl-10 border border-gray-300 rounded-md py-2 focus:outline-none focus:border-blue-500 text-sm'
-				/>
-			</div>
-		</div>
-	);
+export const EmailField = ({ email, onChange }: EmailFieldProps) => {
+    return (
+        <div className="relative grid w-full max-w-md place-self-center">
+            <label
+                htmlFor="email"
+                className="inline-block rounded-sm px-1 text-sm font-medium text-gray-700 transition-colors duration-200 focus-within:bg-blue-100 focus-within:text-blue-700"
+            >
+                Email
+            </label>
+
+            <div className="relative">
+                <div className="pointer-events-none absolute top-2 flex items-center pl-3 text-gray-400">
+                    <AlternateEmailIcon aria-hidden="true" />
+                </div>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    data-testid="email-field"
+                    placeholder="Email"
+                    value={email}
+                    onChange={onChange}
+                    className="block w-full rounded-md border border-gray-300 py-2 pl-10 text-sm focus:border-blue-500 focus:outline-none"
+                />
+            </div>
+        </div>
+    );
 };

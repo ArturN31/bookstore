@@ -1,119 +1,73 @@
 'use server';
 
 import { z } from 'zod';
-import { createClient } from '@/utils/db/server';
+import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { signUpSchema } from '@/data/schemas/authSchemas';
 
 export type SignUpFormState = {
-	email: string | null;
-	password: string | null;
-	cnfPassword: string | null;
-	validationErrors?: z.ZodIssue[];
-	message?: string;
-	error?: any;
+    email: string | null;
+    password: string | null;
+    cnfPassword: string | null;
+    validationErrors?: z.core.$ZodIssue[];
+    message?: string;
+    error?: any;
 };
 
-const schema = z
-	.object({
-		email: z.string().trim().min(1, 'Email is required').email('Invalid email format'),
-		password: z
-			.string()
-			.trim()
-			.min(8, 'Password must be at least 8 characters long')
-			.max(50, 'Password cannot be longer than 50 characters')
-			.regex(
-				/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
-				'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character',
-			),
-		cnfPassword: z
-			.string()
-			.trim()
-			.min(6, 'Confirm Password must be at least 6 characters long')
-			.max(50, 'Confirm Password cannot be longer than 50 characters'),
-	})
-	.refine((data) => data.password === data.cnfPassword, {
-		message: 'Passwords must match',
-		path: ['cnfPassword'],
-	});
+const SIGNUP_ERROR_MESSAGES: Record<string, string> = {
+    email_exists: 'An account with this email already exists.',
+    user_already_exists: 'An account with this email already exists.',
+    weak_password: 'Password is too weak. Please ensure it meets all complexity requirements.',
+};
 
 export async function SignUpAction(
-	prevState: SignUpFormState | undefined,
-	formData: FormData,
+    prevState: SignUpFormState | undefined,
+    formData: FormData,
 ): Promise<SignUpFormState> {
-	const email = formData.get('email') as string | null;
-	const password = formData.get('password') as string | null;
-	const cnfPassword = formData.get('cnfPassword') as string | null;
-	const reset = formData.get('reset') as string | null;
+    const rawData = Object.fromEntries(formData.entries()) as Record<string, string>;
 
-	if (reset)
-		return {
-			email: '',
-			password: '',
-			cnfPassword: '',
-			message: undefined,
-			error: undefined,
-			validationErrors: undefined,
-		};
+    if (rawData.reset)
+        return {
+            email: '',
+            password: '',
+            cnfPassword: '',
+            message: undefined,
+            error: undefined,
+            validationErrors: undefined,
+        };
 
-	const validatedData = schema.safeParse({ email, password, cnfPassword });
+    const validated = signUpSchema.safeParse(rawData);
 
-	if (!validatedData.success) {
-		return {
-			email,
-			password,
-			cnfPassword,
-			validationErrors: validatedData.error.issues,
-			message: 'Please correct the errors below.',
-		};
-	}
+    if (!validated.success)
+        return {
+            email: rawData.email || null,
+            password: rawData.password || null,
+            cnfPassword: rawData.cnfPassword || null,
+            validationErrors: validated.error.issues,
+            message: 'Please correct the errors below.',
+        };
 
-	const supabase = await createClient();
-	const { error: supabaseError } = await supabase.auth.signUp({
-		email: validatedData.data.email,
-		password: validatedData.data.password,
-	});
+    const supabase = await createBackendClient();
+    const { error: authError } = await supabase.auth.signUp({
+        email: validated.data.email,
+        password: validated.data.password,
+    });
 
-	if (supabaseError) {
-		console.log('Signup error:', supabaseError);
-		if (supabaseError.code === 'email_exists') {
-			return {
-				email,
-				password,
-				cnfPassword,
-				error: supabaseError,
-				message: 'Failed to insert user into the database as email already exists.',
-			};
-		}
-		if (supabaseError.code === 'user_already_exists') {
-			return {
-				email,
-				password,
-				cnfPassword,
-				error: supabaseError,
-				message: 'Failed to insert user into the database as it already exists.',
-			};
-		}
-		if (supabaseError.code === 'weak_password') {
-			return {
-				email,
-				password,
-				cnfPassword,
-				error: supabaseError,
-				message:
-					'Failed to insert user into the database as the password is too weak.\nPassword should be at least 8 characters long.\nIt has to include: lowercase, uppercase letters, digits, and symbols.',
-			};
-		}
-		return {
-			email,
-			password,
-			cnfPassword,
-			error: supabaseError,
-			message: 'Failed to insert user into the database.',
-		};
-	}
+    if (authError)
+        return {
+            email: rawData.email || null,
+            password: rawData.password || null,
+            cnfPassword: rawData.cnfPassword || null,
+            error: authError,
+            message:
+                SIGNUP_ERROR_MESSAGES[authError.code || ''] ||
+                authError.message ||
+                'Failed to create account.',
+        };
 
-	//return success
-	revalidatePath('/user/profile');
-	redirect('/user/profile');
+    revalidatePath('/', 'layout');
+    revalidatePath('/user/profile');
+
+    redirect('/user/profile');
 }

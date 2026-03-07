@@ -1,45 +1,37 @@
-import { ZodIssue } from 'zod';
+import { z } from 'zod';
 
 export const FormErrors = ({
-	formError,
-	isUsernameTaken,
-	validationErrors,
+    formError,
+    validationErrors,
 }: {
-	formError: string | null;
-	isUsernameTaken: boolean | undefined;
-	validationErrors: ZodIssue[] | undefined;
+    formError: string | undefined;
+    validationErrors: z.core.$ZodIssue[] | undefined;
 }) => {
-	return (
-		<>
-			{formError && (
-				<div
-					className='bg-red-100 border border-red-400 text-red-700 px-4 py-1 rounded relative text-sm'
-					role='alert'
-					data-testid='form-error-display'>
-					<strong className='font-bold'>Error:</strong>
-					<span className='pl-2 block sm:inline'>{formError}</span>
-				</div>
-			)}
-			{isUsernameTaken && (
-				<div
-					className='bg-orange-100 border border-orange-400 text-orange-700 px-4 py-1 rounded relative text-sm'
-					role='alert'>
-					<strong className='font-bold'>Warning:</strong>
-					<span className='pl-2 block sm:inline'>Username unavailable.</span>
-				</div>
-			)}
-			{validationErrors && (
-				<div
-					className='bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-1 rounded relative text-sm'
-					role='alert'>
-					<strong className='font-bold'>Validation Issues:</strong>
-					<ul className='mt-1 list-disc pl-5 text-sm'>
-						{validationErrors.map((issue, index) => (
-							<li key={index}>{issue.message}.</li>
-						))}
-					</ul>
-				</div>
-			)}
-		</>
-	);
+    return (
+        <>
+            {formError && (
+                <div
+                    className="relative rounded border border-red-400 bg-red-100 px-4 py-1 text-sm text-red-700"
+                    role="alert"
+                    data-testid="form-error-display"
+                >
+                    <strong className="font-bold">Error:</strong>
+                    <span className="block pl-2 sm:inline">{formError}</span>
+                </div>
+            )}
+            {validationErrors && (
+                <div
+                    className="relative rounded border border-yellow-400 bg-yellow-100 px-4 py-1 text-sm text-yellow-700"
+                    role="alert"
+                >
+                    <strong className="font-bold">Validation Issues:</strong>
+                    <ul className="mt-1 list-disc pl-5 text-sm">
+                        {validationErrors.map((issue, index) => (
+                            <li key={index}>{issue.message}.</li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+        </>
+    );
 };

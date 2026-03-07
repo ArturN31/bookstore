@@ -3,89 +3,133 @@
 import { SearchOutput } from './SearchOutput';
 import { ChangeEvent, useEffect, useState } from 'react';
 import { SearchInput } from './SearchInput';
-import { getAllBooks } from '@/data/books/GetBooksData';
+import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
+import { useRouter } from 'next/navigation';
 
 export const SearchBar = () => {
-	const [input, setInput] = useState('');
-	const [isDropdownVisible, setIsDropdownVisible] = useState(false);
-	const [searchResults, setSearchResults] = useState<Book[]>([]);
-	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [input, setInput] = useState('');
+    const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+    const [searchResults, setSearchResults] = useState<Book[]>([]);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [activeIndex, setActiveIndex] = useState(-1);
+    const [isLoading, setIsLoading] = useState(false);
 
-	const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-		const { value } = e.target;
-		setInput(value);
-		setIsDropdownVisible(true);
-		setErrorMessage(null);
-	};
+    const router = useRouter();
 
-	const fetchAndFilterBooks = async (searchTerm: string) => {
-		setSearchResults([]);
-		setErrorMessage(null);
+    const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const { value } = e.target;
+        setInput(value);
+        setIsDropdownVisible(true);
+        setErrorMessage(null);
+        if (value) setIsLoading(true);
+    };
 
-		try {
-			const allBooks = await getAllBooks();
+    const clearSearch = () => {
+        setInput('');
+        setIsDropdownVisible(false);
+        setActiveIndex(-1);
+    };
 
-			if (!allBooks) {
-				setErrorMessage('No books available to search.');
-				setIsDropdownVisible(true);
-				return;
-			}
+    const fetchAndFilterBooks = async (searchTerm: string) => {
+        setIsLoading(true);
 
-			const filteredBooks = allBooks
-				.filter((book: Book) => book.is_active)
-				.filter((book: Book) =>
-					book.title.toLowerCase().includes(searchTerm.toLowerCase()),
-				)
-				.slice(0, 10);
+        try {
+            const allBooks = await fetchBooksWithReviews();
+            if (!allBooks) {
+                setErrorMessage('No books available to search.');
+                setIsDropdownVisible(true);
+                return;
+            }
 
-			setSearchResults(filteredBooks);
-			setIsDropdownVisible(true);
-		} catch (error) {
-			const message =
-				error instanceof Error
-					? error.message
-					: 'An unknown error occurred while fetching books.';
+            const filteredBooks = allBooks.data
+                .filter((book: Book) => book.is_active)
+                .filter((book: Book) => book.title.toLowerCase().includes(searchTerm.toLowerCase()))
+                .slice(0, 10);
 
-			setErrorMessage(
-				`Failed to retrieve books. Please try again later. Details: ${message}`,
-			);
-			setSearchResults([]);
-			setIsDropdownVisible(true);
-		}
-	};
+            setSearchResults(filteredBooks);
+            setIsDropdownVisible(true);
+        } catch (error) {
+            setErrorMessage('Failed to retrieve books. Please try again later.');
+            setSearchResults([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-	const handleMouseEnter = () => setIsDropdownVisible(true);
-	const handleMouseLeave = () => setIsDropdownVisible(false);
+    const handleBlur = (e: React.FocusEvent) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            setIsDropdownVisible(false);
+            setActiveIndex(-1);
+        }
+    };
 
-	useEffect(() => {
-		if (input) {
-			const delaySearch = setTimeout(() => {
-				fetchAndFilterBooks(input);
-			}, 1000);
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Escape') {
+            setIsDropdownVisible(false);
+            setActiveIndex(-1);
+        }
 
-			return () => clearTimeout(delaySearch);
-		} else {
-			setSearchResults([]);
-			setErrorMessage(null);
-		}
-	}, [input]);
+        if (isDropdownVisible && searchResults.length > 0) {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setActiveIndex((prev) => (prev < searchResults.length - 1 ? prev + 1 : prev));
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setActiveIndex((prev) => (prev > 0 ? prev - 1 : prev));
+            } else if (e.key === 'Enter' && activeIndex !== -1) {
+                e.preventDefault();
+                const selectedBook = searchResults[activeIndex];
+                router.push(`/book/${selectedBook.id}`);
+                clearSearch();
+            }
+        }
+    };
 
-	return (
-		<div
-			data-testid='searchbar'
-			className='grid relative'
-			onMouseEnter={handleMouseEnter}
-			onMouseLeave={handleMouseLeave}>
-			<SearchInput
-				input={input}
-				handleInput={handleInputChange}
-			/>
-			{input && isDropdownVisible && (
-				<SearchOutput
-					books={searchResults}
-					errorMessage={errorMessage}
-				/>
-			)}
-		</div>
-	);
+    useEffect(() => {
+        if (input) {
+            const delaySearch = setTimeout(() => {
+                fetchAndFilterBooks(input);
+            }, 1000);
+            return () => clearTimeout(delaySearch);
+        } else {
+            setIsLoading(false);
+            setSearchResults([]);
+            setErrorMessage(null);
+            setActiveIndex(-1);
+        }
+    }, [input]);
+
+    return (
+        <div
+            className="relative"
+            role="combobox"
+            data-testid="searchbar"
+            aria-expanded={isDropdownVisible}
+            aria-haspopup="listbox"
+            aria-controls="search-results"
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            onMouseEnter={() => input && setIsDropdownVisible(true)}
+            onMouseLeave={() => setIsDropdownVisible(false)}
+        >
+            <SearchInput
+                input={input}
+                handleInput={handleInputChange}
+            />
+            <div
+                aria-live="polite"
+                className="relative min-h-10 w-75"
+            >
+                {input && isDropdownVisible && (
+                    <SearchOutput
+                        books={searchResults}
+                        errorMessage={errorMessage}
+                        activeIndex={activeIndex}
+                        onClose={clearSearch}
+                        isLoading={isLoading}
+                    />
+                )}
+            </div>
+        </div>
+    );
 };

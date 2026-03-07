@@ -5,7 +5,7 @@ import { BookCardCart } from './BookCardCart';
 export const BookCardBodyContent = ({ book }: { book: Book }) => {
 	return (
 		<div className='h-full grid'>
-			<CardMedia className='bg-black max-h-[200px]'>
+			<CardMedia className='bg-black max-h-50'>
 				<Image
 					className='m-auto'
 					src={book.image_url}

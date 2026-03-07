@@ -1,107 +1,78 @@
 'use server';
 
 import { z } from 'zod';
-import { createClient } from '@/utils/db/server';
+import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { getUserDataProperty } from '@/data/user/GetUserData';
+import { passwordSchema } from '@/data/schemas/authSchemas';
 
 export type ChangePasswordFormState = {
-	password: string | null;
-	cnfPassword: string | null;
-	validationErrors?: z.ZodIssue[];
-	message?: string;
-	error?: any;
+    password: string | null;
+    cnfPassword: string | null;
+    validationErrors?: z.core.$ZodIssue[];
+    message?: string;
+    error?: any;
 };
 
-const schema = z
-	.object({
-		password: z
-			.string()
-			.trim()
-			.min(8, 'Password must be at least 8 characters long')
-			.max(50, 'Password cannot be longer than 50 characters')
-			.regex(
-				/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
-				'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character.',
-			),
-		cnfPassword: z
-			.string()
-			.trim()
-			.min(8, 'Password must be at least 8 characters long')
-			.max(50, 'Password cannot be longer than 50 characters')
-			.regex(
-				/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
-				'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character.',
-			),
-	})
-	.refine((data) => data.password === data.cnfPassword, {
-		message: 'Passwords must match.',
-		path: ['cnfPassword'],
-	});
-
 export async function ChangePasswordAction(
-	prevState: ChangePasswordFormState | undefined,
-	formData: FormData,
+    prevState: ChangePasswordFormState | undefined,
+    formData: FormData,
 ): Promise<ChangePasswordFormState> {
-	const password = formData.get('password') as string | null;
-	const cnfPassword = formData.get('cnfPassword') as string | null;
-	const reset = formData.get('reset') as string | null;
+    const rawData = Object.fromEntries(formData.entries()) as Record<string, string>;
 
-	if (reset)
-		return {
-			password: '',
-			cnfPassword: '',
-			message: undefined,
-			error: undefined,
-			validationErrors: undefined,
-		};
+    if (rawData.reset)
+        return {
+            password: '',
+            cnfPassword: '',
+            message: undefined,
+            error: undefined,
+            validationErrors: undefined,
+        };
 
-	const validatedData = schema.safeParse({ password, cnfPassword });
+    const validated = passwordSchema.safeParse(rawData);
 
-	if (!validatedData.success) {
-		return {
-			password,
-			cnfPassword,
-			validationErrors: validatedData.error.issues,
-			message: 'Please correct the errors below.',
-		};
-	}
+    if (!validated.success)
+        return {
+            password: rawData.password || null,
+            cnfPassword: rawData.cnfPassword || null,
+            validationErrors: validated.error.issues,
+            message: 'Please correct the errors below.',
+        };
 
-	const userID = await getUserDataProperty('id');
+    const supabase = await createBackendClient();
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
 
-	if (!userID) {
-		return {
-			password,
-			cnfPassword,
-			message: 'User not authenticated. Please log in again.',
-		};
-	}
+    if (authError || !user)
+        return {
+            password: rawData.password || null,
+            cnfPassword: rawData.cnfPassword || null,
+            message: 'Authentication failed. Please log in.',
+        };
 
-	const supabase = await createClient();
-	const { error: supabaseError } = await supabase.auth.updateUser({
-		password: validatedData.data.password,
-	});
+    const { error: supabaseError } = await supabase.auth.updateUser({
+        password: validated.data.password,
+    });
 
-	if (supabaseError) {
-		if (supabaseError.code === 'weak_password') {
-			return {
-				password,
-				cnfPassword,
-				error: supabaseError,
-				message: 'Failed to update password.',
-			};
-		}
-		return {
-			password,
-			cnfPassword,
-			error: supabaseError,
-			message: 'Failed to update password. Please try again later.',
-		};
-	}
+    if (supabaseError) {
+        const isReauth = supabaseError.message.toLowerCase().includes('reauthentication');
+        const isWeak = supabaseError.code === 'weak_password';
 
-	//return success
-	await supabase.auth.signOut();
-	revalidatePath('/user/profile');
-	redirect('/user/profile');
+        return {
+            password: rawData.password || null,
+            cnfPassword: rawData.cnfPassword || null,
+            error: supabaseError,
+            message: isReauth
+                ? 'Security timeout: Please sign out and back in to change your password.'
+                : isWeak
+                  ? 'Password is too weak.'
+                  : supabaseError.message,
+        };
+    }
+
+    await supabase.auth.signOut();
+    revalidatePath('/', 'layout');
+    redirect('/user/auth/signin');
 }

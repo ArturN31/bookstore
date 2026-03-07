@@ -1,0 +1,97 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`LayoutSkeleton matches the snapshot 1`] = `
+<DocumentFragment>
+  <div
+    class="mx-auto max-w-375 animate-pulse space-y-12 p-8"
+  >
+    <div
+      class="h-75 w-full rounded-xl bg-slate-200"
+    />
+    <div
+      class="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+    >
+      <div
+        class="space-y-3"
+      >
+        <div
+          class="aspect-3/4 w-full rounded-lg bg-slate-200"
+        />
+        <div
+          class="h-4 w-3/4 rounded bg-slate-200"
+        />
+      </div>
+      <div
+        class="space-y-3"
+      >
+        <div
+          class="aspect-3/4 w-full rounded-lg bg-slate-200"
+        />
+        <div
+          class="h-4 w-3/4 rounded bg-slate-200"
+        />
+      </div>
+      <div
+        class="space-y-3"
+      >
+        <div
+          class="aspect-3/4 w-full rounded-lg bg-slate-200"
+        />
+        <div
+          class="h-4 w-3/4 rounded bg-slate-200"
+        />
+      </div>
+      <div
+        class="space-y-3"
+      >
+        <div
+          class="aspect-3/4 w-full rounded-lg bg-slate-200"
+        />
+        <div
+          class="h-4 w-3/4 rounded bg-slate-200"
+        />
+      </div>
+      <div
+        class="space-y-3"
+      >
+        <div
+          class="aspect-3/4 w-full rounded-lg bg-slate-200"
+        />
+        <div
+          class="h-4 w-3/4 rounded bg-slate-200"
+        />
+      </div>
+      <div
+        class="space-y-3"
+      >
+        <div
+          class="aspect-3/4 w-full rounded-lg bg-slate-200"
+        />
+        <div
+          class="h-4 w-3/4 rounded bg-slate-200"
+        />
+      </div>
+      <div
+        class="space-y-3"
+      >
+        <div
+          class="aspect-3/4 w-full rounded-lg bg-slate-200"
+        />
+        <div
+          class="h-4 w-3/4 rounded bg-slate-200"
+        />
+      </div>
+      <div
+        class="space-y-3"
+      >
+        <div
+          class="aspect-3/4 w-full rounded-lg bg-slate-200"
+        />
+        <div
+          class="h-4 w-3/4 rounded bg-slate-200"
+        />
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;

@@ -1,32 +1,36 @@
 export const TextInput = ({
-	id,
-	label,
-	defaultValue,
+    id,
+    label,
+    value,
+    onChange,
 }: {
-	id: string;
-	label: string;
-	defaultValue: string;
+    id: string;
+    label: string;
+    value: string;
+    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) => {
-	return (
-		<div className='relative grid place-self-center w-full max-w-md'>
-			<label
-				htmlFor={id}
-				className='inline-block text-gray-700 font-medium text-sm rounded-sm transition-colors duration-200 focus-within:bg-blue-100 focus-within:text-blue-700 px-1'>
-				{label}
-			</label>
-			<input
-				autoComplete='off'
-				required
-				type='text'
-				id={id}
-				data-testid={`${id}-field`}
-				name={id}
-				placeholder={label}
-				defaultValue={defaultValue}
-				className={`block w-full pl-1 border border-gray-300 rounded-md py-2 focus:outline-none focus:border-blue-500 text-sm ${
-					id === 'postcode' ? 'uppercase placeholder:normal-case' : ''
-				}`}
-			/>
-		</div>
-	);
+    return (
+        <div className="relative grid w-full max-w-md place-self-center">
+            <label
+                htmlFor={id}
+                className="inline-block rounded-sm px-1 text-sm font-medium text-gray-700 transition-colors duration-200 focus-within:bg-blue-100 focus-within:text-blue-700"
+            >
+                {label}
+            </label>
+            <input
+                autoComplete="off"
+                required
+                type="text"
+                id={id}
+                data-testid={`${id}-field`}
+                name={id}
+                placeholder={label}
+                value={value}
+                onChange={onChange}
+                className={`block w-full rounded-md border border-gray-300 py-2 pl-1 text-sm focus:border-blue-500 focus:outline-none ${
+                    id === 'postcode' ? 'uppercase placeholder:normal-case' : ''
+                }`}
+            />
+        </div>
+    );
 };

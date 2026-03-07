@@ -1,34 +1,78 @@
-import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
-import { getBooksByGroupAndType } from '@/data/books/GetBooksData';
-import { OutputBooks } from '@/components/books/OutputBooks';
+import { fetchBooksWithReviews, FilterableBookColumns } from '@/data/books/GetBooksData';
+import { notFound } from 'next/navigation';
+import { AppBreadcrumbs } from '@/components/AppBreadcrumbs';
+import { BooksManager } from '@/components/books/BooksManager';
+
+const formatLabel = (str: string) => str.replace(/-/g, ' ');
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string[] }> }) {
+    const { slug } = await params;
+    const type = decodeURIComponent(slug[1] || '');
+    const formattedType = formatLabel(type);
+    const title = formattedType.charAt(0).toUpperCase() + formattedType.slice(1);
+
+    return {
+        title: `${title} Books | Books4You`,
+        description: `Explore our selection of ${formattedType} books available in various formats.`,
+    };
+}
 
 export default async function BooksByGroupAndType({
-	params,
+    params,
 }: {
-	params: Promise<{ slug: string }>;
+    params: Promise<{ slug: string[] }>;
 }) {
-	const slug = (await params).slug as unknown as string[];
-	const group = slug[0]; //represents the book group - genre/format
-	const type = decodeURIComponent(slug[1]); //represents the type - Adventure/Comedy/Paperback/Hardcover
-	let books = await getBooksByGroupAndType(group, type);
+    const { slug } = await params;
+    if (!slug || slug.length < 2) notFound();
 
-	if (books)
-		return (
-			<div>
-				<div className='flex w-fit pb-2'>
-					<p>{String(group).charAt(0).toUpperCase() + String(group).slice(1)} </p>
+    const [group, typeSlug] = slug;
+    const type = decodeURIComponent(typeSlug);
+    const formattedType = formatLabel(type);
 
-					<KeyboardArrowRightIcon />
+    const initialData = await fetchBooksWithReviews({
+        group: group as FilterableBookColumns,
+        type: type,
+        page: 1,
+        limit: 12,
+    });
 
-					<p>{type}</p>
-				</div>
+    if (initialData.error || !initialData.data.length) return notFound();
 
-				<OutputBooks
-					books={books}
-					type='all'
-				/>
-			</div>
-		);
+    return (
+        <main className="container mx-auto max-w-375 px-4 py-8">
+            <AppBreadcrumbs
+                items={[
+                    {
+                        label: formatLabel(group),
+                        href: `/books/${group}`,
+                    },
+                    {
+                        label: formattedType,
+                        href: '#',
+                        active: true,
+                        count: initialData.total,
+                    },
+                ]}
+            />
 
-	return <p>Cannot retrieve books.</p>;
+            <header className="mb-8">
+                <h1 className="font-serif text-4xl tracking-tight text-slate-900 capitalize">
+                    {formattedType}
+                </h1>
+                <p className="mt-2 text-slate-600">
+                    Showing {initialData.total} {formattedType} books
+                </p>
+            </header>
+
+            <section aria-label={`${formattedType} books collection`}>
+                <BooksManager
+                    initialData={initialData}
+                    filters={{
+                        group: group as FilterableBookColumns,
+                        type: type,
+                    }}
+                />
+            </section>
+        </main>
+    );
 }

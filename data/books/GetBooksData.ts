@@ -1,87 +1,120 @@
 'use server';
 
-import { createClient } from '@/utils/db/server';
+import { createBackendClient } from '@/utils/db/server';
 import { PostgrestResponse } from '@supabase/supabase-js';
 
-/**
- * Retrieves a book from the database by book id.
- *
- * @param bookID Id of a book.
- *
- * @returns A promise that resolves to a `Book` object if successful, or a string error message if not.
- */
-export const getBook = async (bookID: string) => {
-	const supabase = await createClient();
-	const { data, error }: PostgrestResponse<Book> = await supabase
-		.from('books')
-		.select('*')
-		.eq('id', bookID);
+export type FilterableBookColumns = Extract<keyof Book, 'genre' | 'format'>;
 
-	if (error) {
-		console.error('Error retrieving book:', error);
-		return null;
-	}
+export interface FetchBooksFilters {
+    bookID?: string;
+    bookIDs?: string[];
+    group?: FilterableBookColumns;
+    type?: string;
+    page?: number;
+    limit?: number;
+    onlyActive?: boolean;
+    sortBy?: string;
+}
 
-	if (!data || data.length === 0) return null;
+export interface FetchBooksResponse {
+    data: Book[];
+    total: number;
+    totalPages: number;
+    currentPage: number;
+    error: string | null;
+}
 
-	return data[0];
+const enrichBookData = (book: any): Book => {
+    const reviews = book.book_reviews || [];
+    const totalRating = reviews.reduce((acc: number, curr: any) => acc + curr.rating, 0);
+    const avgRating = reviews.length > 0 ? totalRating / reviews.length : 0;
+
+    return {
+        ...book,
+        rating: avgRating,
+        reviews: reviews,
+    };
 };
 
-/**
- * Retrieves books from the database based on the specified group and type.
- *
- * @param group The book group (e.g., genre, format, author).
- * @param type The specific type within the group (e.g., Adventure, Comedy, Paperback, Hardcover).
- * @returns A promise that resolves to an array of `Book` objects if successful, or null.
- */
-export const getBooksByGroupAndType = async (group: string, type: string) => {
-	const supabase = await createClient();
-	const { data, error }: PostgrestResponse<Book> = await supabase
-		.from('books')
-		.select('*')
-		.eq(group, type);
-	if (error) {
-		console.error('Error retrieving books:', error);
-		return null;
-	}
-	if (!data || data.length === 0) return null;
-	return data;
-};
+const createEmptyResponse = (page: number, error: string | null = null): FetchBooksResponse => ({
+    data: [],
+    total: 0,
+    totalPages: 0,
+    currentPage: page,
+    error,
+});
 
-/**
- * Retrieves all books from the database.
- *
- * @returns A promise that resolves to an array of `Book` objects if successful, or null.
- */
-export const getAllBooks = async () => {
-	const supabase = await createClient();
-	const { data, error }: PostgrestResponse<Book> = await supabase
-		.from('books')
-		.select('*');
-	if (error) {
-		console.error('Error retrieving books:', error);
-		return null;
-	}
-	if (!data || data.length === 0) return null;
-	return data;
-};
+export const fetchBooksWithReviews = async ({
+    bookID,
+    bookIDs,
+    group,
+    type,
+    page = 1,
+    limit = 10,
+    onlyActive = true,
+    sortBy = 'Title: A-Z',
+}: FetchBooksFilters = {}): Promise<FetchBooksResponse> => {
+    try {
+        const supabase = await createBackendClient();
 
-/**
- * Retrieves all of users wishlisted books.
- *
- * @param userID
- *
- * @returns A promise that resolves to an array of `Book` objects if successful, or null.
- */
-export const getUsersWishlistedBooks = async (userID: string) => {
-	const supabase = await createClient();
-	const { data, error }: PostgrestResponse<Wishlist> = await supabase
-		.from('wishlist')
-		.select('*')
-		.eq('user_id', userID);
-	if (error) {
-		console.error('Error retrieving wishlisted books:', error);
-		return null;
-	}
-	return data;
+        const isSingleBook = !!bookID;
+        const reviewSelector = isSingleBook ? 'book_reviews(*)' : 'book_reviews(rating)';
+
+        let query = supabase.from('books').select(`*, ${reviewSelector}`, { count: 'exact' });
+
+        if (bookID) query = query.eq('id', bookID);
+        if (bookIDs && bookIDs.length > 0) query = query.in('id', bookIDs);
+        if (group && type) query = query.eq(group, type);
+        if (onlyActive) query = query.eq('is_active', true);
+
+        switch (sortBy) {
+            case 'Title: Z-A':
+                query = query.order('title', { ascending: false });
+                break;
+            case 'Price: Low to High':
+                query = query.order('price' as any, {
+                    ascending: true,
+                });
+                break;
+            case 'Price: High to Low':
+                query = query.order('price' as any, { ascending: false });
+                break;
+            case 'Release Date: Newest to Oldest':
+                query = query.order('created_at', { ascending: false });
+                break;
+            case 'Release Date: Oldest to Newest':
+                query = query.order('created_at', { ascending: true });
+                break;
+            case 'Best Sellers':
+                query = query.order('sales_count', { ascending: false });
+                break;
+            case 'Title: A-Z':
+            default:
+                query = query.order('title', { ascending: true });
+                break;
+        }
+
+        const startIndex = (page - 1) * limit;
+        query = query.range(startIndex, startIndex + limit - 1);
+
+        const { data, error, count }: PostgrestResponse<any> = await query;
+
+        if (error && error.code !== 'PGRST116') {
+            console.error('FetchBooks Database Error:', error.message);
+            return createEmptyResponse(page, 'Internal Server Error');
+        }
+
+        const enrichedData: Book[] = (data || []).map(enrichBookData);
+
+        return {
+            data: enrichedData,
+            total: count || 0,
+            totalPages: Math.ceil((count || 0) / limit),
+            currentPage: page,
+            error: null,
+        };
+    } catch (err) {
+        console.error('FetchBooks Unexpected Error:', err);
+        return createEmptyResponse(page, 'An unexpected error occurred');
+    }
 };

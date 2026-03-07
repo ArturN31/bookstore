@@ -1,37 +1,28 @@
-'use server';
+import { PostgrestResponse, SupabaseClient } from '@supabase/supabase-js';
 
-import { createClient } from '@/utils/db/server';
+export const getUserData = async (supabase: SupabaseClient) => {
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
 
-export const getUserDataProperty = async (prop: keyof User) => {
-	const supabase = await createClient();
-	let {
-		data: { user },
-		error,
-	} = await supabase.auth.getUser();
+    if (authError || !user) return null;
 
-	if (error) return null;
-	if (!user) return null;
-	return user[prop as keyof typeof user] as string;
+    const { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
+
+    if (error) return null;
+    return data as User;
 };
 
-export const getUserData = async () => {
-	const supabase = await createClient();
-	const userID = await getUserDataProperty('id');
-	const { data, error } = await supabase.from('users').select('*').eq('id', userID).single();
-	if (error) return null;
-	return data as User;
-};
+export const getUserWishlist = async (supabase: SupabaseClient, userID: string) => {
+    const { data, error }: PostgrestResponse<Wishlist> = await supabase
+        .from('wishlist')
+        .select('*')
+        .eq('user_id', userID);
 
-export const logout = async () => {
-	try {
-		const supabase = await createClient();
-		const { error } = await supabase.auth.signOut();
-		if (error) {
-			console.log(error);
-			return false;
-		}
-		return true;
-	} catch (error) {
-		console.log(error);
-	}
+    if (error) {
+        console.error('Error retrieving wishlisted books:', error);
+        return null;
+    }
+    return data;
 };

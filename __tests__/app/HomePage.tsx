@@ -1,63 +1,106 @@
 import HomePage from '@/app/page';
-import { act, render, screen } from '@testing-library/react';
-import { getAllBooks } from '@/data/books/GetBooksData';
+import { render, screen, act } from '@testing-library/react';
+import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
+import { Providers } from '@/providers/Providers';
+
+global.IntersectionObserver = class IntersectionObserver {
+    readonly root: Element | null = null;
+    readonly rootMargin: string = '';
+    readonly thresholds: ReadonlyArray<number> = [];
+    constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {}
+    disconnect() {}
+    observe(target: Element) {}
+    takeRecords(): IntersectionObserverEntry[] {
+        return [];
+    }
+    unobserve(target: Element) {}
+};
+
+global.scrollTo = jest.fn();
 
 jest.mock('next/headers', () => ({
-	cookies: jest.fn().mockResolvedValue({
-		get: jest.fn(() => ({ value: 'mock-token' })),
-		getAll: jest.fn(() => []),
-	}),
+    cookies: jest.fn().mockResolvedValue({
+        get: jest.fn(() => ({ value: 'mock-token' })),
+        getAll: jest.fn(() => []),
+    }),
 }));
 
 jest.mock('next/cache', () => ({
-	revalidatePath: jest.fn(),
+    revalidatePath: jest.fn(),
 }));
 
 jest.mock('next/navigation', () => ({
-	redirect: jest.fn(),
-	useRouter: jest.fn(),
-	usePathname: jest.fn(() => '/books/Novel'),
+    redirect: jest.fn(),
+    useRouter: jest.fn(() => ({
+        push: jest.fn(),
+        replace: jest.fn(),
+        prefetch: jest.fn(),
+        back: jest.fn(),
+    })),
+    usePathname: jest.fn(() => '/'),
 }));
 
-const mockedGetAllBooks = getAllBooks as jest.Mock;
 jest.mock('@/data/books/GetBooksData', () => ({
-	getAllBooks: jest.fn(),
+    fetchBooksWithReviews: jest.fn(),
 }));
 
-jest.mock('@/components/books/OutputBooks', () => ({
-	OutputBooks: jest.fn(({ books, type }) => {
-		if (!books || books.length === 0) return null;
+const mockedFetchBooks = fetchBooksWithReviews as jest.Mock;
 
-		return (
-			<div data-testid='mock-output-books'>
-				{books.map((book: any) => (
-					<p key={book.id}>{book.title}</p>
-				))}
-			</div>
-		);
-	}),
-}));
+const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
+    return (
+        <Providers
+            initialSessionData={{
+                initialUser: null,
+                initialWishlist: [],
+                initialCart: null,
+            }}
+        >
+            {children}
+        </Providers>
+    );
+};
 
 describe('APP - Homepage', () => {
-	it('Should render the HomePage (no books)', async () => {
-		mockedGetAllBooks.mockResolvedValue(null);
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
 
-		const element = await HomePage();
-		await act(async () => {
-			render(element);
-		});
+    it('Should render the ErrorState when no books are returned', async () => {
+        mockedFetchBooks.mockResolvedValue({ data: null, error: 'No data found' });
 
-		expect(screen.getByText('Cannot retrieve books.')).toBeInTheDocument();
-	});
+        const element = await HomePage();
 
-	it('Should render the OutputBooks component when books are found', async () => {
-		mockedGetAllBooks.mockResolvedValue([{ id: 1, title: 'Test Book' }]);
+        await act(async () => {
+            render(element, { wrapper: AllTheProviders });
+        });
 
-		const element = await HomePage();
-		await act(async () => {
-			render(element);
-		});
+        expect(screen.getByText(/Connection Interrupted/i)).toBeInTheDocument();
+    });
 
-		expect(screen.getByText('Test Book')).toBeInTheDocument();
-	});
+    it('Should render the books when found', async () => {
+        mockedFetchBooks.mockResolvedValue({
+            data: [
+                {
+                    id: '1',
+                    title: 'Test Book',
+                    author: 'Author',
+                    price: '10.00',
+                    image_url: '/test.jpg',
+                    genre: 'Fiction',
+                },
+            ],
+            totalPages: 1,
+            currentPage: 1,
+            total: 1,
+            error: null,
+        });
+
+        const element = await HomePage();
+
+        await act(async () => {
+            render(element, { wrapper: AllTheProviders });
+        });
+
+        expect(screen.getByText('Test Book')).toBeInTheDocument();
+    });
 });

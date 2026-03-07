@@ -1,74 +1,139 @@
-import { getBook } from '@/data/books/GetBooksData';
-import { BookImg } from '@/components/pages/book/Layout/BookImg';
-import { BookMainDetails } from '@/components/pages/book/Layout/BookMainDetails';
-import { BookCart } from '@/components/pages/book/Cart/BookCart';
-import { BookSecondaryDetails } from '@/components/pages/book/Layout/BookSecondaryDetails';
+import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
+import { BookMainDetails } from '@/components/pages/book/BookMainDetails';
+import { BookCart } from '@/components/pages/book/BookCart';
 import { BookReviews } from '@/components/pages/book/Reviews/BookReviews';
-import { BookDescription } from '@/components/pages/book/Layout/BookDescription';
-import { getBookReviewsByBookId } from '@/data/books/GetReviewsData';
+import { notFound } from 'next/navigation';
+import Image from 'next/image';
+import { ErrorState } from '@/components/ErrorState';
 
 type BookByIdProps = {
-	params: Promise<{ slug: string }>;
-	searchParams: Promise<{ reviewPagination?: string }>;
+    params: Promise<{ slug: string }>;
+    searchParams: Promise<{ reviewPagination?: string }>;
 };
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params;
+    const books = await fetchBooksWithReviews({ bookID: slug });
+
+    if (!books.data?.length) return { title: 'Book Not Found' };
+
+    const book = books.data[0];
+    return {
+        title: `${book.title} by ${book.author} | Books4You`,
+        description: book.description.substring(0, 160),
+    };
+}
+
 export default async function BookById({ params, searchParams }: BookByIdProps) {
-	const slug = (await params).slug;
-	const book = await getBook(slug);
+    const { slug } = await params;
+    const { reviewPagination } = await searchParams;
+    const currentPage = parseInt(reviewPagination || '1', 10);
 
-	const reviewsPaginationPage = parseInt((await searchParams).reviewPagination || '1');
-	const REVIEWS_PER_PAGE = 5;
-	const reviewsData = book?.id
-		? await getBookReviewsByBookId(book.id, reviewsPaginationPage, REVIEWS_PER_PAGE)
-		: { data: null, total: 0, totalPages: 0, currentPage: 1 };
+    const { data: books, error } = await fetchBooksWithReviews({ bookID: slug });
 
-	if (book) {
-		return (
-			<div className='grid gap-5 max-w-[1000px] m-auto'>
-				<div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3'>
-					<BookImg
-						image={book.image_url}
-						title={book.title}
-					/>
+    if (error) return <ErrorState />;
+    if (!books || books.length === 0) notFound();
 
-					<BookMainDetails
-						stock={book.stock_quantity}
-						title={book.title}
-						author={book.author}
-						publicationDate={book.publication_date}
-						publisher={book.publisher}
-						format={book.format}
-						genre={book.genre}
-					/>
+    const book = books[0];
+    const allReviews = book.reviews || [];
 
-					<BookCart book={book} />
-				</div>
+    const reviewsData = {
+        data: allReviews,
+        total: allReviews.length,
+        totalPages: 1,
+        currentPage: currentPage,
+        error: null,
+    };
 
-				<hr />
+    const {
+        image_url,
+        title,
+        stock_quantity,
+        author,
+        publication_date,
+        publisher,
+        format,
+        genre,
+        page_count,
+        description,
+    } = book;
 
-				<BookDescription description={book.description} />
+    return (
+        <article
+            className="m-auto grid max-w-375 gap-5"
+            role="main"
+        >
+            <div
+                className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3"
+                aria-label="Book overview"
+            >
+                <div className="grid justify-center rounded-md bg-black shadow-[0px_2px_6px_-2px_#000]">
+                    <div className="grid justify-center rounded-md bg-black shadow-[0px_2px_6px_-2px_#000]">
+                        <Image
+                            width="0"
+                            height="0"
+                            sizes="100vw"
+                            style={{ width: '100%', height: 'auto' }}
+                            src={image_url}
+                            alt={`Placeholder image for ${title}`}
+                        />
+                    </div>
+                </div>
 
-				<hr />
+                <BookMainDetails
+                    stock={stock_quantity}
+                    title={title}
+                    author={author}
+                    publicationDate={publication_date}
+                    publisher={publisher}
+                    format={format}
+                    genre={genre}
+                />
 
-				<BookSecondaryDetails
-					publicationDate={book.publication_date}
-					pageCount={book.page_count}
-					format={book.format}
-					publisher={book.publisher}
-					author={book.author}
-					title={book.title}
-				/>
+                <BookCart book={book} />
+            </div>
 
-				<hr />
+            <hr aria-hidden="true" />
 
-				<BookReviews
-					reviewsData={reviewsData}
-					slug={slug}
-					page={reviewsPaginationPage}
-				/>
-			</div>
-		);
-	}
+            <p className="text-lg font-semibold">Description</p>
+            <p className="text-justify">{description}</p>
 
-	return <p>Could not retrieve book data.</p>;
+            <hr aria-hidden="true" />
+
+            <p className="text-lg font-semibold">Details</p>
+            <table className="table-auto">
+                <tbody>
+                    {[
+                        { text: 'Publication date:', value: publication_date },
+                        { text: 'Page count:', value: page_count },
+                        { text: 'Format:', value: format },
+                        { text: 'Publisher:', value: publisher },
+                        { text: 'Author:', value: author },
+                        { text: 'Title:', value: title },
+                    ].map((el) => (
+                        <tr
+                            className="grid grid-cols-2 gap-10"
+                            key={el.text}
+                        >
+                            <th
+                                scope="row"
+                                className="text-left font-normal"
+                            >
+                                {el.text}
+                            </th>
+                            <td>{el.value}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+
+            <hr aria-hidden="true" />
+
+            <BookReviews
+                reviewsData={reviewsData}
+                slug={slug}
+                page={currentPage}
+            />
+        </article>
+    );
 }

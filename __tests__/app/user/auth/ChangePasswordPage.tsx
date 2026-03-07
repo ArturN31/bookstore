@@ -5,152 +5,225 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 const MOCK_MESSAGE = 'Please correct the errors below.';
 
 let mockReturnState: ChangePasswordFormState = {
-	password: '',
-	cnfPassword: '',
-	message: MOCK_MESSAGE,
-	error: undefined,
-	validationErrors: undefined,
+    password: '',
+    cnfPassword: '',
+    message: MOCK_MESSAGE,
+    error: undefined,
+    validationErrors: undefined,
 };
 
 jest.mock('@/data/actions/auth/ChangePasswordAction', () => ({
-	ChangePasswordAction: jest.fn(async (prevState, formData) => {
-		const reset = formData.get('reset');
-		if (reset === 'yes') {
-			return {
-				password: '',
-				cnfPassword: '',
-				message: undefined,
-				error: undefined,
-				validationErrors: undefined,
-			};
-		}
-		return mockReturnState;
-	}),
+    ChangePasswordAction: jest.fn(async (prevState, formData) => {
+        const reset = formData.get('reset');
+        if (reset === 'yes') {
+            return {
+                password: '',
+                cnfPassword: '',
+                message: undefined,
+                error: undefined,
+                validationErrors: undefined,
+            };
+        }
+        return mockReturnState;
+    }),
 }));
 
 jest.mock('react', () => {
-	const originalReact = jest.requireActual('react');
-
-	return {
-		...originalReact,
-		useActionState: (actionFn: any, initialState: any) => {
-			const [state, setState] = originalReact.useState(initialState);
-
-			const formAction = async (formData: FormData) => {
-				const newState = await actionFn(state, formData);
-				setState(newState);
-			};
-
-			return [state, formAction];
-		},
-		useTransition: () => [false, (callback: any) => callback()],
-	};
+    const originalReact = jest.requireActual('react');
+    return {
+        ...originalReact,
+        useActionState: (actionFn: any, initialState: any) => {
+            const [state, setState] = originalReact.useState(initialState);
+            const formAction = async (formData: FormData) => {
+                const newState = await actionFn(state, formData);
+                setState(newState);
+            };
+            return [state, formAction];
+        },
+        useTransition: () => [false, (callback: any) => callback()],
+    };
 });
 
 jest.mock('@/components/formItems/PasswordField', () => ({
-	PasswordField: (props: any) => (
-		<input
-			id={props.id}
-			data-testid={`${props.id}-field`}
-			{...props}
-		/>
-	),
+    PasswordField: (props: any) => (
+        <input
+            id={props.id}
+            name={props.id}
+            data-testid={`${props.id}-field`}
+            value={props.value}
+            onChange={props.onChange}
+        />
+    ),
 }));
 
 jest.mock('@/components/formItems/FormBtns', () => ({
-	FormBtns: (props: any) => (
-		<div className='flex justify-end gap-3 pt-4'>
-			<button type='submit'>Save</button>
-			<button
-				data-testid='reset-btn'
-				onClick={props.handleReset}>
-				Clear
-			</button>
-		</div>
-	),
+    FormBtns: (props: any) => (
+        <div className="flex justify-end gap-3 pt-4">
+            <button type="submit">Save</button>
+            <button
+                data-testid="reset-btn"
+                onClick={props.handleReset}
+                type="button"
+            >
+                Clear
+            </button>
+        </div>
+    ),
 }));
 
 jest.mock('@/components/formItems/FormErrors', () => ({
-	FormErrors: ({ formError }: any) =>
-		formError ? <div data-testid='form-error-display'>{formError}</div> : null,
+    FormErrors: ({ formError }: any) =>
+        formError ? <div data-testid="form-error-display">{formError}</div> : null,
 }));
 
 describe('APP - Auth - ChangePasswordPage', () => {
-	beforeEach(() => {
-		jest.clearAllMocks();
-		mockReturnState = {
-			password: '',
-			cnfPassword: '',
-			message: MOCK_MESSAGE,
-			error: undefined,
-			validationErrors: undefined,
-		};
-	});
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockReturnState = {
+            password: '',
+            cnfPassword: '',
+            message: MOCK_MESSAGE,
+            error: undefined,
+            validationErrors: undefined,
+        };
+    });
 
-	it('should set formError state and display message when the form action returns a message', async () => {
-		render(<ChangePasswordPage />);
+    it('should show real-time validation errors as the user types', async () => {
+        render(<ChangePasswordPage />);
 
-		expect(screen.queryByTestId('form-error-display')).not.toBeInTheDocument();
+        const passwordField = screen.getByTestId('password-field');
 
-		const passwordField = screen.getByTestId('password-field');
-		const cnfPasswordField = screen.getByTestId('cnfPassword-field');
+        fireEvent.change(passwordField, { target: { name: 'password', value: 'abcdefgh' } });
 
-		fireEvent.change(passwordField, { target: { value: 'ValidP@ss1' } });
-		fireEvent.change(cnfPasswordField, { target: { value: 'ValidP@ss1' } });
+        await waitFor(() => {
+            const errorDisplay = screen.getByTestId('form-error-display');
+            expect(errorDisplay).toBeInTheDocument();
+            expect(errorDisplay).toHaveTextContent('Validation Issues');
+        });
+    });
 
-		const changePasswordForm = screen.getByTestId('change-password-form');
-		fireEvent.submit(changePasswordForm);
+    it('should prevent submission and show error message when schema validation fails', async () => {
+        render(<ChangePasswordPage />);
 
-		await waitFor(() => {
-			const errorDisplay = screen.getByTestId('form-error-display');
-			expect(errorDisplay).toBeInTheDocument();
-			expect(errorDisplay).toHaveTextContent(MOCK_MESSAGE);
-		});
-	});
+        const passwordField = screen.getByTestId('password-field');
+        const cnfPasswordField = screen.getByTestId('cnfPassword-field');
 
-	it('should reset the formState to Default on resetBtn click', async () => {
-		render(<ChangePasswordPage />);
+        fireEvent.change(passwordField, { target: { name: 'password', value: 'short' } });
+        fireEvent.change(cnfPasswordField, { target: { name: 'cnfPassword', value: 'mismatch' } });
 
-		const passwordField = screen.getByTestId('password-field') as HTMLInputElement;
-		const cnfPasswordField = screen.getByTestId('cnfPassword-field') as HTMLInputElement;
+        const form = screen.getByTestId('change-password-form');
+        fireEvent.submit(form);
 
-		fireEvent.change(passwordField, { target: { value: 'ValidP@ss1' } });
-		fireEvent.change(cnfPasswordField, { target: { value: 'ValidP@ss1' } });
+        await waitFor(() => {
+            const errorDisplay = screen.getByTestId('form-error-display');
+            expect(errorDisplay).toBeInTheDocument();
+            expect(errorDisplay).toHaveTextContent('Please fix the errors before submitting.');
+        });
 
-		const resetBtn = screen.getByTestId('reset-btn');
-		fireEvent.click(resetBtn);
+        const { ChangePasswordAction } = require('@/data/actions/auth/ChangePasswordAction');
+        expect(ChangePasswordAction).not.toHaveBeenCalled();
+    });
 
-		await waitFor(() => {
-			expect(passwordField.value).toBe('');
-			expect(cnfPasswordField.value).toBe('');
-		});
-	});
+    it('should construct FormData and call formAction when validation passes', async () => {
+        mockReturnState = {
+            password: '',
+            cnfPassword: '',
+            message: 'Success!',
+            error: undefined,
+            validationErrors: undefined,
+        };
 
-	it('should fall back to empty string when password state is null', async () => {
-		mockReturnState = {
-			password: null,
-			cnfPassword: null,
-			message: MOCK_MESSAGE,
-			error: undefined,
-			validationErrors: undefined,
-		} as any;
+        render(<ChangePasswordPage />);
 
-		render(<ChangePasswordPage />);
+        const passwordField = screen.getByTestId('password-field');
+        const cnfPasswordField = screen.getByTestId('cnfPassword-field');
 
-		const changePasswordForm = screen.getByTestId('change-password-form');
-		fireEvent.submit(changePasswordForm);
+        const validPass = 'ValidP@ss123!';
+        fireEvent.change(passwordField, { target: { name: 'password', value: validPass } });
+        fireEvent.change(cnfPasswordField, { target: { name: 'cnfPassword', value: validPass } });
 
-		await waitFor(() => {
-			const passwordField = screen.getByTestId('password-field') as HTMLInputElement;
-			const cnfPasswordField = screen.getByTestId(
-				'cnfPassword-field',
-			) as HTMLInputElement;
+        const form = screen.getByTestId('change-password-form');
+        fireEvent.submit(form);
 
-			expect(passwordField.defaultValue).toBe('');
-			expect(cnfPasswordField.defaultValue).toBe('');
+        await waitFor(() => {
+            const { ChangePasswordAction } = require('@/data/actions/auth/ChangePasswordAction');
 
-			expect(passwordField.value).toBe('');
-			expect(cnfPasswordField.value).toBe('');
-		});
-	});
+            expect(ChangePasswordAction).toHaveBeenCalled();
+
+            const sentFormData = (ChangePasswordAction as jest.Mock).mock.calls[0][1] as FormData;
+            expect(sentFormData.get('password')).toBe(validPass);
+            expect(sentFormData.get('cnfPassword')).toBe(validPass);
+        });
+    });
+
+    it('should reset the formState to Default on resetBtn click', async () => {
+        render(<ChangePasswordPage />);
+
+        const passwordField = screen.getByTestId('password-field') as HTMLInputElement;
+        const cnfPasswordField = screen.getByTestId('cnfPassword-field') as HTMLInputElement;
+
+        fireEvent.change(passwordField, { target: { value: 'ValidP@ss1' } });
+        fireEvent.change(cnfPasswordField, { target: { value: 'ValidP@ss1' } });
+
+        const resetBtn = screen.getByTestId('reset-btn');
+        fireEvent.click(resetBtn);
+
+        await waitFor(() => {
+            expect(passwordField.value).toBe('');
+            expect(cnfPasswordField.value).toBe('');
+        });
+    });
+
+    it('LOGIC COVERAGE: should cover FormData construction and submission', async () => {
+        render(<ChangePasswordPage />);
+
+        const passwordField = screen.getByTestId('password-field');
+        const cnfPasswordField = screen.getByTestId('cnfPassword-field');
+
+        // Use a value that passes your passwordSchema (length, complexity, and MATCHING)
+        const validPass = 'ValidP@ss123!';
+
+        fireEvent.change(passwordField, { target: { name: 'password', value: validPass } });
+        fireEvent.change(cnfPasswordField, { target: { name: 'cnfPassword', value: validPass } });
+
+        const form = screen.getByTestId('change-password-form');
+        fireEvent.submit(form);
+
+        // Now validation passes, so we reach the FormData loop and action call
+        await waitFor(() => {
+            const { ChangePasswordAction } = require('@/data/actions/auth/ChangePasswordAction');
+            expect(ChangePasswordAction).toHaveBeenCalled();
+
+            // This specifically covers the .append() logic inside the loop
+            const sentFormData = (ChangePasswordAction as jest.Mock).mock.calls[0][1] as FormData;
+            expect(sentFormData.get('password')).toBe(validPass);
+        });
+    });
+
+    it('BRANCH COVERAGE: hits nullish coalescing branches in JSX', async () => {
+        mockReturnState = {
+            password: null,
+            cnfPassword: null,
+            message: undefined,
+            validationErrors: undefined,
+        };
+
+        render(<ChangePasswordPage />);
+
+        const p1 = screen.getByTestId('password-field');
+        const p2 = screen.getByTestId('cnfPassword-field');
+
+        const valid = 'ValidP@ss123!';
+        fireEvent.change(p1, { target: { name: 'password', value: valid } });
+        fireEvent.change(p2, { target: { name: 'cnfPassword', value: valid } });
+
+        const form = screen.getByTestId('change-password-form');
+        fireEvent.submit(form);
+
+        await waitFor(() => {
+            expect((p1 as HTMLInputElement).value).toBe('');
+            expect((p2 as HTMLInputElement).value).toBe('');
+            expect(screen.queryByTestId('form-error-display')).not.toBeInTheDocument();
+        });
+    });
 });

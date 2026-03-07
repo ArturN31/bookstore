@@ -1,165 +1,114 @@
 import { useState, useCallback, useEffect, useActionState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
-import { CartFormUpdate } from '@/data/actions/CartForm/CartFormUpdate';
-import { CartFormRemove } from '@/data/actions/CartForm/CartFormRemove';
 import { useTransition } from 'react';
-import { useCartState } from '@/providers/CartProvider';
+import { useCartActions } from '@/providers/cart/utils/useCart';
 import RemoveIcon from '@mui/icons-material/Remove';
 import AddIcon from '@mui/icons-material/Add';
+import { enqueueSnackbar } from 'notistack';
+import { CartAction } from '@/data/actions/CartForm/CartAction';
 
 export const CartItemQuantityControls = ({
-	quantity: initialQuantity,
-	book,
+    quantity: initialQuantity,
+    book,
 }: {
-	quantity: number;
-	book: Book;
+    quantity: number;
+    book: Book;
 }) => {
-	const { refreshCart, cartError } = useCartState();
-	const [localQuantity, setLocalQuantity] = useState(initialQuantity);
-	const [stockMessage, setStockMessage] = useState('');
+    const { refreshCart } = useCartActions();
+    const [localQuantity, setLocalQuantity] = useState(initialQuantity);
 
-	const cartAction = async (
-		prevState: { success: boolean; message: string },
-		formData: FormData,
-	) => {
-		const actionType = formData.get('action-type');
+    const [state, formAction] = useActionState(CartAction, {
+        success: false,
+        message: '',
+    });
+    const [isPending, startTransition] = useTransition();
 
-		if (actionType === 'remove') {
-			return await CartFormRemove(prevState, formData);
-		} else if (actionType === 'update') {
-			return await CartFormUpdate(prevState, formData);
-		} else if (actionType === 'clear-message') {
-			return { success: false, message: '' };
-		}
-		return { success: false, message: 'Invalid action type' };
-	};
+    const dispatchCartAction = useCallback(
+        (type: 'UPDATE' | 'REMOVE', qty?: number) => {
+            const formData = new FormData();
+            formData.append('action-type', type);
+            formData.append('book-id', book.id);
+            if (qty !== undefined) formData.append('book-quantity', String(qty));
 
-	const [state, formAction] = useActionState(cartAction, {
-		success: false,
-		message: '',
-	});
-	const [isPending, startTransition] = useTransition();
+            startTransition(async () => {
+                await formAction(formData);
+            });
+        },
+        [book.id, formAction],
+    );
 
-	const handleUpdate = useCallback(
-		(newQuantity: number) => {
-			const formData = new FormData();
-			formData.append('action-type', 'update');
-			formData.append('book-quantity', String(newQuantity));
-			formData.append('book-id', book.id);
-			startTransition(() => {
-				formAction(formData);
-			});
-		},
-		[book.id, formAction],
-	);
+    const debouncedUpdate = useDebouncedCallback((qty: number) => {
+        dispatchCartAction('UPDATE', qty);
+    }, 500);
 
-	const debouncedUpdate = useDebouncedCallback(handleUpdate, 500);
+    const decrement = () => {
+        if (localQuantity === 1) {
+            dispatchCartAction('REMOVE');
+        } else {
+            const nextQty = localQuantity - 1;
+            setLocalQuantity(nextQty);
+            debouncedUpdate(nextQty);
+        }
+    };
 
-	const decrement = () => {
-		if (localQuantity === 1) {
-			handleRemove();
-		} else {
-			setLocalQuantity((prev) => prev - 1);
-			setStockMessage('');
-			debouncedUpdate(localQuantity - 1);
-		}
-	};
+    const increment = () => {
+        if (localQuantity >= 10) {
+            enqueueSnackbar('You can only purchase 10 of the same books.', { variant: 'warning' });
+            return;
+        }
 
-	const increment = () => {
-		if (localQuantity === 10) {
-			setStockMessage('You can only purchase 10 of the same books.');
-			return;
-		}
+        if (localQuantity >= book.stock_quantity) {
+            const message =
+                book.stock_quantity === 1
+                    ? 'There is only 1 book left in stock.'
+                    : `There are only ${book.stock_quantity} books left in stock.`;
+            enqueueSnackbar(message, { variant: 'warning' });
+            return;
+        }
 
-		if (localQuantity >= book.stock_quantity) {
-			const message =
-				book.stock_quantity === 1
-					? 'There is only 1 book left in stock.'
-					: `There are only ${book.stock_quantity} books left in stock.`;
-			setStockMessage(message);
-			return;
-		}
+        const nextQty = localQuantity + 1;
+        setLocalQuantity(nextQty);
+        debouncedUpdate(nextQty);
+    };
 
-		if (localQuantity < 10) {
-			setLocalQuantity((prev) => prev + 1);
-			setStockMessage('');
-			debouncedUpdate(localQuantity + 1);
-		}
-	};
+    useEffect(() => {
+        if (state.success) refreshCart();
+    }, [state.success, state.timestamp, refreshCart]);
 
-	const handleRemove = useCallback(() => {
-		const formData = new FormData();
-		formData.append('action-type', 'remove');
-		formData.append('book-id', book.id);
-		startTransition(() => {
-			formAction(formData);
-		});
-	}, [book.id, formAction]);
+    useEffect(() => {
+        if (!state.message) return;
 
-	useEffect(() => {
-		if (state.success || cartError || !isPending) {
-			refreshCart();
-		}
-	}, [state.success, cartError, isPending, refreshCart]);
+        const variant = state.success ? 'success' : 'warning';
+        enqueueSnackbar(state.message, { variant });
+    }, [state.message, state.success, state.timestamp]);
 
-	useEffect(() => {
-		let timer: NodeJS.Timeout | undefined;
+    return (
+        <div className="flex w-fit flex-col items-center gap-2">
+            <div className="flex items-center space-x-4">
+                <button
+                    data-testid="cart-item-decrement-btn"
+                    onClick={decrement}
+                    disabled={isPending}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:cursor-pointer hover:text-gray-600 focus:ring-2 focus:ring-gray-400 focus:outline-none disabled:opacity-50"
+                >
+                    <RemoveIcon className="h-5 w-5" />
+                </button>
 
-		if (state.message) {
-			timer = setTimeout(() => {
-				const formData = new FormData();
-				formData.append('action-type', 'clear-message');
-				startTransition(() => {
-					formAction(formData);
-				});
-			}, 3000);
-		}
+                <p
+                    className={`w-10 text-center text-base font-semibold ${isPending ? 'text-gray-400' : 'text-gray-800'}`}
+                >
+                    {localQuantity}
+                </p>
 
-		return () => {
-			if (timer) {
-				clearTimeout(timer);
-			}
-		};
-	}, [state.message, formAction]);
-
-	useEffect(() => {
-		let timer: NodeJS.Timeout | undefined;
-		if (stockMessage) {
-			timer = setTimeout(() => {
-				setStockMessage('');
-			}, 5000);
-		}
-		return () => {
-			if (timer) {
-				clearTimeout(timer);
-			}
-		};
-	}, [stockMessage]);
-
-	return (
-		<div className='flex w-fit flex-col items-center gap-2'>
-			<div className='flex items-center space-x-4'>
-				<button
-					onClick={decrement}
-					className='flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-gray-600 hover:cursor-pointer focus:outline-none focus:ring-2 focus:ring-gray-400'>
-					<RemoveIcon className='h-5 w-5' />
-				</button>
-				<p className='w-10 text-center text-base font-semibold text-gray-800'>
-					{localQuantity}
-				</p>
-				<button
-					onClick={increment}
-					className='flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:text-gray-600 hover:cursor-pointer focus:outline-none focus:ring-2 focus:ring-gray-400'>
-					<AddIcon className='h-5 w-5' />
-				</button>
-			</div>
-			<div className='w-40 min-h-[1.5rem] pt-1'>
-				{(cartError || state.message || stockMessage) && (
-					<div className='text-xs text-center text-red-500'>
-						<p>{cartError || state.message || stockMessage}</p>
-					</div>
-				)}
-			</div>
-		</div>
-	);
+                <button
+                    data-testid="cart-item-increment-btn"
+                    onClick={increment}
+                    disabled={isPending}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:cursor-pointer hover:text-gray-600 focus:ring-2 focus:ring-gray-400 focus:outline-none disabled:opacity-50"
+                >
+                    <AddIcon className="h-5 w-5" />
+                </button>
+            </div>
+        </div>
+    );
 };

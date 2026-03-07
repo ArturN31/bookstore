@@ -1,63 +1,77 @@
 'use client';
 
-import { CartFormRemove } from '@/data/actions/CartForm/CartFormRemove';
-import { useCartState } from '@/providers/CartProvider';
-import { useUserState } from '@/providers/UserProvider';
+import { CartAction } from '@/data/actions/CartForm/CartAction';
+import { useCartActions } from '@/providers/cart/utils/useCart';
+import { useUserState } from '@/providers/user/utils/useUser';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import { useState, useActionState, useTransition, useEffect } from 'react';
+import { enqueueSnackbar } from 'notistack';
+import { useState, useActionState, useTransition, useEffect, SyntheticEvent } from 'react';
 
 export const CartItemRemove = ({ book }: { book: Book }) => {
-	const { loggedIn, profileExists } = useUserState();
-	const { cartError, refreshCart } = useCartState();
-	const [state, formAction] = useActionState(CartFormRemove, {
-		success: false,
-		message: '',
-	});
-	const [isPending, startTransition] = useTransition();
-	const isButtonDisabled = !loggedIn || !profileExists || isPending;
-	const [hover, setHover] = useState(false);
+    const { loggedIn, profileExists } = useUserState();
+    const { refreshCart } = useCartActions();
 
-	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-		event.stopPropagation();
-		if (isButtonDisabled) return;
+    const [state, formAction] = useActionState(CartAction, {
+        success: false,
+        message: '',
+    });
 
-		const formData = new FormData();
-		formData.append('book-id', book.id);
+    const [isPending, startTransition] = useTransition();
+    const [hover, setHover] = useState(false);
 
-		startTransition(() => {
-			formAction(formData);
-		});
-	};
+    const isButtonDisabled = !loggedIn || !profileExists || isPending;
 
-	useEffect(() => {
-		if (state.success) refreshCart();
-	}, [state.success, refreshCart]);
+    const handleSubmit = async (event: SyntheticEvent<HTMLFormElement, SubmitEvent>) => {
+        event.preventDefault();
+        event.stopPropagation();
 
-	return (
-		<div className='grid gap-2'>
-			<form onSubmit={handleSubmit}>
-				<button
-					disabled={isButtonDisabled}
-					className='w-full grid place-self-center mx-2 transition-[all_0.2s_ease-out] hover:transform-[scale(1.15)] hover:cursor-pointer disabled:text-[#666] disabled:transform-none'
-					onMouseEnter={() => setHover(true)}
-					onMouseLeave={() => setHover(false)}>
-					{hover ? <DeleteForeverIcon /> : <DeleteIcon />}
-				</button>
-			</form>
+        if (isButtonDisabled) return;
 
-			{/* {cartError && (
-				<div className='text-xs text-center'>
-					<p className='text-red-400'>{cartError}</p>
-				</div>
-			)}
+        const formData = new FormData();
+        formData.append('book-id', book.id);
+        formData.append('action-type', 'REMOVE');
 
-			{state.message && (
-				<div className='text-xs text-center'>
-					<p className='text-red-400'>{state.message}</p>
-				</div>
-			)} */}
-		</div>
-	);
+        startTransition(async () => {
+            await formAction(formData);
+        });
+    };
+
+    useEffect(() => {
+        if (state.success) refreshCart();
+    }, [state.success, state.timestamp, refreshCart]);
+
+    useEffect(() => {
+        if (!state.message) return;
+
+        const variant = state.success ? 'success' : 'warning';
+        if (!state.success || state.message.includes('removed'))
+            enqueueSnackbar(state.message, { variant });
+    }, [state.message, state.success, state.timestamp]);
+
+    return (
+        <div className="grid gap-2">
+            <form
+                onSubmit={handleSubmit}
+                aria-label="remove-item-form"
+            >
+                <button
+                    type="submit"
+                    disabled={isButtonDisabled}
+                    className="mx-2 grid place-items-center transition-all duration-200 hover:scale-115 hover:cursor-pointer disabled:transform-none disabled:text-gray-500"
+                    onMouseEnter={() => setHover(true)}
+                    onMouseLeave={() => setHover(false)}
+                    aria-label={`Remove ${book.title} from cart`}
+                >
+                    {isPending ? (
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                    ) : hover ? (
+                        <DeleteForeverIcon />
+                    ) : (
+                        <DeleteIcon />
+                    )}
+                </button>
+            </form>
+        </div>
+    );
 };
