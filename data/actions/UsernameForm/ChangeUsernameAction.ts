@@ -1,23 +1,21 @@
 'use server';
 
 import { z } from 'zod';
-import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { createBackendClient } from '@/utils/db/server';
 import { getUserData } from '@/data/user/GetUserData';
-
-//TODO: Improve code.
-//TODO: Add hybrid validation to form.
+import { updateUsername } from './UsernameRepository';
+import { handleUsernameUpdateError } from './DatabaseErrorHandler';
 
 export type ChangeUsernameFormState = {
-    username: string | null;
-    validationErrors?: z.ZodIssue[];
-    message?: string;
-    error?: any;
+    username?: string | null;
+    validationErrors?: z.core.$ZodIssue[];
+    message?: string | null;
     isUsernameTaken?: boolean;
 };
 
-const schema = z.object({
+const USERNAME_SCHEMA = z.object({
     username: z
         .string()
         .min(3, 'Username must be at least 3 characters long')
@@ -26,82 +24,57 @@ const schema = z.object({
         .trim(),
 });
 
+const INITIAL_STATE: ChangeUsernameFormState = {
+    username: '',
+    message: null,
+    isUsernameTaken: false,
+};
+
 export async function ChangeUsernameAction(
     prevState: ChangeUsernameFormState | undefined,
     formData: FormData,
 ): Promise<ChangeUsernameFormState> {
-    const supabase = await createBackendClient();
+    const rawUsername = formData.get('username') as string | null;
+    const isReset = formData.get('reset') === 'true';
 
-    const username = formData.get('username') as string | null;
-    const reset = formData.get('reset') as string | null;
+    if (isReset) return INITIAL_STATE;
 
-    if (reset)
+    const validated = USERNAME_SCHEMA.safeParse({ username: rawUsername });
+    if (!validated.success)
         return {
-            username: '',
-            message: undefined,
-            error: undefined,
-            validationErrors: undefined,
-            isUsernameTaken: false,
+            username: rawUsername,
+            validationErrors: validated.error.issues,
+            message: 'Please resolve the validation errors.',
         };
 
-    const validatedData = schema.safeParse({
-        username,
-    });
+    const { username } = validated.data;
 
-    if (!validatedData.success) {
-        return {
-            username,
-            validationErrors: validatedData.error.issues,
-            message: 'Please correct the errors below.',
-            isUsernameTaken: false,
-        };
-    }
+    try {
+        const supabase = await createBackendClient();
 
-    const user = await getUserData();
+        const { data: user, error: authError } = await getUserData();
+        if (authError || !user) return { message: 'Session expired. Please log in again.' };
 
-    if (!user) {
-        return {
-            username,
-            message: 'User not authenticated. Please log in again.',
-            isUsernameTaken: false,
-        };
-    }
-
-    if (user.username === username) {
-        return {
-            username,
-            message: 'Provided username is the same as current one.',
-            isUsernameTaken: false,
-        };
-    }
-
-    const { error: supabaseError } = await supabase
-        .from('users')
-        .update({
-            username: validatedData.data.username,
-        })
-        .eq('id', user.id);
-
-    if (supabaseError) {
-        console.log('Username form update error:', supabaseError);
-
-        if (
-            supabaseError.message ===
-            'duplicate key value violates unique constraint "users_username_key"'
-        )
+        if (user.username === username)
             return {
                 username,
-                error: supabaseError,
-                message: 'Failed to update username.',
-                isUsernameTaken: true,
+                message: 'This is already your current username.',
             };
 
-        return {
-            username,
-            error: supabaseError,
-            message: 'Failed to update username. Please try again later.',
-            isUsernameTaken: false,
-        };
+        const { error: dbError } = await updateUsername(supabase, user.id, username);
+
+        if (dbError) {
+            const errorState = handleUsernameUpdateError(dbError);
+            return {
+                username,
+                ...errorState,
+            };
+        }
+    } catch (err) {
+        if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
+
+        console.error('[ChangeUsernameAction] Pipeline Failure:', err);
+        return { message: 'A critical server error occurred.' };
     }
 
     revalidatePath('/user/profile');

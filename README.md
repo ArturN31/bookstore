@@ -54,6 +54,7 @@ The project follows a rigorous testing approach focusing on **Code Coverage** an
 | :------------- | :----------------- | :----------- | :-------- | :---------- | :-------- | :-------------- |
 | Total Project  | All Files          | **77.31**    | **95.07** | **78.91**   | **77.31** | ✅ Improving    |
 | App Routing    | app/               | 100.00       | 100.00    | 100.00      | 100.00    | ✅ Complete     |
+| Dev Tools      | app/dev-tools      | 0.00         | 0.00      | 0.00        | 0.00      | 🔴 Critical Gap |
 | UI Components  | components/        | 100.00       | 100.00    | 100.00      | 100.00    | ✅ Complete     |
 | Data Schemas   | data/schemas/      | 100.00       | 100.00    | 100.00      | 100.00    | ✅ Complete     |
 | Auth Actions   | data/actions/auth/ | 100.00       | 100.00    | 100.00      | 100.00    | ✅ Complete     |

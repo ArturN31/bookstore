@@ -1,109 +1,82 @@
 'use client';
 
-import { ChangeEvent, useActionState, useState, useTransition } from 'react';
+import { ChangeEvent, useActionState, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { EmailField } from '@/components/formItems/EmailField';
 import { FormBtns } from '@/components/formItems/FormBtns';
 import { FormErrors } from '@/components/formItems/FormErrors';
 import { PasswordField } from '@/components/formItems/PasswordField';
-import { SignInAction, SignInFormState } from '@/data/actions/auth/SignInAction';
+import { SignInAction } from '@/data/actions/auth/SignInAction';
 import { useSearchParams } from 'next/navigation';
 import { signInSchema } from '@/data/schemas/authSchemas';
+import z from 'zod';
 
 export default function SignInPage() {
     const searchParams = useSearchParams();
     const returnTo = searchParams.get('returnTo');
 
-    const [formData, setFormData] = useState<SignInFormState>({
+    const [localFields, setLocalFields] = useState({
         email: '',
         password: '',
-        message: undefined,
-        validationErrors: [],
     });
 
-    const [formState, formAction] = useActionState(
-        async (state: SignInFormState, payload: FormData) => {
-            const result = await SignInAction(state, payload);
-            if (result) {
-                setFormData((prev) => ({ ...prev, ...result }));
-            }
-            return result;
-        },
-        formData,
-    );
+    const [clientErrors, setClientErrors] = useState<z.core.$ZodIssue[]>([]);
+
+    const [formState, formAction] = useActionState(SignInAction, {
+        message: null,
+        validationErrors: [],
+    });
 
     const [isTransitioningSubmit, startTransitionSubmit] = useTransition();
     const [isTransitioningReset, startTransitionReset] = useTransition();
 
+    const allValidationErrors = useMemo(() => {
+        return [...clientErrors, ...(formState.validationErrors || [])];
+    }, [clientErrors, formState.validationErrors]);
+
     const handleFieldChange = (e: ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+        const updatedFields = { ...localFields, [name]: value };
+        setLocalFields(updatedFields);
 
-        setFormData((prev) => {
-            const updatedData = { ...prev, [name]: value };
-            const validation = signInSchema.safeParse(updatedData);
-
-            if (validation.success)
-                return { ...updatedData, validationErrors: [], message: undefined };
-
-            const filteredIssues = validation.error.issues.filter((issue) => {
-                const isCurrentField = issue.path.includes(name);
-                const isNotRequiredError =
-                    issue.code !== 'invalid_type' &&
-                    issue.code !== 'too_small' &&
-                    issue.message.toLowerCase() !== 'required' &&
-                    issue.message.toLowerCase() !== 'email is required';
-
-                return isCurrentField && isNotRequiredError;
-            });
-
-            return {
-                ...updatedData,
-                validationErrors: filteredIssues,
-                message: filteredIssues.length > 0 ? 'Validation Issues' : undefined,
-            };
-        });
+        const result = signInSchema.safeParse(updatedFields);
+        if (result.success) setClientErrors([]);
+        else {
+            const fieldErrors = result.error.issues.filter((issue) => issue.path.includes(name));
+            setClientErrors(fieldErrors);
+        }
     };
 
-    const handleSubmit = (event: React.SyntheticEvent<HTMLFormElement, SubmitEvent>) => {
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        const result = signInSchema.safeParse(formData);
+        const result = signInSchema.safeParse(localFields);
 
         if (!result.success) {
-            setFormData((prev) => ({
-                ...prev,
-                validationErrors: result.error.issues,
-                message: 'Please fix the errors before submitting.',
-            }));
+            setClientErrors(result.error.issues);
             return;
         }
 
-        const submitData = new FormData();
-        Object.entries(formData).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-                submitData.append(key, value.toString());
-            }
-        });
+        setClientErrors([]);
 
+        const submitData = new FormData();
+        submitData.append('email', localFields.email);
+        submitData.append('password', localFields.password);
         if (returnTo) submitData.append('returnTo', returnTo);
 
-        startTransitionSubmit(async () => {
-            await formAction(submitData);
+        startTransitionSubmit(() => {
+            formAction(submitData);
         });
     };
 
     const handleReset = () => {
-        startTransitionReset(async () => {
+        setLocalFields({ email: '', password: '' });
+        setClientErrors([]);
+
+        startTransitionReset(() => {
             const resetData = new FormData();
             resetData.append('reset', 'yes');
-            await formAction(resetData);
-
-            setFormData({
-                email: '',
-                password: '',
-                message: undefined,
-                validationErrors: [],
-            });
+            formAction(resetData);
         });
     };
 
@@ -112,8 +85,6 @@ export default function SignInPage() {
             <div className="relative grid w-full max-w-md place-self-center">
                 <form
                     id="signin-form"
-                    data-testid="signin-form"
-                    aria-label="Sign In Form"
                     onSubmit={handleSubmit}
                     className="border-gunmetal grid w-full max-w-md gap-5 place-self-center rounded-lg border-t-8 bg-white p-8 shadow-md"
                     style={{ boxShadow: '0px 2px 6px -2px black' }}
@@ -128,17 +99,15 @@ export default function SignInPage() {
                     </div>
 
                     <FormErrors
-                        formError={formData.message ?? undefined}
+                        formError={formState.message ?? undefined}
                         validationErrors={
-                            formData.validationErrors?.length
-                                ? formData.validationErrors
-                                : undefined
+                            allValidationErrors.length ? allValidationErrors : undefined
                         }
                     />
 
                     <div className="grid gap-3">
                         <EmailField
-                            email={formData.email ?? ''}
+                            email={localFields.email}
                             onChange={handleFieldChange}
                         />
 
@@ -146,7 +115,7 @@ export default function SignInPage() {
                             id="password"
                             label="Password"
                             placeholder="Password"
-                            value={formData.password ?? ''}
+                            value={localFields.password}
                             onChange={handleFieldChange}
                         />
 

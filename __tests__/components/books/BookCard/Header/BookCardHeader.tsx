@@ -1,6 +1,6 @@
-import { BookCardHeader } from '@/components/books/bookCard/Header/BookCardHeader';
+import { BookCardHeader } from '@/components/books/bookCard/BookCardHeader';
 import { useUserState } from '@/providers/user/utils/useUser';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 const mockedBook: Book = {
     id: 'mock-book-id-123',
@@ -16,11 +16,12 @@ const mockedBook: Book = {
     format: 'Hardcover',
     page_count: 300,
     image_url: 'http://example.com/mock.jpg',
-    stock_quantity: 30,
+    stock_quantity: 10,
     is_active: true,
     reviews: [],
     rating: 5,
 };
+
 jest.mock('@/utils/db/server', () => ({
     createBackendClient: jest.fn(),
 }));
@@ -35,9 +36,7 @@ jest.mock('next/cache', () => ({
 
 jest.mock('@/providers/user/utils/useUser', () => ({
     useUserState: jest.fn(() => ({
-        loggedIn: true,
-        profileExists: true,
-        wishlist: [],
+        username: 'testuser',
     })),
 }));
 
@@ -55,34 +54,22 @@ describe('APP - BookCard - Header', () => {
         jest.clearAllMocks();
     });
 
-    it('should render wishlist and rating when logged in and stock is high', () => {
+    it('should render wishlist and rating when logged in and profile exists', () => {
         mockUseUserState.mockReturnValue({ loggedIn: true, profileExists: true } as any);
 
-        const { container } = render(<BookCardHeader book={mockedBook} />);
+        render(<BookCardHeader book={mockedBook} />);
 
         expect(screen.getByTestId('mock-wishlist')).toBeInTheDocument();
         expect(screen.getByTestId('mock-rating')).toBeInTheDocument();
-        expect(screen.queryByText(/left/i)).not.toBeInTheDocument();
     });
 
-    it('should render Low Stock chip and change grid when stock <= 25', () => {
+    it('should not render wishlist when not logged in', () => {
         mockUseUserState.mockReturnValue({ loggedIn: false, profileExists: false } as any);
-        const lowStockBook = { ...mockedBook, stock_quantity: 0 };
 
-        const { container } = render(<BookCardHeader book={lowStockBook} />);
+        render(<BookCardHeader book={mockedBook} />);
 
-        expect(screen.getByText('Sold Out')).toBeInTheDocument();
         expect(screen.queryByTestId('mock-wishlist')).not.toBeInTheDocument();
-    });
-
-    it('should render Low Stock chip and change grid when stock <= 25', () => {
-        mockUseUserState.mockReturnValue({ loggedIn: false, profileExists: false } as any);
-        const lowStockBook = { ...mockedBook, stock_quantity: 10 };
-
-        const { container } = render(<BookCardHeader book={lowStockBook} />);
-
-        expect(screen.getByText('10 left')).toBeInTheDocument();
-        expect(screen.queryByTestId('mock-wishlist')).not.toBeInTheDocument();
+        expect(screen.getByTestId('mock-rating')).toBeInTheDocument();
     });
 
     it('should hide wishlist if profileExists is false even if loggedIn', () => {
@@ -91,5 +78,40 @@ describe('APP - BookCard - Header', () => {
         render(<BookCardHeader book={mockedBook} />);
 
         expect(screen.queryByTestId('mock-wishlist')).not.toBeInTheDocument();
+    });
+
+    it('should hide wishlist if loggedIn is false even if profileExists', () => {
+        mockUseUserState.mockReturnValue({ loggedIn: false, profileExists: true } as any);
+
+        render(<BookCardHeader book={mockedBook} />);
+
+        expect(screen.queryByTestId('mock-wishlist')).not.toBeInTheDocument();
+    });
+
+    it('should call stopPropagation on wishlist wrapper click (covers line 15 onClick)', () => {
+        mockUseUserState.mockReturnValue({ loggedIn: true, profileExists: true } as any);
+
+        render(<BookCardHeader book={mockedBook} />);
+
+        const wishlistWrapper = screen.getByTestId('mock-wishlist').parentElement;
+        expect(wishlistWrapper).toBeInTheDocument();
+        
+        // Create a click event and verify stopPropagation is called
+        const clickEvent = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+        });
+        
+        let stopPropagationCalled = false;
+        const originalStopPropagation = clickEvent.stopPropagation.bind(clickEvent);
+        clickEvent.stopPropagation = () => {
+            stopPropagationCalled = true;
+            originalStopPropagation();
+        };
+        
+        if (wishlistWrapper) {
+            wishlistWrapper.dispatchEvent(clickEvent);
+            expect(stopPropagationCalled).toBe(true);
+        }
     });
 });

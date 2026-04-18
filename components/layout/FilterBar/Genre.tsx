@@ -1,8 +1,8 @@
 'use server';
 
+import { CustomPopoverWithList } from '@/components/ui/CustomPopoverWithList';
 import { createBackendClient } from '@/utils/db/server';
 import { PostgrestResponse } from '@supabase/supabase-js';
-import { CustomPopoverWithList } from '@/components/CustomPopoverWithList';
 import { redirect } from 'next/navigation';
 
 export const handleGenreChoice = async (filter: string) => {

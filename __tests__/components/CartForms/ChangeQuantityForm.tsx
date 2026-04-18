@@ -76,10 +76,13 @@ describe('APP - CartForms - ChangeQuantityForm', () => {
         ]);
 
         render(<ChangeQuantityForm bookID="1" />);
-        const select = screen.getByRole('combobox');
-        const submitBtn = screen.getByRole('button', { name: /update cart/i });
-
+        const select = screen.getByRole('combobox') as HTMLSelectElement;
+        
+        // Change the quantity to enable the submit button
         fireEvent.change(select, { target: { value: '8' } });
+        
+        const submitBtn = screen.getByRole('button', { name: /update cart/i });
+        
         fireEvent.click(submitBtn);
 
         const formData = mockDispatch.mock.calls[0][0];
@@ -116,7 +119,28 @@ describe('APP - CartForms - ChangeQuantityForm', () => {
         render(<ChangeQuantityForm bookID="1" />);
 
         expect(mockedEnqueueSnackbar).toHaveBeenCalledWith('Failed to update item in cart.', {
-            variant: 'warning',
+            variant: 'error',
         });
+    });
+
+    it('should show loading spinner when isPending is true', () => {
+        // Mock useTransition to return isPending = true
+        (React.useTransition as jest.Mock).mockReturnValueOnce([true, jest.fn()]);
+        
+        (useActionState as jest.Mock).mockReturnValue([
+            { success: false, message: '' },
+            jest.fn(),
+            false,
+        ]);
+
+        const { container } = render(<ChangeQuantityForm bookID="1" />);
+
+        // Check for the loading spinner (span with animate-spin and rounded-full classes)
+        const spinner = container.querySelector('span.animate-spin');
+        expect(spinner).toBeInTheDocument();
+        
+        // Button should show "Updating..." text and be disabled
+        const submitBtn = screen.getByText(/updating/i).closest('button');
+        expect(submitBtn).toBeDisabled();
     });
 });

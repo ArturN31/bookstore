@@ -1,6 +1,16 @@
 @import 'tailwindcss';
 
 @theme {
+    --breakpoint-xs: 480px; /* Small Mobile / SE */
+    --breakpoint-sm: 640px; /* Standard Mobile */
+    --breakpoint-md: 768px; /* Tablets / iPads */
+    --breakpoint-lg: 1024px; /* Laptops / 1080p Layout Base */
+    --breakpoint-xl: 1280px; /* Desktop / 720p Monitor */
+    --breakpoint-2xl: 1536px; /* Large Laptops / MacBook Pro */
+    --breakpoint-1080p: 1920px; /* Full HD Monitors */
+    --breakpoint-1440p: 2560px; /* QHD / 1440p High-Res */
+    --breakpoint-4k: 3840px; /* UHD / 4K Displays */
+
     --color-gunmetal: #20272f;
     --color-yellow: #f7cb15;
 

@@ -20,7 +20,7 @@ jest.mock('@/providers/user/utils/useUser', () => ({
     useUserActions: jest.fn(),
 }));
 
-jest.mock('@/components/CustomPopoverWithList', () => ({
+jest.mock('@/components/ui/CustomPopoverWithList', () => ({
     CustomPopoverWithList: ({ listToRender, listItemOnClick }: any) => (
         <div>
             <button data-testid="popover-icon-btn">Open</button>

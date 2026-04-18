@@ -13,7 +13,6 @@ export default function ChangeUsernamePage() {
     const INITIAL_STATE: ChangeUsernameFormState = {
         username: '',
         message: undefined,
-        error: undefined,
         validationErrors: undefined,
         isUsernameTaken: false,
     };
@@ -24,11 +23,8 @@ export default function ChangeUsernamePage() {
     const { username, message, validationErrors, isUsernameTaken } = formState;
 
     useEffect(() => {
-        if (message) {
-            setFormError(message);
-        } else {
-            setFormError(undefined);
-        }
+        if (message) setFormError(message);
+        else setFormError(undefined);
     }, [message]);
 
     const handleReset = async () => {

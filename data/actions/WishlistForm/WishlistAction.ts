@@ -1,10 +1,11 @@
 'use server';
 
 import { z } from 'zod';
+import { revalidatePath } from 'next/cache';
 import { createBackendClient } from '@/utils/db/server';
 import { getUserData } from '@/data/user/GetUserData';
 import { wishlistSchema } from '@/data/schemas/wishlistSchema';
-import { revalidatePath } from 'next/cache';
+import { executeWishlistOperation } from './WishlistService';
 
 export type WishlistFormState = {
     success: boolean;
@@ -23,7 +24,6 @@ export async function WishlistAction(
     };
 
     const validated = wishlistSchema.safeParse(rawData);
-
     if (!validated.success)
         return {
             success: false,
@@ -32,51 +32,34 @@ export async function WishlistAction(
         };
 
     const { bookId, actionType } = validated.data;
-    const supabase = await createBackendClient();
-    const user = await getUserData();
-
-    if (!user)
-        return {
-            success: false,
-            message: 'You must be logged in to manage your wishlist.',
-        };
 
     try {
-        switch (actionType) {
-            case 'INSERT':
-                const { error: insertError } = await supabase
-                    .from('wishlist')
-                    .insert([{ user_id: user.id, book_id: bookId }]);
+        const supabase = await createBackendClient();
 
-                if (insertError) {
-                    console.error('Wishlist Insert Error:', insertError.message);
-                    return { success: false, message: 'Could not add to wishlist.' };
-                }
-                break;
+        const { data: user, error: authError } = await getUserData();
+        if (authError || !user)
+            return {
+                success: false,
+                message: 'Login required to manage wishlist.',
+            };
 
-            case 'REMOVE':
-                const { error: removeError } = await supabase
-                    .from('wishlist')
-                    .delete()
-                    .eq('user_id', user.id)
-                    .eq('book_id', bookId);
+        const result = await executeWishlistOperation(supabase, actionType, user.id, bookId);
 
-                if (removeError) {
-                    console.error('Wishlist Remove Error:', removeError.message);
-                    return { success: false, message: 'Could not remove from wishlist.' };
-                }
-                break;
-        }
+        if (result.error) return { success: false, message: result.error };
 
         revalidatePath('/', 'layout');
 
+        const actionVerb = actionType === 'INSERT' ? 'added to' : 'removed from';
         return {
             success: true,
-            message: `Item successfully ${actionType === 'INSERT' ? 'added to' : 'removed from'} wishlist.`,
+            message: `Item successfully ${actionVerb} wishlist.`,
             timestamp: Date.now(),
         };
     } catch (err) {
-        console.error('Wishlist Action Unexpected Error:', err);
-        return { success: false, message: 'An unexpected error occurred.' };
+        console.error('[WishlistAction] Pipeline Failure:', err);
+        return {
+            success: false,
+            message: 'A system error occurred. Please try again.',
+        };
     }
 }

@@ -1,7 +1,7 @@
 'use client';
 
-import { Button, Popover, SvgIconTypeMap } from '@mui/material';
-import { ReactElement, useState } from 'react';
+import { Button, Popover } from '@mui/material';
+import { ReactElement, useState, useEffect } from 'react';
 
 type ButtonContent = {
     btnText: string;
@@ -21,6 +21,11 @@ export const CustomPopoverWithList = ({
     listItemOnClick,
 }: ButtonContent) => {
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -51,7 +56,7 @@ export const CustomPopoverWithList = ({
     };
 
     const iconBtnStyle = {
-        borderRadius: 'calc(infinity * 1px)',
+        borderRadius: '50%',
         width: '48px',
         height: '48px',
         display: 'grid',
@@ -68,6 +73,18 @@ export const CustomPopoverWithList = ({
             border: '1px solid black',
         },
     };
+
+    if (!isMounted)
+        return (
+            <div
+                style={
+                    btnText
+                        ? { padding: '6px 8px', minWidth: '64px', height: '36px' }
+                        : { width: '48px', height: '48px' }
+                }
+                aria-hidden="true"
+            />
+        );
 
     return (
         <>

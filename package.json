@@ -13,9 +13,9 @@
     "dependencies": {
         "@emotion/react": "^11.14.0",
         "@emotion/styled": "^11.14.0",
-        "@mui/icons-material": "^7",
-        "@mui/material": "^7",
-        "@supabase/ssr": "^0.9",
+        "@mui/icons-material": "^9",
+        "@mui/material": "^9",
+        "@supabase/ssr": "^0.10",
         "@supabase/supabase-js": "^2.97.0",
         "@tailwindcss/postcss": "^4.0.0",
         "next": "^16",
@@ -44,7 +44,7 @@
         "prettier-plugin-tailwindcss": "^0.7.2",
         "supabase": "^2",
         "tailwindcss": "^4.0.0",
-        "typescript": "^5"
+        "typescript": "^6"
     },
     "browserslist": [
         "last 2 Chrome versions",

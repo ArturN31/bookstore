@@ -1,104 +1,87 @@
 'use client';
 
-import { ChangeEvent, SyntheticEvent, useActionState, useState, useTransition } from 'react';
+import { ChangeEvent, useActionState, useState, useTransition, useMemo } from 'react';
 import { EmailField } from '@/components/formItems/EmailField';
 import { FormBtns } from '@/components/formItems/FormBtns';
 import { FormErrors } from '@/components/formItems/FormErrors';
 import { PasswordField } from '@/components/formItems/PasswordField';
-import { SignUpAction, SignUpFormState } from '@/data/actions/auth/SignUpAction';
+import { SignUpAction } from '@/data/actions/auth/SignUpAction';
 import { signUpSchema } from '@/data/schemas/authSchemas';
 import Link from 'next/link';
+import { z } from 'zod';
 
 export default function SignUpPage() {
-    const [formData, setFormData] = useState<SignUpFormState>({
+    const [localFields, setLocalFields] = useState({
         email: '',
         password: '',
         cnfPassword: '',
-        message: undefined,
-        validationErrors: [],
     });
 
-    const [formState, formAction] = useActionState(
-        async (state: SignUpFormState, payload: FormData) => {
-            const result = await SignUpAction(state, payload);
-            if (result) {
-                setFormData((prev) => ({ ...prev, ...result }));
-            }
-            return result;
-        },
-        formData,
-    );
+    const [clientErrors, setClientErrors] = useState<z.core.$ZodIssue[]>([]);
+
+    const [formState, formAction] = useActionState(SignUpAction, {
+        message: null,
+        validationErrors: [],
+    });
 
     const [isTransitioningSubmit, startTransitionSubmit] = useTransition();
     const [isTransitioningReset, startTransitionReset] = useTransition();
 
+    const allValidationErrors = useMemo(() => {
+        return [...clientErrors, ...(formState.validationErrors || [])];
+    }, [clientErrors, formState.validationErrors]);
+
     const handleFieldChange = (e: ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+        const updatedFields = { ...localFields, [name]: value };
+        setLocalFields(updatedFields);
 
-        setFormData((prev) => {
-            const updatedData = { ...prev, [name]: value };
-            const validation = signUpSchema.safeParse(updatedData);
-
-            if (validation.success)
-                return { ...updatedData, validationErrors: [], message: undefined };
-
-            const filteredIssues = validation.error.issues.filter((issue) => {
-                const isCurrentField = issue.path.includes(name);
-                const isNotRequiredError =
-                    issue.code !== 'invalid_type' &&
-                    issue.code !== 'too_small' &&
-                    !issue.message.toLowerCase().includes('required');
-
-                return isCurrentField && isNotRequiredError;
-            });
-
-            return {
-                ...updatedData,
-                validationErrors: filteredIssues,
-                message: filteredIssues.length > 0 ? 'Validation Issues' : undefined,
-            };
-        });
+        const result = signUpSchema.safeParse(updatedFields);
+        if (result.success) setClientErrors([]);
+        else {
+            const fieldErrors = result.error.issues.filter(
+                (issue) =>
+                    issue.path.includes(name) ||
+                    (name === 'cnfPassword' && issue.code === 'custom'),
+            );
+            setClientErrors(fieldErrors);
+        }
     };
 
-    const handleSubmit = (event: SyntheticEvent<HTMLFormElement, SubmitEvent>) => {
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        const result = signUpSchema.safeParse(formData);
+        const result = signUpSchema.safeParse(localFields);
 
         if (!result.success) {
-            setFormData((prev) => ({
-                ...prev,
-                validationErrors: result.error.issues,
-                message: 'Please fix the errors before submitting.',
-            }));
+            setClientErrors(result.error.issues);
             return;
         }
 
-        const submitData = new FormData();
-        Object.entries(formData).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-                submitData.append(key, value.toString());
-            }
-        });
+        setClientErrors([]);
 
-        startTransitionSubmit(async () => {
-            await formAction(submitData);
+        const submitData = new FormData();
+        submitData.append('email', localFields.email);
+        submitData.append('password', localFields.password);
+        submitData.append('cnfPassword', localFields.cnfPassword);
+
+        startTransitionSubmit(() => {
+            formAction(submitData);
         });
     };
 
     const handleReset = () => {
-        startTransitionReset(async () => {
+        setLocalFields({
+            email: '',
+            password: '',
+            cnfPassword: '',
+        });
+        setClientErrors([]);
+
+        startTransitionReset(() => {
             const resetData = new FormData();
             resetData.append('reset', 'yes');
-            await formAction(resetData);
-
-            setFormData({
-                email: '',
-                password: '',
-                cnfPassword: '',
-                message: undefined,
-                validationErrors: [],
-            });
+            formAction(resetData);
         });
     };
 
@@ -122,33 +105,31 @@ export default function SignUpPage() {
                     </div>
 
                     <FormErrors
-                        formError={formData.message ?? undefined}
+                        formError={formState.message ?? undefined}
                         validationErrors={
-                            formData.validationErrors?.length
-                                ? formData.validationErrors
-                                : undefined
+                            allValidationErrors.length ? allValidationErrors : undefined
                         }
                     />
 
                     <div className="grid gap-4">
                         <EmailField
-                            email={formData.email ?? ''}
+                            email={localFields.email}
                             onChange={handleFieldChange}
                         />
 
                         <PasswordField
                             id="password"
                             label="Password"
-                            placeholder="Password"
-                            value={formData.password ?? ''}
+                            placeholder="Create a strong password"
+                            value={localFields.password}
                             onChange={handleFieldChange}
                         />
 
                         <PasswordField
                             id="cnfPassword"
                             label="Confirm Password"
-                            placeholder="Confirm Password"
-                            value={formData.cnfPassword ?? ''}
+                            placeholder="Repeat password"
+                            value={localFields.cnfPassword}
                             onChange={handleFieldChange}
                         />
 

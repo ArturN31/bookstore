@@ -35,18 +35,28 @@ const mockedReviews: Review[] = [
 ];
 
 describe('APP - BookCard - Rating', () => {
-    it('should render component', () => {
+    it('should render component with badge variant', () => {
         render(<BookRating reviews={mockedReviews} />);
 
-        expect(screen.getByTestId(`book-rating-${mockedReviews[0].book_id}`)).toHaveTextContent(
-            '3.67',
-        );
+        expect(screen.getByText('3.7')).toBeInTheDocument();
     });
 
-    it('should render 0.00 when there are no reviews', () => {
-        render(<BookRating reviews={[]} />);
+    it('should render nothing when there are no reviews', () => {
+        const { container } = render(<BookRating reviews={[]} />);
 
-        const ratingElement = screen.getByTestId('book-rating-empty');
-        expect(ratingElement).toHaveTextContent('0.00');
+        expect(container.firstChild).toBeNull();
+    });
+
+    it('should render default variant with progress bar', () => {
+        const { container } = render(<BookRating reviews={mockedReviews} variant="default" />);
+
+        expect(screen.getByText('3.7')).toBeInTheDocument();
+        expect(screen.getByText('Rating')).toBeInTheDocument();
+        // Check for the progress bar element (yellow bar)
+        const progressBar = container.querySelector('.bg-\\[\\#facc15\\]');
+        expect(progressBar).toBeInTheDocument();
+        // Check for the background bar (slate-100)
+        const backgroundBar = container.querySelector('.bg-slate-100');
+        expect(backgroundBar).toBeInTheDocument();
     });
 });

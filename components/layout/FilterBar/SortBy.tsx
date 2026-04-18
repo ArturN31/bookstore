@@ -1,34 +1,23 @@
 'use client';
 
-import { CustomPopoverWithList } from '@/components/CustomPopoverWithList';
+import { CustomPopoverWithList } from '@/components/ui/CustomPopoverWithList';
+import { BOOK_SORT_OPTIONS, BookSortType } from '@/data/books/BookConstants';
 import { useBookFilter } from '@/providers/BookFilterProvider';
-
-const SORT_CHOICES = [
-    'Title: A-Z',
-    'Title: Z-A',
-    'Price: Low to High',
-    'Price: High to Low',
-    'Release Date: Newest to Oldest',
-    'Release Date: Oldest to Newest',
-    'Highest Avg. customer rating',
-    'Lowest Avg. customer rating',
-    'Best Sellers',
-] as const;
-
-type SortChoice = (typeof SORT_CHOICES)[number];
 
 export const SortBy = () => {
     const { toggleFilter, filterType } = useBookFilter();
+
+    const sortOptionsList = Object.values(BOOK_SORT_OPTIONS);
 
     return (
         <CustomPopoverWithList
             btnText={filterType || 'Sort By'}
             btnIcon={undefined}
-            listToRender={[...SORT_CHOICES]}
+            listToRender={sortOptionsList}
             listIcons={undefined}
             message={undefined}
             listItemOnClick={(choice: string) => {
-                toggleFilter(choice as SortChoice);
+                toggleFilter(choice as BookSortType);
             }}
         />
     );

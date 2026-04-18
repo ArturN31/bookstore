@@ -39,13 +39,19 @@ export const generateReviewsArray = (
         const reviewedUsers = bookReviewerMap.get(book.id)!;
 
         if (!reviewedUsers.has(user.id)) {
+            const timestamp = faker.date.past({ years: 1 }).toISOString();
+
             reviews.push({
+                id: faker.string.uuid(),
+                created_at: timestamp,
+                updated_at: timestamp,
                 book_id: book.id,
                 user_id: user.id,
                 username: user.username,
                 review: faker.lorem.paragraph({ min: 1, max: 3 }),
                 rating: Math.floor(Math.random() * 5) + 1,
             });
+
             reviewedUsers.add(user.id);
             createdCount++;
         }

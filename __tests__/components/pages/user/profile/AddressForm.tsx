@@ -1,6 +1,6 @@
 import { AddressForm } from '@/components/pages/user/profile/AddressForm/AddressForm';
 import { UserAddressAction } from '@/data/actions/AddressForm/UserAddressAction';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 
 jest.mock('@/data/actions/AddressForm/UserAddressAction', () => ({
     UserAddressAction: jest.fn(),
@@ -228,20 +228,44 @@ describe('APP - pages/user - AddressForm', () => {
             <AddressForm
                 mode="update"
                 initialData={{
-                    streetAddress: '123 Valid St',
-                    postcode: 'G1 1AA',
-                    city: 'Glasgow',
-                    country: 'UK',
+                    streetAddress: undefined,
+                    postcode: undefined,
+                    city: undefined,
+                    country: undefined,
                 }}
             />,
         );
 
-        const form = document.querySelector('form')!;
-        await act(async () => {
-            fireEvent.submit(form);
-        });
-
         const cityInput = screen.getByLabelText(/City/i) as HTMLInputElement;
         expect(cityInput.value).toBe('');
+    });
+
+    it('covers nullish coalescing branches in JSX when values are defined (?? "" false branch)', async () => {
+        mockAction.mockResolvedValueOnce({
+            streetAddress: '123 Main St',
+            postcode: '12345',
+            city: 'New York',
+            country: 'USA',
+            message: null,
+            validationErrors: [],
+        });
+
+        render(
+            <AddressForm
+                mode="update"
+                initialData={{
+                    streetAddress: '123 Main St',
+                    postcode: '12345',
+                    city: 'New York',
+                    country: 'USA',
+                }}
+            />,
+        );
+
+        const cityInput = screen.getByLabelText(/City/i) as HTMLInputElement;
+        expect(cityInput.value).toBe('New York');
+        
+        const streetInput = screen.getByLabelText(/Street Address/i) as HTMLInputElement;
+        expect(streetInput.value).toBe('123 Main St');
     });
 });

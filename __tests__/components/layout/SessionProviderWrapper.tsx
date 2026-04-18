@@ -37,11 +37,11 @@ describe('SessionProviderWrapper Coverage Fix', () => {
     it('covers the "user exists but no cart/wishlist" branches', async () => {
         const mockUser = { id: 'user-123' };
         mockCreateClient.mockResolvedValue({
-            auth: { getUser: jest.fn().mockResolvedValue({ data: { user: mockUser } }) },
+            auth: { getUser: jest.fn().mockResolvedValue({ data: { user: mockUser }, error: null }) },
         });
 
-        (getUserData as jest.Mock).mockResolvedValue(null);
-        (getUserWishlist as jest.Mock).mockResolvedValue(null);
+        (getUserData as jest.Mock).mockResolvedValue({ data: null, error: null });
+        (getUserWishlist as jest.Mock).mockResolvedValue({ data: null, error: null });
         (getCartData as jest.Mock).mockResolvedValue({ books: null, error: 'Failed' });
 
         const component = await SessionProviderWrapper({ children: <div /> });
@@ -58,12 +58,15 @@ describe('SessionProviderWrapper Coverage Fix', () => {
     it('covers the "user exists with full data" branches', async () => {
         const mockUser = { id: 'user-456' };
         mockCreateClient.mockResolvedValue({
-            auth: { getUser: jest.fn().mockResolvedValue({ data: { user: mockUser } }) },
+            auth: { getUser: jest.fn().mockResolvedValue({ data: { user: mockUser }, error: null }) },
         });
 
-        (getUserData as jest.Mock).mockResolvedValue({ id: 'user-456', first_name: 'John' });
-        (getUserWishlist as jest.Mock).mockResolvedValue([{ id: 1 }]);
-        (getCartData as jest.Mock).mockResolvedValue({ books: [{ id: 'b1' }], error: null });
+        (getUserData as jest.Mock).mockResolvedValue({ 
+            data: { id: 'user-456', first_name: 'John' }, 
+            error: null 
+        });
+        (getUserWishlist as jest.Mock).mockResolvedValue({ data: [{ id: 1 }], error: null });
+        (getCartData as jest.Mock).mockResolvedValue({ data: { books: [{ id: 'b1' }] }, error: null });
 
         const component = await SessionProviderWrapper({ children: <div /> });
         render(component);
@@ -79,7 +82,7 @@ describe('SessionProviderWrapper Coverage Fix', () => {
     it('should handle the guest branch and provide "guest" as the key', async () => {
         mockCreateClient.mockResolvedValue({
             auth: {
-                getUser: jest.fn().mockResolvedValue({ data: { user: null } }),
+                getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
             },
         });
 

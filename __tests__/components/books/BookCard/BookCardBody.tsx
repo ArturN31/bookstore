@@ -1,4 +1,4 @@
-import { BookCardBody } from '@/components/books/bookCard/Body/BookCardBody';
+import { BookCardBody } from '@/components/books/bookCard/BookCardBody';
 import { useCartActions, useCartState } from '@/providers/cart/utils/useCart';
 import { useUserState } from '@/providers/user/utils/useUser';
 import { screen, render, fireEvent } from '@testing-library/react';
@@ -72,12 +72,12 @@ describe('APP - BookCard - CardBody', () => {
         });
     });
 
-    it('Should navigate to page on click', () => {
+    it('Should render book title and author', () => {
         render(<BookCardBody book={mockedBook} />);
 
-        const card = screen.getByTestId(`book-card-body-${mockedBook.title}`);
-        fireEvent.click(card);
-
-        expect(mockPush).toHaveBeenCalledWith(`/book/${mockedBook.id}`);
+        expect(screen.getByText('The Mock Book')).toBeInTheDocument();
+        expect(screen.getByText('A. Test Author')).toBeInTheDocument();
+        expect(screen.getByText('Mock Publisher')).toBeInTheDocument();
+        expect(screen.getByText('2023')).toBeInTheDocument();
     });
 });

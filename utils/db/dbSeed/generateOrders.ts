@@ -30,9 +30,11 @@ const generateLineItems = (orderID: string, books: BookDB[], count: number) => {
         if (!book || !book.id) continue;
 
         const quantity = faker.number.int({ min: 1, max: 2 });
-        const unitPrice = parseFloat(book.price.replace('£', ''));
+        const unitPrice = parseFloat(book.price.toString().replace(/[£,]/g, ''));
 
         items.push({
+            id: faker.string.uuid(),
+            created_at: new Date().toISOString(),
             order_id: orderID,
             book_id: book.id,
             quantity,
@@ -44,6 +46,7 @@ const generateLineItems = (orderID: string, books: BookDB[], count: number) => {
 
     return { items, subtotal };
 };
+
 export const generateOrdersAndItems = (
     books: BookDB[],
     ordersAmount: number,
@@ -54,6 +57,7 @@ export const generateOrdersAndItems = (
     const orders: OrderDB[] = [];
     const allItems: OrderItemDB[] = [];
     const orderDiscounts: OrderDiscountDB[] = [];
+
     const baseItemsPerOrder = Math.floor(itemsAmount / ordersAmount);
     let extraItems = itemsAmount % ordersAmount;
     let remainingDiscounts = Math.min(discountsAmount, ordersAmount);
@@ -71,7 +75,11 @@ export const generateOrdersAndItems = (
         if (remainingDiscounts > 0 && discounts.length > 0) {
             const discount = faker.helpers.arrayElement(discounts);
             if (discount.id) {
-                orderDiscounts.push({ order_id: orderID, discount_id: discount.id });
+                orderDiscounts.push({
+                    id: faker.string.uuid(),
+                    order_id: orderID,
+                    discount_id: discount.id,
+                });
                 finalTotal = applyDiscount(subtotal, discount);
                 remainingDiscounts--;
             }
@@ -83,6 +91,7 @@ export const generateOrdersAndItems = (
             total_amount: Number(finalTotal.toFixed(2)),
             status: faker.helpers.arrayElement(['pending', 'completed', 'cancelled', 'shipped']),
             payment_method: faker.helpers.arrayElement(PAYMENT_METHODS),
+            created_at: faker.date.recent({ days: 30 }).toISOString(),
         });
     }
 

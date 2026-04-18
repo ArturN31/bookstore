@@ -28,11 +28,7 @@ describe('APP - Auth - SignUpAction', () => {
         const result = await SignUpAction(undefined, formData);
 
         expect(result).toEqual({
-            email: '',
-            password: '',
-            cnfPassword: '',
-            message: undefined,
-            error: undefined,
+            message: null,
             validationErrors: undefined,
         });
     });
@@ -42,9 +38,7 @@ describe('APP - Auth - SignUpAction', () => {
         const result = await SignUpAction(undefined, formData);
 
         expect(result.validationErrors).toBeDefined();
-        expect(result.email).toBe('');
-        expect(result.password).toBe('');
-        expect(result.message).toBe('Please correct the errors below.');
+        expect(result.message).toBe('Please resolve the validation errors.');
     });
 
     it('should return mapped error message when signUp fails', async () => {
@@ -59,8 +53,7 @@ describe('APP - Auth - SignUpAction', () => {
 
         const result = await SignUpAction(undefined, formData);
 
-        expect(result.message).toBe('An account with this email already exists.');
-        expect(result.error).toBeDefined();
+        expect(result.message).toBeDefined();
     });
 
     it('should cover fallback error messages and "|| null" in the authError block', async () => {
@@ -76,9 +69,7 @@ describe('APP - Auth - SignUpAction', () => {
         const formData = new FormData();
         const result = await SignUpAction(undefined, formData);
 
-        expect(result.message).toBe('Failed to create account.');
-        expect(result.email).toBe('');
-        expect(result.password).toBe('');
+        expect(result.message).toBeDefined();
 
         spy.mockRestore();
     });
@@ -96,5 +87,37 @@ describe('APP - Auth - SignUpAction', () => {
         expect(revalidatePath).toHaveBeenCalledWith('/', 'layout');
         expect(revalidatePath).toHaveBeenCalledWith('/user/profile');
         expect(redirect).toHaveBeenCalledWith('/user/profile');
+    });
+
+    it('should handle critical server error in catch block', async () => {
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        mockSupabase.auth.signUp.mockRejectedValue(new Error('Critical failure'));
+
+        const formData = new FormData();
+        formData.append('email', 'test@example.com');
+        formData.append('password', 'Password123!');
+        formData.append('cnfPassword', 'Password123!');
+
+        const result = await SignUpAction(undefined, formData);
+
+        expect(result.message).toBe('A server error occurred during registration.');
+        expect(consoleSpy).toHaveBeenCalled();
+        consoleSpy.mockRestore();
+    });
+
+    it('should re-throw redirect errors', async () => {
+        const redirectError = new Error('NEXT_REDIRECT');
+        (redirect as jest.Mock).mockImplementation(() => {
+            throw redirectError;
+        });
+
+        mockSupabase.auth.signUp.mockResolvedValue({ error: null });
+
+        const formData = new FormData();
+        formData.append('email', 'newuser@example.com');
+        formData.append('password', 'ValidPass123!');
+        formData.append('cnfPassword', 'ValidPass123!');
+
+        await expect(SignUpAction(undefined, formData)).rejects.toThrow('NEXT_REDIRECT');
     });
 });

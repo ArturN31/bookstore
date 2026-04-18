@@ -1,7 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
-import { useState } from 'react';
 import { CartSidebar } from '@/components/CartSidebar/CartSidebar';
 import { useCartState } from '@/providers/cart/utils/useCart';
 import { IconButton, Badge } from '@mui/material';
@@ -9,7 +9,22 @@ import { IconButton, Badge } from '@mui/material';
 export const CartBtn = () => {
     const [openCart, setOpenCart] = useState(false);
     const { cartBooksAmount } = useCartState();
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     const handleCartVisibility = () => setOpenCart(!openCart);
+
+    if (!isMounted)
+        return (
+            <div
+                style={{ width: '48px', height: '48px' }}
+                aria-hidden="true"
+            />
+        );
+
     const cartButtonLabel = `Shopping cart with ${cartBooksAmount} items`;
 
     return (
@@ -20,14 +35,14 @@ export const CartBtn = () => {
                 aria-label={cartButtonLabel}
                 sx={{
                     boxShadow: '0 4px 6px -1px black',
-                    borderRadius: 'calc(infinity * 1px)',
+                    borderRadius: '50%',
                     width: '48px',
                     height: '48px',
                     display: 'grid',
                     placeItems: 'center',
                     backgroundColor: '#f7cb15',
                     cursor: 'pointer',
-                    ':hover': {
+                    '&:hover': {
                         backgroundColor: '#f7cb1580',
                         border: '1px solid black',
                     },

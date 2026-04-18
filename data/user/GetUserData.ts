@@ -1,36 +1,64 @@
 'use server';
 
 import { createBackendClient } from '@/utils/db/server';
+import { findUserById, findWishlistByUserId } from './UserRepository';
+import { withRetry } from '@/utils/network/retry';
 
-export const getUserData = async () => {
-    const supabase = await createBackendClient();
+export const getUserData = async (): Promise<ActionResponse<User>> => {
+    try {
+        const supabase = await createBackendClient();
 
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser();
+        const {
+            data: { user: authUser },
+            error: authError,
+        } = await supabase.auth.getUser();
 
-    if (authError || !user) return null;
+        if (authError || !authUser) return { data: null, error: 'User session not found.' };
 
-    const { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
+        const result = await withRetry(async () => {
+            return await findUserById(supabase, authUser.id);
+        });
 
-    if (error) return null;
-    return data as User;
+        if (result.error) {
+            console.error('[UserService] Profile Fetch Error:', result.error.message);
+            return { data: null, error: 'Failed to retrieve profile data.' };
+        }
+
+        if (!result.data) return { data: null, error: null };
+
+        return {
+            data: {
+                ...result.data,
+                email: authUser.email || '',
+            } as User,
+            error: null,
+        };
+    } catch (err) {
+        console.error('[UserService] Unexpected Error:', err);
+        return { data: null, error: 'A system error occurred or connection timed out.' };
+    }
 };
 
-export const getUserWishlist = async (userID: string) => {
-    const supabase = await createBackendClient();
+export const getUserWishlist = async (userID: string): Promise<ActionResponse<Wishlist[]>> => {
+    if (!userID) return { data: null, error: 'No user ID provided.' };
 
-    const { data, error } = await supabase.from('wishlist').select('*').eq('user_id', userID);
-
-    if (error) {
-        console.error('Error retrieving wishlisted books:', {
-            code: error.code,
-            message: error.message,
-            details: error.details,
+    try {
+        const result = await withRetry(async () => {
+            const supabase = await createBackendClient();
+            return await findWishlistByUserId(supabase, userID);
         });
-        return null;
-    }
 
-    return data;
+        if (result.error) {
+            console.error('[UserService] Wishlist Fetch Error:', result.error.message);
+            return { data: null, error: 'Could not load wishlist.' };
+        }
+
+        return {
+            data: (result.data || []) as Wishlist[],
+            error: null,
+        };
+    } catch (err) {
+        console.error('[UserService] Wishlist System Error:', err);
+        return { data: null, error: 'Failed to fetch wishlist due to network issues.' };
+    }
 };

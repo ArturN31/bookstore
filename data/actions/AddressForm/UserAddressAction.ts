@@ -1,47 +1,22 @@
 'use server';
 
-import { z } from 'zod';
+import { addressSchema, fullUserSchema } from '@/data/schemas/addressSchema';
 import { createBackendClient } from '@/utils/db/server';
+import { z } from 'zod';
+import { mapToUserPayload } from './UserAddressMapper';
+import { insertUserAddress, updateUserAddress } from './UserAddressRepository';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { addressSchema, fullUserSchema } from '@/data/schemas/addressSchema';
 
 export type UserAddressFormState = {
-    firstName?: string;
-    lastName?: string;
-    dob?: string;
-    phoneNumber?: string;
-    streetAddress?: string;
-    postcode?: string;
-    city?: string;
-    country?: string;
     message?: string | null;
     validationErrors?: z.core.$ZodIssue[];
-    error?: any;
+    error?: unknown;
 };
 
-const DB_MAP: Partial<Record<keyof UserAddressFormState, string>> = {
-    firstName: 'first_name',
-    lastName: 'last_name',
-    dob: 'date_of_birth',
-    phoneNumber: 'phone_number',
-    streetAddress: 'street_address',
-    postcode: 'postcode',
-    city: 'city',
-    country: 'country',
-};
-
-const mapToDbPayload = (data: Partial<UserAddressFormState>) => {
-    const payload: Record<string, string | undefined> = {};
-
-    for (const key in data) {
-        const typedKey = key as keyof UserAddressFormState;
-        const dbKey = DB_MAP[typedKey];
-
-        if (dbKey) payload[dbKey] = data[typedKey] as string;
-    }
-
-    return payload;
+const INITIAL_EMPTY_STATE: UserAddressFormState = {
+    message: null,
+    validationErrors: undefined,
 };
 
 export async function UserAddressAction(
@@ -49,49 +24,40 @@ export async function UserAddressAction(
     prevState: UserAddressFormState,
     formData: FormData,
 ): Promise<UserAddressFormState> {
-    const rawData = Object.fromEntries(formData.entries()) as Record<string, string>;
+    const rawData = Object.fromEntries(formData.entries());
 
-    if (rawData.reset)
-        return {
-            firstName: '',
-            lastName: '',
-            dob: '',
-            phoneNumber: '',
-            streetAddress: '',
-            postcode: '',
-            city: '',
-            country: '',
-            message: null,
-            validationErrors: undefined,
-        };
+    if (rawData.reset) return INITIAL_EMPTY_STATE;
 
     const schema = mode === 'add' ? fullUserSchema : addressSchema;
     const validated = schema.safeParse(rawData);
 
     if (!validated.success)
         return {
-            ...rawData,
             validationErrors: validated.error.issues,
-            message: 'Please correct the errors.',
+            message: 'Please correct the highlighted errors.',
         };
 
-    const supabase = await createBackendClient();
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser();
+    try {
+        const supabase = await createBackendClient();
 
-    if (authError || !user) return { ...rawData, message: 'Authentication failed. Please log in.' };
+        const {
+            data: { user },
+            error: authError,
+        } = await supabase.auth.getUser();
+        if (authError || !user) return { message: 'Session expired. Please log in again.' };
 
-    const payload = mapToDbPayload(validated.data);
-    const query =
-        mode === 'add'
-            ? supabase.from('users').insert({ id: user.id, ...payload })
-            : supabase.from('users').update(payload).eq('id', user.id);
+        const payload = mapToUserPayload(validated.data);
 
-    const { error: dbError } = await query;
+        const { error: dbError } =
+            mode === 'add'
+                ? await insertUserAddress(supabase, { id: user.id, ...payload } as any)
+                : await updateUserAddress(supabase, user.id, payload);
 
-    if (dbError) return { ...rawData, message: 'Database error occurred.', error: dbError };
+        if (dbError) throw dbError;
+    } catch (err) {
+        console.error('[UserAddressAction] Error:', err);
+        return { message: 'Failed to save address details.', error: err };
+    }
 
     revalidatePath('/user/profile');
     redirect('/user/profile');

@@ -22,19 +22,18 @@ export type CommandResponse = { message: string; success: boolean };
 export type CommandHandler = (supabase: SupabaseClient) => Promise<CommandResponse>;
 
 export const handleAddSales: CommandHandler = async (supabase) => {
-    const [booksResponse, discountsResponse] = await Promise.all([
+    const [booksRes, discountsRes] = await Promise.all([
         supabase.from('books').select('*'),
         supabase.from('discounts').select('*'),
     ]);
 
-    if (booksResponse.error) throw booksResponse.error;
-    if (discountsResponse.error) throw discountsResponse.error;
+    if (booksRes.error) throw booksRes.error;
+    if (discountsRes.error) throw discountsRes.error;
 
-    const books = booksResponse.data as BookDB[];
-    const discounts = (discountsResponse.data as DiscountDB[]) || [];
+    const books = booksRes.data as BookDB[];
+    const discounts = (discountsRes.data as DiscountDB[]) || [];
 
-    if (!books || books.length === 0)
-        throw new Error('Cannot generate sales: No books in catalog.');
+    if (!books || books.length === 0) throw new Error('Seed Failure: Catalog is empty.');
 
     const { orders, items, orderDiscounts } = generateOrdersAndItems(
         books,
@@ -47,30 +46,28 @@ export const handleAddSales: CommandHandler = async (supabase) => {
     const { error: ordErr } = await supabase.from('orders').insert(orders);
     if (ordErr) throw ordErr;
 
-    const childTasks = [supabase.from('order_items').insert(items)];
+    const tasks = [supabase.from('order_items').insert(items)];
 
     if (orderDiscounts.length > 0)
-        childTasks.push(supabase.from('order_discounts').insert(orderDiscounts));
+        tasks.push(supabase.from('order_discounts').insert(orderDiscounts));
 
-    const results = await Promise.all(childTasks);
-
-    const failedTask = results.find((r) => r.error);
-    if (failedTask?.error) throw failedTask.error;
+    const results = await Promise.all(tasks);
+    const failed = results.find((r) => r.error);
+    if (failed?.error) throw failed.error;
 
     return {
-        message: `Success: ${DEV_CONFIG.ORDERS_COUNT} Orders injected with full relational integrity.`,
+        message: `Success: ${DEV_CONFIG.ORDERS_COUNT} Orders injected.`,
         success: true,
     };
 };
 
 export const handleSeedDiscounts: CommandHandler = async (supabase) => {
-    const amount = 5;
-    const discounts = generateDiscounts(amount);
+    const discounts = generateDiscounts(DEV_CONFIG.DISCOUNT_COUNT);
 
     const { error } = await supabase.from('discounts').insert(discounts);
     if (error) throw error;
 
-    return { message: `${amount} New Discounts Added`, success: true };
+    return { message: `${DEV_CONFIG.DISCOUNT_COUNT} New Discounts Added`, success: true };
 };
 
 export const handleStockPurge: CommandHandler = async (supabase) => {
@@ -98,7 +95,8 @@ export const handleReviewBomb: CommandHandler = async (supabase) => {
         supabase.from('users').select('id, username'),
     ]);
 
-    if (!books?.length || !users?.length) throw new Error('Data missing for reviews.');
+    if (!books || !users || books.length === 0 || users.length === 0)
+        throw new Error('Seed Error: Required data for reviews is missing.');
 
     const reviews = generateReviewsArray(
         books as BookDB[],
@@ -109,7 +107,10 @@ export const handleReviewBomb: CommandHandler = async (supabase) => {
     const { error } = await supabase.from('book_reviews').insert(reviews);
     if (error) throw error;
 
-    return { message: `Social Proof: ${reviews.length} reviews distributed.`, success: true };
+    return {
+        message: `Social Proof: ${reviews.length} reviews distributed among ${users.length} profiles.`,
+        success: true,
+    };
 };
 
 export const handleAddCarts: CommandHandler = async (supabase) => {
@@ -122,19 +123,19 @@ export const handleAddCarts: CommandHandler = async (supabase) => {
 
     const targetUsers = users.sort(() => 0.5 - Math.random()).slice(0, DEV_CONFIG.USER_COUNT);
 
-    const { data: createdCarts, error: cartErr } = await supabase
+    const { data: carts, error: cartErr } = await supabase
         .from('shopping_carts')
         .insert(targetUsers.map((u) => ({ user_id: u.id })))
         .select('id, user_id');
 
-    if (cartErr || !createdCarts) throw cartErr;
+    if (cartErr || !carts) throw cartErr;
 
-    const cartItems = createdCarts.flatMap((cart) => {
-        const randomBooks = books
+    const cartItems = carts.flatMap((cart) => {
+        const selectedBooks = books
             .sort(() => 0.5 - Math.random())
             .slice(0, faker.number.int({ min: 1, max: 3 }));
 
-        return randomBooks.map((book) => ({
+        return selectedBooks.map((book) => ({
             cart_id: cart.id,
             book_id: book.id,
             quantity: faker.number.int({ min: 1, max: 2 }),
@@ -144,10 +145,10 @@ export const handleAddCarts: CommandHandler = async (supabase) => {
     const { error: itemErr } = await supabase.from('shopping_cart_items').insert(cartItems);
     if (itemErr) throw itemErr;
 
-    return { message: `Cart Injection: ${createdCarts.length} carts populated.`, success: true };
+    return { message: `Cart Injection: ${carts.length} carts populated.`, success: true };
 };
 
-export const handleAddWishlists: CommandHandler = async (supabase: SupabaseClient) => {
+export const handleAddWishlists: CommandHandler = async (supabase) => {
     const [{ data: books }, { data: users }, { data: existing }] = await Promise.all([
         supabase.from('books').select('id'),
         supabase.from('users').select('id'),
@@ -169,10 +170,7 @@ export const handleAddWishlists: CommandHandler = async (supabase: SupabaseClien
     const { error } = await supabase.from('wishlist').insert(newEntries);
     if (error) throw error;
 
-    return {
-        message: `Success: Added ${newEntries.length} new items.`,
-        success: true,
-    };
+    return { message: `Success: Added ${newEntries.length} wishlist items.`, success: true };
 };
 
 export const handleAddBooks: CommandHandler = async (supabase: SupabaseClient) => {

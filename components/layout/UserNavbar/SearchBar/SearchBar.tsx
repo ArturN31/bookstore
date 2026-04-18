@@ -1,7 +1,7 @@
 'use client';
 
 import { SearchOutput } from '@/components/layout/UserNavbar/SearchBar/SearchOutput';
-import { ChangeEvent, useEffect, useState } from 'react';
+import { ChangeEvent, useEffect, useState, useRef } from 'react';
 import { SearchInput } from '@/components/layout/UserNavbar/SearchBar/SearchInput';
 import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
 import { useRouter } from 'next/navigation';
@@ -15,6 +15,7 @@ export const SearchBar = () => {
     const [isLoading, setIsLoading] = useState(false);
 
     const router = useRouter();
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
         const { value } = e.target;
@@ -28,38 +29,57 @@ export const SearchBar = () => {
         setInput('');
         setIsDropdownVisible(false);
         setActiveIndex(-1);
+        setSearchResults([]);
     };
 
     const fetchAndFilterBooks = async (searchTerm: string) => {
+        if (abortControllerRef.current) abortControllerRef.current.abort();
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         setIsLoading(true);
 
         try {
-            const allBooks = await fetchBooksWithReviews();
-            if (!allBooks) {
-                setErrorMessage('No books available to search.');
-                setIsDropdownVisible(true);
+            const response = await fetchBooksWithReviews({ limit: 50 });
+
+            if (controller.signal.aborted) return;
+
+            if (response.error || !response.data) {
+                setErrorMessage(response.error ?? 'No books available to search.');
+                setSearchResults([]);
                 return;
             }
 
-            const filteredBooks = allBooks.data
+            const allBooks = response.data.data ?? [];
+
+            const filteredBooks = allBooks
                 .filter((book: Book) => book.is_active)
-                .filter((book: Book) => book.title.toLowerCase().includes(searchTerm.toLowerCase()))
+                .filter(
+                    (book: Book) =>
+                        book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        book.author?.toLowerCase().includes(searchTerm.toLowerCase()),
+                )
                 .slice(0, 10);
 
             setSearchResults(filteredBooks);
+            setErrorMessage(filteredBooks.length === 0 ? 'No matching books found.' : null);
             setIsDropdownVisible(true);
         } catch (error) {
-            setErrorMessage('Failed to retrieve books. Please try again later.');
-            setSearchResults([]);
+            if (!(error instanceof DOMException && error.name === 'AbortError')) {
+                setErrorMessage('Failed to retrieve books. Please try again later.');
+                setSearchResults([]);
+            }
         } finally {
-            setIsLoading(false);
+            if (!controller.signal.aborted) setIsLoading(false);
         }
     };
 
     const handleBlur = (e: React.FocusEvent) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-            setIsDropdownVisible(false);
-            setActiveIndex(-1);
+            setTimeout(() => {
+                setIsDropdownVisible(false);
+                setActiveIndex(-1);
+            }, 200);
         }
     };
 
@@ -86,10 +106,10 @@ export const SearchBar = () => {
     };
 
     useEffect(() => {
-        if (input) {
+        if (input.trim()) {
             const delaySearch = setTimeout(() => {
-                fetchAndFilterBooks(input);
-            }, 1000);
+                fetchAndFilterBooks(input.trim());
+            }, 600);
             return () => clearTimeout(delaySearch);
         } else {
             setIsLoading(false);
@@ -109,8 +129,6 @@ export const SearchBar = () => {
             aria-controls="search-results"
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            onMouseEnter={() => input && setIsDropdownVisible(true)}
-            onMouseLeave={() => setIsDropdownVisible(false)}
         >
             <SearchInput
                 input={input}

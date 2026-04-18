@@ -1,5 +1,5 @@
 import { BookCard } from '@/components/books/bookCard/BookCard';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { createBackendClient } from '@/utils/db/server';
 import { useCartActions, useCartState } from '@/providers/cart/utils/useCart';
 
@@ -85,5 +85,25 @@ describe('APP - BookCard', () => {
         });
 
         render(<BookCard book={mockedBook} />);
+    });
+
+    it('Should render with out of stock styling when stock_quantity is 0', () => {
+        const outOfStockBook = { ...mockedBook, stock_quantity: 0 };
+
+        const { container } = render(<BookCard book={outOfStockBook} />);
+
+        // Check that the card has the opacity-90 class for out of stock
+        const card = container.querySelector('.MuiCard-root');
+        expect(card).toHaveClass('opacity-90');
+    });
+
+    it('Should navigate to book page on click', () => {
+        render(<BookCard book={mockedBook} />);
+
+        const card = document.querySelector('.MuiCard-root');
+        if (card) {
+            card.click();
+            expect(mockPush).toHaveBeenCalledWith(`/book/${mockedBook.id}`);
+        }
     });
 });

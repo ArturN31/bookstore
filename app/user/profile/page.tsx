@@ -1,9 +1,18 @@
 import { getUserData } from '@/data/user/GetUserData';
 import { AddressForm } from '@/components/pages/user/profile/AddressForm/AddressForm';
 import { UserProfilePage } from '@/components/pages/user/profile/UserProfilePage/UserProfilePage';
+import { ErrorState } from '@/components/ui/ErrorState';
 
 export default async function ProfilePage() {
-    const userData = await getUserData();
+    const { data: userData, error: serverError } = await getUserData();
+
+    if (serverError && serverError !== 'Failed to retrieve profile data.')
+        return (
+            <ErrorState
+                title="Profile Error"
+                message={serverError}
+            />
+        );
 
     if (!userData)
         return (

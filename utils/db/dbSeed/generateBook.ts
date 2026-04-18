@@ -3,10 +3,12 @@ import { faker } from '@faker-js/faker/locale/en_GB';
 const generateBook = (): BookDB => {
     const title = faker.book.title();
     const currentDate = new Date();
-
-    const randomColour = faker.color.rgb({ prefix: '' });
+    const randomColour = faker.color.rgb({ prefix: '' }).replace('#', '');
 
     return {
+        id: faker.string.uuid(),
+        created_at: faker.date.past().toISOString(),
+        updated_at: currentDate.toISOString(),
         title: title,
         author: faker.book.author(),
         genre: faker.book.genre(),

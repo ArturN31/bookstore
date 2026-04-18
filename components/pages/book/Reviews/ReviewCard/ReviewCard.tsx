@@ -1,5 +1,5 @@
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import Person2OutlinedIcon from '@mui/icons-material/Person2Outlined';
 import StarRateIcon from '@mui/icons-material/StarRate';
 
 export type SelectedReview = ReviewDB & {
@@ -18,7 +18,7 @@ export const ReviewCard = async ({ review }: { review: SelectedReview }) => {
             <div className="flex flex-col justify-between gap-2 text-sm sm:flex-row sm:items-start">
                 <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-50 text-indigo-500">
-                        <PersonOutlineIcon sx={{ fontSize: 20 }} />
+                        <Person2OutlinedIcon sx={{ fontSize: 20 }} />
                     </div>
                     <div>
                         <h4 className="leading-tight font-semibold text-indigo-600">

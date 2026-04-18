@@ -1,78 +1,64 @@
 'use server';
 
 import { z } from 'zod';
-import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { createBackendClient } from '@/utils/db/server';
 import { passwordSchema } from '@/data/schemas/authSchemas';
+import { updateAccountPassword, terminateSession } from './AuthRepository';
+import { mapAuthErrorToMessage } from './AuthErrorHandler';
 
 export type ChangePasswordFormState = {
-    password: string | null;
-    cnfPassword: string | null;
     validationErrors?: z.core.$ZodIssue[];
-    message?: string;
-    error?: any;
+    message?: string | null;
+    success?: boolean;
+};
+
+const INITIAL_STATE: ChangePasswordFormState = {
+    message: null,
+    validationErrors: undefined,
 };
 
 export async function ChangePasswordAction(
     prevState: ChangePasswordFormState | undefined,
     formData: FormData,
 ): Promise<ChangePasswordFormState> {
-    const rawData = Object.fromEntries(formData.entries()) as Record<string, string>;
+    const rawData = Object.fromEntries(formData.entries());
 
-    if (rawData.reset)
-        return {
-            password: '',
-            cnfPassword: '',
-            message: undefined,
-            error: undefined,
-            validationErrors: undefined,
-        };
+    if (rawData.reset) return INITIAL_STATE;
 
     const validated = passwordSchema.safeParse(rawData);
-
     if (!validated.success)
         return {
-            password: '',
-            cnfPassword: '',
             validationErrors: validated.error.issues,
-            message: 'Please correct the errors below.',
+            message: 'Validation failed. Please check the requirements.',
         };
 
-    const supabase = await createBackendClient();
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser();
+    try {
+        const supabase = await createBackendClient();
 
-    if (authError || !user)
-        return {
-            password: '',
-            cnfPassword: '',
-            message: 'Authentication failed. Please log in.',
-        };
+        const {
+            data: { user },
+            error: authError,
+        } = await supabase.auth.getUser();
+        if (authError || !user) return { message: 'Session expired. Please log in again.' };
 
-    const { error: supabaseError } = await supabase.auth.updateUser({
-        password: validated.data.password,
-    });
+        const { error: updateError } = await updateAccountPassword(
+            supabase,
+            validated.data.password,
+        );
 
-    if (supabaseError) {
-        const isReauth = supabaseError.message?.toLowerCase().includes('reauthentication');
-        const isWeak = supabaseError.code === 'weak_password';
+        if (updateError)
+            return {
+                message: mapAuthErrorToMessage(updateError),
+            };
 
-        return {
-            password: '',
-            cnfPassword: '',
-            error: supabaseError,
-            message: isReauth
-                ? 'Security timeout: Please sign out and back in to change your password.'
-                : isWeak
-                  ? 'Password is too weak.'
-                  : supabaseError.message,
-        };
+        await terminateSession(supabase);
+    } catch (err) {
+        console.error('[ChangePasswordAction] Critical Failure:', err);
+        return { message: 'A server error occurred.' };
     }
 
-    await supabase.auth.signOut();
     revalidatePath('/', 'layout');
     redirect('/user/auth/signin');
 }

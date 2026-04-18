@@ -31,7 +31,7 @@ jest.mock('@/components/books/BooksManager', () => ({
     BooksManager: jest.fn(),
 }));
 
-jest.mock('@/components/AppBreadcrumbs', () => ({
+jest.mock('@/components/ui/AppBreadcrumbs', () => ({
     AppBreadcrumbs: ({ items }: { items: any[] }) => (
         <nav data-testid="breadcrumbs">
             {items.map((item) => (
@@ -59,15 +59,20 @@ describe('App - Books[...slug]', () => {
     describe('Component Logic & Rendering', () => {
         it('should render list of books and breadcrumbs on success', async () => {
             mockedFetchBooks.mockResolvedValue({
-                data: mockBooksData,
                 error: null,
+                data: {
+                    data: mockBooksData,
+                    totalPages: 1,
+                    currentPage: 1,
+                    total: mockBooksData.length,
+                },
             });
 
             const props = { params: Promise.resolve({ slug: ['genre', 'science-fiction'] }) };
             const element = await BooksByGroupAndType(props);
             render(element);
 
-            expect(screen.getByLabelText('science fiction books collection')).toBeInTheDocument();
+            expect(screen.getByLabelText('science fiction collection')).toBeInTheDocument();
             expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/science fiction/i);
             expect(screen.getByTestId('breadcrumbs')).toBeInTheDocument();
         });
@@ -120,7 +125,74 @@ describe('App - Books[...slug]', () => {
             };
 
             const metadata = await generateMetadata(props);
+            expect(metadata.title).toBe('Books | Books4You');
+        });
+
+        it('should format type with dashes correctly (covers formatLabel replace branch)', async () => {
+            const props = {
+                params: Promise.resolve({ slug: ['genre', 'sci-fi-books'] }),
+            };
+
+            const metadata = await generateMetadata(props);
+
+            expect(metadata.title).toBe('Sci fi books Books | Books4You');
+            expect(metadata.description).toContain('sci fi books');
+        });
+
+        it('should handle empty slug[1] with fallback (covers line 14 || branch)', async () => {
+            const props = {
+                params: Promise.resolve({ slug: ['genre', ''] }),
+            };
+
+            const metadata = await generateMetadata(props);
+
+            // Empty string should result in empty title
             expect(metadata.title).toBe(' Books | Books4You');
+        });
+    });
+
+    describe('Singular vs Plural Books Display', () => {
+        it('should display singular "book" when total is 1 (covers line 70)', async () => {
+            mockedFetchBooks.mockResolvedValue({
+                error: null,
+                data: {
+                    data: [mockBooksData[0]],
+                    totalPages: 1,
+                    currentPage: 1,
+                    total: 1,
+                },
+            });
+
+            const props = { params: Promise.resolve({ slug: ['genre', 'fiction'] }) };
+            const element = await BooksByGroupAndType(props);
+            render(element);
+
+            // Text is split across multiple elements due to JSX whitespace
+            // Check the paragraph element that contains "book"
+            const paragraph = screen.getByText(/Showing/i).closest('p');
+            expect(paragraph?.textContent).toContain('book');
+            expect(paragraph?.textContent).not.toContain('books');
+        });
+
+        it('should display plural "books" when total is more than 1', async () => {
+            mockedFetchBooks.mockResolvedValue({
+                error: null,
+                data: {
+                    data: mockBooksData,
+                    totalPages: 1,
+                    currentPage: 1,
+                    total: 5,
+                },
+            });
+
+            const props = { params: Promise.resolve({ slug: ['genre', 'fiction'] }) };
+            const element = await BooksByGroupAndType(props);
+            render(element);
+
+            // Text is split across multiple elements due to JSX whitespace
+            // Check the paragraph element that contains "books"
+            const paragraph = screen.getByText(/Showing/i).closest('p');
+            expect(paragraph?.textContent).toContain('books');
         });
     });
 });

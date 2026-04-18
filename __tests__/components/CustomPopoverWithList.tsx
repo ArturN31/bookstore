@@ -1,5 +1,5 @@
 import { render, waitFor, screen, fireEvent } from '@testing-library/react';
-import { CustomPopoverWithList } from '@/components/CustomPopoverWithList';
+import { CustomPopoverWithList } from '@/components/ui/CustomPopoverWithList';
 
 const expectedListItems = ['Audiobook', 'Ebook', 'Hardcover', 'Paperback'];
 const mockListItemOnClick = jest.fn();

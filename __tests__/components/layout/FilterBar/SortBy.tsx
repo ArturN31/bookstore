@@ -6,7 +6,7 @@ jest.mock('@/providers/BookFilterProvider', () => ({
     useBookFilter: jest.fn(),
 }));
 
-jest.mock('@/components/CustomPopoverWithList', () => ({
+jest.mock('@/components/ui/CustomPopoverWithList', () => ({
     CustomPopoverWithList: ({ btnText, listToRender, listItemOnClick }: any) => (
         <div>
             <button data-testid="popover-btn">{btnText}</button>

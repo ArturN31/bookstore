@@ -39,7 +39,6 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
         formData.append('reset', 'yes');
 
         const result = await UserAddressAction('add', {}, formData);
-        expect(result.firstName).toBe('');
         expect(result.message).toBeNull();
     });
 
@@ -50,11 +49,8 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
 
         const result = await UserAddressAction('update', {}, formData);
 
-        expect(result.city).toBe('Glasgow');
-        expect(result.postcode).toBe('INVALID_POSTCODE');
-        expect(result.message).toBe('Please correct the errors.');
         expect(result.validationErrors).toBeDefined();
-        expect(result.validationErrors?.length).toBeGreaterThan(0);
+        expect(result.message).toBe('Please correct the highlighted errors.');
         expect(createBackendClient).not.toHaveBeenCalled();
     });
 
@@ -71,7 +67,7 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
         });
 
         const result = await UserAddressAction('update', {}, formData);
-        expect(result.message).toBe('Authentication failed. Please log in.');
+        expect(result.message).toBe('Session expired. Please log in again.');
     });
 
     it('handles database error during update', async () => {
@@ -91,7 +87,7 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
 
         const result = await UserAddressAction('update', {}, formData);
 
-        expect(result.message).toBe('Database error occurred.');
+        expect(result.message).toBe('Failed to save address details.');
         expect(mockSupabase.eq).toHaveBeenCalledWith('id', '123');
     });
 

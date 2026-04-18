@@ -1,155 +1,82 @@
-/**
- * BASE SCHEMAS
- * Representing the data as it inserted into database
- */
+import type { Tables } from '@/database.types';
 
-interface BookDB {
-    id?: string;
-    title: string;
-    author: string;
-    genre: string;
-    publisher: string;
-    publication_date: string;
-    price: string;
-    description: string;
-    format: string;
-    page_count: number;
-    image_url: string;
-    stock_quantity: number;
-    is_active: boolean;
-    sales_count: number;
-}
+declare global {
+    // BASE SCHEMAS
+    // Inferred directly from Supabase generated types
 
-interface ReviewDB {
-    id?: string;
-    created_at?: string;
-    updated_at?: string;
-    book_id: string;
-    user_id: string;
-    username: string;
-    review: string;
-    rating: number;
-}
+    type BookDB = Tables<'books'>;
+    type ReviewDB = Tables<'book_reviews'>;
+    type UserDB = Tables<'users'>;
+    type OrderDB = Tables<'orders'>;
+    type OrderItemDB = Tables<'order_items'>;
+    type OrderDiscountDB = Tables<'order_discounts'>;
+    type DiscountDB = Tables<'discounts'>;
+    type CartItemDB = Tables<'shopping_cart_items'>;
+    type WishlistDB = Tables<'wishlist'>;
 
-interface UserDB {
-    id: string;
-    created_at?: string;
-    updated_at?: string;
-    first_name: string;
-    last_name: string;
-    date_of_birth: string;
-    street_address: string;
-    postcode: string;
-    city: string;
-    country: string;
-    phone_number: string;
-    username: string;
-}
+    type PaymentMethod =
+        | 'Credit Card'
+        | 'Debit Card'
+        | 'PayPal'
+        | 'Apple Pay'
+        | 'Google Pay'
+        | 'Stripe';
 
-type PaymentMethod =
-    | 'Credit Card'
-    | 'Debit Card'
-    | 'PayPal'
-    | 'Apple Pay'
-    | 'Google Pay'
-    | 'Stripe';
+    //APP ENTITIES
+    //Extends base schemas with UI-specific or joined fields
 
-interface OrderDB {
-    id?: string;
-    created_at?: string;
-    user_id: string;
-    total_amount: number;
-    status: 'pending' | 'completed' | 'cancelled' | 'shipped';
-    payment_method: PaymentMethod;
-}
+    interface Book extends BookDB {
+        reviews?: Review[];
+        rating?: number;
+        avg_rating?: number;
+        review_count?: number;
+    }
 
-interface OrderItemDB {
-    id?: string;
-    created_at?: string;
-    order_id: string;
-    book_id: string;
-    quantity: number;
-    price: number;
-}
+    interface Review extends ReviewDB {}
 
-interface OrderDiscountDB {
-    id?: string;
-    order_id: string;
-    discount_id: string;
-}
+    interface User extends UserDB {
+        email: string;
+    }
 
-interface DiscountDB {
-    id?: string;
-    created_at?: string;
-    code: string;
-    type: 'percentage' | 'fixed';
-    value: number;
-    start_date: string;
-    end_date: string;
-    is_active: boolean;
-}
+    interface Order extends OrderDB {}
 
-interface CartItemDB {
-    id?: string;
-    created_at?: string;
-    cart_id: string;
-    book_id: string;
-    quantity: number;
-}
+    interface OrderItem extends OrderItemDB {}
 
-/**
- * APP ENTITIES
- * Extends base schemas with database-generated fields
- */
-interface Book extends BookDB {
-    id: string;
-    created_at: string;
-    updated_at: string;
-    // optional enriched data from server-side mapping
-    reviews?: Review[];
-    rating?: number;
-}
+    interface OrderDiscount extends OrderDiscountDB {
+        discount_amount: number;
+    }
 
-interface User extends UserDB {
-    email: string;
-}
+    // FEATURE SPECIFIC TYPES
 
-interface OrderDiscount extends OrderDiscountDB {
-    discount_amount: number;
-}
+    interface Wishlist extends WishlistDB {}
 
-/**
- * FEATURE SPECIFIC TYPES
- */
+    interface CartItem extends Book {
+        quantity: number;
+    }
 
-interface Wishlist {
-    id: string;
-    created_at: string;
-    user_id: string;
-    book_id: string;
-}
+    interface Cart {
+        cartBooks: CartItem[];
+        cartBooksAmount: number; // sum of quantities
+        cartItemsAmount: number; // distinct items count
+        cartTotal: number;
+        cartID: string | null;
+        loading: boolean;
+    }
 
-interface Cart {
-    cartBooks: CartItem[];
-    cartBooksAmount: number; //sum of quantities
-    cartItemsAmount: number; //distinct items count
-    cartTotal: number;
-    cartID: string | null;
-    loading: boolean;
-}
+    interface PaginatedReviewsResult {
+        data: Review[];
+        total: number;
+        totalPages: number;
+        currentPage: number;
+    }
 
-interface CartItem extends Book {
-    quantity: number;
-}
+    interface GeneratedSalesData {
+        orders: Order[];
+        items: OrderItem[];
+    }
 
-interface PaginatedReviewsResult {
-    data: Review[];
-    total: number;
-    totalPages: number;
-    currentPage: number;
-}
-
-interface GeneratedSalesData {
-    orders: Order[];
-    items: OrderItem[];
+    type ActionResponse<T> = {
+        data: T | null;
+        error: string | null;
+    };
 }

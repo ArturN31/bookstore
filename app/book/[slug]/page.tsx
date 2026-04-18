@@ -4,7 +4,7 @@ import { BookCart } from '@/components/pages/book/BookCart';
 import { BookReviews } from '@/components/pages/book/Reviews/BookReviews';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { ErrorState } from '@/components/ErrorState';
+import { ErrorState } from '@/components/ui/ErrorState';
 
 type BookByIdProps = {
     params: Promise<{ slug: string }>;
@@ -13,14 +13,16 @@ type BookByIdProps = {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
-    const books = await fetchBooksWithReviews({ bookID: slug });
 
-    if (!books.data?.length) return { title: 'Book Not Found' };
+    const { data: paginatedResult } = await fetchBooksWithReviews({ bookID: slug });
 
-    const book = books.data[0];
+    if (!paginatedResult?.data || paginatedResult.data.length === 0)
+        return { title: 'Book Not Found' };
+
+    const book = paginatedResult.data[0];
     return {
         title: `${book.title} by ${book.author} | Books4You`,
-        description: book.description.substring(0, 160),
+        description: book.description?.substring(0, 160) || 'Book details.',
     };
 }
 
@@ -29,9 +31,13 @@ export default async function BookById({ params, searchParams }: BookByIdProps) 
     const { reviewPagination } = await searchParams;
     const currentPage = parseInt(reviewPagination || '1', 10);
 
-    const { data: books, error } = await fetchBooksWithReviews({ bookID: slug });
+    const { data: paginatedResult, error } = await fetchBooksWithReviews({
+        bookID: slug,
+    });
 
-    if (error) return <ErrorState />;
+    if (error) return <ErrorState message="Could not load book details." />;
+
+    const books = paginatedResult?.data;
     if (!books || books.length === 0) notFound();
 
     const book = books[0];
@@ -39,8 +45,8 @@ export default async function BookById({ params, searchParams }: BookByIdProps) 
 
     const reviewsData = {
         data: allReviews,
-        total: allReviews.length,
-        totalPages: 1,
+        total: paginatedResult.total || allReviews.length,
+        totalPages: paginatedResult.totalPages || 1,
         currentPage: currentPage,
         error: null,
     };
@@ -63,21 +69,20 @@ export default async function BookById({ params, searchParams }: BookByIdProps) 
             className="m-auto grid max-w-375 gap-5"
             role="main"
         >
-            <div
+            <header
                 className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3"
                 aria-label="Book overview"
             >
-                <div className="grid justify-center rounded-md bg-black shadow-[0px_2px_6px_-2px_#000]">
-                    <div className="grid justify-center rounded-md bg-black shadow-[0px_2px_6px_-2px_#000]">
-                        <Image
-                            width="0"
-                            height="0"
-                            sizes="100vw"
-                            style={{ width: '100%', height: 'auto' }}
-                            src={image_url}
-                            alt={`Placeholder image for ${title}`}
-                        />
-                    </div>
+                <div className="grid justify-center overflow-hidden rounded-md bg-black shadow-[0px_2px_6px_-2px_#000]">
+                    <Image
+                        width={400}
+                        height={600}
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        style={{ width: '100%', height: 'auto' }}
+                        src={image_url || '/placeholder-book.png'}
+                        alt={`Cover for ${title}`}
+                        priority
+                    />
                 </div>
 
                 <BookMainDetails
@@ -91,43 +96,56 @@ export default async function BookById({ params, searchParams }: BookByIdProps) 
                 />
 
                 <BookCart book={book} />
-            </div>
+            </header>
 
-            <hr aria-hidden="true" />
+            <hr
+                aria-hidden="true"
+                className="border-gray-200"
+            />
 
-            <p className="text-lg font-semibold">Description</p>
-            <p className="text-justify">{description}</p>
+            <section>
+                <h2 className="text-lg font-semibold">Description</h2>
+                <p className="text-justify leading-relaxed">{description}</p>
+            </section>
 
-            <hr aria-hidden="true" />
+            <hr
+                aria-hidden="true"
+                className="border-gray-200"
+            />
 
-            <p className="text-lg font-semibold">Details</p>
-            <table className="table-auto">
-                <tbody>
-                    {[
-                        { text: 'Publication date:', value: publication_date },
-                        { text: 'Page count:', value: page_count },
-                        { text: 'Format:', value: format },
-                        { text: 'Publisher:', value: publisher },
-                        { text: 'Author:', value: author },
-                        { text: 'Title:', value: title },
-                    ].map((el) => (
-                        <tr
-                            className="grid grid-cols-2 gap-10"
-                            key={el.text}
-                        >
-                            <th
-                                scope="row"
-                                className="text-left font-normal"
+            <section>
+                <h2 className="mb-2 text-lg font-semibold">Technical Details</h2>
+                <table className="w-full table-auto">
+                    <tbody className="divide-y divide-gray-100">
+                        {[
+                            { label: 'Title:', value: title },
+                            { label: 'Author:', value: author },
+                            { label: 'Publisher:', value: publisher },
+                            { label: 'Publication date:', value: publication_date },
+                            { label: 'Page count:', value: page_count },
+                            { label: 'Format:', value: format },
+                        ].map((detail) => (
+                            <tr
+                                className="grid grid-cols-2 py-2"
+                                key={detail.label}
                             >
-                                {el.text}
-                            </th>
-                            <td>{el.value}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+                                <th
+                                    scope="row"
+                                    className="text-left font-normal text-gray-600"
+                                >
+                                    {detail.label}
+                                </th>
+                                <td className="font-medium">{detail.value}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </section>
 
-            <hr aria-hidden="true" />
+            <hr
+                aria-hidden="true"
+                className="border-gray-200"
+            />
 
             <BookReviews
                 reviewsData={reviewsData}

@@ -74,25 +74,41 @@ describe('APP - Homepage', () => {
             render(element, { wrapper: AllTheProviders });
         });
 
-        expect(screen.getByText(/Connection Interrupted/i)).toBeInTheDocument();
+        expect(screen.getByText(/Archival Retrieval Failed/i)).toBeInTheDocument();
+        expect(screen.getByText(/No data found/i)).toBeInTheDocument();
+    });
+
+    it('Should render ErrorState with default message when error is null but data is missing (covers ?? branch)', async () => {
+        mockedFetchBooks.mockResolvedValue({ data: null, error: null });
+
+        const element = await HomePage();
+
+        await act(async () => {
+            render(element, { wrapper: AllTheProviders });
+        });
+
+        expect(screen.getByText(/Archival Retrieval Failed/i)).toBeInTheDocument();
+        expect(screen.getByText(/We encountered a problem loading the collection/i)).toBeInTheDocument();
     });
 
     it('Should render the books when found', async () => {
         mockedFetchBooks.mockResolvedValue({
-            data: [
-                {
-                    id: '1',
-                    title: 'Test Book',
-                    author: 'Author',
-                    price: '10.00',
-                    image_url: '/test.jpg',
-                    genre: 'Fiction',
-                },
-            ],
-            totalPages: 1,
-            currentPage: 1,
-            total: 1,
             error: null,
+            data: {
+                data: [
+                    {
+                        id: '1',
+                        title: 'Test Book',
+                        author: 'Author',
+                        price: '10.00',
+                        image_url: '/test.jpg',
+                        genre: 'Fiction',
+                    },
+                ],
+                totalPages: 1,
+                currentPage: 1,
+                total: 1,
+            },
         });
 
         const element = await HomePage();

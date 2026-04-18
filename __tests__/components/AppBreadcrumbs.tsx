@@ -1,4 +1,4 @@
-import { AppBreadcrumbs } from '@/components/AppBreadcrumbs';
+import { AppBreadcrumbs } from '@/components/ui/AppBreadcrumbs';
 import { render, screen } from '@testing-library/react';
 
 describe('AppBreadcrumbs', () => {

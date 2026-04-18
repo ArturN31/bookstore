@@ -19,15 +19,18 @@ export const SessionProviderWrapper = async ({ children }: { children: React.Rea
     let initialCart: Cart | null = null;
 
     if (user) {
-        const [userData, wishlistData, cartData] = await Promise.all([
+        const [userRes, wishlistRes, cartRes] = await Promise.all([
             getUserData(),
             getUserWishlist(user.id),
             getCartData(user.id),
         ]);
 
-        initialUser = userData ? mapUserData(userData) : { ...DEFAULT_USER, id: user.id };
-        initialWishlist = wishlistData || [];
-        if (!cartData.error && cartData.books) initialCart = mapCartData(cartData.books);
+        if (!userRes.error && userRes.data) initialUser = mapUserData(userRes.data);
+        else initialUser = { ...DEFAULT_USER, id: user.id };
+
+        if (!wishlistRes.error && wishlistRes.data) initialWishlist = wishlistRes.data;
+
+        if (!cartRes.error && cartRes.data?.books) initialCart = mapCartData(cartRes.data.books);
     }
 
     const initialSessionData = {

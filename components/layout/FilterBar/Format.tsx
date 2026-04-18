@@ -2,8 +2,8 @@
 
 import { PostgrestResponse } from '@supabase/supabase-js';
 import { createBackendClient } from '@/utils/db/server';
-import { CustomPopoverWithList } from '@/components/CustomPopoverWithList';
 import { redirect } from 'next/navigation';
+import { CustomPopoverWithList } from '@/components/ui/CustomPopoverWithList';
 
 export const handleFormatChoice = async (filter: string) => {
     const option = filter.slice(0, 1) + filter.slice(1, filter.length + 1).toLocaleLowerCase();

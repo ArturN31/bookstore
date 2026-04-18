@@ -32,7 +32,7 @@ export const Providers = ({
                 <SnackbarProvider
                     anchorOrigin={{
                         vertical: 'bottom',
-                        horizontal: 'right',
+                        horizontal: 'left',
                     }}
                 >
                     {children}

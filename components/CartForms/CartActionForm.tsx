@@ -1,3 +1,5 @@
+'use client';
+
 import { useActionState, useEffect, useMemo } from 'react';
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import RemoveShoppingCartOutlinedIcon from '@mui/icons-material/RemoveShoppingCartOutlined';
@@ -30,15 +32,12 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
 
     const isAddMode = !isInCart;
     const isCartFull = cartBooksAmount >= 10;
-    const isButtonDisabled =
-        (!userLoading && (!loggedIn || !profileExists || (isAddMode && isCartFull))) || stock === 0;
+    const isOutOfStock = stock === 0;
+    const isLowStock = stock > 0 && stock <= 25;
 
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        if (isButtonDisabled || isPending) {
-            event.preventDefault();
-            return;
-        }
-    };
+    const isButtonDisabled =
+        (!userLoading && (!loggedIn || !profileExists || (isAddMode && isCartFull))) ||
+        isOutOfStock;
 
     useEffect(() => {
         if (!state.message) return;
@@ -47,15 +46,50 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
         enqueueSnackbar(state.message, { variant });
     }, [state.message, state.success, state.timestamp]);
 
+    const getStatusContent = () => {
+        if (userLoading) return null;
+
+        if (isOutOfStock) return { text: 'Out of stock', color: 'text-slate-400', animate: false };
+
+        if (isLowStock && isAddMode)
+            return { text: `Limited Stock: ${stock} left`, color: 'text-red-500', animate: true };
+
+        if (!loggedIn)
+            return { text: 'Sign in to use cart', color: 'text-gray-400', animate: false };
+
+        if (loggedIn && !profileExists)
+            return { text: 'Complete your user profile', color: 'text-gray-400', animate: false };
+
+        if (isCartFull && isAddMode)
+            return { text: 'Cart is full (Max 10 items)', color: 'text-red-400', animate: false };
+
+        return null;
+    };
+
+    const status = getStatusContent();
+
     const buttonStyles = isAddMode
         ? 'bg-yellow text-gunmetal hover:bg-yellow/90'
         : 'border border-yellow text-yellow hover:bg-yellow/10';
 
     return (
-        <div className="grid gap-2">
+        <div className="flex w-full flex-col">
+            <div className="4k:h-10 flex h-5 items-center justify-center">
+                {status ? (
+                    <p
+                        className={`4k:text-xl text-[10px] font-bold tracking-tight uppercase ${status.color} ${status.animate ? 'animate-pulse' : ''}`}
+                    >
+                        {status.text}
+                    </p>
+                ) : (
+                    <div className="h-px w-4 bg-transparent" />
+                )}
+            </div>
+
             <form
                 action={formAction}
-                onSubmit={handleSubmit}
+                onSubmit={(e) => (isButtonDisabled || isPending) && e.preventDefault()}
+                className="mt-1"
                 aria-label="cart-form"
             >
                 <input
@@ -80,29 +114,24 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
                     type="submit"
                     disabled={isButtonDisabled || isPending}
                     onClick={(e) => e.stopPropagation()}
-                    className={`min-h-12 w-full rounded-sm px-2 font-bold transition-all ${
+                    className={`flex min-h-12 w-full items-center justify-center rounded-sm px-2 font-bold transition-all ${
                         isPending ? 'cursor-wait opacity-70' : 'cursor-pointer hover:scale-[1.02]'
-                    } disabled:transform-none disabled:bg-[#b3b3b3] disabled:text-[#666] ${buttonStyles}`}
+                    } disabled:transform-none disabled:bg-[#b3b3b3] disabled:text-[#666] ${buttonStyles} 4k:min-h-24 4k:text-3xl}`}
                 >
-                    {isAddMode ? <ShoppingCartOutlinedIcon /> : <RemoveShoppingCartOutlinedIcon />}
-                    &nbsp;
-                    {isPending ? 'Processing...' : isAddMode ? 'Add to cart' : 'Remove from cart'}
+                    {isPending ? (
+                        'Processing...'
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            {isAddMode ? (
+                                <ShoppingCartOutlinedIcon />
+                            ) : (
+                                <RemoveShoppingCartOutlinedIcon />
+                            )}
+                            <span>{isAddMode ? 'Add to cart' : 'Remove from cart'}</span>
+                        </div>
+                    )}
                 </button>
             </form>
-
-            {!userLoading && (
-                <div className="text-center text-xs text-gray-400">
-                    {!loggedIn && <p>Sign in to use cart</p>}
-                    {stock === 0 && <p>Out of stock</p>}
-                    {loggedIn && !profileExists && <p>Complete your user profile</p>}
-                </div>
-            )}
-
-            {isCartFull && isAddMode && (
-                <div className="text-center text-xs text-red-400">
-                    <p>Cart is full (Max 10 items)</p>
-                </div>
-            )}
         </div>
     );
 };

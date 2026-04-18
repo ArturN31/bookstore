@@ -1,72 +1,63 @@
 'use server';
 
 import { z } from 'zod';
-import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { createBackendClient } from '@/utils/db/server';
 import { getUserData } from '@/data/user/GetUserData';
 import { signInSchema } from '@/data/schemas/authSchemas';
+import { authenticateUser } from './AuthRepository';
+import { mapAuthErrorToMessage } from './AuthErrorHandler';
 
 export type SignInFormState = {
-    email: string | null;
-    password: string | null;
     validationErrors?: z.core.$ZodIssue[];
-    message?: string;
-    error?: any;
+    message?: string | null;
 };
 
-const AUTH_ERROR_MESSAGES: Record<string, string> = {
-    invalid_credentials: 'Sign in credentials not recognized.',
-    user_not_found: 'User to which the request relates no longer exists.',
+const INITIAL_STATE: SignInFormState = {
+    message: null,
+    validationErrors: undefined,
 };
 
 export async function SignInAction(
     prevState: SignInFormState | undefined,
     formData: FormData,
 ): Promise<SignInFormState> {
-    const rawData = Object.fromEntries(formData.entries()) as Record<string, string>;
+    const rawData = Object.fromEntries(formData.entries());
 
-    if (rawData.reset)
-        return {
-            email: '',
-            password: '',
-            message: undefined,
-            error: undefined,
-            validationErrors: undefined,
-        };
+    if (rawData.reset) return INITIAL_STATE;
 
     const validated = signInSchema.safeParse(rawData);
-
     if (!validated.success)
         return {
-            email: '',
-            password: '',
             validationErrors: validated.error.issues,
-            message: 'Please correct the errors below.',
+            message: 'Please correct the highlighted errors.',
         };
 
-    const supabase = await createBackendClient();
-    const { error: authError } = await supabase.auth.signInWithPassword(validated.data);
+    try {
+        const supabase = await createBackendClient();
 
-    if (authError)
-        return {
-            email: '',
-            password: '',
-            error: authError,
-            message:
-                AUTH_ERROR_MESSAGES[authError.code || ''] ||
-                authError.message ||
-                'Failed to sign in.',
-        };
+        const { error: authError } = await authenticateUser(supabase, validated.data);
 
-    const dbUser = await getUserData();
+        if (authError)
+            return {
+                message: mapAuthErrorToMessage(authError),
+            };
 
-    revalidatePath('/', 'layout');
+        const { data: dbUser } = await getUserData();
 
-    if (!dbUser) redirect('/user/profile');
+        revalidatePath('/', 'layout');
 
-    const returnTo = rawData.returnTo;
-    if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) redirect(returnTo);
+        if (!dbUser) redirect('/user/profile');
+
+        const returnTo = rawData.returnTo as string | undefined;
+        if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) redirect(returnTo);
+    } catch (err) {
+        if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
+
+        console.error('[SignInAction] Critical Failure:', err);
+        return { message: 'A server error occurred during authentication.' };
+    }
 
     redirect('/');
 }

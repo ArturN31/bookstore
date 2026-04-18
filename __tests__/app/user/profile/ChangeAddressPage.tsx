@@ -44,18 +44,42 @@ describe('APP - Auth - ChangeAddressPage', () => {
     });
 
     it('should redirect to homepage when userData is not retrieved', async () => {
-        (getUserData as jest.Mock).mockResolvedValue(null);
+        (getUserData as jest.Mock).mockResolvedValue({ data: null, error: null });
 
-        const Page = await ChangeAddressPage();
-        render(Page);
+        try {
+            await ChangeAddressPage();
+        } catch (e) {
+            // Redirect throws in test environment
+        }
+
+        expect(redirect).toHaveBeenCalledWith('/');
+    });
+
+    it('should redirect to homepage when there is an error', async () => {
+        (getUserData as jest.Mock).mockResolvedValue({ data: null, error: 'Error' });
+
+        try {
+            await ChangeAddressPage();
+        } catch (e) {
+            // Redirect throws in test environment
+        }
 
         expect(redirect).toHaveBeenCalledWith('/');
     });
 
     it('should render form when userData is present', async () => {
         (getUserData as jest.Mock).mockResolvedValue({
-            first_name: 'Jane',
-            street_address: '123 Test St',
+            data: {
+                first_name: 'Jane',
+                last_name: null,
+                date_of_birth: null,
+                street_address: '123 Test St',
+                postcode: null,
+                city: null,
+                country: null,
+                phone_number: null,
+            },
+            error: null,
         });
 
         const Page = await ChangeAddressPage();

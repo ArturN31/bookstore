@@ -83,7 +83,7 @@ describe('APP - User - UserProfile', () => {
                 }),
             },
         });
-        mockedGetUserData.mockResolvedValue(mockUserData);
+        mockedGetUserData.mockResolvedValue({ data: mockUserData, error: null });
 
         render(await UserProfile());
 
@@ -99,11 +99,30 @@ describe('APP - User - UserProfile', () => {
                 }),
             },
         });
-        mockedGetUserData.mockResolvedValue(null);
+        mockedGetUserData.mockResolvedValue({ data: null, error: null });
 
         render(await UserProfile());
 
         expect(screen.getByTestId('no-user-profile-info')).toBeInTheDocument();
         expect(screen.getByTestId('add-address-form')).toBeInTheDocument();
+    });
+
+    it('should render ErrorState when serverError is not the default message (covers line 9)', async () => {
+        mockedCreateClient.mockReturnValue({
+            auth: {
+                getSession: jest.fn().mockResolvedValue({
+                    data: { session: { user: { email: 'test@test.com' } } },
+                }),
+            },
+        });
+        mockedGetUserData.mockResolvedValue({ 
+            data: null, 
+            error: 'Custom database error' 
+        });
+
+        render(await UserProfile());
+
+        expect(screen.getByText(/Profile Error/i)).toBeInTheDocument();
+        expect(screen.getByText(/Custom database error/i)).toBeInTheDocument();
     });
 });

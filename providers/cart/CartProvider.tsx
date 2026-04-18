@@ -25,16 +25,19 @@ export const CartProvider = ({ initialCart, children }: CartProviderProps) => {
         try {
             dispatch({ type: 'START_LOADING' });
 
-            const { cartID, books, error } = await getCartData(user.id);
+            const response = await getCartData(user.id);
 
-            if (error) throw error;
+            if (response.error) throw new Error(response.error);
 
-            dispatch({ type: 'SET_CART_DATA', payload: { cartID, books } });
+            if (response.data) {
+                const { cartID, books } = response.data;
+                dispatch({ type: 'SET_CART_DATA', payload: { cartID, books } });
+            }
         } catch (err) {
             console.error('Cart Refresh Failed:', err);
             dispatch({ type: 'SET_ERROR' });
         }
-    }, [user?.id, supabase]);
+    }, [user?.id]);
 
     useCartListeners({
         supabase,

@@ -1,7 +1,7 @@
 'use client';
 
 import RefreshIcon from '@mui/icons-material/Refresh';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
 
 interface ErrorStateProps {
     title?: string;
@@ -22,7 +22,7 @@ export const ErrorState = ({
         >
             <div className="max-w-md space-y-6">
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-500">
-                    <ErrorOutlineIcon sx={{ fontSize: 32 }} />
+                    <ErrorOutlineOutlinedIcon sx={{ fontSize: 32 }} />
                 </div>
 
                 <div className="space-y-2">

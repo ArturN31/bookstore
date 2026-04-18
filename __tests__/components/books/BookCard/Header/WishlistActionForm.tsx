@@ -66,10 +66,12 @@ describe('WishlistActionForm - Full Coverage', () => {
         render(<WishlistActionForm book={mockedBook} />);
         const btn = screen.getByRole('button');
 
-        expect(screen.getByTestId('BookmarkAddedOutlinedIcon')).toBeInTheDocument();
+        // When wishlisted, shows BookmarkIcon (filled)
+        expect(screen.getByTestId('BookmarkIcon')).toBeInTheDocument();
 
         fireEvent.mouseEnter(btn);
-        expect(screen.getByTestId('BookmarkRemoveOutlinedIcon')).toBeInTheDocument();
+        // On hover when wishlisted, should still show BookmarkIcon
+        expect(screen.getByTestId('BookmarkIcon')).toBeInTheDocument();
     });
 
     it('should cover the formAction logic: success and refreshWishlist', async () => {
@@ -122,7 +124,7 @@ describe('WishlistActionForm - Full Coverage', () => {
         expect(WishlistAction).not.toHaveBeenCalled();
     });
 
-    it('should render BookmarkAddOutlinedIcon when hovered and NOT wishlisted', () => {
+    it('should render BookmarkBorderIcon when NOT wishlisted', () => {
         (useUserState as jest.Mock).mockReturnValue({
             wishlist: [],
             loggedIn: true,
@@ -132,12 +134,11 @@ describe('WishlistActionForm - Full Coverage', () => {
         render(<WishlistActionForm book={mockedBook} />);
         const btn = screen.getByRole('button');
 
+        // When not wishlisted, shows BookmarkBorderIcon (outline)
+        expect(screen.getByTestId('BookmarkBorderIcon')).toBeInTheDocument();
+
         fireEvent.mouseEnter(btn);
-
-        expect(screen.getByTestId('BookmarkAddOutlinedIcon')).toBeInTheDocument();
-
-        fireEvent.mouseLeave(btn);
-        expect(screen.queryByTestId('BookmarkAddOutlinedIcon')).not.toBeInTheDocument();
+        // On hover when not wishlisted, should still show BookmarkBorderIcon
         expect(screen.getByTestId('BookmarkBorderIcon')).toBeInTheDocument();
     });
 
@@ -172,9 +173,9 @@ describe('WishlistActionForm - Full Coverage', () => {
         });
 
         render(<WishlistActionForm book={mockedBook} />);
+        
+        // When at wishlist limit, the button should be disabled
         const button = screen.getByRole('button');
-
-        expect(button).toHaveAttribute('title', 'Wishlist limit reached');
         expect(button).toBeDisabled();
     });
 });

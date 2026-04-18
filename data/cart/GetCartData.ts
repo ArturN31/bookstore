@@ -1,126 +1,127 @@
 'use server';
 
 import { createBackendClient } from '@/utils/db/server';
-import { PostgrestResponse, PostgrestSingleResponse, SupabaseClient } from '@supabase/supabase-js';
+import { PostgrestError } from '@supabase/supabase-js';
+import * as Repo from './CartRepository';
+import { mapDatabaseCartToDomain } from './CartMapper';
+import { withRetry } from '@/utils/network/retry';
 
-export const getUsersCartID = async (userID: string) => {
-    const supabase = await createBackendClient();
-    let { data: shopping_carts, error }: PostgrestResponse<{ id: string }> = await supabase
-        .from('shopping_carts')
-        .select('id')
-        .eq('user_id', userID);
-    if (error) {
-        if (error.message === `invalid input syntax for type uuid: "User not logged in."`)
-            return null;
-        console.log(error);
-        return null;
-    }
-    return shopping_carts?.[0]?.id || null;
+const handleDatabaseError = (error: PostgrestError, context: string): ActionResponse<never> => {
+    console.error(`[CartService] ${context} failure:`, error.message);
+    return {
+        data: null,
+        error: `Unable to ${context.toLowerCase()} at this time.`,
+    };
 };
 
-export const createUsersCart = async (userID: string) => {
-    const supabase = await createBackendClient();
-    const { data, error } = await supabase
-        .from('shopping_carts')
-        .insert([{ user_id: userID }])
-        .select();
-    if (error) {
-        console.log('Error creating cart:', error);
-        return null;
-    }
-    if (data) return true;
-    else return null;
+const isValidUUID = (id: string): boolean => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 };
 
-export const addItemToUsersCart = async (cartID: string, bookID: string, bookQuantity: number) => {
-    const supabase = await createBackendClient();
-    const { data, error } = await supabase
-        .from('shopping_cart_items')
-        .insert([{ cart_id: cartID, book_id: bookID, quantity: bookQuantity }])
-        .select();
-    if (error) {
-        console.log('Error adding cart items:', error);
-        return null;
+export const getUsersCartID = async (userID: string): Promise<ActionResponse<string>> => {
+    if (!isValidUUID(userID)) return { data: null, error: 'User session is invalid.' };
+
+    try {
+        const result = await withRetry(async () => {
+            const supabase = await createBackendClient();
+            return await Repo.findCartIdByUserId(supabase, userID);
+        });
+
+        if (result.error) return handleDatabaseError(result.error, 'Fetch Cart');
+        return { data: result.data?.id || null, error: null };
+    } catch (err) {
+        return { data: null, error: 'Connection timeout. Please try again.' };
     }
-    if (data) return true;
-    else null;
+};
+
+export const createUsersCart = async (userID: string): Promise<ActionResponse<string>> => {
+    if (!isValidUUID(userID)) return { data: null, error: 'User session is invalid.' };
+
+    try {
+        const result = await withRetry(async () => {
+            const supabase = await createBackendClient();
+            return await Repo.createCart(supabase, userID);
+        });
+
+        if (result.error) return handleDatabaseError(result.error, 'Create Cart');
+        return { data: result.data.id, error: null };
+    } catch (err) {
+        return { data: null, error: 'Failed to create cart due to connection issues.' };
+    }
+};
+
+export const addItemToUsersCart = async (
+    cartID: string,
+    bookID: string,
+    bookQuantity: number,
+): Promise<ActionResponse<boolean>> => {
+    try {
+        const result = await withRetry(async () => {
+            const supabase = await createBackendClient();
+            return await Repo.upsertItem(supabase, cartID, bookID, bookQuantity);
+        });
+
+        if (result.error) return handleDatabaseError(result.error, 'Add Item');
+        return { data: true, error: null };
+    } catch (err) {
+        return { data: false, error: 'Could not add item. Connection timed out.' };
+    }
 };
 
 export const updateItemInUsersCart = async (
     cartID: string,
     bookID: string,
     bookQuantity: number,
-) => {
-    const supabase = await createBackendClient();
-    const { data, error } = await supabase
-        .from('shopping_cart_items')
-        .update([{ quantity: bookQuantity }])
-        .eq('cart_id', cartID)
-        .eq('book_id', bookID)
-        .select();
-    if (error) {
-        console.log('Error updating cart item:', error);
-        return null;
+): Promise<ActionResponse<boolean>> => {
+    try {
+        const result = await withRetry(async () => {
+            const supabase = await createBackendClient();
+            return await Repo.updateItem(supabase, cartID, bookID, bookQuantity);
+        });
+
+        if (result.error) return handleDatabaseError(result.error, 'Update Item');
+        return { data: true, error: null };
+    } catch (err) {
+        return { data: false, error: 'Update failed due to network error.' };
     }
-    if (data) return true;
-    else null;
 };
 
-export const removeItemFromUsersCart = async (cartID: string, bookID: string) => {
-    const supabase = await createBackendClient();
-    const { data, error } = await supabase
-        .from('shopping_cart_items')
-        .delete()
-        .eq('cart_id', cartID)
-        .eq('book_id', bookID)
-        .select();
-    if (error) {
-        console.log('Error removing cart item:', error);
-        return null;
+export const removeItemFromUsersCart = async (
+    cartID: string,
+    bookID: string,
+): Promise<ActionResponse<boolean>> => {
+    try {
+        const result = await withRetry(async () => {
+            const supabase = await createBackendClient();
+            return await Repo.deleteItem(supabase, cartID, bookID);
+        });
+
+        if (result.error) return handleDatabaseError(result.error, 'Remove Item');
+        return { data: true, error: null };
+    } catch (err) {
+        return { data: false, error: 'Removal failed. Check your connection.' };
     }
-    if (data) return true;
-    else null;
 };
 
-export const getCartData = async (userID: string) => {
-    const supabase = await createBackendClient();
+export const getCartData = async (
+    userID: string,
+): Promise<ActionResponse<{ cartID: string | null; books: CartItem[] }>> => {
+    if (!isValidUUID(userID)) return { data: null, error: 'Session identification failed.' };
 
-    type UsersCart = {
-        cartID: string;
-        cartItems: {
-            bookDetails: Book;
-            quantity: number;
-        }[];
-    };
+    try {
+        const result = await withRetry(async () => {
+            const supabase = await createBackendClient();
+            return await Repo.fetchFullCartWithBooks(supabase, userID);
+        });
 
-    const { data, error }: PostgrestSingleResponse<UsersCart | null> = await supabase
-        .from('shopping_carts')
-        .select(
-            `
-            cartID:id,
-            cartItems:shopping_cart_items (
-                quantity,
-                created_at,
-                bookDetails: books (*) 
-            )
-            `,
-        )
-        .eq('user_id', userID)
-        .order('created_at', { referencedTable: 'shopping_cart_items', ascending: true })
-        .maybeSingle();
+        if (result.error) return handleDatabaseError(result.error, 'Retrieve Cart Content');
 
-    if (error) {
-        console.error('Database error fetching cart:', error);
-        return { cartID: null, books: [], error };
+        return {
+            data: mapDatabaseCartToDomain(result.data),
+            error: null,
+        };
+    } catch (err) {
+        console.error('[CartService] Pipeline Error:', err);
+        return { data: null, error: 'Internal system error or connection timeout.' };
     }
-
-    const formattedBooks = (data?.cartItems || []).map((item) => ({
-        ...item.bookDetails,
-        quantity: item.quantity,
-    }));
-
-    return {
-        cartID: data?.cartID || null,
-        books: formattedBooks,
-    };
 };

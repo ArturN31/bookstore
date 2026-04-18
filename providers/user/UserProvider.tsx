@@ -23,7 +23,6 @@ export const UserProvider = ({ initialUser, initialWishlist, children }: UserPro
 
     const supabase = useMemo(() => createFrontendClient(), []);
     const router = useRouter();
-
     const activeUserId = useRef<string | null>(initialUser?.id || null);
 
     const syncAllData = useCallback(
@@ -39,12 +38,15 @@ export const UserProvider = ({ initialUser, initialWishlist, children }: UserPro
             try {
                 dispatch({ type: 'START_LOADING' });
 
-                const [userData, wishlistData] = await Promise.all([
+                const [userRes, wishlistRes] = await Promise.all([
                     getUserData(),
                     getUserWishlist(userId),
                 ]);
 
                 if (activeUserId.current === userId) {
+                    const userData = userRes.data;
+                    const wishlistData = wishlistRes.data;
+
                     dispatch({
                         type: 'SET_SYNCED_DATA',
                         payload: {
@@ -60,14 +62,15 @@ export const UserProvider = ({ initialUser, initialWishlist, children }: UserPro
                 if (activeUserId.current === userId) dispatch({ type: 'STOP_LOADING' });
             }
         },
-        [supabase],
+        [dispatch],
     );
 
     const refreshProfile = useCallback(async () => {
         if (!activeUserId.current) return;
 
         try {
-            const userData = await getUserData();
+            const response = await getUserData();
+            const userData = response.data;
 
             dispatch({
                 type: 'UPDATE_PROFILE',
@@ -83,18 +86,23 @@ export const UserProvider = ({ initialUser, initialWishlist, children }: UserPro
                 payload: 'Could not update profile data.',
             });
         }
-    }, [supabase]);
+    }, [dispatch]);
 
     const refreshWishlist = useCallback(async () => {
         if (!activeUserId.current) return;
 
         try {
-            const wishlistData = await getUserWishlist(activeUserId.current);
-            dispatch({ type: 'UPDATE_WISHLIST', payload: wishlistData ?? [] });
+            const response = await getUserWishlist(activeUserId.current);
+            const wishlistData = response.data;
+
+            dispatch({
+                type: 'UPDATE_WISHLIST',
+                payload: wishlistData ?? [],
+            });
         } catch (err) {
             dispatch({ type: 'SET_ERROR', payload: 'Could not update wishlist.' });
         }
-    }, [supabase]);
+    }, [dispatch]);
 
     useUserListeners({
         supabase,

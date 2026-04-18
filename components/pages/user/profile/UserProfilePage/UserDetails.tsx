@@ -1,4 +1,4 @@
-import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import Person2OutlinedIcon from '@mui/icons-material/Person2Outlined';
 import CakeIcon from '@mui/icons-material/Cake';
 import HomeIcon from '@mui/icons-material/Home';
 import PhoneIcon from '@mui/icons-material/Phone';
@@ -12,7 +12,7 @@ export const UserDetails = ({ userData }: { userData: User }) => {
         street_address,
         city,
         country,
-        phone_number,
+        phone_number, 
         email,
     } = userData;
 
@@ -20,7 +20,7 @@ export const UserDetails = ({ userData }: { userData: User }) => {
         <div className="flex flex-col gap-5 rounded-lg bg-white p-6 shadow-md md:col-span-2 lg:col-span-2">
             <h2 className="mb-4 text-xl font-semibold text-gray-800">User Details</h2>
             <div className="flex gap-4 rounded-md bg-gray-50 p-4">
-                <PersonOutlineIcon className="h-6 w-6 shrink-0 text-indigo-500" />
+                <Person2OutlinedIcon className="h-6 w-6 shrink-0 text-indigo-500" />
                 <div className="flex flex-col">
                     <p className="text-sm font-semibold text-gray-700">Name:</p>
                     <p className="text-gray-600">

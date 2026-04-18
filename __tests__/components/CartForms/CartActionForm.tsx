@@ -186,4 +186,72 @@ describe('APP - CartForms - CartActionForm', () => {
 
         expect(screen.queryByText(/Cart is full/i)).not.toBeInTheDocument();
     });
+
+    it('should display "Out of stock" status when stock is 0', () => {
+        render(<CartActionForm bookID="1" stock={0} />);
+
+        expect(screen.getByText(/out of stock/i)).toBeInTheDocument();
+    });
+
+    it('should display "Limited Stock" warning when stock is low (1-25) and in add mode', () => {
+        render(<CartActionForm bookID="1" stock={15} />);
+
+        expect(screen.getByText(/limited stock/i)).toBeInTheDocument();
+        expect(screen.getByText(/15 left/i)).toBeInTheDocument();
+    });
+
+    it('should display "Sign in to use cart" when not logged in and stock is not low', () => {
+        (useUserState as jest.Mock).mockReturnValue({
+            loggedIn: false,
+            profileExists: false,
+            loading: false,
+        });
+
+        // Use high stock so isLowStock is false
+        render(<CartActionForm bookID="1" stock={100} />);
+
+        expect(screen.getByText(/sign in to use cart/i)).toBeInTheDocument();
+    });
+
+    it('should display "Complete your user profile" when logged in but profile does not exist and stock is not low', () => {
+        (useUserState as jest.Mock).mockReturnValue({
+            loggedIn: true,
+            profileExists: false,
+            loading: false,
+        });
+
+        // Use high stock so isLowStock is false
+        render(<CartActionForm bookID="1" stock={100} />);
+
+        expect(screen.getByText(/complete your user profile/i)).toBeInTheDocument();
+    });
+
+    it('should display "Cart is full" warning when cart has 10 items, in add mode, and stock is not low', () => {
+        (useCartState as jest.Mock).mockReturnValue({
+            cartBooks: [],
+            cartBooksAmount: 10,
+        });
+
+        // Use high stock so isLowStock is false
+        render(<CartActionForm bookID="1" stock={100} />);
+
+        expect(screen.getByText(/cart is full/i)).toBeInTheDocument();
+    });
+
+    it('should not display any status when user is loaded, logged in, profile exists, and cart is not full', () => {
+        (useUserState as jest.Mock).mockReturnValue({
+            loggedIn: true,
+            profileExists: true,
+            loading: false,
+        });
+        (useCartState as jest.Mock).mockReturnValue({
+            cartBooks: [],
+            cartBooksAmount: 5,
+        });
+
+        const { container } = render(<CartActionForm bookID="1" stock={100} />);
+
+        // No status message should be displayed
+        expect(container.querySelector('.text-\\[10px\\]')).not.toBeInTheDocument();
+    });
 });

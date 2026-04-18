@@ -1,12 +1,12 @@
 import { DateOfBirthInput } from '@/components/formItems/DateOfBirthInput';
 import { TextInput } from '@/components/formItems/TextInput';
-import { UserAddressFormState } from '@/data/actions/AddressForm/UserAddressAction';
+import { AddressFormFields } from '@/components/pages/user/profile/AddressForm/AddressForm';
 
 export const UserPersonalFields = ({
     formData,
     onChange,
 }: {
-    formData: UserAddressFormState;
+    formData: AddressFormFields;
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) => (
     <>
@@ -14,25 +14,25 @@ export const UserPersonalFields = ({
             <TextInput
                 label="First Name"
                 id="firstName"
-                value={formData.firstName ?? ''}
+                value={formData.firstName}
                 onChange={onChange}
             />
             <TextInput
                 label="Last Name"
                 id="lastName"
-                value={formData.lastName ?? ''}
+                value={formData.lastName}
                 onChange={onChange}
             />
         </div>
         <div className="flex gap-3">
             <DateOfBirthInput
-                dob={formData.dob ?? ''}
+                dob={formData.dob}
                 onChange={onChange}
             />
             <TextInput
                 label="Phone"
                 id="phoneNumber"
-                value={formData.phoneNumber ?? ''}
+                value={formData.phoneNumber}
                 onChange={onChange}
             />
         </div>

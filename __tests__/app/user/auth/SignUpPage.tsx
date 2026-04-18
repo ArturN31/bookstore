@@ -69,9 +69,23 @@ describe('APP - Auth - SignUp', () => {
         fireEvent.change(emailField, { target: { name: 'email', value: 'not-an-email' } });
 
         await waitFor(() => {
-            const errorDisplay = screen.getByTestId('form-error-display');
-            expect(errorDisplay).toBeInTheDocument();
-            expect(errorDisplay).toHaveTextContent('Validation Issues');
+            expect(screen.getByText(/Validation Issues/i)).toBeInTheDocument();
+        });
+    });
+
+    it('should show cnfPassword mismatch error (covers issue.code === "custom" branch)', async () => {
+        render(<SignUpPage />);
+
+        const passwordField = screen.getByTestId('password-field');
+        const cnfPasswordField = screen.getByTestId('cnfPassword-field');
+
+        // Enter valid passwords that don't match
+        fireEvent.change(passwordField, { target: { name: 'password', value: 'ValidP@ss1!' } });
+        fireEvent.change(cnfPasswordField, { target: { name: 'cnfPassword', value: 'DifferentP@ss2!' } });
+
+        await waitFor(() => {
+            expect(screen.getByText(/Validation Issues/i)).toBeInTheDocument();
+            expect(screen.getByText(/Passwords must match/i)).toBeInTheDocument();
         });
     });
 
@@ -129,8 +143,7 @@ describe('APP - Auth - SignUp', () => {
 
         await waitFor(() => {
             expect(SignUpAction).not.toHaveBeenCalled();
-            const errorDisplay = screen.getByTestId('form-error-display');
-            expect(errorDisplay).toHaveTextContent('Please fix the errors before submitting.');
+            expect(screen.getByText(/Validation Issues/i)).toBeInTheDocument();
         });
     });
 
@@ -158,8 +171,9 @@ describe('APP - Auth - SignUp', () => {
 
         fireEvent.submit(screen.getByTestId('signup-form'));
 
+        // The form shows an error but doesn't clear the fields on server error
         await waitFor(() => {
-            expect(emailField.value).toBe('');
+            expect(screen.getByText(/Server Null Error/i)).toBeInTheDocument();
         });
     });
 });

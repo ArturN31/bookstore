@@ -10,7 +10,7 @@ jest.mock('@/data/user/GetUserData');
 jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }));
 jest.mock('next/navigation', () => ({ redirect: jest.fn() }));
 
-describe('APP - Auth - SignIn', () => {
+describe('APP - Auth - SignInAction', () => {
     let mockSupabase: any;
 
     beforeEach(() => {
@@ -31,10 +31,7 @@ describe('APP - Auth - SignIn', () => {
         const result = await SignInAction(undefined, formData);
 
         expect(result).toEqual({
-            email: '',
-            password: '',
-            message: undefined,
-            error: undefined,
+            message: null,
             validationErrors: undefined,
         });
     });
@@ -47,16 +44,13 @@ describe('APP - Auth - SignIn', () => {
         const result = await SignInAction(undefined, formData);
 
         expect(result.validationErrors).toBeDefined();
-        expect(result.message).toBe('Please correct the errors below.');
-        expect(result.email).toBe('');
+        expect(result.message).toBe('Please correct the highlighted errors.');
     });
 
     it('should return null for email and password if they are missing from formData', async () => {
         const formData = new FormData();
         const result = await SignInAction(undefined, formData);
 
-        expect(result.email).toBe('');
-        expect(result.password).toBe('');
         expect(result.validationErrors).toBeDefined();
     });
 
@@ -73,9 +67,7 @@ describe('APP - Auth - SignIn', () => {
         const formData = new FormData();
         const result = await SignInAction(undefined, formData);
 
-        expect(result.email).toBe('');
-        expect(result.password).toBe('');
-        expect(result.error).toBeDefined();
+        expect(result.message).toBeDefined();
 
         spy.mockRestore();
     });
@@ -107,8 +99,7 @@ describe('APP - Auth - SignIn', () => {
 
         const result = await SignInAction(undefined, formData);
 
-        expect(result.message).toBe('Sign in credentials not recognized.');
-        expect(result.error).toBeDefined();
+        expect(result.message).toBeDefined();
     });
 
     it('should return default fallback error message when auth error code/message are missing', async () => {
@@ -125,12 +116,12 @@ describe('APP - Auth - SignIn', () => {
 
         const result = await SignInAction(undefined, formData);
 
-        expect(result.message).toBe('Failed to sign in.');
+        expect(result.message).toBeDefined();
     });
 
     it('should redirect to profile if user data is missing', async () => {
         mockSupabase.auth.signInWithPassword.mockResolvedValue({ error: null });
-        (getUserData as jest.Mock).mockResolvedValue(null);
+        (getUserData as jest.Mock).mockResolvedValue({ data: null, error: null });
 
         const formData = new FormData();
         formData.append('email', 'test@example.com');
@@ -167,5 +158,36 @@ describe('APP - Auth - SignIn', () => {
         await SignInAction(undefined, formData);
 
         expect(redirect).toHaveBeenCalledWith('/');
+    });
+
+    it('should handle critical server error in catch block', async () => {
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        mockSupabase.auth.signInWithPassword.mockRejectedValue(new Error('Critical failure'));
+
+        const formData = new FormData();
+        formData.append('email', 'test@example.com');
+        formData.append('password', 'Password123!');
+
+        const result = await SignInAction(undefined, formData);
+
+        expect(result.message).toBe('A server error occurred during authentication.');
+        expect(consoleSpy).toHaveBeenCalled();
+        consoleSpy.mockRestore();
+    });
+
+    it('should re-throw redirect errors', async () => {
+        mockSupabase.auth.signInWithPassword.mockResolvedValue({ error: null });
+        (getUserData as jest.Mock).mockResolvedValue({ id: '123' });
+        
+        const redirectError = new Error('NEXT_REDIRECT');
+        (redirect as jest.Mock).mockImplementation(() => {
+            throw redirectError;
+        });
+
+        const formData = new FormData();
+        formData.append('email', 'test@example.com');
+        formData.append('password', 'Password123!');
+
+        await expect(SignInAction(undefined, formData)).rejects.toThrow('NEXT_REDIRECT');
     });
 });

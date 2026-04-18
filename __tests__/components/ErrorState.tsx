@@ -1,4 +1,4 @@
-import { ErrorState } from '@/components/ErrorState';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 describe('ErrorState', () => {

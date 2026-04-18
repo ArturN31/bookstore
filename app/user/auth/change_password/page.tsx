@@ -11,89 +11,46 @@ import { passwordSchema } from '@/data/schemas/authSchemas';
 import { useActionState, useState, useTransition } from 'react';
 
 export default function ChangePasswordPage() {
-    const [formData, setFormData] = useState<ChangePasswordFormState>({
+    const [localFields, setLocalFields] = useState({
         password: '',
         cnfPassword: '',
-        message: undefined,
+    });
+
+    const [formState, formAction] = useActionState(ChangePasswordAction, {
+        message: null,
         validationErrors: [],
     });
 
-    const [formState, formAction] = useActionState(
-        async (state: ChangePasswordFormState, payload: FormData) => {
-            const result = await ChangePasswordAction(state, payload);
-            if (result) setFormData((prev) => ({ ...prev, ...result }));
-            return result;
-        },
-        formData,
-    );
+    const [isPending, startTransition] = useTransition();
 
-    const [isTransitioningSubmit, startTransitionSubmit] = useTransition();
-    const [isTransitioningReset, startTransitionReset] = useTransition();
+    const displayErrors = formState.validationErrors?.length ? formState.validationErrors : [];
 
     const handleFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-
-        setFormData((prev) => {
-            const updatedData = { ...prev, [name]: value };
-            const validation = passwordSchema.safeParse(updatedData);
-
-            if (validation.success)
-                return { ...updatedData, validationErrors: [], message: undefined };
-
-            const filteredIssues = validation.error.issues.filter((issue) => {
-                const isCurrentField = issue.path.includes(name);
-                const isNotRequiredError =
-                    issue.code !== 'invalid_type' &&
-                    issue.code !== 'too_small' &&
-                    issue.message.toLowerCase() !== 'required';
-
-                return isCurrentField && isNotRequiredError;
-            });
-
-            return {
-                ...updatedData,
-                validationErrors: filteredIssues,
-                message: filteredIssues.length > 0 ? 'Validation Issues' : undefined,
-            };
-        });
+        setLocalFields((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (event: React.SyntheticEvent<HTMLFormElement, SubmitEvent>) => {
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        const result = passwordSchema.safeParse(formData);
-
-        if (!result.success) {
-            setFormData((prev) => ({
-                ...prev,
-                validationErrors: result.error.issues,
-                message: 'Please fix the errors before submitting.',
-            }));
-            return;
-        }
+        const validation = passwordSchema.safeParse(localFields);
+        if (!validation.success) return;
 
         const submitData = new FormData();
-        Object.entries(formData).forEach(([key, value]) => {
-            if (value) submitData.append(key, value.toString());
-        });
+        submitData.append('password', localFields.password);
+        submitData.append('cnfPassword', localFields.cnfPassword);
 
-        startTransitionSubmit(async () => {
-            await formAction(submitData);
+        startTransition(() => {
+            formAction(submitData);
         });
     };
 
     const handleReset = () => {
-        startTransitionReset(async () => {
-            const resetData = new FormData();
-            resetData.append('reset', 'yes');
-            await formAction(resetData);
-
-            setFormData({
-                password: '',
-                cnfPassword: '',
-                message: undefined,
-                validationErrors: [],
-            });
+        setLocalFields({ password: '', cnfPassword: '' });
+        const resetData = new FormData();
+        resetData.append('reset', 'yes');
+        startTransition(() => {
+            formAction(resetData);
         });
     };
 
@@ -101,46 +58,40 @@ export default function ChangePasswordPage() {
         <div className="relative grid w-full max-w-md place-self-center">
             <form
                 id="change-password-form"
-                data-testid="change-password-form"
-                aria-label="Change Password Form"
                 onSubmit={handleSubmit}
                 className="border-gunmetal grid w-full max-w-md gap-5 place-self-center rounded-lg border-t-8 bg-white p-8 shadow-md"
                 style={{ boxShadow: '0px 2px 6px -2px black' }}
             >
                 <div className="border-b border-gray-200 pb-5">
-                    <p className="mb-1 text-xl font-semibold text-gray-800">
-                        Let's Update Your Password!
-                    </p>
+                    <p className="mb-1 text-xl font-semibold text-gray-800">Update Your Password</p>
                     <p className="text-sm font-light text-gray-600">
-                        Keep your account safe with a new, strong password.
+                        Ensure your account remains secure.
                     </p>
                 </div>
 
                 <FormErrors
-                    formError={formData.message ?? undefined}
-                    validationErrors={
-                        formData.validationErrors?.length ? formData.validationErrors : undefined
-                    }
+                    formError={formState.message ?? undefined}
+                    validationErrors={displayErrors.length ? displayErrors : undefined}
                 />
 
                 <div className="grid gap-3">
                     <PasswordField
                         id="password"
-                        label="Password"
-                        placeholder="Enter Password"
-                        value={formData.password ?? ''}
+                        label="New Password"
+                        placeholder="New Password"
+                        value={localFields.password}
                         onChange={handleFieldChange}
                     />
                     <PasswordField
                         id="cnfPassword"
-                        label="Confirm Password"
-                        placeholder="Confirm Password"
-                        value={formData.cnfPassword ?? ''}
+                        label="Confirm New Password"
+                        placeholder="Confirm New Password"
+                        value={localFields.cnfPassword}
                         onChange={handleFieldChange}
                     />
                     <FormBtns
-                        isTransitioningSubmit={isTransitioningSubmit}
-                        isTransitioningReset={isTransitioningReset}
+                        isTransitioningSubmit={isPending}
+                        isTransitioningReset={isPending}
                         handleReset={handleReset}
                     />
                 </div>

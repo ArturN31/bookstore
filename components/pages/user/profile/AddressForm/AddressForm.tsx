@@ -10,17 +10,31 @@ import { FormBtns } from '@/components/formItems/FormBtns';
 import { FormErrors } from '@/components/formItems/FormErrors';
 import { TextInput } from '@/components/formItems/TextInput';
 import { UserPersonalFields } from '@/components/pages/user/profile/AddressForm/UserPersonalFields';
+import { z } from 'zod';
+
+export interface AddressFormFields {
+    firstName: string;
+    lastName: string;
+    dob: string;
+    streetAddress: string;
+    postcode: string;
+    city: string;
+    country: string;
+    phoneNumber: string;
+    message: string | null;
+    validationErrors: z.core.$ZodIssue[];
+}
 
 interface AddressFormProps {
     mode: 'add' | 'update';
-    initialData?: Partial<UserAddressFormState>;
+    initialData?: Partial<Omit<AddressFormFields, 'message' | 'validationErrors'>>;
 }
 
 export const AddressForm = ({ mode, initialData }: AddressFormProps) => {
     const isAddMode = mode === 'add';
     const activeSchema = isAddMode ? fullUserSchema : addressSchema;
 
-    const [formData, setFormData] = useState<UserAddressFormState>({
+    const [formData, setFormData] = useState<AddressFormFields>({
         firstName: initialData?.firstName ?? '',
         lastName: initialData?.lastName ?? '',
         dob: initialData?.dob ?? '',
@@ -36,10 +50,16 @@ export const AddressForm = ({ mode, initialData }: AddressFormProps) => {
     const [formState, formAction] = useActionState(
         async (state: UserAddressFormState, payload: FormData) => {
             const result = await UserAddressAction(mode, state, payload);
-            if (result) setFormData((prev) => ({ ...prev, ...result }));
+            if (result) {
+                setFormData((prev) => ({
+                    ...prev,
+                    message: result.message ?? null,
+                    validationErrors: (result.validationErrors as z.ZodIssue[]) ?? [],
+                }));
+            }
             return result;
         },
-        formData,
+        { message: null, validationErrors: [] },
     );
 
     const [isTransitioningSubmit, startTransitionSubmit] = useTransition();
@@ -85,10 +105,21 @@ export const AddressForm = ({ mode, initialData }: AddressFormProps) => {
         }
 
         const submitData = new FormData();
-        Object.entries(formData).forEach(([key, value]) => {
-            if (value !== null && value !== undefined) {
-                submitData.append(key, value.toString());
-            }
+
+        const dataKeys: (keyof AddressFormFields)[] = [
+            'firstName',
+            'lastName',
+            'dob',
+            'streetAddress',
+            'postcode',
+            'city',
+            'country',
+            'phoneNumber',
+        ];
+
+        dataKeys.forEach((key) => {
+            const value = formData[key];
+            if (value !== null && value !== undefined) submitData.append(key, value.toString());
         });
 
         startTransitionSubmit(async () => {
@@ -149,13 +180,13 @@ export const AddressForm = ({ mode, initialData }: AddressFormProps) => {
                         <TextInput
                             label="Street Address"
                             id="streetAddress"
-                            value={formData.streetAddress ?? ''}
+                            value={formData.streetAddress}
                             onChange={handleFieldChange}
                         />
                         <TextInput
                             label="Postcode"
                             id="postcode"
-                            value={formData.postcode ?? ''}
+                            value={formData.postcode}
                             onChange={handleFieldChange}
                         />
                     </div>
@@ -164,13 +195,13 @@ export const AddressForm = ({ mode, initialData }: AddressFormProps) => {
                         <TextInput
                             label="City"
                             id="city"
-                            value={formData.city ?? ''}
+                            value={formData.city}
                             onChange={handleFieldChange}
                         />
                         <TextInput
                             label="Country"
                             id="country"
-                            value={formData.country ?? ''}
+                            value={formData.country}
                             onChange={handleFieldChange}
                         />
                     </div>

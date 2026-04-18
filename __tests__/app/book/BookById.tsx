@@ -1,7 +1,7 @@
-import BookById, { generateMetadata } from '@/app/book/[slug]/page';
 import { render, screen } from '@testing-library/react';
 import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
 import { notFound } from 'next/navigation';
+import BookById, { generateMetadata } from '@/app/book/[slug]/page';
 
 const mockedFetchBooks = fetchBooksWithReviews as jest.Mock;
 jest.mock('@/data/books/GetBooksData');
@@ -53,6 +53,7 @@ const mockBookData: Book = {
         },
     ],
     rating: 5,
+    sales_count: null,
 };
 
 type BookByIdProps = {
@@ -73,8 +74,13 @@ describe('App - Book[slug]', () => {
 
     it('Should render the book details when data is successfully fetched', async () => {
         mockedFetchBooks.mockResolvedValue({
-            data: [mockBookData],
             error: null,
+            data: {
+                data: [mockBookData],
+                totalPages: 1,
+                currentPage: 1,
+                total: 1,
+            },
         });
 
         const element = await BookById(defaultProps);
@@ -100,8 +106,13 @@ describe('App - Book[slug]', () => {
 
     it('should return correct metadata when book exists', async () => {
         mockedFetchBooks.mockResolvedValue({
-            data: [mockBookData],
             error: null,
+            data: {
+                data: [mockBookData],
+                totalPages: 1,
+                currentPage: 1,
+                total: 1,
+            },
         });
 
         const metadata = await generateMetadata(mockParams);
@@ -112,10 +123,52 @@ describe('App - Book[slug]', () => {
         });
     });
 
+    it('should return metadata with default description when book description is empty (covers ?? branch)', async () => {
+        const bookWithEmptyDescription = { ...mockBookData, description: '' };
+
+        mockedFetchBooks.mockResolvedValue({
+            error: null,
+            data: {
+                data: [bookWithEmptyDescription],
+                totalPages: 1,
+                currentPage: 1,
+                total: 1,
+            },
+        });
+
+        const metadata = await generateMetadata(mockParams);
+
+        expect(metadata).toEqual({
+            title: `${bookWithEmptyDescription.title} by ${bookWithEmptyDescription.author} | Books4You`,
+            description: 'Book details.',
+        });
+    });
+
+    it('should return metadata with default description when book description is null (covers ?? branch)', async () => {
+        const bookWithNullDescription = { ...mockBookData, description: null as any };
+
+        mockedFetchBooks.mockResolvedValue({
+            error: null,
+            data: {
+                data: [bookWithNullDescription],
+                totalPages: 1,
+                currentPage: 1,
+                total: 1,
+            },
+        });
+
+        const metadata = await generateMetadata(mockParams);
+
+        expect(metadata).toEqual({
+            title: `${bookWithNullDescription.title} by ${bookWithNullDescription.author} | Books4You`,
+            description: 'Book details.',
+        });
+    });
+
     it('should return fallback title when book is not found', async () => {
         mockedFetchBooks.mockResolvedValue({
-            data: [],
-            error: null,
+            data: null,
+            error: 'Book not found',
         });
 
         const metadata = await generateMetadata(mockParams);
@@ -127,8 +180,13 @@ describe('App - Book[slug]', () => {
 
     it('Should trigger notFound when the books array is empty', async () => {
         mockedFetchBooks.mockResolvedValue({
-            data: [],
             error: null,
+            data: {
+                data: [],
+                totalPages: 0,
+                currentPage: 1,
+                total: 0,
+            },
         });
 
         await expect(BookById(defaultProps)).rejects.toThrow('NEXT_NOT_FOUND');
@@ -139,8 +197,13 @@ describe('App - Book[slug]', () => {
         const bookWithNoReviews = { ...mockBookData, reviews: undefined };
 
         mockedFetchBooks.mockResolvedValue({
-            data: [bookWithNoReviews],
             error: null,
+            data: {
+                data: [bookWithNoReviews],
+                totalPages: 1,
+                currentPage: 1,
+                total: 1,
+            },
         });
 
         const element = await BookById(defaultProps);
