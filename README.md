@@ -50,17 +50,17 @@ The project follows a rigorous testing approach focusing on **Code Coverage** an
 
 ### Current Coverage Status
 
-| Category       | File Path          | % Statements | % Branch  | % Functions | % Lines   | Status          |
-| :------------- | :----------------- | :----------- | :-------- | :---------- | :-------- | :-------------- |
-| Total Project  | All Files          | **77.31**    | **95.07** | **78.91**   | **77.31** | ✅ Improving    |
-| App Routing    | app/               | 100.00       | 100.00    | 100.00      | 100.00    | ✅ Complete     |
-| Dev Tools      | app/dev-tools      | 0.00         | 0.00      | 0.00        | 0.00      | 🔴 Critical Gap |
-| UI Components  | components/        | 100.00       | 100.00    | 100.00      | 100.00    | ✅ Complete     |
-| Data Schemas   | data/schemas/      | 100.00       | 100.00    | 100.00      | 100.00    | ✅ Complete     |
-| Auth Actions   | data/actions/auth/ | 100.00       | 100.00    | 100.00      | 100.00    | ✅ Complete     |
-| Server Actions | data/actions/      | 44.11        | 80.00     | 50.00       | 44.11     | 🎯 Focus Area   |
-| Providers      | providers/         | 77.27        | 66.66     | 50.00       | 77.27     | ⚠️ Needs Work   |
-| Data Fetching  | data/books/        | 25.83        | 100.00    | 0.00        | 25.83     | 🔴 Critical Gap |
+| Category       | File Path          | % Statements | % Branch  | % Functions | % Lines   | Status        |
+| :------------- | :----------------- | :----------- | :-------- | :---------- | :-------- | :------------ |
+| Total Project  | All Files          | **92.67**    | **96.77** | **94.71**   | **92.67** | ✅ Improving  |
+| App Routing    | app/               | 100.00       | 100.00    | 100.00      | 100.00    | ✅ Complete   |
+| Dev Tools      | app/dev-tools      | 31.67        | 32.12     | 27.65       | 31.67     | ⚠️ Needs Work |
+| UI Components  | components/        | 100.00       | 100.00    | 100.00      | 100.00    | ✅ Complete   |
+| Data Schemas   | data/schemas/      | 100.00       | 100.00    | 100.00      | 100.00    | ✅ Complete   |
+| Auth Actions   | data/actions/auth/ | 100.00       | 100.00    | 100.00      | 100.00    | ✅ Complete   |
+| Server Actions | data/actions/      | 100.00       | 95.14     | 100.00      | 100.00    | ✅ Complete   |
+| Providers      | providers/         | 100.00       | 98.66     | 84.44       | 100.00    | 🎯 Focus Area |
+| Data Fetching  | data/books/        | 99.50        | 97.82     | 100.00      | 99.50     | ✅ Complete   |
 
 ### Test Strategy
 
@@ -98,7 +98,7 @@ The application is audited to ensure professional‑grade speed and accessibilit
 
 ## Features
 
-#### Core Bookstore Functionality:
+### Core Bookstore Functionality:
 
 - **Book Browsing & Pagination**: Explore books across multiple pages with comprehensive metadata including authors, genres, formats, and publication dates.
 - **Advanced Search**: Real-time search bar with debounced queries, case-insensitive partial matching, and instant dropdown results (limited to 10 hits).
@@ -109,14 +109,14 @@ The application is audited to ensure professional‑grade speed and accessibilit
 - **Shopping Cart**: Animated sidebar cart with "Reactive Flip" synchronization logic. Using React 19's `useActionState` hook coordinated with `isPending` state and server-side timestamps, the "Add to Cart" and "Remove" buttons toggle with 100% reliability, accurately reflecting inventory status.
 - **Real-time Feedback**: Integrated Notistack toast notification system providing immediate visual feedback for all user interactions (wishlist, cart, authentication).
 
-#### Authentication & User Management:
+### Authentication & User Management:
 
 - **Supabase Email/Password Auth**: Implements secure sign-up, login, and password management with strict validation rules (minimum 8 characters, uppercase, lowercase, digit, and special character required).
 - **Profile Management**: Users can update username, shipping address, and password directly through intuitive multi-step forms with Zod schema validation.
 - **First-Time Login Flow**: New users must complete their address setup before accessing wishlist and cart features, ensuring data integrity.
 - **Real-Time Session Persistence**: Authentication state is managed via Supabase real-time listeners with custom Provider architecture, ensuring seamless cross-device synchronization and avoiding layout shift (CLS = 0).
 
-#### Developer Tools & Administration:
+### Developer Tools & Administration:
 
 - **Dev-Tools Admin Console** (protected environment): Unlocks powerful utilities including:
     - **Live Telemetry Dashboard**: Real-time system performance and application metrics.
