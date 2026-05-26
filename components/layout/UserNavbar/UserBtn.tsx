@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useUserActions, useUserState } from '@/providers/user/utils/useUser';
 import { usePathname, useRouter } from 'next/navigation';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
@@ -15,12 +14,6 @@ export const UserBtn = () => {
     const { signOut } = useUserActions();
     const router = useRouter();
     const pathname = usePathname();
-
-    const [isMounted, setIsMounted] = useState(false);
-
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
 
     const handleChoice = (choice: string) => {
         switch (choice) {
@@ -51,15 +44,6 @@ export const UserBtn = () => {
             console.error('Error signing out:', error);
         }
     };
-
-    if (!isMounted)
-        return (
-            <div
-                className="h-11 w-11 rounded-full bg-[#facc15] opacity-70"
-                style={{ display: 'inline-block' }}
-                aria-hidden="true"
-            />
-        );
 
     const getListData = () => {
         if (loading)

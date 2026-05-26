@@ -1,0 +1,14 @@
+version: 2
+updates:
+    - package-ecosystem: 'npm'
+      directory: '/'
+      schedule:
+          interval: 'weekly' # Reduces alert fatigue and enforces a natural cooldown
+      open-pull-requests-limit: 5
+      versioning-strategy: increase-if-necessary
+      groups:
+          # Group minor updates together to prevent terminal spam
+          development-dependencies:
+              patterns:
+                  - '*'
+              dependency-type: 'development'

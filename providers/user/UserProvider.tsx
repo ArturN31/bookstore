@@ -1,9 +1,13 @@
 'use client';
-import React, { useReducer, useMemo, useCallback, useRef } from 'react';
+import React, { useReducer, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createFrontendClient } from '@/utils/db/client';
 import { User as SupabaseUser } from '@supabase/supabase-js';
-import { UserStateContext, UserActionsContext } from '@/providers/user/UserContext';
+import {
+    UserStateContext,
+    UserActionsContext,
+    PartialUserPayload,
+} from '@/providers/user/UserContext';
 import { userReducer } from '@/providers/user/UserReducer';
 import { createInitialState } from '@/providers/user/utils/UserMapper';
 import { useUserListeners } from '@/providers/user/utils/useUserListeners';
@@ -23,90 +27,106 @@ export const UserProvider = ({ initialUser, initialWishlist, children }: UserPro
 
     const supabase = useMemo(() => createFrontendClient(), []);
     const router = useRouter();
-    const activeUserId = useRef<string | null>(initialUser?.id || null);
+    const activeUserId = useRef<string | null>(state.user.id || null);
+
+    useEffect(() => {
+        activeUserId.current = state.user.id || null;
+    }, [state.user.id]);
 
     const syncAllData = useCallback(
         async (supabaseUser: SupabaseUser | null) => {
-            const userId = supabaseUser?.id || null;
-            activeUserId.current = userId;
-
-            if (!userId) {
-                dispatch({ type: 'RESET' });
-                return;
-            }
+            dispatch({ type: 'START_SYNC' });
 
             try {
-                dispatch({ type: 'START_LOADING' });
+                if (!supabaseUser) {
+                    dispatch({ type: 'RESET' });
+                    return;
+                }
 
-                const [userRes, wishlistRes] = await Promise.all([
+                const [userData, wishlistData] = await Promise.all([
                     getUserData(),
-                    getUserWishlist(userId),
+                    getUserWishlist(supabaseUser.id),
                 ]);
 
-                if (activeUserId.current === userId) {
-                    const userData = userRes.data;
-                    const wishlistData = wishlistRes.data;
-
+                const syncError = userData.error || wishlistData.error;
+                if (syncError) {
                     dispatch({
-                        type: 'SET_SYNCED_DATA',
-                        payload: {
-                            user: userData || ({ id: userId } as any),
-                            profileExists: !!userData,
-                            wishlist: wishlistData ?? [],
-                        },
+                        type: 'SET_ERROR',
+                        payload: syncError,
                     });
+                    return;
                 }
+
+                const userPayload: PartialUserPayload = userData.data
+                    ? userData.data
+                    : { id: supabaseUser.id };
+
+                dispatch({
+                    type: 'SET_SYNCED_DATA',
+                    payload: {
+                        user: userPayload,
+                        profileExists: !!userData.data,
+                        wishlist: wishlistData.data || [],
+                    },
+                });
             } catch (err) {
-                dispatch({ type: 'SET_ERROR', payload: 'Sync failed' });
-            } finally {
-                if (activeUserId.current === userId) dispatch({ type: 'STOP_LOADING' });
+                const message = err instanceof Error ? err.message : 'An unexpected error occurred';
+                dispatch({ type: 'SET_ERROR', payload: message });
             }
         },
-        [dispatch],
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [getUserData, getUserWishlist],
     );
 
     const refreshProfile = useCallback(async () => {
-        if (!activeUserId.current) return;
+        const userId = activeUserId.current;
+        if (!userId) return;
 
         try {
-            const response = await getUserData();
-            const userData = response.data;
+            const { data, error } = await getUserData();
+            if (error) throw new Error(error);
 
-            dispatch({
-                type: 'UPDATE_PROFILE',
-                payload: {
-                    user: userData || ({ id: activeUserId.current } as User),
-                    profileExists: !!userData,
-                },
-            });
+            if (activeUserId.current === userId) {
+                dispatch({
+                    type: 'UPDATE_PROFILE',
+                    payload: {
+                        user: data || ({ id: userId } as User),
+                        profileExists: !!data,
+                    },
+                });
+            }
         } catch (err) {
-            console.error('Profile refresh failed:', err);
-            dispatch({
-                type: 'SET_ERROR',
-                payload: 'Could not update profile data.',
-            });
+            console.error('Profile update failed:', err);
+            dispatch({ type: 'SET_ERROR', payload: 'Profile update failed' });
         }
-    }, [dispatch]);
+    }, []);
 
     const refreshWishlist = useCallback(async () => {
-        if (!activeUserId.current) return;
+        const userId = activeUserId.current;
+        if (!userId) return;
 
         try {
-            const response = await getUserWishlist(activeUserId.current);
-            const wishlistData = response.data;
-
-            dispatch({
-                type: 'UPDATE_WISHLIST',
-                payload: wishlistData ?? [],
-            });
+            const { data, error } = await getUserWishlist(userId);
+            if (error) throw new Error(error);
+            if (activeUserId.current === userId)
+                dispatch({ type: 'UPDATE_WISHLIST', payload: data ?? [] });
         } catch (err) {
-            dispatch({ type: 'SET_ERROR', payload: 'Could not update wishlist.' });
+            console.error('Wishlist update failed:', err);
+            dispatch({ type: 'SET_ERROR', payload: 'Wishlist update failed' });
         }
-    }, [dispatch]);
+    }, []);
+
+    const signOut = useCallback(async () => {
+        activeUserId.current = null;
+        dispatch({ type: 'RESET' });
+        await supabase.auth.signOut();
+        router.push('/');
+        router.refresh();
+    }, [supabase, router]);
 
     useUserListeners({
         supabase,
-        activeUserId: state.user.id,
+        activeUserId: state.user.id || null,
         router,
         syncAllData,
         refreshProfile,
@@ -117,12 +137,9 @@ export const UserProvider = ({ initialUser, initialWishlist, children }: UserPro
         () => ({
             refreshProfile,
             refreshWishlist,
-            signOut: async () => {
-                activeUserId.current = null;
-                await supabase.auth.signOut();
-            },
+            signOut,
         }),
-        [refreshProfile, refreshWishlist, supabase],
+        [refreshProfile, refreshWishlist, signOut],
     );
 
     return (

@@ -6,12 +6,13 @@ export function cartReducer(state: Cart, action: CartAction): Cart {
             return { ...state, loading: true };
 
         case 'SET_CART_DATA': {
-            const { itemsAmount, total, booksAmount } = calculateCartTotals(action.payload.books);
+            const { books, cartID } = action.payload;
+            const { itemsAmount, total, booksAmount } = calculateCartTotals(books);
 
             return {
                 ...state,
-                cartID: action.payload.cartID,
-                cartBooks: [...action.payload.books],
+                cartID,
+                cartBooks: books,
                 cartBooksAmount: booksAmount,
                 cartItemsAmount: itemsAmount,
                 cartTotal: total,
@@ -20,7 +21,7 @@ export function cartReducer(state: Cart, action: CartAction): Cart {
         }
 
         case 'RESET_CART':
-            return INITIAL_CART_STATE;
+            return { ...INITIAL_CART_STATE };
 
         case 'SET_ERROR':
             return { ...state, loading: false };

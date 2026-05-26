@@ -6,7 +6,7 @@ export const ConsoleSection = ({ title, subtitle, children, variant = 'default' 
                     variant === 'danger' ? 'bg-yellow text-gunmetal' : 'bg-gunmetal text-white'
                 }`}
             >
-                {title} {subtitle && <span className="ml-2 opacity-50">// {subtitle}</span>}
+                {title} {subtitle && <span className="ml-2 opacity-50">{'// ' + subtitle}</span>}
             </h2>
             <div
                 className={`h-0.5 flex-1 ${variant === 'danger' ? 'bg-yellow/30' : 'bg-gunmetal/10'}`}

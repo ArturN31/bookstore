@@ -1,0 +1,71 @@
+import { useCartState } from '@/providers/cart/utils/useCart';
+import { Header } from '@/components/layout/Header';
+import { render, screen } from '@testing-library/react';
+
+const mockUsePathname = jest.fn();
+jest.mock('next/navigation', () => ({
+    useRouter: jest.fn(() => ({
+        push: jest.fn(),
+    })),
+    usePathname: () => mockUsePathname(),
+}));
+
+jest.mock('next/link', () => {
+    const MockLink = ({
+        children,
+        href,
+        ...props
+    }: {
+        children: React.ReactNode;
+        href: string;
+    }) => (
+        <a
+            href={href}
+            {...props}
+        >
+            {children}
+        </a>
+    );
+    MockLink.displayName = 'MockNextLink';
+    return MockLink;
+});
+
+jest.mock('@/providers/cart/utils/useCart');
+
+jest.mock('@/components/layout/FilterBar/Genre', () => ({
+    Genre: jest.fn(() => <div data-testid="mock-genre">Mock Genre</div>),
+}));
+
+jest.mock('@/components/layout/FilterBar/Format', () => ({
+    Format: jest.fn(() => <div data-testid="mock-format">Mock Format</div>),
+}));
+
+jest.mock('@/components/layout/UserNavbar/UserNavbar', () => ({
+    UserNavbar: () => <div data-testid="mock-user-navbar" />,
+}));
+
+jest.mock('@/components/layout/FilterBar/FilterBar', () => ({
+    FilterBar: () => <div data-testid="mock-filter-bar" />,
+}));
+
+describe('FilterBar - Home', () => {
+    beforeEach(() => {
+        (useCartState as jest.Mock).mockReturnValue({
+            cartBooks: [],
+            cartBooksAmount: 0,
+            cartItemsAmount: 0,
+            cartTotal: '0',
+            cartID: null,
+            loading: false,
+            cartError: null,
+            refreshCart: jest.fn(),
+        });
+    });
+
+    it('Should render component', () => {
+        render(<Header />);
+
+        const headerElement = screen.getByTestId('header');
+        expect(headerElement).toBeInTheDocument();
+    });
+});

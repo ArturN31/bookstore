@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/.coverage-temp
 
 # next.js
 /.next/
@@ -41,3 +42,5 @@ next-env.d.ts
 
 .swc
 .continue
+.roo
+.roomodes

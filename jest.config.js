@@ -14,9 +14,11 @@ const customJestConfig = {
         "components/**/*.{js,jsx,ts,tsx}",
         "data/**/*.{js,jsx,ts,tsx}",
         "providers/**/*.{js,jsx,ts,tsx}",
+        "hooks/**/*.{js,jsx,ts,tsx}",
         "!**/node_modules/**",
         "!**/.next/**",
         "!**/app/globals.css.js",
+        "!**/app/layout.tsx",
     ],
     coveragePathIgnorePatterns: [
         "<rootDir>/app/globals.css",

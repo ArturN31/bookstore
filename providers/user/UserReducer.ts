@@ -1,13 +1,21 @@
-import { UserState, UserAction, INITIAL_USER_STATE } from '@/providers/user/UserContext';
-import { mapUserData } from '@/providers/user/utils/UserMapper';
+import { UserState, UserAction } from './UserContext';
+import { mapUserData } from './utils/UserMapper';
+import { INITIAL_USER_STATE } from './UserContext';
 
-export function userReducer(state: UserState, action: UserAction): UserState {
+export const userReducer = (state: UserState, action: UserAction): UserState => {
     switch (action.type) {
+        case 'START_SYNC':
         case 'START_LOADING':
-            return { ...state, loading: true };
+            return {
+                ...state,
+                loading: true,
+            };
 
         case 'STOP_LOADING':
-            return { ...state, loading: false };
+            return {
+                ...state,
+                loading: false,
+            };
 
         case 'SET_SYNCED_DATA':
             return {
@@ -25,22 +33,27 @@ export function userReducer(state: UserState, action: UserAction): UserState {
                 ...state,
                 user: mapUserData(action.payload.user),
                 profileExists: action.payload.profileExists,
+                error: null,
             };
 
         case 'UPDATE_WISHLIST':
-            return { ...state, wishlist: action.payload };
+            return {
+                ...state,
+                wishlist: action.payload,
+                error: null,
+            };
 
         case 'SET_ERROR':
-            return { ...state, error: action.payload, loading: false };
-
-        case 'RESET':
             return {
-                ...INITIAL_USER_STATE,
-                user: { ...INITIAL_USER_STATE.user },
+                ...state,
+                error: action.payload,
                 loading: false,
             };
+
+        case 'RESET':
+            return { ...INITIAL_USER_STATE };
 
         default:
             return state;
     }
-}
+};

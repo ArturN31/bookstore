@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect } from 'react';
 import { SupabaseClient, User as SupabaseUser } from '@supabase/supabase-js';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
@@ -22,56 +20,46 @@ export const useUserListeners = ({
     reset,
 }: UseUserListenersProps) => {
     useEffect(() => {
-        const hydrate = async () => {
-            if (!activeUserId) {
-                const {
-                    data: { user },
-                } = await supabase.auth.getUser();
-                if (user) await syncAllData(user);
-            }
-        };
-        hydrate();
-    }, []);
+        if (!activeUserId) {
+            supabase.auth.getUser().then(({ data }) => {
+                if (data.user) syncAllData(data.user);
+            });
+        }
 
-    // Auth State Listener (Login/Logout/Updates)
-    useEffect(() => {
         const {
-            data: { subscription: authListener },
+            data: { subscription },
         } = supabase.auth.onAuthStateChange(async (event, session) => {
-            const currentUser = session?.user || null;
-
-            if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-                await syncAllData(currentUser);
-            } else if (event === 'SIGNED_OUT') {
+            if (event === 'SIGNED_IN' || event === 'USER_UPDATED')
+                await syncAllData(session?.user ?? null);
+            if (event === 'SIGNED_OUT') {
                 reset();
                 router.push('/');
                 router.refresh();
             }
         });
 
-        return () => authListener.unsubscribe();
-    }, [supabase, syncAllData, router, reset]);
-
-    // Realtime Postgres Listener (Database table updates)
-    useEffect(() => {
-        if (!activeUserId) return;
-
-        const channel = supabase
-            .channel(`user_changes_${activeUserId}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'users',
-                    filter: `id=eq.${activeUserId}`,
-                },
-                () => refreshProfile(),
-            )
-            .subscribe();
+        let channel: any = null;
+        if (activeUserId) {
+            channel = supabase
+                .channel(`user_changes_${activeUserId}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'users',
+                        filter: `id=eq.${activeUserId}`,
+                    },
+                    () => {
+                        refreshProfile();
+                    },
+                )
+                .subscribe();
+        }
 
         return () => {
-            supabase.removeChannel(channel);
+            subscription.unsubscribe();
+            if (channel) supabase.removeChannel(channel);
         };
-    }, [activeUserId, supabase, refreshProfile]);
+    }, [supabase, activeUserId, router, syncAllData, refreshProfile, reset]);
 };

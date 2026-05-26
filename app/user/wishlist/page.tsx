@@ -54,7 +54,11 @@ export default function UsersWishlist() {
 
     useEffect(() => {
         const controller = new AbortController();
-        loadWishlistBooks(controller.signal);
+
+        Promise.resolve().then(() => {
+            loadWishlistBooks(controller.signal);
+        });
+
         return () => controller.abort();
     }, [loadWishlistBooks]);
 

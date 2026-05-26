@@ -9,7 +9,7 @@ import { enqueueSnackbar } from 'notistack';
 import { useState, useActionState, useTransition, useEffect, SyntheticEvent } from 'react';
 
 export const CartItemRemove = ({ book }: { book: Book }) => {
-    const { loggedIn, profileExists } = useUserState();
+    const { user, loggedIn, profileExists } = useUserState();
     const { refreshCart } = useCartActions();
 
     const [state, formAction] = useActionState(CartAction, {
@@ -38,16 +38,17 @@ export const CartItemRemove = ({ book }: { book: Book }) => {
     };
 
     useEffect(() => {
-        if (state.success) refreshCart();
-    }, [state.success, state.timestamp, refreshCart]);
-
-    useEffect(() => {
         if (!state.message) return;
 
         const variant = state.success ? 'success' : 'warning';
-        if (!state.success || state.message.includes('removed'))
+        if (!state.success || state.message.includes('removed')) {
             enqueueSnackbar(state.message, { variant });
-    }, [state.message, state.success, state.timestamp]);
+        }
+
+        if (state.success) {
+            refreshCart(user.id);
+        }
+    }, [state.message, state.success, state.timestamp, refreshCart, user?.id]);
 
     return (
         <div className="grid gap-2">

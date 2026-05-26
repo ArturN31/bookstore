@@ -1,0 +1,202 @@
+import { BooksManager } from '@/components/books/BooksManager';
+import { useBookFilter } from '@/providers/BookFilterProvider';
+import { render, screen, waitFor } from '@testing-library/react';
+import { useInView } from 'react-intersection-observer';
+import { useBooksFetcher } from '@/data/books/useBooksFetcher';
+import { PaginatedBookResult } from '@/data/books/BookConstants';
+
+// Define strict types for ActionResponse matches to remain 'any'-free
+interface ActionResponse<T> {
+    error: string | null;
+    data: T | null;
+}
+
+jest.mock('@/providers/BookFilterProvider', () => ({
+    useBookFilter: jest.fn(),
+}));
+
+jest.mock('react-intersection-observer', () => ({
+    useInView: jest.fn(),
+}));
+
+jest.mock('@/data/books/useBooksFetcher', () => ({
+    useBooksFetcher: jest.fn(),
+}));
+
+jest.mock('@/components/books/bookCard/BookCard', () => ({
+    BookCard: ({ book }: { book: Book }) => <div data-testid="mock-book-card">{book.title}</div>,
+}));
+
+const createMockBook = (overrides: Partial<Book>): Book => ({
+    id: '1',
+    title: 'Default',
+    author: 'Author',
+    genre: 'Genre',
+    description: 'Desc',
+    price: '10',
+    rating: 4,
+    review_count: 10,
+    sales_count: null,
+    stock_quantity: 0,
+    image_url: '',
+    publisher: 'Pub',
+    publication_date: '2024',
+    format: 'Paperback',
+    page_count: 200,
+    created_at: '',
+    updated_at: '',
+    is_active: true,
+    ...overrides,
+});
+
+const mockInitialData: ActionResponse<PaginatedBookResult> = {
+    error: null,
+    data: {
+        data: [createMockBook({ id: '1', title: 'Book 1' })],
+        currentPage: 1,
+        totalPages: 2,
+        total: 2,
+    },
+};
+
+describe('BooksManager', () => {
+    const mockUseBookFilter = useBookFilter as jest.Mock;
+    const mockUseInView = useInView as jest.Mock;
+    const mockUseBooksFetcher = useBooksFetcher as jest.Mock;
+    const mockFetchBooks = jest.fn();
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+
+        mockUseBookFilter.mockReturnValue({ filterType: 'Title: A-Z' });
+        mockUseInView.mockReturnValue({ ref: jest.fn(), inView: false });
+
+        mockUseBooksFetcher.mockReturnValue({
+            state: {
+                books: [createMockBook({ id: '1', title: 'Book 1' })],
+                page: 1,
+                hasMore: true,
+            },
+            isLoading: false,
+            fetchBooks: mockFetchBooks,
+        });
+
+        window.scrollTo = jest.fn();
+    });
+
+    it('renders initial data correctly', () => {
+        render(<BooksManager initialData={mockInitialData} />);
+        expect(screen.getByText('Book 1')).toBeInTheDocument();
+    });
+
+    it('shows empty state when no books are provided in initialData', () => {
+        mockUseBooksFetcher.mockReturnValue({
+            state: {
+                books: [],
+                page: 1,
+                hasMore: false,
+            },
+            isLoading: false,
+            fetchBooks: mockFetchBooks,
+        });
+
+        render(
+            <BooksManager
+                initialData={{
+                    error: null,
+                    data: { data: [], currentPage: 1, totalPages: 0, total: 0 },
+                }}
+            />,
+        );
+
+        expect(screen.queryByTestId('mock-book-card')).not.toBeInTheDocument();
+    });
+
+    it('triggers loadMore when scrolling to bottom', async () => {
+        let triggerChange: (inView: boolean) => void = () => {};
+
+        mockUseInView.mockImplementation(
+            ({ onChange }: { onChange: (inView: boolean) => void }) => {
+                triggerChange = onChange;
+                return { ref: jest.fn() };
+            },
+        );
+
+        render(<BooksManager initialData={mockInitialData} />);
+
+        // Simulate moving viewport down to hit infinite scrolling intersection observer threshold
+        triggerChange(true);
+
+        expect(mockFetchBooks).toHaveBeenCalledWith(true, 1);
+    });
+
+    it('resets and reloads books when filterType changes', async () => {
+        const { rerender } = render(<BooksManager initialData={mockInitialData} />);
+
+        mockUseBookFilter.mockReturnValue({ filterType: 'Price: Low to High' });
+
+        // Changing hooks value and rerendering mirrors standard React context updates
+        rerender(<BooksManager initialData={mockInitialData} />);
+
+        expect(mockUseBooksFetcher).toHaveBeenCalledWith(
+            expect.objectContaining({ filterType: 'Price: Low to High' }),
+        );
+    });
+
+    it('handles fetch errors gracefully (Fixed Logic)', async () => {
+        mockUseBooksFetcher.mockReturnValue({
+            state: {
+                books: [createMockBook({ id: '1', title: 'Book 1' })],
+                page: 1,
+                hasMore: false,
+            },
+            isLoading: false,
+            fetchBooks: mockFetchBooks,
+        });
+
+        render(<BooksManager initialData={mockInitialData} />);
+
+        expect(screen.getByText('Book 1')).toBeInTheDocument();
+        expect(screen.queryByText('Book 2')).not.toBeInTheDocument();
+    });
+
+    it('handles fetch rejection with non-AbortError', async () => {
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+        mockFetchBooks.mockImplementationOnce(() => {
+            console.error('Failed to fetch books:', new Error('Network error'));
+        });
+
+        let triggerChange: (inView: boolean) => void = () => {};
+        mockUseInView.mockImplementation(
+            ({ onChange }: { onChange: (inView: boolean) => void }) => {
+                triggerChange = onChange;
+                return { ref: jest.fn() };
+            },
+        );
+
+        render(<BooksManager initialData={mockInitialData} />);
+        triggerChange(true);
+
+        expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch books:', expect.any(Error));
+        consoleSpy.mockRestore();
+    });
+
+    it('does not scroll when fetching next page', async () => {
+        const scrollSpy = jest.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+        let triggerChange: (inView: boolean) => void = () => {};
+        mockUseInView.mockImplementation(
+            ({ onChange }: { onChange: (inView: boolean) => void }) => {
+                triggerChange = onChange;
+                return { ref: jest.fn() };
+            },
+        );
+
+        render(<BooksManager initialData={mockInitialData} />);
+        triggerChange(true);
+
+        expect(scrollSpy).not.toHaveBeenCalled();
+        scrollSpy.mockRestore();
+    });
+});

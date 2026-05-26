@@ -6,6 +6,7 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import AddIcon from '@mui/icons-material/Add';
 import { enqueueSnackbar } from 'notistack';
 import { CartAction } from '@/data/actions/CartForm/CartAction';
+import { useUserState } from '@/providers/user/utils/useUser';
 
 export const CartItemQuantityControls = ({
     quantity: initialQuantity,
@@ -15,13 +16,21 @@ export const CartItemQuantityControls = ({
     book: Book;
 }) => {
     const { refreshCart } = useCartActions();
-    const [localQuantity, setLocalQuantity] = useState(initialQuantity);
+    const { user } = useUserState();
+
+    const [localQuantity, setLocalQuantity] = useState<number>(initialQuantity);
+    const [prevInitialQuantity, setPrevInitialQuantity] = useState<number>(initialQuantity);
 
     const [state, formAction] = useActionState(CartAction, {
         success: false,
         message: '',
     });
     const [isPending, startTransition] = useTransition();
+
+    if (initialQuantity !== prevInitialQuantity) {
+        setPrevInitialQuantity(initialQuantity);
+        setLocalQuantity(initialQuantity);
+    }
 
     const dispatchCartAction = useCallback(
         (type: 'UPDATE' | 'REMOVE', qty?: number) => {
@@ -72,15 +81,13 @@ export const CartItemQuantityControls = ({
     };
 
     useEffect(() => {
-        if (state.success) refreshCart();
-    }, [state.success, state.timestamp, refreshCart]);
-
-    useEffect(() => {
         if (!state.message) return;
 
         const variant = state.success ? 'success' : 'warning';
         enqueueSnackbar(state.message, { variant });
-    }, [state.message, state.success, state.timestamp]);
+
+        if (state.success) refreshCart(user.id);
+    }, [state.message, state.success, state.timestamp, refreshCart, user.id]);
 
     return (
         <div className="flex w-fit flex-col items-center gap-2">

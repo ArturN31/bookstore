@@ -6,7 +6,7 @@ export const HomepageHero = ({ booksAmount }: { booksAmount: number }) => {
                     Discover Books.
                 </h1>
                 <p className="1080p:text-xl 1440p:text-2xl 4k:text-3xl mt-1 text-xs text-slate-500 sm:text-base">
-                    The world's most influential stories, curated for the modern reader.
+                    The world&apos;s most influential stories, curated for the modern reader.
                 </p>
             </div>
 

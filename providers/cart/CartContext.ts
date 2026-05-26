@@ -10,15 +10,11 @@ export const INITIAL_CART_STATE: Cart = {
     loading: false,
 };
 
-export const parsePrice = (price: string | number): number => {
-    if (typeof price === 'number') return price;
-    return parseFloat(price.replace(/[^0-9.-]+/g, '')) || 0;
-};
-
 export const calculateCartTotals = (books: CartItem[]) => {
     const itemsAmount = books.reduce((sum, book) => sum + (book.quantity || 0), 0);
     const totalValue = books.reduce((sum, book) => {
-        return sum + (book.quantity || 0) * parsePrice(book.price);
+        const price = typeof book.price === 'number' ? book.price : parseFloat(book.price) || 0;
+        return sum + (book.quantity || 0) * price;
     }, 0);
     return {
         itemsAmount,
@@ -28,7 +24,8 @@ export const calculateCartTotals = (books: CartItem[]) => {
 };
 
 export type CartActions = {
-    refreshCart: () => Promise<void>;
+    refreshCart: (userId: string) => Promise<void>;
+    resetCart: () => void;
 };
 
 export type CartAction =

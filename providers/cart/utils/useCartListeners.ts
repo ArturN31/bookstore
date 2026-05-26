@@ -1,32 +1,20 @@
-'use client';
 import { useEffect } from 'react';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 interface UseCartListenersProps {
     supabase: SupabaseClient;
     cartID: string | null;
-    loggedIn: boolean;
-    refreshCart: () => Promise<void>;
-    resetCart: () => void;
+    onCartChange: () => void;
 }
 
-export const useCartListeners = ({
-    supabase,
-    cartID,
-    loggedIn,
-    refreshCart,
-    resetCart,
-}: UseCartListenersProps) => {
+export const useCartListeners = ({ supabase, cartID, onCartChange }: UseCartListenersProps) => {
     useEffect(() => {
-        if (!loggedIn) resetCart();
-    }, [loggedIn, resetCart]);
+        if (!cartID) return;
 
-    // Postgres Realtime listener
-    useEffect(() => {
-        if (!loggedIn || !cartID) return;
+        const channelName = `cart-sync-${cartID}`;
 
         const channel = supabase
-            .channel(`cart-sync-${cartID}`)
+            .channel(channelName)
             .on(
                 'postgres_changes',
                 {
@@ -35,12 +23,16 @@ export const useCartListeners = ({
                     table: 'shopping_cart_items',
                     filter: `cart_id=eq.${cartID}`,
                 },
-                () => refreshCart(),
+                () => {
+                    onCartChange();
+                },
             )
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            if (channel) {
+                supabase.removeChannel(channel);
+            }
         };
-    }, [loggedIn, cartID, supabase, refreshCart]);
+    }, [supabase, cartID, onCartChange]);
 };

@@ -6,6 +6,7 @@ import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 
 import { useCartActions, useCartState } from '@/providers/cart/utils/useCart';
 import { CartAction, CartFormState } from '@/data/actions/CartForm/CartAction';
+import { useUserState } from '@/providers/user/utils/useUser';
 
 interface ChangeQuantityFormProps {
     bookID: string;
@@ -14,11 +15,13 @@ interface ChangeQuantityFormProps {
 export const ChangeQuantityForm = ({ bookID }: ChangeQuantityFormProps) => {
     const { cartBooks } = useCartState();
     const { refreshCart } = useCartActions();
+    const { user } = useUserState();
 
     const currentBook = cartBooks.find((cartBook) => cartBook.id === bookID);
     const initialQuantity = currentBook?.quantity || 1;
 
     const [quantity, setQuantity] = useState(initialQuantity);
+    const [prevInitialQuantity, setPrevInitialQuantity] = useState(initialQuantity);
     const [isPending, startTransition] = useTransition();
 
     const [state, formAction] = useActionState(CartAction, {
@@ -26,12 +29,11 @@ export const ChangeQuantityForm = ({ bookID }: ChangeQuantityFormProps) => {
         message: '',
     } as CartFormState);
 
-    // Synchronize local select state with global cart state updates
-    useEffect(() => {
+    if (initialQuantity !== prevInitialQuantity) {
+        setPrevInitialQuantity(initialQuantity);
         setQuantity(initialQuantity);
-    }, [initialQuantity]);
+    }
 
-    // Centralized side-effect handler for server action results
     useEffect(() => {
         if (!state.message) return;
 
@@ -39,16 +41,15 @@ export const ChangeQuantityForm = ({ bookID }: ChangeQuantityFormProps) => {
         enqueueSnackbar(state.message, { variant });
 
         if (state.success) {
-            refreshCart();
+            refreshCart(user.id);
         }
-    }, [state.message, state.success, state.timestamp, refreshCart]);
+    }, [state.message, state.success, state.timestamp, refreshCart, user.id]);
 
     const isChanged = quantity !== initialQuantity;
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        // Production guard: prevent redundant or overlapping submissions
         if (!isChanged || isPending) return;
 
         const formData = new FormData();

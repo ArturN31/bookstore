@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import { CartSidebar } from '@/components/CartSidebar/CartSidebar';
 import { useCartState } from '@/providers/cart/utils/useCart';
@@ -9,21 +9,8 @@ import { IconButton, Badge } from '@mui/material';
 export const CartBtn = () => {
     const [openCart, setOpenCart] = useState(false);
     const { cartBooksAmount } = useCartState();
-    const [isMounted, setIsMounted] = useState(false);
-
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
 
     const handleCartVisibility = () => setOpenCart(!openCart);
-
-    if (!isMounted)
-        return (
-            <div
-                style={{ width: '48px', height: '48px' }}
-                aria-hidden="true"
-            />
-        );
 
     const cartButtonLabel = `Shopping cart with ${cartBooksAmount} items`;
 

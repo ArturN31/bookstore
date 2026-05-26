@@ -1,12 +1,12 @@
 'use client';
-import React, { useReducer, useMemo, useCallback } from 'react';
+import React, { useReducer, useMemo, useCallback, useRef, useEffect } from 'react';
 import { createFrontendClient } from '@/utils/db/client';
 import { CartStateContext, CartActionsContext } from '@/providers/cart/CartContext';
 import { cartReducer } from '@/providers/cart/CartReducer';
-import { useUserState } from '@/providers/user/utils/useUser';
 import { createInitialCartState } from '@/providers/cart/utils/CartMapper';
 import { useCartListeners } from '@/providers/cart/utils/useCartListeners';
 import { getCartData } from '@/data/cart/GetCartData';
+import { useUserState } from '@/providers/user/utils/useUser';
 
 interface CartProviderProps {
     initialCart: Cart | null;
@@ -14,40 +14,56 @@ interface CartProviderProps {
 }
 
 export const CartProvider = ({ initialCart, children }: CartProviderProps) => {
-    const { user, loggedIn } = useUserState();
     const supabase = useMemo(() => createFrontendClient(), []);
-
+    const { user } = useUserState();
     const [state, dispatch] = useReducer(cartReducer, createInitialCartState(initialCart));
+    const activeUserId = useRef<string | null>(user?.id ?? null);
 
-    const refreshCart = useCallback(async () => {
-        if (!user?.id) return;
+    useEffect(() => {
+        activeUserId.current = user?.id ?? null;
+    }, [user?.id]);
+
+    const refreshCart = useCallback(async (userId?: string) => {
+        const targetId = userId || activeUserId.current;
+        if (!targetId) return;
+
+        activeUserId.current = targetId;
+        dispatch({ type: 'START_LOADING' });
 
         try {
-            dispatch({ type: 'START_LOADING' });
-
-            const response = await getCartData(user.id);
+            const response = await getCartData(targetId);
 
             if (response.error) throw new Error(response.error);
 
-            if (response.data) {
-                const { cartID, books } = response.data;
-                dispatch({ type: 'SET_CART_DATA', payload: { cartID, books } });
+            if (activeUserId.current === targetId) {
+                dispatch({
+                    type: 'SET_CART_DATA',
+                    payload: {
+                        cartID: response.data?.cartID ?? null,
+                        books: response.data?.books ?? [],
+                    },
+                });
             }
         } catch (err) {
             console.error('Cart Refresh Failed:', err);
-            dispatch({ type: 'SET_ERROR' });
+            if (activeUserId.current === targetId) dispatch({ type: 'SET_ERROR' });
         }
-    }, [user?.id]);
+    }, []);
+
+    const resetCart = useCallback(() => {
+        activeUserId.current = null;
+        dispatch({ type: 'RESET_CART' });
+    }, []);
 
     useCartListeners({
         supabase,
         cartID: state.cartID,
-        loggedIn,
-        refreshCart,
-        resetCart: () => dispatch({ type: 'RESET_CART' }),
+        onCartChange: () => {
+            if (activeUserId.current) refreshCart(activeUserId.current);
+        },
     });
 
-    const actions = useMemo(() => ({ refreshCart }), [refreshCart]);
+    const actions = useMemo(() => ({ refreshCart, resetCart }), [refreshCart, resetCart]);
 
     return (
         <CartActionsContext.Provider value={actions}>

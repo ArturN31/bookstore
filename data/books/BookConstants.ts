@@ -37,3 +37,16 @@ export interface PaginatedBookResult {
     totalPages: number;
     currentPage: number;
 }
+
+export const BOOK_DEFAULTS = {
+    title: 'Unknown Title',
+    author: 'Unknown Author',
+    genre: 'Uncategorized',
+    publisher: 'Unknown Publisher',
+    format: 'Unknown',
+    price: '0.00',
+    page_count: 0,
+    stock_quantity: 0,
+    is_active: false,
+    sales_count: 0,
+} as const;

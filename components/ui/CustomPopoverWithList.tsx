@@ -1,13 +1,13 @@
 'use client';
 
-import { Button, Popover } from '@mui/material';
-import { ReactElement, useState, useEffect } from 'react';
+import { Popover } from '@mui/material';
+import React, { ReactNode, useState } from 'react';
 
 type ButtonContent = {
     btnText: string;
-    btnIcon: ReactElement<any, any> | undefined;
+    btnIcon: ReactNode | undefined;
     listToRender: string[] | undefined;
-    listIcons: ReactElement<any, any>[] | undefined;
+    listIcons: ReactNode[] | undefined;
     message: string | undefined;
     listItemOnClick: (listItem: string) => void;
 };
@@ -21,11 +21,6 @@ export const CustomPopoverWithList = ({
     listItemOnClick,
 }: ButtonContent) => {
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-    const [isMounted, setIsMounted] = useState(false);
-
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -37,69 +32,30 @@ export const CustomPopoverWithList = ({
     };
 
     const open = Boolean(anchorEl);
-    const baseId = btnText ? btnText.toLocaleLowerCase().replaceAll(' ', '-') : 'icon';
+    const isTextMode = btnText && btnText.trim() !== '';
+    const baseId = isTextMode ? btnText.toLocaleLowerCase().replaceAll(' ', '-') : 'icon';
     const id = `popover-${baseId}`;
-    const ariaLabel = btnText ? `${btnText} menu` : `Open menu`;
-
-    const defaultBtnStyle = {
-        color: '#364153',
-        fontWeight: '600',
-        textTransform: 'capitalize',
-        ':hover': {
-            backgroundColor: 'inherit',
-            textDecorationLine: 'underline',
-            color: '#155dfc',
-        },
-        ':active': {
-            backgroundColor: 'inherit',
-        },
-    };
-
-    const iconBtnStyle = {
-        borderRadius: '50%',
-        width: '48px',
-        height: '48px',
-        display: 'grid',
-        placeItems: 'center',
-        backgroundColor: '#f7cb15',
-        color: 'black',
-        boxShadow: '0 4px 6px -1px black',
-        padding: '0',
-        minWidth: '0',
-        minHeight: '0',
-        cursor: 'pointer',
-        ':hover': {
-            backgroundColor: '#f7cb1580',
-            border: '1px solid black',
-        },
-    };
-
-    if (!isMounted)
-        return (
-            <div
-                style={
-                    btnText
-                        ? { padding: '6px 8px', minWidth: '64px', height: '36px' }
-                        : { width: '48px', height: '48px' }
-                }
-                aria-hidden="true"
-            />
-        );
+    const ariaLabel = isTextMode ? `${btnText} menu` : `Open menu`;
 
     return (
         <>
-            <Button
+            <button
+                type="button"
                 data-testid={`${id}-btn`}
                 aria-controls={open ? id : undefined}
                 aria-haspopup="menu"
                 aria-expanded={open ? 'true' : 'false'}
                 aria-label={ariaLabel}
-                variant="text"
                 onClick={handleClick}
-                sx={btnText ? defaultBtnStyle : iconBtnStyle}
+                className={
+                    btnText
+                        ? 'px-2 py-1.5 font-semibold text-[#364153] capitalize transition-colors duration-200 hover:bg-transparent hover:text-[#155dfc] hover:underline active:bg-transparent'
+                        : 'bg-yellow grid h-12 min-h-0 w-12 min-w-0 cursor-pointer place-items-center rounded-full p-0 text-black shadow-[0_4px_6px_-1px_rgba(0,0,0,1)] transition-all duration-200 hover:border hover:border-black hover:bg-[#f7cb1580]'
+                }
             >
                 {btnText ? btnText : btnIcon}
-            </Button>
+            </button>
+
             <Popover
                 data-testid={`${id}-list`}
                 id={id}
@@ -125,48 +81,36 @@ export const CustomPopoverWithList = ({
                     },
                 }}
             >
-                {listToRender &&
-                    [...listToRender].map((listItem, index) => {
-                        return (
-                            <Button
-                                data-testid={`${id}-choice-${listItem
-                                    .toLocaleLowerCase()
-                                    .replaceAll(' ', '-')}`}
-                                key={listItem}
-                                role="menuitem"
-                                onClick={() => {
-                                    listItemOnClick(listItem);
-                                    handleClose();
-                                }}
-                                endIcon={listIcons ? listIcons[index] : undefined}
-                                sx={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    color: '#364153',
-                                    width: '100%',
-                                    paddingX: '12px',
-                                    paddingY: '12px',
-                                    textTransform: 'capitalize',
-                                    borderRadius: '6px',
-                                    borderLeft: '4px solid transparent',
-                                    ':hover': {
-                                        backgroundColor: '#383e44',
-                                        color: '#ffffff',
-                                        borderLeft: '4px solid #f7cb15',
-                                    },
-                                    ':focus': {
-                                        backgroundColor: '#383e44',
-                                        color: '#ffffff',
-                                        outline: '2px solid #f7cb15',
-                                    },
-                                }}
-                            >
-                                {listItem}
-                            </Button>
-                        );
-                    })}
+                {listToRender?.map((listItem, index) => {
+                    const cleanChoiceId = listItem.toLocaleLowerCase().replaceAll(' ', '-');
+                    return (
+                        <button
+                            type="button"
+                            data-testid={`${id}-choice-${cleanChoiceId}`}
+                            key={listItem}
+                            role="menuitem"
+                            onClick={() => {
+                                listItemOnClick(listItem);
+                                handleClose();
+                            }}
+                            className="hover:border-yellow focus:ring-yellow flex w-full cursor-pointer items-center justify-between rounded-md border-l-4 border-transparent px-3 py-3 text-sm font-medium text-[#364153] capitalize transition-all duration-150 hover:border-l-4 hover:bg-[#383e44] hover:text-white focus:bg-[#383e44] focus:text-white focus:ring-2 focus:outline-none"
+                        >
+                            <span>{listItem}</span>
+                            {listIcons && listIcons[index] && (
+                                <span className="ml-2 flex items-center">{listIcons[index]}</span>
+                            )}
+                        </button>
+                    );
+                })}
 
-                {message && <p role="alert">{message}</p>}
+                {message && (
+                    <p
+                        role="alert"
+                        className="p-2 text-sm text-gray-500"
+                    >
+                        {message}
+                    </p>
+                )}
             </Popover>
         </>
     );

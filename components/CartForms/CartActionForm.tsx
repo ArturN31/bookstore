@@ -9,7 +9,7 @@ import { enqueueSnackbar } from 'notistack';
 import { CartAction, CartFormState } from '@/data/actions/CartForm/CartAction';
 
 export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: number }) => {
-    const { loggedIn, profileExists, loading: userLoading } = useUserState();
+    const { user, loggedIn, profileExists, loading: userLoading } = useUserState();
     const { cartBooks, cartBooksAmount } = useCartState();
     const { refreshCart } = useCartActions();
 
@@ -24,7 +24,7 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
         async (prevState: CartFormState, formData: FormData) => {
             if (isPending) return prevState;
             const result = await CartAction(prevState, formData);
-            if (result.success) await refreshCart();
+            if (result.success) await refreshCart(user.id);
             return result;
         },
         initialState,
@@ -51,9 +51,6 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
 
         if (isOutOfStock) return { text: 'Out of stock', color: 'text-slate-400', animate: false };
 
-        if (isLowStock && isAddMode)
-            return { text: `Limited Stock: ${stock} left`, color: 'text-red-500', animate: true };
-
         if (!loggedIn)
             return { text: 'Sign in to use cart', color: 'text-gray-400', animate: false };
 
@@ -62,6 +59,9 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
 
         if (isCartFull && isAddMode)
             return { text: 'Cart is full (Max 10 items)', color: 'text-red-400', animate: false };
+
+        if (isLowStock && isAddMode)
+            return { text: `Limited Stock: ${stock} left`, color: 'text-red-500', animate: true };
 
         return null;
     };

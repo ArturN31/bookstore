@@ -44,22 +44,17 @@ export type UserActions = {
 export type PartialUserPayload = Partial<User> & { id: string };
 
 export type UserAction =
+    | { type: 'START_SYNC' }
     | { type: 'START_LOADING' }
+    | { type: 'STOP_LOADING' }
     | {
           type: 'SET_SYNCED_DATA';
           payload: { user: PartialUserPayload; profileExists: boolean; wishlist: Wishlist[] };
       }
-    | {
-          type: 'UPDATE_PROFILE';
-          payload: {
-              user: PartialUserPayload;
-              profileExists: boolean;
-          };
-      }
+    | { type: 'UPDATE_PROFILE'; payload: { user: PartialUserPayload; profileExists: boolean } }
     | { type: 'UPDATE_WISHLIST'; payload: Wishlist[] }
     | { type: 'SET_ERROR'; payload: string }
-    | { type: 'RESET' }
-    | { type: 'STOP_LOADING' };
+    | { type: 'RESET' };
 
 export const UserStateContext = createContext<UserState | undefined>(undefined);
 export const UserActionsContext = createContext<UserActions | undefined>(undefined);

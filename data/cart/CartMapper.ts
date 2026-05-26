@@ -1,5 +1,9 @@
 import { Database } from '@/database.types';
 
+export type CartItem = Database['public']['Tables']['books']['Row'] & {
+    quantity: number;
+};
+
 type DBItem = {
     quantity: number;
     created_at: string;
@@ -20,14 +24,9 @@ export const mapDatabaseCartToDomain = (data: unknown) => {
             books: [] as CartItem[],
         };
 
-    const books: CartItem[] = casted.shopping_cart_items
-        .filter(
-            (item): item is DBItem & { books: NonNullable<DBItem['books']> } => item.books !== null,
-        )
-        .map((item) => ({
-            ...item.books,
-            quantity: item.quantity,
-        })) as unknown as CartItem[];
+    const books: CartItem[] = casted.shopping_cart_items.flatMap((item) =>
+        item.books ? [{ ...item.books, quantity: item.quantity }] : [],
+    );
 
     return {
         cartID: casted.id,

@@ -17,15 +17,9 @@ export default function ChangeUsernamePage() {
         isUsernameTaken: false,
     };
     const [formState, formAction] = useActionState(ChangeUsernameAction, INITIAL_STATE);
-    const [formError, setFormError] = useState<string | undefined>(undefined);
     const [isTransitioningSubmit, startTransitionSubmit] = useTransition();
     const [isTransitioningReset, startTransitionReset] = useTransition();
     const { username, message, validationErrors, isUsernameTaken } = formState;
-
-    useEffect(() => {
-        if (message) setFormError(message);
-        else setFormError(undefined);
-    }, [message]);
 
     const handleReset = async () => {
         const inputElement = document.getElementById('username-field') as HTMLInputElement | null;
@@ -66,7 +60,7 @@ export default function ChangeUsernamePage() {
                 </div>
                 <div className="grid gap-3">
                     <FormErrors
-                        formError={formError}
+                        formError={message ?? undefined}
                         validationErrors={validationErrors}
                     />
 

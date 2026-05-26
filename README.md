@@ -6,8 +6,8 @@ This project is an online bookstore built with **Next.js (App Router)**, **React
 
 ## Project Status
 
-**Current Phase**: Core marketplace MVP (v1) - Feature complete with high test coverage on critical paths  
-**Test Coverage**: **77.31% overall** (App: 100%, Components: 100%, Schemas: 100%)  
+**Current Phase**: Core marketplace MVP (v1) - Feature complete with high test coverage on critical paths
+**Test Coverage**: **92.78% overall**
 **Performance**: Lighthouse Desktop 99/100 (0.3s FCP, 0.8s LCP, 0 CLS)  
 **Next Priority**: User review submission feature, Stripe payment integration, and enhanced analytics
 
@@ -19,30 +19,30 @@ This project is an online bookstore built with **Next.js (App Router)**, **React
 
 - **The Challenge**: Initial iterations utilised decentralised `useState` hooks, which caused inconsistent UI states and recursive re‑render loops as the Cart and User logic expanded in complexity.
 - **The Decision**: Architected a Dual-Context + Reducer pattern to enforce a unidirectional data flow.
-    - By decoupling the StateContext (data) from the ActionsContext (dispatch functions), I eliminated unnecessary re-renders. Components like the "Logout" button now trigger actions without being forced to re-subscribe to data changes.
-    - Centralized all domain logic within a Reducer to ensure atomic state updates, making the application easier to debug and scale.
+  - By decoupling the StateContext (data) from the ActionsContext (dispatch functions), I eliminated unnecessary re-renders. Components like the "Logout" button now trigger actions without being forced to re-subscribe to data changes.
+  - Centralized all domain logic within a Reducer to ensure atomic state updates, making the application easier to debug and scale.
 
 ### Async Lifecycle Management
 
 - **The Challenge**: Managing loading states for database mutations (Cart/Wishlist) often resulted in inconsistent UI "flickering."
 - **The Decision**: Adopted React 19’s useActionState and useTransition.
-    - Replaced manual isLoading booleans with native transition hooks, allowing the UI to remain responsive during heavy server-side operations.
-    - Implemented a Seeded Initial State pattern. The RootLayout fetches session data on the server and injects it into Client Providers, achieving a Cumulative Layout Shift (CLS) of 0.
+  - Replaced manual isLoading booleans with native transition hooks, allowing the UI to remain responsive during heavy server-side operations.
+  - Implemented a Seeded Initial State pattern. The RootLayout fetches session data on the server and injects it into Client Providers, achieving a Cumulative Layout Shift (CLS) of 0.
 
 ### Relational Seeding & Developer Experience
 
 - **The Challenge**: Testing complex e-commerce flows, such as wishlist persistence and review pagination, demanded a high-volume, relational dataset that manual entry or static JSON files could not provide.
 - **The Decision**: Developed a custom Automated Seeding Engine powered by `@faker-js/faker`.
-    - Implemented a uniqueness‑constraint algorithm for book titles and utilised the `en_GB` locale for realistic, localised testing data.
-    - Designed the engine to programmatically associate generated books with a persistent pool of test UUIDs, simulating a real-world social environment with integrated foreign-key relationships.
-    - Constructed secure `/api/books` and `/api/reviews` endpoints to bridge the gap between local generation and the Supabase (PostgreSQL) instance.
+  - Implemented a uniqueness‑constraint algorithm for book titles and utilised the `en_GB` locale for realistic, localised testing data.
+  - Designed the engine to programmatically associate generated books with a persistent pool of test UUIDs, simulating a real-world social environment with integrated foreign-key relationships.
+  - Constructed secure `/api/books` and `/api/reviews` endpoints to bridge the gap between local generation and the Supabase (PostgreSQL) instance.
 
 ### Schema-First Validation
 
 - **The Challenge**: Handling multi-step user inputs (shipping profiles, password resets) posed a risk of data corruption and runtime errors if unvalidated data reached the server.
 - **The Decision**: Implemented a Schema-First validation layer using Zod integrated with TypeScript.
-    - Leveraged Zod's inference capabilities to ensure that form inputs are strictly typed from the Client-Side to the Server Actions.
-    - Data is sanitized and validated at the edge, providing immediate UI feedback and ensuring that only "clean" data interacts with the database, significantly hardening the application's security posture.
+  - Leveraged Zod's inference capabilities to ensure that form inputs are strictly typed from the Client-Side to the Server Actions.
+  - Data is sanitized and validated at the edge, providing immediate UI feedback and ensuring that only "clean" data interacts with the database, significantly hardening the application's security posture.
 
 ## Testing & Quality Assurance
 
@@ -50,17 +50,33 @@ The project follows a rigorous testing approach focusing on **Code Coverage** an
 
 ### Current Coverage Status
 
-| Category       | File Path          | % Statements | % Branch  | % Functions | % Lines   | Status        |
-| :------------- | :----------------- | :----------- | :-------- | :---------- | :-------- | :------------ |
-| Total Project  | All Files          | **92.67**    | **96.77** | **94.71**   | **92.67** | ✅ Improving  |
-| App Routing    | app/               | 100.00       | 100.00    | 100.00      | 100.00    | ✅ Complete   |
-| Dev Tools      | app/dev-tools      | 31.67        | 32.12     | 27.65       | 31.67     | ⚠️ Needs Work |
-| UI Components  | components/        | 100.00       | 100.00    | 100.00      | 100.00    | ✅ Complete   |
-| Data Schemas   | data/schemas/      | 100.00       | 100.00    | 100.00      | 100.00    | ✅ Complete   |
-| Auth Actions   | data/actions/auth/ | 100.00       | 100.00    | 100.00      | 100.00    | ✅ Complete   |
-| Server Actions | data/actions/      | 100.00       | 95.14     | 100.00      | 100.00    | ✅ Complete   |
-| Providers      | providers/         | 100.00       | 98.66     | 84.44       | 100.00    | 🎯 Focus Area |
-| Data Fetching  | data/books/        | 99.50        | 97.82     | 100.00      | 99.50     | ✅ Complete   |
+| Category | File Path | % Statements | % Branch | % Functions | % Lines | % Average | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Total Project** | **All Files** | **92.78** | **96.99** | **95.68** | **92.78** | **94.56** | ✅ Improving |
+| App Routing | `app/page.tsx` | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| App Routing | `app/book` | 100.00 | 81.25 | 100.00 | 100.00 | 95.31 | ⏳ Near Complete |
+| App Routing | `app/books` | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| App Routing | `app/infos` | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| App Routing | `app/user` | 99.71 | 95.87 | 100.00 | 99.71 | 98.82 | ⏳ Near Complete |
+| Dev Tools | `app/dev-tools` | 39.48 | 39.27 | 37.78 | 39.48 | 39.00 | ⚠️ Needs Work |
+| UI Components | `components/HomepageHero.tsx` | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| UI Components | `components/CartForms` | 98.66 | 94.70 | 100.00 | 98.66 | 98.01 | ⏳ Near Complete |
+| UI Components | `components/CartSidebar` | 99.65 | 99.40 | 100.00 | 99.65 | 99.67 | ⏳ Near Complete |
+| UI Components | `components/books` | 100.00 | 88.09 | 100.00 | 100.00 | 97.02 | ⏳ Near Complete |
+| UI Components | `components/formItems` | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| UI Components | `components/layout` | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| UI Components | `components/pages` | 100.00 | 99.67 | 100.00 | 100.00 | 99.92 | ⏳ Near Complete |
+| UI Components | `components/ui` | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| Server Actions | `data/actions` | 100.00 | 97.31 | 100.00 | 100.00 | 99.33 | ⏳ Near Complete |
+| Data Fetching | `data/books` | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| Cart Data | `data/cart` | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| Data Schemas | `data/schemas` | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| User Data | `data/user` | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| Hooks | `hooks/SearchBar` | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| Providers | `providers/BookFilterProvider.tsx` | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| Providers | `providers/Providers.tsx` | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| Providers | `providers/cart` | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| Providers | `providers/user` | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
 
 ### Test Strategy
 
@@ -98,7 +114,7 @@ The application is audited to ensure professional‑grade speed and accessibilit
 
 ## Features
 
-### Core Bookstore Functionality:
+### Core Bookstore Functionality
 
 - **Book Browsing & Pagination**: Explore books across multiple pages with comprehensive metadata including authors, genres, formats, and publication dates.
 - **Advanced Search**: Real-time search bar with debounced queries, case-insensitive partial matching, and instant dropdown results (limited to 10 hits).
@@ -109,25 +125,25 @@ The application is audited to ensure professional‑grade speed and accessibilit
 - **Shopping Cart**: Animated sidebar cart with "Reactive Flip" synchronization logic. Using React 19's `useActionState` hook coordinated with `isPending` state and server-side timestamps, the "Add to Cart" and "Remove" buttons toggle with 100% reliability, accurately reflecting inventory status.
 - **Real-time Feedback**: Integrated Notistack toast notification system providing immediate visual feedback for all user interactions (wishlist, cart, authentication).
 
-### Authentication & User Management:
+### Authentication & User Management
 
 - **Supabase Email/Password Auth**: Implements secure sign-up, login, and password management with strict validation rules (minimum 8 characters, uppercase, lowercase, digit, and special character required).
 - **Profile Management**: Users can update username, shipping address, and password directly through intuitive multi-step forms with Zod schema validation.
 - **First-Time Login Flow**: New users must complete their address setup before accessing wishlist and cart features, ensuring data integrity.
 - **Real-Time Session Persistence**: Authentication state is managed via Supabase real-time listeners with custom Provider architecture, ensuring seamless cross-device synchronization and avoiding layout shift (CLS = 0).
 
-### Developer Tools & Administration:
+### Developer Tools & Administration
 
 - **Dev-Tools Admin Console** (protected environment): Unlocks powerful utilities including:
-    - **Live Telemetry Dashboard**: Real-time system performance and application metrics.
-    - **System Logs**: Comprehensive activity and error logging for debugging.
-    - **Database Seeding Controls**: One-click database population for development and testing:
-        - Generate realistic book data with uniqueness constraints (Faker.js, en_GB locale)
-        - Create test users and purchase orders with relational integrity
-        - Seed reviews, discounts, and wishlist entries
-    - **User Registry**: View and manage test user accounts and credentials.
+  - **Live Telemetry Dashboard**: Real-time system performance and application metrics.
+  - **System Logs**: Comprehensive activity and error logging for debugging.
+  - **Database Seeding Controls**: One-click database population for development and testing:
+    - Generate realistic book data with uniqueness constraints (Faker.js, en_GB locale)
+    - Create test users and purchase orders with relational integrity
+    - Seed reviews, discounts, and wishlist entries
+  - **User Registry**: View and manage test user accounts and credentials.
 
-#### Real-Time Updates & Security:
+#### Real-Time Updates & Security
 
 - **Cross-Device Synchronization**: Supabase real-time listeners and PostgreSQL CDC (Change Data Capture) maintain authentication state and cart sync across all user devices in real-time.
 - **Row Level Security (RLS)**: Database-level access control restricts queryable data per authenticated user.
@@ -223,7 +239,7 @@ erDiagram
 
 The application uses a sophisticated state management architecture that prevents unnecessary re-renders and ensures unidirectional data flow:
 
-```
+```flowchart
 User/Cart Reducer (pure, centralizes all domain logic)
     ↓
 UserStateContext / CartStateContext (data only)
@@ -265,7 +281,7 @@ This ensures type safety from form submission to database insert.
 
 ### Directory Structure
 
-```
+```filesystem
 app/              → Server routes and layouts (100% test coverage)
 components/       → Reusable UI atoms (100% test coverage)
 data/
@@ -292,21 +308,21 @@ The following features are partially or not yet implemented:
 
 ## Future Roadmap
 
-#### 1. Core E-Commerce Completion
+### 1. Core E-Commerce Completion
 
 - [ ] **User Review Submission**: Add UI and Server Actions to allow authenticated users to submit and rate books (currently read-only).
-- [ ] **Stripe Payment Integration**: Implement a secure checkout flow using Stripe Elements and Server Actions.
+- [ ] **S#### 1. Core E-Commerce Completiontripe Payment Integration**: Implement a secure checkout flow using Stripe Elements and Server Actions.
 - [ ] **Order Success Workflow**: Automate post-purchase triggers, including the generation of dynamic receipts and email confirmations.
 - [ ] **Inventory Auto-Update**: Logic to decrement `stock_quantity` in the `books` table automatically upon successful purchase.
 
-#### 2. Enhanced User Experience
+### 2. Enhanced User Experience
 
 - [ ] **Optimistic UI Updates**: Leverage React 19's `useOptimistic` hook for "Add to Cart" and "Wishlist" actions to provide instantaneous visual feedback while background processes resolve.
 - [ ] **Advanced Multi-Select Filtering**: Support simultaneous filtering by multiple genres and price ranges with real-time result updates.
 - [ ] **Skeleton Loading States**: Implement shimmering MUI Skeleton components to replace basic loading spinners during SSR data fetching, improving perceived performance.
 - [ ] **Image Optimisation**: Implement Next.js Image component with WebP conversion and responsive srcset for book cover art.
 
-#### 3. Advanced Store Features
+### 3. Advanced Store Features
 
 - [ ] **Discount & Promo Logic**: Implement server-side validation service to check the discounts table for expiry, usage limits, and user eligibility before applying final order totals.
 - [ ] **Bestseller Gallery Section**: Homepage showcase driven by aggregate SQL queries of `order_items` and real-time sales rankings.
@@ -314,7 +330,7 @@ The following features are partially or not yet implemented:
 - [ ] **Personalised Recommendations**: ML-driven product recommendations based on browsing history, wishlist patterns, and purchase behaviour.
 - [ ] **Email Notifications**: Transactional emails for order confirmations, wishlist alerts, and promotional offers using SendGrid or similar service.
 
-#### 4. Admin & Operations
+### 4. Admin & Operations
 
 - [ ] **Inventory Management Dashboard**: Protected admin interface using Supabase Custom Claims to manage stock levels, pricing, and book metadata.
 - [ ] **Review Moderation System**: Administrative queue to flag inappropriate reviews and monitor community sentiment with moderation workflows.
@@ -323,7 +339,7 @@ The following features are partially or not yet implemented:
 - [ ] **Sales Analytics Dashboard**: Real-time charts and metrics tracking revenue, top-selling books, user acquisition, and seasonal trends.
 - [ ] **Bulk Operations**: Import/export functionality for managing book catalogs and customer data in CSV format.
 
-#### 5. Security & Compliance Enhancements
+### 5. Security & Compliance Enhancements
 
 - [ ] **Centralized Error Handler**: Create a centralized error handling system that sanitizes all Supabase error messages before client exposure to prevent information leakage.
 - [ ] **Rate Limiting**: Implement distributed rate limiting on authentication endpoints to prevent brute force attacks and credential stuffing.
