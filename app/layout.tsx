@@ -1,5 +1,6 @@
 import '@/app/globals.css';
 import { RootLayoutContent } from '@/components/layout/RootLayoutContent';
+import { Analytics } from '@vercel/analytics/next';
 
 export const metadata = {
     title: 'Next.js',
@@ -11,6 +12,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <html lang="en">
             <body>
                 <RootLayoutContent>{children}</RootLayoutContent>
+                <Analytics />
             </body>
         </html>
     );
