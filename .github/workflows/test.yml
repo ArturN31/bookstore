@@ -10,7 +10,7 @@ permissions:
 jobs:
     test:
         runs-on: ubuntu-latest
-        environment: preview
+        environment: Preview
 
         steps:
             - name: Checkout code
