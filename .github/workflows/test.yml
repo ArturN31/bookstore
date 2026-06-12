@@ -10,7 +10,6 @@ permissions:
 jobs:
     test:
         runs-on: ubuntu-latest
-        environment: Preview
 
         steps:
             - name: Checkout code
@@ -26,7 +25,4 @@ jobs:
               run: npm ci
 
             - name: Run Jest tests
-              env:
-                  NEXT_PUBLIC_SUPABASE_DB_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_DB_URL }}
-                  NEXT_PUBLIC_SUPABASE_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLIC_KEY }}
               run: npm test -- --watchAll=false --ci
