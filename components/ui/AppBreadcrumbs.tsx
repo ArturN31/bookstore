@@ -4,7 +4,7 @@ import { Breadcrumbs, Link as MuiLink, Typography, Box } from '@mui/material';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import NextLink from 'next/link';
 
-interface BreadcrumbItem {
+export interface BreadcrumbItem {
     label: string;
     href: string;
     active?: boolean;

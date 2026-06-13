@@ -5,7 +5,6 @@ import { useInView } from 'react-intersection-observer';
 import { useBooksFetcher } from '@/data/books/useBooksFetcher';
 import { PaginatedBookResult } from '@/data/books/BookConstants';
 
-// Define strict types for ActionResponse matches to remain 'any'-free
 interface ActionResponse<T> {
     error: string | null;
     data: T | null;
@@ -124,7 +123,6 @@ describe('BooksManager', () => {
 
         render(<BooksManager initialData={mockInitialData} />);
 
-        // Simulate moving viewport down to hit infinite scrolling intersection observer threshold
         triggerChange(true);
 
         expect(mockFetchBooks).toHaveBeenCalledWith(true, 1);
@@ -135,7 +133,6 @@ describe('BooksManager', () => {
 
         mockUseBookFilter.mockReturnValue({ filterType: 'Price: Low to High' });
 
-        // Changing hooks value and rerendering mirrors standard React context updates
         rerender(<BooksManager initialData={mockInitialData} />);
 
         expect(mockUseBooksFetcher).toHaveBeenCalledWith(
@@ -198,5 +195,24 @@ describe('BooksManager', () => {
 
         expect(scrollSpy).not.toHaveBeenCalled();
         scrollSpy.mockRestore();
+    });
+
+    it('BRANCH COVERAGE: applies half opacity style when loading the first page (covers line 45)', () => {
+        mockUseBooksFetcher.mockReturnValue({
+            state: {
+                books: [createMockBook({ id: '1', title: 'Book 1' })],
+                page: 1,
+                hasMore: true,
+            },
+            isLoading: true,
+            fetchBooks: mockFetchBooks,
+        });
+
+        render(<BooksManager initialData={mockInitialData} />);
+
+        const mockCardElement = screen.getByTestId('mock-book-card');
+        const cardContainer = mockCardElement.parentElement;
+
+        expect(cardContainer).toHaveStyle('opacity: 0.5');
     });
 });

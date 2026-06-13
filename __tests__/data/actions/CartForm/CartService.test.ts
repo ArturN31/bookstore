@@ -95,23 +95,36 @@ describe('CartService', () => {
             expect(result.message).toBeUndefined();
         });
 
-        it('should use fallback message when SUCCESS_MESSAGES[type] is undefined (covers line 48 || branch)', async () => {
-            // Mock addItem to succeed
-            mockedAddItem.mockResolvedValue({ data: true, error: null });
+        it('BRANCH COVERAGE: should use fallback message when SUCCESS_MESSAGES[type] is undefined (covers line 48 || branch)', async () => {
+            let interceptorActive = true;
+            const mockOperationFn = jest.fn().mockResolvedValue({ data: true, error: null });
 
-            // We need to test the fallback by using a type that exists in CART_OPERATIONS
-            // but not in SUCCESS_MESSAGES. Since all known types have messages,
-            // we test by verifying the structure - the fallback 'Cart updated successfully.'
-            // is used when SUCCESS_MESSAGES[type] is falsy.
-            
-            // For INSERT, SUCCESS_MESSAGES['INSERT'] = 'Item added to your cart!'
-            // So we get that message, not the fallback
-            const result = await executeCartOperation('INSERT', 'cart-123', 'book-1', 1);
-            
-            expect(result.message).toBe('Item added to your cart!');
-            
-            // The fallback is tested implicitly - if SUCCESS_MESSAGES[type] were undefined,
-            // we'd get 'Cart updated successfully.' The code structure ensures this.
+            Object.defineProperty(Object.prototype, 'DYNAMIC_FALLBACK_TEST', {
+                get() {
+                    if (interceptorActive) {
+                        interceptorActive = false;
+                        return mockOperationFn;
+                    }
+                    return undefined;
+                },
+                configurable: true,
+            });
+
+            try {
+                const result = await executeCartOperation(
+                    'DYNAMIC_FALLBACK_TEST',
+                    'cart-123',
+                    'book-1',
+                    1,
+                );
+
+                expect(mockOperationFn).toHaveBeenCalledWith('cart-123', 'book-1', 1);
+                expect(result.data).toBe(true);
+                expect(result.error).toBeNull();
+                expect(result.message).toBe('Cart updated successfully.');
+            } finally {
+                Reflect.deleteProperty(Object.prototype, 'DYNAMIC_FALLBACK_TEST');
+            }
         });
     });
 });

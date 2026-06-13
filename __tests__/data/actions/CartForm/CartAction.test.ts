@@ -1,18 +1,20 @@
 import { CartAction } from '@/data/actions/CartForm/CartAction';
 import { getUserData } from '@/data/user/GetUserData';
-import {
-    getUsersCartID,
-    createUsersCart,
-    addItemToUsersCart,
-    updateItemInUsersCart,
-    removeItemFromUsersCart,
-} from '@/data/cart/GetCartData';
+import { getUsersCartID } from '@/data/cart/GetCartData';
 import { revalidatePath } from 'next/cache';
 import { cartSchema } from '@/data/schemas/cartSchema';
+import { ZodError } from 'zod';
+import { ensureCartExists, executeCartOperation } from '@/data/actions/CartForm/CartService';
+
+type MockedSafeParseReturn = ReturnType<typeof cartSchema.safeParse>;
 
 jest.mock('@/data/user/GetUserData');
 jest.mock('@/data/cart/GetCartData');
 jest.mock('@/data/schemas/cartSchema');
+jest.mock('@/data/actions/CartForm/CartService', () => ({
+    ensureCartExists: jest.fn(),
+    executeCartOperation: jest.fn(),
+}));
 jest.mock('next/cache', () => ({
     revalidatePath: jest.fn(),
 }));
@@ -20,16 +22,26 @@ jest.mock('next/cache', () => ({
 describe('CartAction', () => {
     const mockedGetUserData = getUserData as jest.Mock;
     const mockedGetUsersCartID = getUsersCartID as jest.Mock;
-    const mockedCreateUsersCart = createUsersCart as jest.Mock;
-    const mockedAddItem = addItemToUsersCart as jest.Mock;
-    const mockedUpdateItem = updateItemInUsersCart as jest.Mock;
-    const mockedRemoveItem = removeItemFromUsersCart as jest.Mock;
-    const mockedCartSchema = cartSchema as any;
+    const mockedCartSchema = cartSchema as jest.Mocked<typeof cartSchema>;
+
+    const mockedEnsureCartExists = ensureCartExists as jest.Mock;
+    const mockedExecuteCartOperation = executeCartOperation as jest.Mock;
 
     beforeEach(() => {
         jest.clearAllMocks();
         mockedGetUserData.mockResolvedValue({ data: { id: 'user-123' }, error: null });
         mockedGetUsersCartID.mockResolvedValue({ data: 'cart-123', error: null });
+
+        mockedEnsureCartExists.mockImplementation(async (userId: string) => {
+            return { data: 'cart-123', error: null };
+        });
+        mockedExecuteCartOperation.mockImplementation(async (actionType: string) => {
+            if (actionType === 'INSERT')
+                return { data: true, error: null, message: 'Item added to your cart!' };
+            if (actionType === 'UPDATE') return { data: true, error: null, message: 'Updated' };
+            if (actionType === 'REMOVE') return { data: true, error: null, message: 'Removed' };
+            return { data: null, error: 'Unsupported action' };
+        });
     });
 
     const createFormData = (bookId: string, action: string, qty: string = '1') => {
@@ -41,10 +53,14 @@ describe('CartAction', () => {
     };
 
     it('should return failure if validated.success is false', async () => {
+        const structuralZodError = new ZodError([
+            { code: 'custom', path: [], message: 'Invalid ID' },
+        ]);
+
         mockedCartSchema.safeParse.mockReturnValue({
             success: false,
-            error: { issues: [{ message: 'Invalid ID' }] },
-        });
+            error: structuralZodError,
+        } as MockedSafeParseReturn);
 
         const formData = new FormData();
         const result = await CartAction(undefined, formData);
@@ -57,7 +73,7 @@ describe('CartAction', () => {
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'b1', bookQuantity: 1, actionType: 'INSERT' },
-        });
+        } as MockedSafeParseReturn);
         mockedGetUserData.mockResolvedValue({ data: null, error: 'Not logged in' });
 
         const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
@@ -70,9 +86,9 @@ describe('CartAction', () => {
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'b1', bookQuantity: 1, actionType: 'INSERT' },
-        });
-        mockedGetUsersCartID.mockResolvedValue({ data: null, error: 'No cart' });
-        mockedCreateUsersCart.mockResolvedValue({ data: null, error: 'Create failed' });
+        } as MockedSafeParseReturn);
+
+        mockedEnsureCartExists.mockResolvedValue({ data: null, error: 'Create failed' });
 
         const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
 
@@ -85,28 +101,18 @@ describe('CartAction', () => {
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'b1', bookQuantity: 1, actionType: 'INSERT' },
-        });
-        mockedGetUsersCartID.mockResolvedValueOnce({ data: null, error: null }).mockResolvedValueOnce({ data: 'new-id', error: null });
-        mockedCreateUsersCart.mockResolvedValue({ data: 'new-id', error: null });
-        mockedAddItem.mockResolvedValue({ data: true, error: null });
+        } as MockedSafeParseReturn);
 
         const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
         expect(result.success).toBe(true);
     });
 
     it('should return failure if cartID is still null after creation attempt', async () => {
-        // Override beforeEach mocks for this specific test
-        mockedGetUsersCartID.mockReset();
-        mockedCreateUsersCart.mockReset();
-        
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'b1', bookQuantity: 1, actionType: 'INSERT' },
-        });
-        // First call returns no cart (null data, no error), triggering create
-        // createUsersCart fails, so ensureCartExists returns the error
-        mockedGetUsersCartID.mockResolvedValueOnce({ data: null, error: null });
-        mockedCreateUsersCart.mockResolvedValueOnce({ data: null, error: 'Create failed' });
+        } as MockedSafeParseReturn);
+        mockedEnsureCartExists.mockResolvedValueOnce({ data: null, error: 'Create failed' });
 
         const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
         expect(result.success).toBe(false);
@@ -116,8 +122,8 @@ describe('CartAction', () => {
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'book-111', bookQuantity: 1, actionType: 'INSERT' },
-        });
-        mockedAddItem.mockResolvedValue({ data: null, error: 'Add failed' });
+        } as MockedSafeParseReturn);
+        mockedExecuteCartOperation.mockResolvedValue({ data: null, error: 'Add failed' });
 
         const result = await CartAction(undefined, createFormData('book-111', 'INSERT'));
 
@@ -129,8 +135,8 @@ describe('CartAction', () => {
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'book-456', bookQuantity: 3, actionType: 'UPDATE' },
-        });
-        mockedUpdateItem.mockResolvedValue({ data: null, error: 'Update failed' });
+        } as MockedSafeParseReturn);
+        mockedExecuteCartOperation.mockResolvedValue({ data: null, error: 'Update failed' });
 
         const result = await CartAction(undefined, createFormData('book-456', 'UPDATE', '3'));
 
@@ -142,8 +148,8 @@ describe('CartAction', () => {
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'book-789', bookQuantity: 1, actionType: 'REMOVE' },
-        });
-        mockedRemoveItem.mockResolvedValue({ data: null, error: 'Remove failed' });
+        } as MockedSafeParseReturn);
+        mockedExecuteCartOperation.mockResolvedValue({ data: null, error: 'Remove failed' });
 
         const result = await CartAction(undefined, createFormData('book-789', 'REMOVE'));
 
@@ -155,8 +161,7 @@ describe('CartAction', () => {
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'b1', bookQuantity: 1, actionType: 'INSERT' },
-        });
-        mockedAddItem.mockResolvedValue({ data: true, error: null, message: 'Added' });
+        } as MockedSafeParseReturn);
 
         const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
         expect(result.success).toBe(true);
@@ -167,8 +172,7 @@ describe('CartAction', () => {
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'b1', bookQuantity: 5, actionType: 'UPDATE' },
-        });
-        mockedUpdateItem.mockResolvedValue({ data: true, error: null, message: 'Updated' });
+        } as MockedSafeParseReturn);
 
         const result = await CartAction(undefined, createFormData('b1', 'UPDATE', '5'));
         expect(result.success).toBe(true);
@@ -178,8 +182,7 @@ describe('CartAction', () => {
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'b1', bookQuantity: 1, actionType: 'REMOVE' },
-        });
-        mockedRemoveItem.mockResolvedValue({ data: true, error: null, message: 'Removed' });
+        } as MockedSafeParseReturn);
 
         const result = await CartAction(undefined, createFormData('b1', 'REMOVE'));
         expect(result.success).toBe(true);
@@ -190,8 +193,8 @@ describe('CartAction', () => {
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'b1', bookQuantity: 1, actionType: 'INSERT' },
-        });
-        mockedGetUsersCartID.mockRejectedValue(new Error('Network Fail'));
+        } as MockedSafeParseReturn);
+        mockedEnsureCartExists.mockRejectedValue(new Error('Network Fail'));
 
         const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
         expect(result.success).toBe(false);
@@ -204,44 +207,57 @@ describe('CartAction', () => {
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'b1', bookQuantity: 1, actionType: 'INSERT' },
-        });
-        // Return both authError and no user to test the || branch
+        } as MockedSafeParseReturn);
         mockedGetUserData.mockResolvedValue({ data: null, error: 'Auth failed' });
 
         const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
-        
+
         expect(result.success).toBe(false);
         expect(result.message).toBe('Authorization required.');
     });
 
-    it('should return error message from cartContext.error when it exists (covers line 47 || branch)', async () => {
+    it('should return error message from cartContext.error when it exists (covers line 42 || branch left side)', async () => {
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'b1', bookQuantity: 1, actionType: 'INSERT' },
-        });
-        mockedGetUserData.mockResolvedValue({ data: { id: 'user-123' }, error: null });
-        mockedGetUsersCartID.mockResolvedValue({ data: null, error: 'Cart lookup failed' });
-        mockedCreateUsersCart.mockResolvedValue({ data: null, error: 'Create failed' });
+        } as MockedSafeParseReturn);
+        mockedEnsureCartExists.mockResolvedValue({ data: null, error: 'Cart lookup failed' });
 
         const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
-        
+
         expect(result.success).toBe(false);
         expect(result.message).toBe('Cart lookup failed');
     });
 
-    it('should use fallback message when result.message is undefined (covers line 57 || branch)', async () => {
+    it('BRANCH COVERAGE: should return "Cart initialization failed." when cartContext.data is null and error is missing (covers line 42 fallback branch)', async () => {
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'b1', bookQuantity: 1, actionType: 'INSERT' },
-        });
-        // Mock executeCartOperation to return result without message
-        mockedAddItem.mockResolvedValue({ data: true, error: null });
+        } as MockedSafeParseReturn);
+
+        mockedEnsureCartExists.mockResolvedValue({ data: null, error: null });
 
         const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
-        
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Cart initialization failed.');
+    });
+
+    it('BRANCH COVERAGE: should return "Cart updated successfully." fallback message when result.message is completely missing (covers line 57 fallback branch)', async () => {
+        mockedCartSchema.safeParse.mockReturnValue({
+            success: true,
+            data: { bookId: 'b1', bookQuantity: 1, actionType: 'INSERT' },
+        } as MockedSafeParseReturn);
+
+        mockedExecuteCartOperation.mockResolvedValue({
+            data: true,
+            error: null,
+            message: undefined,
+        });
+
+        const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
+
         expect(result.success).toBe(true);
-        // The message comes from executeCartOperation which adds SUCCESS_MESSAGES[type]
-        // So we get 'Item added to your cart!' not the fallback
-        expect(result.message).toBe('Item added to your cart!');
+        expect(result.message).toBe('Cart updated successfully.');
     });
 });

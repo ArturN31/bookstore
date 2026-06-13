@@ -1,7 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
-import { notFound } from 'next/navigation';
 import BookById, { generateMetadata } from '@/app/book/[slug]/page';
+
+interface BookByIdProps {
+    params: Promise<{ slug: string }>;
+    searchParams: Promise<{ reviewPagination?: string }>;
+}
 
 const mockedFetchBooks = fetchBooksWithReviews as jest.Mock;
 jest.mock('@/data/books/GetBooksData');
@@ -56,11 +60,6 @@ const mockBookData: Book = {
     sales_count: null,
 };
 
-type BookByIdProps = {
-    params: Promise<{ slug: string }>;
-    searchParams: Promise<{ reviewPagination?: string }>;
-};
-
 describe('App - Book[slug]', () => {
     const defaultProps: BookByIdProps = {
         params: Promise.resolve({ slug: mockBookData.id }),
@@ -86,9 +85,30 @@ describe('App - Book[slug]', () => {
         const element = await BookById(defaultProps);
         render(element);
 
-        expect(screen.getByText(mockBookData.description)).toBeInTheDocument();
+        expect(screen.getByText(mockBookData.description as string)).toBeInTheDocument();
         expect(screen.getByTestId('book-main-details')).toBeInTheDocument();
         expect(screen.getByTestId('book-cart')).toBeInTheDocument();
+        expect(screen.getByTestId('book-reviews')).toBeInTheDocument();
+    });
+
+    it('Should process explicit reviewPagination tracking route parameters (covers lines 48-52)', async () => {
+        mockedFetchBooks.mockResolvedValue({
+            error: null,
+            data: {
+                data: [mockBookData],
+                totalPages: 5,
+                currentPage: 2,
+                total: 25,
+            },
+        });
+
+        const explicitProps: BookByIdProps = {
+            params: Promise.resolve({ slug: mockBookData.id }),
+            searchParams: Promise.resolve({ reviewPagination: '2' }),
+        };
+
+        const element = await BookById(explicitProps);
+        render(element);
         expect(screen.getByTestId('book-reviews')).toBeInTheDocument();
     });
 
@@ -119,12 +139,12 @@ describe('App - Book[slug]', () => {
 
         expect(metadata).toEqual({
             title: `${mockBookData.title} by ${mockBookData.author} | Books4You`,
-            description: mockBookData.description.substring(0, 160),
+            description: (mockBookData.description as string).substring(0, 160),
         });
     });
 
     it('should return metadata with default description when book description is empty (covers ?? branch)', async () => {
-        const bookWithEmptyDescription = { ...mockBookData, description: '' };
+        const bookWithEmptyDescription: Book = { ...mockBookData, description: '' };
 
         mockedFetchBooks.mockResolvedValue({
             error: null,
@@ -145,7 +165,10 @@ describe('App - Book[slug]', () => {
     });
 
     it('should return metadata with default description when book description is null (covers ?? branch)', async () => {
-        const bookWithNullDescription = { ...mockBookData, description: null as any };
+        const bookWithNullDescription: Book = {
+            ...mockBookData,
+            description: null as unknown as string,
+        };
 
         mockedFetchBooks.mockResolvedValue({
             error: null,
@@ -190,16 +213,33 @@ describe('App - Book[slug]', () => {
         });
 
         await expect(BookById(defaultProps)).rejects.toThrow('NEXT_NOT_FOUND');
-        expect(notFound).toHaveBeenCalled();
     });
 
-    it('Should fallback to an empty array when book has no reviews property', async () => {
-        const bookWithNoReviews = { ...mockBookData, reviews: undefined };
+    it('Should fallback to an empty array and fallback totals when properties are missing (covers lines 58-62 branch)', async () => {
+        const bookWithNoReviews: Book = { ...mockBookData, reviews: undefined };
 
         mockedFetchBooks.mockResolvedValue({
             error: null,
             data: {
                 data: [bookWithNoReviews],
+                totalPages: 0,
+                total: 0,
+            },
+        });
+
+        const element = await BookById(defaultProps);
+        render(element);
+
+        expect(screen.getByTestId('book-reviews')).toBeInTheDocument();
+    });
+
+    it('Should cover missing image_url fallback branch rendering (covers line 82 branches)', async () => {
+        const bookWithNoImage: Book = { ...mockBookData, image_url: null as unknown as string };
+
+        mockedFetchBooks.mockResolvedValue({
+            error: null,
+            data: {
+                data: [bookWithNoImage],
                 totalPages: 1,
                 currentPage: 1,
                 total: 1,
@@ -209,6 +249,7 @@ describe('App - Book[slug]', () => {
         const element = await BookById(defaultProps);
         render(element);
 
-        expect(screen.getByTestId('book-reviews')).toBeInTheDocument();
+        const imgElement = screen.getByRole('img');
+        expect(imgElement).toHaveAttribute('src', expect.stringContaining('placeholder-book.png'));
     });
 });

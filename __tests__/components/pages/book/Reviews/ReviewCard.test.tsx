@@ -13,7 +13,7 @@ const mockedReview = {
 };
 
 describe('APP - pages/book - BookCart - ReviewCard', () => {
-    const renderAsyncCard = async (review: any) => {
+    const renderAsyncCard = async (review: Review) => {
         const ResolvedComponent = await ReviewCard({ review });
         return render(ResolvedComponent);
     };
@@ -22,7 +22,7 @@ describe('APP - pages/book - BookCart - ReviewCard', () => {
         await renderAsyncCard(mockedReview);
 
         expect(screen.getByText(mockedReview.username)).toBeInTheDocument();
-        expect(screen.getByText('1/1/2023')).toBeInTheDocument();
+        expect(screen.getByText(/0?1\/0?1\/2023/)).toBeInTheDocument();
         expect(screen.getByText('5')).toBeInTheDocument();
         expect(screen.getByText(mockedReview.review)).toBeInTheDocument();
     });

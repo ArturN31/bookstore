@@ -5,7 +5,6 @@ import { UserStateContext } from '@/providers/user/UserContext';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { act } from 'react';
 
-// Define the interface for your mock context to avoid 'any'
 interface MockUserContext {
     wishlist: { book_id: string }[] | null;
     loading: boolean;
@@ -132,7 +131,7 @@ describe('APP - User - wishlist', () => {
         expect(emptyMessage).toBeInTheDocument();
     });
 
-    it('should render books when data is retrieved successfully', async () => {
+    it('should render books when data is retrieved successfully (covers line 41 signal.aborted false branch)', async () => {
         const mockWishlist = [{ book_id: 'mock-book-id-1' }];
 
         mockedFetchBooks.mockResolvedValue({
@@ -205,7 +204,7 @@ describe('APP - User - wishlist', () => {
         expect(profileLink).toHaveAttribute('href', '/user/profile');
     });
 
-    it('should render fallback error message when fetchBooksWithReviews throws an exception', async () => {
+    it('should render fallback error message when fetchBooksWithReviews throws an exception (covers line 46 signal.aborted false branch)', async () => {
         const mockWishlist = [{ book_id: 'mock-book-id-1' }];
         mockedFetchBooks.mockRejectedValue(new Error('Network Crash'));
 
@@ -215,27 +214,59 @@ describe('APP - User - wishlist', () => {
         expect(error).toBeInTheDocument();
     });
 
-    it('should reduce opacity of the collection while fetching books', async () => {
+    it('should reduce opacity of the collection while fetching books (covers line 88 fetchingBooks true branch)', async () => {
         const mockWishlist = [{ book_id: 'mock-book-id-1' }];
 
-        let resolvePromise: (value: { data: unknown; error: string | null }) => void;
+        mockedFetchBooks.mockResolvedValueOnce({
+            data: {
+                data: [mockBooksData[0]],
+                totalPages: 1,
+                currentPage: 1,
+                total: 1,
+            },
+            error: null,
+        });
+
+        let resolvePromise: (value: { data: unknown; error: string | null }) => void = () => {};
         const pendingPromise = new Promise<{ data: unknown; error: string | null }>((resolve) => {
             resolvePromise = resolve;
         });
-        mockedFetchBooks.mockReturnValue(pendingPromise);
+        mockedFetchBooks.mockReturnValueOnce(pendingPromise);
 
         const { rerender } = renderWithContext(mockWishlist);
+
+        const initialBook = await screen.findByText('The Mock Book 1');
+        expect(initialBook).toBeInTheDocument();
+
+        rerender(
+            <UserStateContext.Provider
+                value={
+                    {
+                        wishlist: [{ book_id: 'mock-book-id-1' }, { book_id: 'mock-book-id-2' }],
+                        loading: false,
+                        loggedIn: true,
+                        profileExists: true,
+                        dbUser: { id: 'user-123' },
+                    } as never
+                }
+            >
+                <UsersWishlist />
+            </UserStateContext.Provider>,
+        );
 
         const syncing = await screen.findByText(/Syncing.../i);
         expect(syncing).toBeInTheDocument();
 
+        const booksSection = screen.getByTestId('mock-books-list').closest('section');
+        expect(booksSection).toHaveStyle('opacity: 0.6');
+
         await act(async () => {
             resolvePromise({
                 data: {
-                    data: [mockBooksData[0]],
+                    data: [mockBooksData[0], mockBooksData[1]],
                     totalPages: 1,
                     currentPage: 1,
-                    total: 1,
+                    total: 2,
                 },
                 error: null,
             });
@@ -243,6 +274,7 @@ describe('APP - User - wishlist', () => {
 
         await waitFor(() => {
             expect(screen.queryByText(/Syncing.../i)).not.toBeInTheDocument();
+            expect(booksSection).toHaveStyle('opacity: 1');
         });
     });
 
@@ -251,15 +283,6 @@ describe('APP - User - wishlist', () => {
 
         const emptyMessage = await screen.findByText(/Your wishlist is empty/i);
         expect(emptyMessage).toBeInTheDocument();
-    });
-
-    it('BRANCH COVERAGE: covers signal.aborted branches', async () => {
-        const mockWishlist = [{ book_id: 'mock-book-id-1' }];
-        mockedFetchBooks.mockImplementation(() => new Promise(() => {}));
-
-        renderWithContext(mockWishlist);
-
-        await screen.findByRole('heading', { level: 1 });
     });
 
     it('should call onRetry when error state is shown', async () => {
@@ -280,5 +303,50 @@ describe('APP - User - wishlist', () => {
         }
 
         expect(mockedFetchBooks).toHaveBeenCalledTimes(2);
+    });
+
+    it('BRANCH COVERAGE: hits line 41 signal.aborted true condition block inside safe try scope', async () => {
+        const mockWishlist = [{ book_id: 'mock-book-id-1' }];
+
+        let resolveFormExecution: (value: unknown) => void = () => {};
+        const pendingPromise = new Promise((resolve) => {
+            resolveFormExecution = resolve;
+        });
+
+        mockedFetchBooks.mockReturnValue(pendingPromise);
+
+        const { unmount } = renderWithContext(mockWishlist);
+
+        await Promise.resolve();
+
+        unmount();
+
+        await act(async () => {
+            resolveFormExecution({
+                data: { data: [mockBooksData[0]] },
+                error: null,
+            });
+        });
+    });
+
+    it('BRANCH COVERAGE: hits line 46 signal.aborted true condition block inside rejection catch scope', async () => {
+        const mockWishlist = [{ book_id: 'mock-book-id-1' }];
+
+        let rejectFormExecution: (reason: unknown) => void = () => {};
+        const pendingPromise = new Promise((_, reject) => {
+            rejectFormExecution = reject;
+        });
+
+        mockedFetchBooks.mockReturnValue(pendingPromise);
+
+        const { unmount } = renderWithContext(mockWishlist);
+
+        await Promise.resolve();
+
+        unmount();
+
+        await act(async () => {
+            rejectFormExecution(new Error('Abort Error Catch Check'));
+        });
     });
 });
