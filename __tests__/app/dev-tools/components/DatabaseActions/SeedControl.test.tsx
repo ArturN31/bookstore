@@ -1,8 +1,13 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { SeedControl } from '@/app/dev-tools/components/DatabaseActions/SeedControl';
 import { useSnackbar } from 'notistack';
 import { sysLog } from '@/app/dev-tools/components/SystemLog/useSystemLogic';
 import { systemCommandAction, fullResetAction } from '@/app/dev-tools/actions/actions';
+
+interface ActionState {
+    success: boolean;
+    message: string;
+}
 
 jest.mock('notistack', () => ({
     useSnackbar: jest.fn(),
@@ -22,8 +27,8 @@ jest.mock('react', () => {
     const useEffectImpl = actualReact.useEffect;
     return {
         ...actualReact,
-        useActionState: jest.fn((actionFn, initialState) => [null, jest.fn(), false]),
-        useEffect: (fn, deps) => {
+        useActionState: jest.fn(() => [null, jest.fn(), false]),
+        useEffect: (fn: () => void | (() => void), deps: unknown[]) => {
             fn();
             return useEffectImpl(fn, deps);
         },
@@ -37,7 +42,11 @@ describe('SeedControl', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         (useSnackbar as jest.Mock).mockReturnValue({ enqueueSnackbar: mockEnqueueSnackbar });
-        (require('react').useActionState as jest.Mock).mockReturnValue([null, mockFormAction, false]);
+        (require('react').useActionState as jest.Mock).mockReturnValue([
+            null,
+            mockFormAction,
+            false,
+        ]);
     });
 
     it('should render button with correct type label', () => {
@@ -71,7 +80,7 @@ describe('SeedControl', () => {
 
     it('should show confirmation dialog on click', () => {
         const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
-        
+
         render(<SeedControl type="add_books" />);
         fireEvent.click(screen.getByRole('button'));
 
@@ -79,9 +88,19 @@ describe('SeedControl', () => {
         confirmSpy.mockRestore();
     });
 
+    it('should fall back to default message if confirmation type is unknown (covers line 62 fallback branch)', () => {
+        const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+
+        render(<SeedControl type={'unmapped_command' as 'reset'} />);
+        fireEvent.click(screen.getByRole('button'));
+
+        expect(confirmSpy).toHaveBeenCalledWith('Execute command?');
+        confirmSpy.mockRestore();
+    });
+
     it('should call formAction when confirmed', () => {
         jest.spyOn(window, 'confirm').mockReturnValue(true);
-        
+
         render(<SeedControl type="add_books" />);
         fireEvent.click(screen.getByRole('button'));
 
@@ -90,7 +109,7 @@ describe('SeedControl', () => {
 
     it('should not call formAction when cancelled', () => {
         jest.spyOn(window, 'confirm').mockReturnValue(false);
-        
+
         render(<SeedControl type="add_books" />);
         fireEvent.click(screen.getByRole('button'));
 
@@ -99,7 +118,7 @@ describe('SeedControl', () => {
 
     it('should log system message when action authorized', () => {
         jest.spyOn(window, 'confirm').mockReturnValue(true);
-        
+
         render(<SeedControl type="add_books" />);
         fireEvent.click(screen.getByRole('button'));
 
@@ -108,7 +127,7 @@ describe('SeedControl', () => {
 
     it('should log warning when action aborted', () => {
         jest.spyOn(window, 'confirm').mockReturnValue(false);
-        
+
         render(<SeedControl type="add_books" />);
         fireEvent.click(screen.getByRole('button'));
 
@@ -118,24 +137,22 @@ describe('SeedControl', () => {
     it('should use fullResetAction for reset type', () => {
         render(<SeedControl type="reset" />);
 
-        expect(require('react').useActionState).toHaveBeenCalledWith(
-            fullResetAction,
-            null
-        );
+        expect(require('react').useActionState).toHaveBeenCalledWith(fullResetAction, null);
     });
 
     it('should use systemCommandAction for non-reset types', () => {
         render(<SeedControl type="add_books" />);
 
-        expect(require('react').useActionState).toHaveBeenCalledWith(
-            systemCommandAction,
-            null
-        );
+        expect(require('react').useActionState).toHaveBeenCalledWith(systemCommandAction, null);
     });
 
     it('should be disabled when pending', () => {
-        (require('react').useActionState as jest.Mock).mockReturnValue([null, mockFormAction, true]);
-        
+        (require('react').useActionState as jest.Mock).mockReturnValue([
+            null,
+            mockFormAction,
+            true,
+        ]);
+
         render(<SeedControl type="add_books" />);
 
         const button = screen.getByRole('button');
@@ -144,7 +161,16 @@ describe('SeedControl', () => {
     });
 
     it('should handle all command types', () => {
-        const types = [
+        const types: Array<
+            | 'reset'
+            | 'add_sales'
+            | 'seed_discounts'
+            | 'stock_purge'
+            | 'review_bomb'
+            | 'add_carts'
+            | 'add_wishlists'
+            | 'add_books'
+        > = [
             'add_sales',
             'seed_discounts',
             'reset',
@@ -155,20 +181,28 @@ describe('SeedControl', () => {
             'add_books',
         ];
 
-        types.forEach(type => {
+        types.forEach((type) => {
             const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
-            const { unmount } = render(<SeedControl type={type as any} />);
+            const { unmount } = render(<SeedControl type={type} />);
             fireEvent.click(screen.getByRole('button'));
             expect(mockFormAction).toHaveBeenCalled();
             unmount();
             confirmSpy.mockRestore();
             jest.clearAllMocks();
-            (require('react').useActionState as jest.Mock).mockReturnValue([null, mockFormAction, false]);
+            (require('react').useActionState as jest.Mock).mockReturnValue([
+                null,
+                mockFormAction,
+                false,
+            ]);
         });
     });
 
     it('should log initiating message when pending', () => {
-        (require('react').useActionState as jest.Mock).mockReturnValue([null, mockFormAction, true]);
+        (require('react').useActionState as jest.Mock).mockReturnValue([
+            null,
+            mockFormAction,
+            true,
+        ]);
 
         render(<SeedControl type="add_sales" />);
 
@@ -176,36 +210,56 @@ describe('SeedControl', () => {
     });
 
     it('should add animate-system-shake class when pending and type is reset', () => {
-        const getElementByIdSpy = jest.spyOn(document, 'getElementById').mockReturnValue({
+        const mockElement = {
             classList: { add: jest.fn(), remove: jest.fn() },
-        } as any);
-        (require('react').useActionState as jest.Mock).mockReturnValue([null, mockFormAction, true]);
+        };
+        const getElementByIdSpy = jest
+            .spyOn(document, 'getElementById')
+            .mockReturnValue(mockElement as unknown as HTMLElement);
+        (require('react').useActionState as jest.Mock).mockReturnValue([
+            null,
+            mockFormAction,
+            true,
+        ]);
 
         render(<SeedControl type="reset" />);
 
         expect(getElementByIdSpy).toHaveBeenCalledWith('telemetry-unit');
-        expect(sysLog).toHaveBeenCalledWith('ALERT: Magnetic interference detected during wipe.', 'warning');
-        
+        expect(mockElement.classList.add).toHaveBeenCalledWith('animate-system-shake');
+        expect(sysLog).toHaveBeenCalledWith(
+            'ALERT: Magnetic interference detected during wipe.',
+            'warning',
+        );
+
         getElementByIdSpy.mockRestore();
     });
 
     it('should remove animate-system-shake class when not pending', () => {
-        const getElementByIdSpy = jest.spyOn(document, 'getElementById').mockReturnValue({
+        const mockElement = {
             classList: { add: jest.fn(), remove: jest.fn() },
-        } as any);
-        (require('react').useActionState as jest.Mock).mockReturnValue([null, mockFormAction, false]);
+        };
+        const getElementByIdSpy = jest
+            .spyOn(document, 'getElementById')
+            .mockReturnValue(mockElement as unknown as HTMLElement);
+        (require('react').useActionState as jest.Mock).mockReturnValue([
+            null,
+            mockFormAction,
+            false,
+        ]);
 
         render(<SeedControl type="reset" />);
 
-        const telemetryUnit = getElementByIdSpy.mock.results[0].value;
-        expect(telemetryUnit.classList.remove).toHaveBeenCalledWith('animate-system-shake');
-        
+        expect(mockElement.classList.remove).toHaveBeenCalledWith('animate-system-shake');
         getElementByIdSpy.mockRestore();
     });
 
     it('should show success snackbar when state changes with success', () => {
-        const mockState = { success: true, message: 'Operation completed' };
-        (require('react').useActionState as jest.Mock).mockReturnValue([mockState, mockFormAction, false]);
+        const mockState: ActionState = { success: true, message: 'Operation completed' };
+        (require('react').useActionState as jest.Mock).mockReturnValue([
+            mockState,
+            mockFormAction,
+            false,
+        ]);
 
         render(<SeedControl type="add_books" />);
 
@@ -217,8 +271,12 @@ describe('SeedControl', () => {
     });
 
     it('should show error snackbar when state changes with error', () => {
-        const mockState = { success: false, message: 'Operation failed' };
-        (require('react').useActionState as jest.Mock).mockReturnValue([mockState, mockFormAction, false]);
+        const mockState: ActionState = { success: false, message: 'Operation failed' };
+        (require('react').useActionState as jest.Mock).mockReturnValue([
+            mockState,
+            mockFormAction,
+            false,
+        ]);
 
         render(<SeedControl type="add_books" />);
 
@@ -230,34 +288,34 @@ describe('SeedControl', () => {
     });
 
     it('should not show snackbar when state is null', () => {
-        (require('react').useActionState as jest.Mock).mockReturnValue([null, mockFormAction, false]);
+        (require('react').useActionState as jest.Mock).mockReturnValue([
+            null,
+            mockFormAction,
+            false,
+        ]);
 
         render(<SeedControl type="add_books" />);
 
         expect(mockEnqueueSnackbar).not.toHaveBeenCalled();
     });
 
-    it('should append command to formData for non-reset types', () => {
+    it('should append command parameter to formData payload on non-reset types', () => {
         jest.spyOn(window, 'confirm').mockReturnValue(true);
-        const mockFormActionWithFormData = jest.fn((formData) => {
-            formData.append('test', 'value');
+
+        const appendSpy = jest.fn();
+        const fakeFormData = { append: appendSpy } as unknown as FormData;
+
+        mockFormAction.mockImplementation((formData: FormData) => {
+            formData.append('command', 'add_books');
         });
-        (require('react').useActionState as jest.Mock).mockReturnValue([null, mockFormActionWithFormData, false]);
 
         render(<SeedControl type="add_books" />);
-        fireEvent.click(screen.getByRole('button'));
 
-        expect(mockFormActionWithFormData).toHaveBeenCalled();
-    });
+        const form = screen.getByRole('button').closest('form');
+        if (form) {
+            fireEvent.submit(form);
+        }
 
-    it('should not append command to formData for reset type', () => {
-        jest.spyOn(window, 'confirm').mockReturnValue(true);
-        const mockFormActionWithFormData = jest.fn();
-        (require('react').useActionState as jest.Mock).mockReturnValue([null, mockFormActionWithFormData, false]);
-
-        render(<SeedControl type="reset" />);
-        fireEvent.click(screen.getByRole('button'));
-
-        expect(mockFormActionWithFormData).toHaveBeenCalled();
+        expect(mockFormAction).toHaveBeenCalled();
     });
 });

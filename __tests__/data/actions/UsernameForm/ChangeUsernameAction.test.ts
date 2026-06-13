@@ -1,5 +1,4 @@
 import { ChangeUsernameAction } from '@/data/actions/UsernameForm/ChangeUsernameAction';
-import { createBackendClient } from '@/utils/db/server';
 import { getUserData } from '@/data/user/GetUserData';
 import { updateUsername } from '@/data/actions/UsernameForm/UsernameRepository';
 import { handleUsernameUpdateError } from '@/data/actions/UsernameForm/DatabaseErrorHandler';
@@ -18,10 +17,13 @@ jest.mock('next/navigation', () => ({
 }));
 
 describe('ChangeUsernameAction', () => {
+    const mockedRedirect = redirect as jest.MockedFunction<typeof redirect>;
+    const mockedRevalidatePath = revalidatePath as jest.MockedFunction<typeof revalidatePath>;
+
     beforeEach(() => {
         jest.clearAllMocks();
-        // Reset revalidatePath to normal behavior
-        (revalidatePath as jest.Mock).mockImplementation(() => {});
+        mockedRevalidatePath.mockImplementation(() => {});
+        mockedRedirect.mockImplementation(() => undefined as never);
     });
 
     it('should return initial state when reset is requested', async () => {
@@ -120,23 +122,8 @@ describe('ChangeUsernameAction', () => {
 
         await ChangeUsernameAction(undefined, formData);
 
-        expect(revalidatePath).toHaveBeenCalledWith('/user/profile');
-        expect(redirect).toHaveBeenCalledWith('/user/profile');
-    });
-
-    it('should re-throw NEXT_REDIRECT error', async () => {
-        const formData = new FormData();
-        formData.append('username', 'newusername');
-        (getUserData as jest.Mock).mockResolvedValue({
-            data: { id: 'user-123', username: 'olduser' },
-            error: null,
-        });
-        (updateUsername as jest.Mock).mockResolvedValue({ data: null, error: null });
-        (revalidatePath as jest.Mock).mockImplementation(() => {
-            throw new Error('NEXT_REDIRECT');
-        });
-
-        await expect(ChangeUsernameAction(undefined, formData)).rejects.toThrow('NEXT_REDIRECT');
+        expect(mockedRevalidatePath).toHaveBeenCalledWith('/user/profile');
+        expect(mockedRedirect).toHaveBeenCalledWith('/user/profile');
     });
 
     it('should handle catch block errors', async () => {
@@ -163,7 +150,7 @@ describe('ChangeUsernameAction', () => {
 
         await ChangeUsernameAction(undefined, formData);
 
-        expect(redirect).toHaveBeenCalled();
+        expect(mockedRedirect).toHaveBeenCalled();
     });
 
     it('should handle previous state with existing values', async () => {
@@ -178,6 +165,33 @@ describe('ChangeUsernameAction', () => {
         const prevState = { username: 'previous', message: 'Previous message' };
         await ChangeUsernameAction(prevState, formData);
 
-        expect(redirect).toHaveBeenCalled();
+        expect(mockedRedirect).toHaveBeenCalled();
+    });
+
+    it('BRANCH COVERAGE: should re-throw NEXT_REDIRECT error when thrown inside try block (covers line 74 true branch)', async () => {
+        const formData = new FormData();
+        formData.append('username', 'newusername');
+
+        (getUserData as jest.Mock).mockImplementation(() => {
+            throw new Error('NEXT_REDIRECT');
+        });
+
+        await expect(ChangeUsernameAction(undefined, formData)).rejects.toThrow('NEXT_REDIRECT');
+    });
+
+    it('BRANCH COVERAGE: should return server error message when catch block intercepts non-redirect generic error (covers line 74 false branch)', async () => {
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const formData = new FormData();
+        formData.append('username', 'newusername');
+
+        (getUserData as jest.Mock).mockImplementation(() => {
+            throw new Error('SOME_OTHER_DB_OR_ROUTER_FAIL');
+        });
+
+        const result = await ChangeUsernameAction(undefined, formData);
+
+        expect(result.message).toBe('A critical server error occurred.');
+        expect(consoleSpy).toHaveBeenCalled();
+        consoleSpy.mockRestore();
     });
 });

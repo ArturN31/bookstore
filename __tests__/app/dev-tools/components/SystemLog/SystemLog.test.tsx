@@ -1,6 +1,13 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { SystemLog } from '@/app/dev-tools/components/SystemLog/SystemLog';
 import * as useSystemLogic from '@/app/dev-tools/components/SystemLog/useSystemLogic';
+
+interface LogEntry {
+    id: string;
+    timestamp: string;
+    message: string;
+    type: 'error' | 'success' | 'warning' | 'system' | 'info';
+}
 
 jest.mock('@/app/dev-tools/components/SystemLog/useSystemLogic', () => ({
     useSystemLog: jest.fn(() => []),
@@ -8,8 +15,11 @@ jest.mock('@/app/dev-tools/components/SystemLog/useSystemLogic', () => ({
 }));
 
 describe('SystemLog', () => {
+    const mockScrollIntoView = jest.fn();
+
     beforeEach(() => {
         jest.clearAllMocks();
+        HTMLElement.prototype.scrollIntoView = mockScrollIntoView;
     });
 
     it('should render SystemLog component', () => {
@@ -28,9 +38,9 @@ describe('SystemLog', () => {
     });
 
     it('should display correct line count when logs exist', () => {
-        const mockLogs = [
-            { id: '1', timestamp: '10:00:00', message: 'Test', type: 'info' as const },
-            { id: '2', timestamp: '10:00:01', message: 'Test 2', type: 'info' as const },
+        const mockLogs: LogEntry[] = [
+            { id: '1', timestamp: '10:00:00', message: 'Test', type: 'info' },
+            { id: '2', timestamp: '10:00:01', message: 'Test 2', type: 'info' },
         ];
         (useSystemLogic.useSystemLog as jest.Mock).mockReturnValue(mockLogs);
 
@@ -48,7 +58,9 @@ describe('SystemLog', () => {
     });
 
     it('should not show idle message when logs exist', () => {
-        const mockLogs = [{ id: '1', timestamp: '10:00:00', message: 'Test', type: 'info' as const }];
+        const mockLogs: LogEntry[] = [
+            { id: '1', timestamp: '10:00:00', message: 'Test', type: 'info' },
+        ];
         (useSystemLogic.useSystemLog as jest.Mock).mockReturnValue(mockLogs);
 
         render(<SystemLog />);
@@ -57,8 +69,8 @@ describe('SystemLog', () => {
     });
 
     it('should render log entries', () => {
-        const mockLogs = [
-            { id: '1', timestamp: '10:00:00', message: 'Test message', type: 'info' as const },
+        const mockLogs: LogEntry[] = [
+            { id: '1', timestamp: '10:00:00', message: 'Test message', type: 'info' },
         ];
         (useSystemLogic.useSystemLog as jest.Mock).mockReturnValue(mockLogs);
 
@@ -69,8 +81,8 @@ describe('SystemLog', () => {
     });
 
     it('should render error log with correct styling', () => {
-        const mockLogs = [
-            { id: '1', timestamp: '10:00:00', message: 'Error occurred', type: 'error' as const },
+        const mockLogs: LogEntry[] = [
+            { id: '1', timestamp: '10:00:00', message: 'Error occurred', type: 'error' },
         ];
         (useSystemLogic.useSystemLog as jest.Mock).mockReturnValue(mockLogs);
 
@@ -82,8 +94,8 @@ describe('SystemLog', () => {
     });
 
     it('should render success log with correct styling', () => {
-        const mockLogs = [
-            { id: '1', timestamp: '10:00:00', message: 'Success', type: 'success' as const },
+        const mockLogs: LogEntry[] = [
+            { id: '1', timestamp: '10:00:00', message: 'Success', type: 'success' },
         ];
         (useSystemLogic.useSystemLog as jest.Mock).mockReturnValue(mockLogs);
 
@@ -95,8 +107,8 @@ describe('SystemLog', () => {
     });
 
     it('should render warning log with correct styling', () => {
-        const mockLogs = [
-            { id: '1', timestamp: '10:00:00', message: 'Warning', type: 'warning' as const },
+        const mockLogs: LogEntry[] = [
+            { id: '1', timestamp: '10:00:00', message: 'Warning', type: 'warning' },
         ];
         (useSystemLogic.useSystemLog as jest.Mock).mockReturnValue(mockLogs);
 
@@ -108,8 +120,8 @@ describe('SystemLog', () => {
     });
 
     it('should render system log with correct styling', () => {
-        const mockLogs = [
-            { id: '1', timestamp: '10:00:00', message: 'System event', type: 'system' as const },
+        const mockLogs: LogEntry[] = [
+            { id: '1', timestamp: '10:00:00', message: 'System event', type: 'system' },
         ];
         (useSystemLogic.useSystemLog as jest.Mock).mockReturnValue(mockLogs);
 
@@ -121,8 +133,8 @@ describe('SystemLog', () => {
     });
 
     it('should render info log with correct styling', () => {
-        const mockLogs = [
-            { id: '1', timestamp: '10:00:00', message: 'Info message', type: 'info' as const },
+        const mockLogs: LogEntry[] = [
+            { id: '1', timestamp: '10:00:00', message: 'Info message', type: 'info' },
         ];
         (useSystemLogic.useSystemLog as jest.Mock).mockReturnValue(mockLogs);
 
@@ -151,5 +163,45 @@ describe('SystemLog', () => {
         render(<SystemLog />);
 
         expect(screen.getByText(/Active_Session/i)).toBeInTheDocument();
+    });
+
+    it('should not call scrollToBottom on first render when empty', () => {
+        (useSystemLogic.useSystemLog as jest.Mock).mockReturnValue([]);
+
+        render(<SystemLog />);
+
+        expect(mockScrollIntoView).not.toHaveBeenCalled();
+    });
+
+    it('should call scrollToBottom when log updates happen after initial load (covers lines 12-16 & 23-24)', () => {
+        (useSystemLogic.useSystemLog as jest.Mock).mockReturnValue([]);
+        const { rerender } = render(<SystemLog />);
+        expect(mockScrollIntoView).not.toHaveBeenCalled();
+
+        const updatedLogs: LogEntry[] = [
+            {
+                id: '1',
+                timestamp: '12:34:56',
+                message: 'Realtime telemetry trace data stream updated',
+                type: 'system',
+            },
+        ];
+        (useSystemLogic.useSystemLog as jest.Mock).mockReturnValue(updatedLogs);
+
+        rerender(<SystemLog />);
+
+        expect(mockScrollIntoView).toHaveBeenCalledWith({
+            behavior: 'smooth',
+            block: 'nearest',
+        });
+    });
+
+    it('should not call scrollToBottom on log collection change if array is left empty', () => {
+        (useSystemLogic.useSystemLog as jest.Mock).mockReturnValue([]);
+        const { rerender } = render(<SystemLog />);
+
+        rerender(<SystemLog />);
+
+        expect(mockScrollIntoView).not.toHaveBeenCalled();
     });
 });

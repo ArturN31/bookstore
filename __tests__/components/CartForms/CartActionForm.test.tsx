@@ -17,7 +17,7 @@ jest.mock('react', () => {
     return {
         ...actual,
         useActionState: jest.fn(),
-        useTransition: jest.fn(() => [false, (cb: any) => cb()]),
+        useTransition: jest.fn(() => [false, (cb: () => void) => cb()]),
     };
 });
 
@@ -74,7 +74,8 @@ describe('APP - CartForms - CartActionForm', () => {
 
     it('should cover the internal isPending guard in useActionState', async () => {
         const prevState = { success: false, message: 'initial' };
-        let capturedAction: any;
+        let capturedAction: (state: unknown, formData: FormData) => Promise<unknown> = () =>
+            Promise.resolve(prevState);
 
         (useActionState as jest.Mock).mockImplementation((action, initialState) => {
             capturedAction = action;
@@ -115,6 +116,29 @@ describe('APP - CartForms - CartActionForm', () => {
 
         expect(enqueueSnackbar).toHaveBeenCalledWith('Failed to update cart', {
             variant: 'warning',
+        });
+    });
+
+    it('should call enqueueSnackbar with "success" variant when success is true', () => {
+        (useActionState as jest.Mock).mockReturnValue([
+            {
+                success: true,
+                message: 'Successfully updated cart',
+                timestamp: Date.now(),
+            },
+            jest.fn(),
+            false,
+        ]);
+
+        render(
+            <CartActionForm
+                bookID="1"
+                stock={createMockBook({ id: '1', title: 'Book 1' }).stock_quantity}
+            />,
+        );
+
+        expect(enqueueSnackbar).toHaveBeenCalledWith('Successfully updated cart', {
+            variant: 'success',
         });
     });
 
@@ -297,6 +321,25 @@ describe('APP - CartForms - CartActionForm', () => {
         );
 
         expect(screen.getByText('Cart is full (Max 10 items)')).toBeInTheDocument();
+    });
+
+    it('BRANCH COVERAGE: should return null from getStatusContent when userLoading is true (covers line 50 true branch)', () => {
+        (useUserState as jest.Mock).mockReturnValue({
+            user: { id: 'user-123' },
+            loggedIn: true,
+            profileExists: true,
+            loading: true,
+        });
+
+        const { container } = render(
+            <CartActionForm
+                bookID="1"
+                stock={0}
+            />,
+        );
+
+        expect(container.querySelector('.text-\\[10px\\]')).not.toBeInTheDocument();
+        expect(screen.queryByText(/out of stock/i)).not.toBeInTheDocument();
     });
 
     it('should not display any status when user is loaded, logged in, profile exists, and cart is not full', () => {

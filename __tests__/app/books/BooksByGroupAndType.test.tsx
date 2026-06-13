@@ -3,11 +3,16 @@ import { render, screen } from '@testing-library/react';
 import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { BreadcrumbItem } from '@/components/ui/AppBreadcrumbs';
+
+interface PageParams {
+    params: Promise<{ slug: string[] }>;
+}
 
 jest.mock('next/navigation', () => ({
     notFound: jest.fn(() => {
         const error = new Error('NEXT_NOT_FOUND');
-        (error as any).digest = 'NEXT_NOT_FOUND';
+        (error as Error & { digest?: string }).digest = 'NEXT_NOT_FOUND';
         throw error;
     }),
 }));
@@ -28,14 +33,20 @@ jest.mock('@/providers/cart/CartProvider', () => ({
 }));
 
 jest.mock('@/components/books/BooksManager', () => ({
-    BooksManager: jest.fn(),
+    BooksManager: jest.fn(() => <div data-testid="books-manager" />),
 }));
 
 jest.mock('@/components/ui/AppBreadcrumbs', () => ({
-    AppBreadcrumbs: ({ items }: { items: any[] }) => (
+    AppBreadcrumbs: ({ items }: { items: BreadcrumbItem[] }) => (
         <nav data-testid="breadcrumbs">
             {items.map((item) => (
-                <span key={item.label}>{item.label}</span>
+                <span
+                    key={item.label}
+                    data-active={item.active}
+                    data-count={item.count}
+                >
+                    {item.label}
+                </span>
             ))}
         </nav>
     ),
@@ -68,7 +79,9 @@ describe('App - Books[...slug]', () => {
                 },
             });
 
-            const props = { params: Promise.resolve({ slug: ['genre', 'science-fiction'] }) };
+            const props: PageParams = {
+                params: Promise.resolve({ slug: ['genre', 'science-fiction'] }),
+            };
             const element = await BooksByGroupAndType(props);
             render(element);
 
@@ -78,7 +91,7 @@ describe('App - Books[...slug]', () => {
         });
 
         it('should trigger notFound when slug has fewer than 2 elements', async () => {
-            const shortSlugProps = {
+            const shortSlugProps: PageParams = {
                 params: Promise.resolve({ slug: ['only-one-part'] }),
             };
 
@@ -89,7 +102,7 @@ describe('App - Books[...slug]', () => {
         it('should trigger notFound when fetchBooksWithReviews returns an error', async () => {
             mockedFetchBooks.mockResolvedValue({ data: null, error: 'Database error' });
 
-            const props = { params: Promise.resolve({ slug: ['genre', 'novel'] }) };
+            const props: PageParams = { params: Promise.resolve({ slug: ['genre', 'novel'] }) };
 
             await expect(BooksByGroupAndType(props)).rejects.toThrow('NEXT_NOT_FOUND');
             expect(notFound).toHaveBeenCalled();
@@ -98,7 +111,7 @@ describe('App - Books[...slug]', () => {
         it('should trigger notFound when fetchBooksWithReviews returns an empty array', async () => {
             mockedFetchBooks.mockResolvedValue({ data: [], error: null });
 
-            const props = { params: Promise.resolve({ slug: ['genre', 'novel'] }) };
+            const props: PageParams = { params: Promise.resolve({ slug: ['genre', 'novel'] }) };
 
             await expect(BooksByGroupAndType(props)).rejects.toThrow('NEXT_NOT_FOUND');
         });
@@ -106,7 +119,7 @@ describe('App - Books[...slug]', () => {
 
     describe('Metadata Generation', () => {
         it('should generate correct metadata with formatted titles', async () => {
-            const props = {
+            const props: PageParams = {
                 params: Promise.resolve({ slug: ['genre', 'action-adventure'] }),
             };
 
@@ -120,7 +133,7 @@ describe('App - Books[...slug]', () => {
         });
 
         it('should handle missing type slug in metadata by returning fallback title', async () => {
-            const props = {
+            const props: PageParams = {
                 params: Promise.resolve({ slug: ['all'] }),
             };
 
@@ -129,7 +142,7 @@ describe('App - Books[...slug]', () => {
         });
 
         it('should format type with dashes correctly (covers formatLabel replace branch)', async () => {
-            const props = {
+            const props: PageParams = {
                 params: Promise.resolve({ slug: ['genre', 'sci-fi-books'] }),
             };
 
@@ -140,13 +153,12 @@ describe('App - Books[...slug]', () => {
         });
 
         it('should handle empty slug[1] with fallback (covers line 14 || branch)', async () => {
-            const props = {
+            const props: PageParams = {
                 params: Promise.resolve({ slug: ['genre', ''] }),
             };
 
             const metadata = await generateMetadata(props);
 
-            // Empty string should result in empty title
             expect(metadata.title).toBe(' Books | Books4You');
         });
     });
@@ -163,12 +175,10 @@ describe('App - Books[...slug]', () => {
                 },
             });
 
-            const props = { params: Promise.resolve({ slug: ['genre', 'fiction'] }) };
+            const props: PageParams = { params: Promise.resolve({ slug: ['genre', 'fiction'] }) };
             const element = await BooksByGroupAndType(props);
             render(element);
 
-            // Text is split across multiple elements due to JSX whitespace
-            // Check the paragraph element that contains "book"
             const paragraph = screen.getByText(/Showing/i).closest('p');
             expect(paragraph?.textContent).toContain('book');
             expect(paragraph?.textContent).not.toContain('books');
@@ -185,12 +195,10 @@ describe('App - Books[...slug]', () => {
                 },
             });
 
-            const props = { params: Promise.resolve({ slug: ['genre', 'fiction'] }) };
+            const props: PageParams = { params: Promise.resolve({ slug: ['genre', 'fiction'] }) };
             const element = await BooksByGroupAndType(props);
             render(element);
 
-            // Text is split across multiple elements due to JSX whitespace
-            // Check the paragraph element that contains "books"
             const paragraph = screen.getByText(/Showing/i).closest('p');
             expect(paragraph?.textContent).toContain('books');
         });

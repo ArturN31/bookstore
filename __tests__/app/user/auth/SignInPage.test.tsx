@@ -3,13 +3,9 @@ import { SignInFormState } from '@/data/actions/auth/SignInAction';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 const MOCK_ACTION_MESSAGE = 'Please correct the errors below.';
-const CLIENT_VALIDATION_MESSAGE = 'Please fix the errors before submitting.';
 
 let mockReturnState: SignInFormState = {
-    email: 'test@gmail.com',
-    password: 'test1',
     message: MOCK_ACTION_MESSAGE,
-    error: undefined,
     validationErrors: undefined,
 };
 
@@ -25,10 +21,7 @@ jest.mock('@/data/actions/auth/SignInAction', () => ({
         const reset = formData.get('reset');
         if (reset === 'yes') {
             return {
-                email: '',
-                password: '',
-                message: undefined,
-                error: undefined,
+                message: null,
                 validationErrors: undefined,
             };
         }
@@ -41,7 +34,10 @@ jest.mock('react', () => {
 
     return {
         ...originalReact,
-        useActionState: (actionFn: any, initialState: any) => {
+        useActionState: (
+            actionFn: (state: SignInFormState, data: FormData) => Promise<SignInFormState>,
+            initialState: SignInFormState,
+        ) => {
             const [state, setState] = originalReact.useState(initialState);
 
             const formAction = async (formData: FormData) => {
@@ -51,7 +47,7 @@ jest.mock('react', () => {
 
             return [state, formAction];
         },
-        useTransition: () => [false, (callback: any) => callback()],
+        useTransition: () => [false, (callback: () => void) => callback()],
     };
 });
 
@@ -64,10 +60,8 @@ describe('APP - Auth - SignIn', () => {
     it('should show client-side validation message when Zod fails during submit', async () => {
         render(<SignInPage />);
 
-        // Submit with empty fields to trigger validation
         fireEvent.click(screen.getByText('Submit'));
 
-        // The form should not proceed with submission when validation fails
         await waitFor(() => {
             const { SignInAction } = require('@/data/actions/auth/SignInAction');
             expect(SignInAction).not.toHaveBeenCalled();
@@ -147,7 +141,7 @@ describe('APP - Auth - SignIn', () => {
 
     it('should clear client errors on successful validation (covers setClientErrors([]) branch)', async () => {
         const { SignInAction } = require('@/data/actions/auth/SignInAction');
-        
+
         mockReturnState = {
             ...mockReturnState,
             message: null,
@@ -159,14 +153,12 @@ describe('APP - Auth - SignIn', () => {
         const emailField = screen.getByTestId('email-field') as HTMLInputElement;
         const passwordField = screen.getByTestId('password-field') as HTMLInputElement;
 
-        // First enter invalid data to trigger errors
         fireEvent.change(emailField, { target: { name: 'email', value: 'not-an-email' } });
-        
+
         await waitFor(() => {
             expect(screen.getByText(/Validation Issues/i)).toBeInTheDocument();
         });
 
-        // Then enter valid data to clear errors
         fireEvent.change(emailField, { target: { name: 'email', value: 'valid@test.com' } });
         fireEvent.change(passwordField, { target: { name: 'password', value: 'ValidPass123!' } });
 
@@ -206,7 +198,7 @@ describe('APP - Auth - SignIn', () => {
     it('should NOT append returnTo when not present in URL (covers if branch false)', async () => {
         const { SignInAction } = require('@/data/actions/auth/SignInAction');
 
-        mockGetParam.mockReturnValue(null); // No returnTo in URL
+        mockGetParam.mockReturnValue(null);
 
         render(<SignInPage />);
 
@@ -221,17 +213,15 @@ describe('APP - Auth - SignIn', () => {
 
         await waitFor(() => {
             const sentData = (SignInAction as jest.Mock).mock.calls[0][1];
-            // When returnTo is falsy, it won't be appended, so get() returns null
             expect(sentData.get('returnTo')).toBeNull();
         });
     });
 
-    it('should handle null/undefined values in formData and construction', async () => {
+    it('should handle state values smoothly and match UI layout standards', async () => {
         mockReturnState = {
             ...mockReturnState,
-            email: null,
-            password: null,
             message: 'Partial data',
+            validationErrors: undefined,
         };
 
         render(<SignInPage />);
@@ -249,6 +239,45 @@ describe('APP - Auth - SignIn', () => {
 
         await waitFor(() => {
             expect(screen.getByText(/Error:/i)).toBeInTheDocument();
+        });
+    });
+
+    it('should cover the scenario where validation errors are matched and stored for a specific field name', async () => {
+        render(<SignInPage />);
+        const emailField = screen.getByTestId('email-field');
+
+        fireEvent.change(emailField, { target: { name: 'email', value: 'not-valid' } });
+
+        await waitFor(() => {
+            expect(screen.getByText(/Validation Issues/i)).toBeInTheDocument();
+        });
+    });
+
+    it('should cover the alternative condition where validation fails but no target field name matches path issues', async () => {
+        render(<SignInPage />);
+        const emailField = screen.getByTestId('email-field');
+
+        fireEvent.change(emailField, { target: { name: 'email', value: 'goodformat@gmail.com' } });
+
+        await waitFor(() => {
+            expect(screen.queryByText(/Validation Issues/i)).not.toBeInTheDocument();
+        });
+    });
+
+    it('should hit handleSubmit failure catch block explicitly when input data fails zod validation during submission', async () => {
+        render(<SignInPage />);
+
+        const emailField = screen.getByTestId('email-field');
+        fireEvent.change(emailField, { target: { name: 'email', value: 'invalid-email-string' } });
+
+        const formElement = document.getElementById('signin-form');
+        expect(formElement).not.toBeNull();
+
+        fireEvent.submit(formElement as HTMLElement);
+
+        await waitFor(() => {
+            const { SignInAction } = require('@/data/actions/auth/SignInAction');
+            expect(SignInAction).not.toHaveBeenCalled();
         });
     });
 });

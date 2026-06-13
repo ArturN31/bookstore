@@ -1,7 +1,7 @@
 import { BookCardBody } from '@/components/books/bookCard/BookCardBody';
 import { useCartActions, useCartState } from '@/providers/cart/utils/useCart';
 import { useUserState } from '@/providers/user/utils/useUser';
-import { screen, render, fireEvent } from '@testing-library/react';
+import { screen, render } from '@testing-library/react';
 
 const mockedBook: Book = {
     id: 'mock-book-id-123',
@@ -21,6 +21,7 @@ const mockedBook: Book = {
     is_active: true,
     reviews: [],
     rating: 5,
+    sales_count: null,
 };
 
 jest.mock('@/data/actions/CartForm/CartAction', () => ({
@@ -79,5 +80,18 @@ describe('APP - BookCard - CardBody', () => {
         expect(screen.getByText('A. Test Author')).toBeInTheDocument();
         expect(screen.getByText('Mock Publisher')).toBeInTheDocument();
         expect(screen.getByText('2023')).toBeInTheDocument();
+    });
+
+    it('BRANCH COVERAGE: should fallback to empty string if publication_date is missing (covers line 5)', () => {
+        const bookWithoutDate: Book = {
+            ...mockedBook,
+            publication_date: '',
+        };
+
+        const { container } = render(<BookCardBody book={bookWithoutDate} />);
+
+        expect(screen.getByText('The Mock Book')).toBeInTheDocument();
+        expect(screen.getByText('Mock Publisher')).toBeInTheDocument();
+        expect(screen.queryByText('2023')).not.toBeInTheDocument();
     });
 });

@@ -263,4 +263,25 @@ describe('APP - CartSidebar - CartItemQuantityControls', () => {
 
         mockTransitionPending = false;
     });
+
+    it('BRANCH COVERAGE: should synchronize local state when quantity prop changes externally (covers lines 31-33)', () => {
+        const testBook = createMockBook({ id: '1', title: 'Book 1' });
+
+        const { rerender } = render(
+            <CartItemQuantityControls
+                quantity={3}
+                book={testBook}
+            />,
+        );
+        expect(screen.getByText('3')).toBeInTheDocument();
+
+        rerender(
+            <CartItemQuantityControls
+                quantity={7}
+                book={testBook}
+            />,
+        );
+
+        expect(screen.getByText('7')).toBeInTheDocument();
+    });
 });

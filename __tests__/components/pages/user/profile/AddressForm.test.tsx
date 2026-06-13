@@ -1,6 +1,18 @@
 import { AddressForm } from '@/components/pages/user/profile/AddressForm/AddressForm';
 import { UserAddressAction } from '@/data/actions/AddressForm/UserAddressAction';
-import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { z } from 'zod';
+
+interface MockAddressFormFields {
+    firstName: string;
+    lastName: string;
+    dob: string;
+    streetAddress: string;
+    postcode: string;
+    city: string;
+    country: string;
+    phoneNumber: string;
+}
 
 jest.mock('@/data/actions/AddressForm/UserAddressAction', () => ({
     UserAddressAction: jest.fn(),
@@ -63,7 +75,9 @@ describe('APP - pages/user - AddressForm', () => {
 
     it('handleSubmit early return and successful submission loop', async () => {
         const mockResult = { message: 'Address Saved!', validationErrors: [] };
-        mockAction.mockResolvedValue(mockResult);
+        mockAction.mockImplementation(async () => {
+            return mockResult;
+        });
 
         render(
             <AddressForm
@@ -176,18 +190,17 @@ describe('APP - pages/user - AddressForm', () => {
     });
 
     it('covers the case where validationErrors is undefined (line 138)', () => {
-        const dataWithMissingKey = {
+        const dataWithMissingKey: Partial<MockAddressFormFields> = {
             streetAddress: '123 St',
             postcode: 'G1 1AA',
             city: 'Glasgow',
             country: 'UK',
-            message: 'Force coverage',
         };
 
         render(
             <AddressForm
                 mode="update"
-                initialData={dataWithMissingKey as any}
+                initialData={dataWithMissingKey}
             />,
         );
 
@@ -215,15 +228,6 @@ describe('APP - pages/user - AddressForm', () => {
     });
 
     it('covers nullish coalescing branches in JSX (?? "")', async () => {
-        mockAction.mockResolvedValueOnce({
-            streetAddress: undefined,
-            postcode: undefined,
-            city: undefined,
-            country: undefined,
-            message: 'Partial update',
-            validationErrors: [],
-        });
-
         render(
             <AddressForm
                 mode="update"
@@ -241,15 +245,6 @@ describe('APP - pages/user - AddressForm', () => {
     });
 
     it('covers nullish coalescing branches in JSX when values are defined (?? "" false branch)', async () => {
-        mockAction.mockResolvedValueOnce({
-            streetAddress: '123 Main St',
-            postcode: '12345',
-            city: 'New York',
-            country: 'USA',
-            message: null,
-            validationErrors: [],
-        });
-
         render(
             <AddressForm
                 mode="update"
@@ -264,8 +259,79 @@ describe('APP - pages/user - AddressForm', () => {
 
         const cityInput = screen.getByLabelText(/City/i) as HTMLInputElement;
         expect(cityInput.value).toBe('New York');
-        
+
         const streetInput = screen.getByLabelText(/Street Address/i) as HTMLInputElement;
         expect(streetInput.value).toBe('123 Main St');
+    });
+
+    it('BRANCH COVERAGE: executes useActionState state update branches when action returns a result (covers lines 56-57)', async () => {
+        const mockResult = {
+            message: 'Action Result Message',
+            validationErrors: [
+                {
+                    code: z.ZodIssueCode.custom,
+                    path: ['city'],
+                    message: 'Server side city error feedback',
+                },
+            ] as z.ZodIssue[],
+        };
+
+        mockAction.mockImplementation(async () => {
+            return mockResult;
+        });
+
+        render(
+            <AddressForm
+                mode="update"
+                initialData={{
+                    streetAddress: '456 Alternate St',
+                    postcode: 'G2 2BB',
+                    city: 'Edinburgh',
+                    country: 'UK',
+                }}
+            />,
+        );
+
+        const form = document.getElementById('update-address-form') as HTMLFormElement;
+
+        await act(async () => {
+            fireEvent.submit(form);
+        });
+
+        expect(mockAction).toHaveBeenCalled();
+        expect(await screen.findByText('Action Result Message')).toBeInTheDocument();
+        expect(await screen.findByText(/Server side city error feedback/i)).toBeInTheDocument();
+    });
+
+    it('BRANCH COVERAGE: executes useActionState fallback nullish coalescing operators when action result options are missing (covers lines 56-57 fallback paths)', async () => {
+        const mockEmptyResult = {
+            message: undefined,
+            validationErrors: undefined,
+        };
+
+        mockAction.mockImplementation(async () => {
+            return mockEmptyResult;
+        });
+
+        render(
+            <AddressForm
+                mode="update"
+                initialData={{
+                    streetAddress: '789 Empty Route St',
+                    postcode: 'G3 3CC',
+                    city: 'Aberdeen',
+                    country: 'UK',
+                }}
+            />,
+        );
+
+        const form = document.getElementById('update-address-form') as HTMLFormElement;
+
+        await act(async () => {
+            fireEvent.submit(form);
+        });
+
+        expect(mockAction).toHaveBeenCalled();
+        expect(screen.queryByText('Validation Issues:')).not.toBeInTheDocument();
     });
 });

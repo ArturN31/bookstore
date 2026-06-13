@@ -31,6 +31,22 @@ global.IntersectionObserver = class IntersectionObserver {
 
 global.scrollTo = jest.fn();
 
+jest.mock('@supabase/supabase-js', () => ({
+    createClient: jest.fn(() => ({
+        auth: {
+            onAuthStateChange: jest.fn(() => ({
+                data: {
+                    subscription: {
+                        unsubscribe: jest.fn(),
+                    },
+                },
+            })),
+            getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+            getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+        },
+    })),
+}));
+
 jest.mock('next/headers', () => ({
     cookies: jest.fn().mockResolvedValue({
         get: jest.fn(() => ({ value: 'mock-token' })),
