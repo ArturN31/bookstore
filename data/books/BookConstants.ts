@@ -22,8 +22,8 @@ export type BookSortType = (typeof BOOK_SORT_OPTIONS)[keyof typeof BOOK_SORT_OPT
 export const SORT_MAP: Record<string, { col: string; asc: boolean }> = {
     [BOOK_SORT_OPTIONS.TITLE_ASC]: { col: 'title', asc: true },
     [BOOK_SORT_OPTIONS.TITLE_DESC]: { col: 'title', asc: false },
-    [BOOK_SORT_OPTIONS.PRICE_LOW]: { col: 'price_numeric', asc: true },
-    [BOOK_SORT_OPTIONS.PRICE_HIGH]: { col: 'price_numeric', asc: false },
+    [BOOK_SORT_OPTIONS.PRICE_LOW]: { col: 'price', asc: true },
+    [BOOK_SORT_OPTIONS.PRICE_HIGH]: { col: 'price', asc: false },
     [BOOK_SORT_OPTIONS.NEWEST]: { col: 'publication_date', asc: false },
     [BOOK_SORT_OPTIONS.OLDEST]: { col: 'publication_date', asc: true },
     [BOOK_SORT_OPTIONS.BEST_SELLERS]: { col: 'sales_count', asc: false },
