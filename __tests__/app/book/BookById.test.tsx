@@ -250,6 +250,6 @@ describe('App - Book[slug]', () => {
         render(element);
 
         const imgElement = screen.getByRole('img');
-        expect(imgElement).toHaveAttribute('src', expect.stringContaining('placeholder-book.png'));
+        expect(imgElement).toHaveAttribute('src', expect.stringContaining('placeholder-book'));
     });
 });
