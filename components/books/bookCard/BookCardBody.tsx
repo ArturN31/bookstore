@@ -3,13 +3,14 @@ import Image from 'next/image';
 
 export const BookCardBody = ({ book }: { book: Book }) => {
     const year = book.publication_date ? new Date(book.publication_date).getFullYear() : '';
+    const imageSrc = book.image_url || '/placeholder-book.svg';
 
     return (
         <div className="flex grow flex-col">
             <CardMedia className="relative aspect-4/5 w-full overflow-hidden bg-slate-50">
                 <Image
                     className="object-cover transition-all duration-500 group-hover:scale-110"
-                    src={book.image_url}
+                    src={imageSrc}
                     alt={book.title}
                     fill
                     sizes="(max-width: 1080px) 280px, (max-width: 1920px) 400px, 800px"
