@@ -24,4 +24,30 @@ describe('APP - pages/user - UserDetails', () => {
         expect(screen.getByText('John Doe'));
         expect(screen.getByText('123 Main St, Anytown, USA'));
     });
+
+    it('should show fallback copy when optional details are missing', () => {
+        render(
+            <UserDetails
+                userData={{
+                    ...mockedUserData,
+                    first_name: '',
+                    last_name: '',
+                    date_of_birth: '',
+                    street_address: '',
+                    city: '',
+                    country: '',
+                    phone_number: '',
+                    email: '',
+                }}
+            />,
+        );
+
+        expect(screen.getAllByText('Not provided').length).toBeGreaterThan(0);
+    });
+
+    it('should display fallback text for invalid birth dates', () => {
+        render(<UserDetails userData={{ ...mockedUserData, date_of_birth: 'not-a-date' }} />);
+
+        expect(screen.getByText('Not provided')).toBeTruthy();
+    });
 });

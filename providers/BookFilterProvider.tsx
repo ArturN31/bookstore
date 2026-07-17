@@ -1,38 +1,29 @@
 'use client';
 
 import { createContext, useContext, useMemo, useState } from 'react';
+import { BOOK_SORT_OPTIONS, BookSortType } from '@/data/books/BookConstants';
 
-const FilterTypes = [
-    'Title: A-Z',
-    'Title: Z-A',
-    'Price: Low to High',
-    'Price: High to Low',
-    'Release Date: Newest to Oldest',
-    'Release Date: Oldest to Newest',
-    'Highest Avg. customer rating',
-    'Lowest Avg. customer rating',
-    'Best Sellers',
-] as const;
+const FilterTypes = Object.values(BOOK_SORT_OPTIONS);
 
 type BookFilterContextType = {
-    filterType: (typeof FilterTypes)[number];
-    toggleFilter: (choice: (typeof FilterTypes)[number]) => void;
+    filterType: BookSortType;
+    toggleFilter: (choice: BookSortType) => void;
 };
 
 const BookFilterContext = createContext<BookFilterContextType>({
-    filterType: 'Title: A-Z',
+    filterType: BOOK_SORT_OPTIONS.TITLE_ASC,
     toggleFilter: () => {},
 });
 
 export const BookFilterProvider = ({ children }: { children: React.ReactNode }) => {
-    const [filterType, setFilter] = useState<(typeof FilterTypes)[number]>('Title: A-Z');
+    const [filterType, setFilter] = useState<BookSortType>(BOOK_SORT_OPTIONS.TITLE_ASC);
 
     const contextValue = useMemo(
         () => ({
             filterType,
-            toggleFilter: (choice: string) => {
-                if (FilterTypes.includes(choice as (typeof FilterTypes)[number])) {
-                    setFilter(choice as (typeof FilterTypes)[number]);
+            toggleFilter: (choice: BookSortType) => {
+                if (FilterTypes.includes(choice)) {
+                    setFilter(choice);
                 }
             },
         }),

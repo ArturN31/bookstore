@@ -236,7 +236,7 @@ describe('fetchBooksWithReviews', () => {
             limit: 5,
         });
 
-        expect(chain.order).toHaveBeenCalledWith('price_numeric', { ascending: false });
+        expect(chain.order).toHaveBeenCalledWith('price', { ascending: false });
         expect(chain.range).toHaveBeenCalledWith(0, 4);
     });
 
