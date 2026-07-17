@@ -74,12 +74,13 @@ export default async function BookById({ params, searchParams }: BookByIdProps) 
                 aria-label="Book overview"
             >
                 <div className="grid justify-center overflow-hidden rounded-md bg-black shadow-[0px_2px_6px_-2px_#000]">
+                    {/** Use Next Image with sizes so Next generates responsive srcset and serves AVIF/WebP per next.config */}
                     <Image
                         width={400}
                         height={600}
                         sizes="(max-width: 768px) 100vw, 33vw"
                         style={{ width: '100%', height: 'auto' }}
-                        src={image_url || '/placeholder-book.png'}
+                        src={image_url || '/placeholder-book.svg'}
                         alt={`Cover for ${title}`}
                         priority
                     />

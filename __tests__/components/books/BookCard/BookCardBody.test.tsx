@@ -94,4 +94,16 @@ describe('APP - BookCard - CardBody', () => {
         expect(screen.getByText('Mock Publisher')).toBeInTheDocument();
         expect(screen.queryByText('2023')).not.toBeInTheDocument();
     });
+
+    it('BRANCH COVERAGE: should fallback to placeholder when image_url is missing (covers line 6)', () => {
+        const bookWithoutImage: Book = {
+            ...mockedBook,
+            image_url: '' as unknown as string,
+        };
+
+        render(<BookCardBody book={bookWithoutImage} />);
+
+        const imgElement = screen.getByRole('img');
+        expect(imgElement).toHaveAttribute('src', expect.stringContaining('placeholder-book'));
+    });
 });
