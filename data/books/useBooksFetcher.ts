@@ -22,6 +22,7 @@ interface FetchState {
 
 export const useBooksFetcher = ({ initialData, filters, filterType }: UseBooksFetcherProps) => {
     const abortControllerRef = useRef<AbortController | null>(null);
+    const previousFilterTypeRef = useRef<string>(filterType);
     const [isLoading, setIsLoading] = useState(false);
     const [state, setState] = useState<FetchState>({
         books: initialData.data?.data ?? [],
@@ -70,9 +71,11 @@ export const useBooksFetcher = ({ initialData, filters, filterType }: UseBooksFe
     );
 
     useEffect(() => {
-        if (initialData.data && filterType === 'Title: A-Z' && state.page === 1) return;
+        const hasFilterChanged = previousFilterTypeRef.current !== filterType;
+        if (!hasFilterChanged && initialData.data && state.page === 1) return;
 
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+        previousFilterTypeRef.current = filterType;
+
         executeFetchOperation(false, 1, filters, filterType);
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
