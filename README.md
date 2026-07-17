@@ -6,14 +6,14 @@ This project is an online bookstore built with **Next.js 16 (App Router)**, **Re
 
 ## Project Status
 
-**Current Phase**: Core marketplace MVP - Production-ready with excellent test coverage
-**Test Coverage**: **95.33% overall** (92.98% statements, 99.23% branches, 96.12% functions)
+**Current Phase**: Core marketplace MVP - Production-ready with strong automated test coverage
+**Test Coverage**: **95.40% average coverage** (93.10% statements, 99.24% branches, 96.17% functions)
 **Performance**: Lighthouse Desktop 99/100 (0.3s FCP, 0.8s LCP, 0ms TBT, 0 CLS)
-**Last Updated**: June 13, 2026 (Deep codebase analysis)
+**Last Updated**: July 17, 2026 (latest automated coverage report)
 
 ## Key Highlights
 
-- ✅ **100% Test Coverage**: App routing, components, data actions, and providers fully tested
+- ✅ **Strong automated coverage**: Core storefront routes, components, data actions, and providers are well covered by Jest
 - ✅ **9 Sort Options**: Including Best Sellers (implemented via sales_count), price, release date, ratings
 - ✅ **Real-time Sync**: Shopping cart and wishlist sync across devices via Supabase listeners
 - ✅ **Schema-First Validation**: All inputs validated with Zod from client to database
@@ -66,16 +66,16 @@ type FormData = z.infer<typeof schema>; // Auto-generated TypeScript type
 
 ### Coverage Summary
 
-| Area | Statements | Branches | Functions | Lines | Status |
-|------|-----------|----------|-----------|-------|--------|
-| **Overall** | 92.98% | 99.23% | 96.12% | 92.98% | ✅ Excellent |
-| App Routing | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
-| Components | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
-| Server Actions | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
-| Data Fetching | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
-| Providers | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
-| Schemas | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
-| Dev-Tools | 40.00 | 40.00 | 40.00 | 40.00 | ⚠️ Intentional (admin-only) |
+| Area | Statements | Branches | Functions | Lines | Avg | Status |
+|------|-----------|----------|-----------|-------|-----|--------|
+| **Overall** | 93.10% | 99.24% | 96.17% | 93.10% | 95.40% | ✅ Excellent |
+| App Routing | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| Components | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| Server Actions | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| Data Fetching | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| Providers | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| Schemas | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
+| Dev-Tools | 40.00 | 40.00 | 40.00 | 40.00 | 40.00 | ⚠️ Intentional (admin-only) |
 
 ### Running Tests
 
@@ -295,13 +295,13 @@ This ensures type safety from form submission to database insert.
 ### Directory Structure
 
 ```filesystem
-app/              → Server routes and layouts (100% test coverage)
-components/       → Reusable UI atoms (100% test coverage)
+app/              → Server routes and layouts (strong automated coverage)
+components/       → Reusable UI atoms (strong automated coverage)
 data/
-  ├─ actions/     → Server Actions with Zod validation (100% coverage)
-  ├─ books/       → Data fetching queries (100% coverage)
-  └─ schemas/     → Zod schemas (100% coverage)
-providers/        → Global state (User, Cart contexts) (100% coverage)
+  ├─ actions/     → Server Actions with Zod validation (well covered by tests)
+  ├─ books/       → Data fetching queries (well covered by tests)
+  └─ schemas/     → Zod schemas (well covered by tests)
+providers/        → Global state (User, Cart contexts) (well covered by tests)
 utils/
   └─ db/          → Database helpers (admin, client, seed)
 __tests__/        → Test suite mirroring src/ structure
