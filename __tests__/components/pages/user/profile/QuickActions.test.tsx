@@ -1,4 +1,4 @@
-import { QuickActions } from '@/components/pages/user/profile/UserProfilePage/QuickActions';
+import { QuickActions } from '@/components/pages/user/profile/UserProfilePage/QuickActions/QuickActions';
 import { screen, render } from '@testing-library/react';
 
 describe('APP - pages/user - QuickActions', () => {

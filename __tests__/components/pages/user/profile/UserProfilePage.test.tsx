@@ -21,7 +21,7 @@ describe('APP - pages/user - UserDetails', () => {
     it('should render component', () => {
         render(<UserProfilePage userData={mockedUserData} />);
 
-        expect(screen.getByText('Welcome back,'));
-        expect(screen.getByText(`${mockedUserData.username}!`));
+        expect(screen.getByText('Welcome back!'));
+        expect(screen.getByRole('heading', { name: 'johndoe' }));
     });
 });
