@@ -2,7 +2,6 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { createBackendClient } from '@/utils/db/server';
 import { getUserData } from '@/data/user/GetUserData';
 import { wishlistSchema } from '@/data/schemas/wishlistSchema';
 import { executeWishlistOperation } from './WishlistService';
@@ -34,8 +33,6 @@ export async function WishlistAction(
     const { bookId, actionType } = validated.data;
 
     try {
-        const supabase = await createBackendClient();
-
         const { data: user, error: authError } = await getUserData();
         if (authError || !user)
             return {
@@ -43,7 +40,7 @@ export async function WishlistAction(
                 message: 'Login required to manage wishlist.',
             };
 
-        const result = await executeWishlistOperation(supabase, actionType, user.id, bookId);
+        const result = await executeWishlistOperation(actionType, user.id, bookId);
 
         if (result.error) return { success: false, message: result.error };
 

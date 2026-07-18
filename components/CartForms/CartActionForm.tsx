@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useMemo } from 'react';
+import { useActionState, useEffect, useMemo, useOptimistic, startTransition } from 'react';
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import RemoveShoppingCartOutlinedIcon from '@mui/icons-material/RemoveShoppingCartOutlined';
 import { useUserState } from '@/providers/user/utils/useUser';
@@ -18,11 +18,21 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
         [cartBooks, bookID],
     );
 
+    const [optimisticInCart, setOptimisticInCart] = useOptimistic(
+        isInCart,
+        (_, next: boolean) => next,
+    );
+
+    useEffect(() => {
+        startTransition(() => {
+            setOptimisticInCart(isInCart);
+        });
+    }, [isInCart, setOptimisticInCart]);
+
     const initialState: CartFormState = { success: false, message: '' };
 
-    const [state, formAction, isPending] = useActionState(
+    const [state, formAction] = useActionState(
         async (prevState: CartFormState, formData: FormData) => {
-            if (isPending) return prevState;
             const result = await CartAction(prevState, formData);
             if (result.success) await refreshCart(user.id);
             return result;
@@ -30,7 +40,7 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
         initialState,
     );
 
-    const isAddMode = !isInCart;
+    const isAddMode = !optimisticInCart;
     const isCartFull = cartBooksAmount >= 10;
     const isOutOfStock = stock === 0;
     const isLowStock = stock > 0 && stock <= 25;
@@ -42,9 +52,11 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
     useEffect(() => {
         if (!state.message) return;
 
-        const variant = state.success ? 'success' : 'warning';
+        const variant = state.success ? 'success' : 'error';
         enqueueSnackbar(state.message, { variant });
-    }, [state.message, state.success, state.timestamp]);
+
+        if (!state.success) startTransition(() => setOptimisticInCart(isInCart));
+    }, [state.message, state.success, state.timestamp, isInCart, setOptimisticInCart]);
 
     const getStatusContent = () => {
         if (userLoading) return null;
@@ -74,21 +86,9 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
 
     return (
         <div className="flex w-full flex-col">
-            <div className="4k:h-10 flex h-5 items-center justify-center">
-                {status ? (
-                    <p
-                        className={`4k:text-xl text-[10px] font-bold tracking-tight uppercase ${status.color} ${status.animate ? 'animate-pulse' : ''}`}
-                    >
-                        {status.text}
-                    </p>
-                ) : (
-                    <div className="h-px w-4 bg-transparent" />
-                )}
-            </div>
-
             <form
                 action={formAction}
-                onSubmit={(e) => (isButtonDisabled || isPending) && e.preventDefault()}
+                onSubmit={(e) => isButtonDisabled && e.preventDefault()}
                 className="mt-1"
                 aria-label="cart-form"
             >
@@ -101,7 +101,7 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
                 <input
                     type="hidden"
                     name="action-type"
-                    value={isAddMode ? 'INSERT' : 'REMOVE'}
+                    value={!isInCart ? 'INSERT' : 'REMOVE'}
                 />
 
                 <input
@@ -112,26 +112,37 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
 
                 <button
                     type="submit"
-                    disabled={isButtonDisabled || isPending}
-                    onClick={(e) => e.stopPropagation()}
-                    className={`flex min-h-12 w-full items-center justify-center rounded-sm px-2 font-bold transition-all ${
-                        isPending ? 'cursor-wait opacity-70' : 'cursor-pointer hover:scale-[1.02]'
-                    } disabled:transform-none disabled:bg-[#b3b3b3] disabled:text-[#666] ${buttonStyles} 4k:min-h-24 4k:text-3xl}`}
+                    disabled={isButtonDisabled}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isButtonDisabled)
+                            startTransition(() => setOptimisticInCart(!isInCart));
+                    }}
+                    className={`flex min-h-12 w-full cursor-pointer items-center justify-center rounded-sm px-2 font-bold transition-all hover:scale-[1.02] disabled:transform-none disabled:bg-[#b3b3b3] disabled:text-[#666] ${buttonStyles} 4k:min-h-24 4k:text-3xl}`}
                 >
-                    {isPending ? (
-                        'Processing...'
-                    ) : (
-                        <div className="flex items-center gap-2">
-                            {isAddMode ? (
-                                <ShoppingCartOutlinedIcon />
-                            ) : (
-                                <RemoveShoppingCartOutlinedIcon />
-                            )}
-                            <span>{isAddMode ? 'Add to cart' : 'Remove from cart'}</span>
-                        </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                        {isAddMode ? (
+                            <ShoppingCartOutlinedIcon />
+                        ) : (
+                            <RemoveShoppingCartOutlinedIcon />
+                        )}
+                        <span>{isAddMode ? 'Add to cart' : 'Remove from cart'}</span>
+                    </div>
                 </button>
             </form>
+            {status && (
+                <div className="4k:h-10 flex h-5 items-center justify-center">
+                    {status ? (
+                        <p
+                            className={`4k:text-xl text-[10px] font-bold tracking-tight uppercase ${status.color} ${status.animate ? 'animate-pulse' : ''}`}
+                        >
+                            {status.text}
+                        </p>
+                    ) : (
+                        <div className="h-px w-4 bg-transparent" />
+                    )}
+                </div>
+            )}
         </div>
     );
 };

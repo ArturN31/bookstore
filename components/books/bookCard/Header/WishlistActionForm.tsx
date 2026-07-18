@@ -18,7 +18,7 @@ interface WishlistActionFormProps {
 export const WishlistActionForm = ({ book }: WishlistActionFormProps) => {
     const { wishlist, loggedIn, loading: userLoading } = useUserState();
     const { refreshWishlist } = useUserActions();
-    const { id, title } = book;
+    const { id } = book;
 
     const isActuallyWishlisted = useMemo(
         () => wishlist.some((item) => item.book_id === id),
@@ -31,11 +31,11 @@ export const WishlistActionForm = ({ book }: WishlistActionFormProps) => {
     );
 
     const atLimit = wishlist.length >= WISHLIST_LIMIT;
-    const isAddMode = !isActuallyWishlisted;
+    const isAddMode = !optimisticWishlisted;
     const isButtonDisabled = !userLoading && (!loggedIn || (isAddMode && atLimit));
 
     const [state, formAction] = useActionState(
-        async (prevState: WishlistFormState | undefined, formData: FormData) => {
+        async (prevState: WishlistFormState, formData: FormData) => {
             if (isButtonDisabled) return prevState;
 
             const result = await WishlistAction(prevState, formData);
@@ -47,9 +47,18 @@ export const WishlistActionForm = ({ book }: WishlistActionFormProps) => {
 
     useEffect(() => {
         if (!state?.message) return;
-        if (state.success) enqueueSnackbar(`${title}: ${state.message}`, { variant: 'success' });
-        else enqueueSnackbar(state.message, { variant: 'error' });
-    }, [state, title]);
+
+        const variant = state.success ? 'success' : 'error';
+        enqueueSnackbar(state.message, { variant });
+
+        if (!state.success) startTransition(() => setOptimisticWishlisted(isActuallyWishlisted));
+    }, [
+        state.message,
+        state.success,
+        state.timestamp,
+        isActuallyWishlisted,
+        setOptimisticWishlisted,
+    ]);
 
     const handleAction = (formData: FormData) => {
         startTransition(() => {
@@ -68,17 +77,14 @@ export const WishlistActionForm = ({ book }: WishlistActionFormProps) => {
         const base =
             'group cursor-pointer relative flex items-center gap-2 rounded-full px-3.5 py-1.5 transition-all duration-300 active:scale-95';
 
-        if (!loggedIn) {
+        if (!loggedIn)
             return `${base} bg-slate-50 text-slate-400 hover:bg-slate-200 hover:text-slate-600 cursor-not-allowed`;
-        }
 
-        if (atLimit && isAddMode) {
+        if (atLimit && isAddMode)
             return `${base} bg-slate-50 text-slate-300 cursor-not-allowed grayscale`;
-        }
 
-        if (optimisticWishlisted) {
+        if (optimisticWishlisted)
             return `${base} bg-slate-100 text-[#1e293b] hover:bg-red-50 hover:text-red-600 hover:border-red-100 border border-transparent`;
-        }
 
         return `${base} bg-slate-50 text-slate-400 hover:bg-[#facc15] hover:text-[#1e293b] hover:shadow-md`;
     };
@@ -103,13 +109,17 @@ export const WishlistActionForm = ({ book }: WishlistActionFormProps) => {
                 <button
                     type="submit"
                     disabled={isButtonDisabled}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isButtonDisabled)
+                            startTransition(() => setOptimisticWishlisted(!optimisticWishlisted));
+                    }}
                     className={getButtonStyles()}
                 >
                     <div className="relative flex items-center justify-center">
                         {!loggedIn ? (
                             <LockIcon className="text-[0.9rem] transition-transform group-hover:rotate-12" />
-                        ) : optimisticWishlisted ? (
+                        ) : isAddMode ? (
                             <>
                                 <BookmarkIcon className="animate-in zoom-in text-[1.1rem] duration-300" />
                                 <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[#facc15] ring-2 ring-slate-100 group-hover:bg-red-500" />
@@ -119,7 +129,7 @@ export const WishlistActionForm = ({ book }: WishlistActionFormProps) => {
                         )}
                     </div>
                     <span className="text-[10px] font-black tracking-widest uppercase">
-                        {optimisticWishlisted ? 'Saved' : 'Save'}
+                        {isAddMode ? 'Saved' : 'Save'}
                     </span>
                 </button>
             </form>
