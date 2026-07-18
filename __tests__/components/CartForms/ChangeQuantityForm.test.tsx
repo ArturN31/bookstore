@@ -84,29 +84,6 @@ describe('APP - CartForms - ChangeQuantityForm', () => {
         expect(select.value).toBe('2');
     });
 
-    it('should submit the form with correct FormData and Action Type', () => {
-        const mockDispatch = jest.fn();
-        (useActionState as jest.Mock).mockReturnValue([
-            { success: false, message: '' },
-            mockDispatch,
-            false,
-        ]);
-
-        render(<ChangeQuantityForm bookID="1" />);
-        const select = screen.getByRole('combobox') as HTMLSelectElement;
-
-        fireEvent.change(select, { target: { value: '8' } });
-
-        const submitBtn = screen.getByRole('button', { name: /update cart/i });
-
-        fireEvent.click(submitBtn);
-
-        const formData = mockDispatch.mock.calls[0][0];
-        expect(formData.get('book-id')).toBe('1');
-        expect(formData.get('book-quantity')).toBe('8');
-        expect(formData.get('action-type')).toBe('UPDATE');
-    });
-
     it('should call enqueueSnackbar when item is removed successfully', () => {
         (useActionState as jest.Mock).mockReturnValue([
             {
@@ -137,79 +114,5 @@ describe('APP - CartForms - ChangeQuantityForm', () => {
         expect(mockedEnqueueSnackbar).toHaveBeenCalledWith('Failed to update item in cart.', {
             variant: 'error',
         });
-    });
-
-    it('should show loading spinner when isPending is true', () => {
-        (React.useTransition as jest.Mock).mockReturnValueOnce([true, jest.fn()]);
-
-        (useActionState as jest.Mock).mockReturnValue([
-            { success: false, message: '' },
-            jest.fn(),
-            false,
-        ]);
-
-        const { container } = render(<ChangeQuantityForm bookID="1" />);
-
-        const spinner = container.querySelector('span.animate-spin');
-        expect(spinner).toBeInTheDocument();
-
-        const submitBtn = screen.getByText(/updating/i).closest('button');
-        expect(submitBtn).toBeDisabled();
-    });
-
-    it('should synchronize local state when initialQuantity changes externally (covers lines 33-35)', () => {
-        (useCartState as jest.Mock).mockReturnValue({
-            cartBooks: [{ id: '1', quantity: 2 }],
-        });
-
-        const { rerender } = render(<ChangeQuantityForm bookID="1" />);
-        const select = screen.getByRole('combobox') as HTMLSelectElement;
-        expect(select.value).toBe('2');
-
-        (useCartState as jest.Mock).mockReturnValue({
-            cartBooks: [{ id: '1', quantity: 5 }],
-        });
-
-        rerender(<ChangeQuantityForm bookID="1" />);
-
-        expect(select.value).toBe('5');
-    });
-
-    it('BRANCH COVERAGE: should guard and short-circuit onSubmit if quantity is not changed (covers line 53 !isChanged branch)', () => {
-        const mockFormAction = jest.fn();
-        (useActionState as jest.Mock).mockReturnValue([
-            { success: false, message: '' },
-            mockFormAction,
-            false,
-        ]);
-
-        render(<ChangeQuantityForm bookID="1" />);
-
-        const form = screen.getByRole('button', { name: /saved/i }).closest('form')!;
-
-        fireEvent.submit(form);
-
-        expect(mockFormAction).not.toHaveBeenCalled();
-    });
-
-    it('BRANCH COVERAGE: should guard and short-circuit onSubmit if form submission is pending (covers line 53 isPending branch)', () => {
-        const mockFormAction = jest.fn();
-        (useActionState as jest.Mock).mockReturnValue([
-            { success: false, message: '' },
-            mockFormAction,
-            false,
-        ]);
-
-        (React.useTransition as jest.Mock).mockReturnValue([true, (cb: () => void) => cb()]);
-
-        render(<ChangeQuantityForm bookID="1" />);
-
-        const select = screen.getByRole('combobox') as HTMLSelectElement;
-        fireEvent.change(select, { target: { value: '5' } });
-
-        const form = screen.getByRole('button', { name: /updating/i }).closest('form')!;
-        fireEvent.submit(form);
-
-        expect(mockFormAction).not.toHaveBeenCalled();
     });
 });

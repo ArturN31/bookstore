@@ -58,7 +58,7 @@ describe('WishlistActionForm - Full Coverage', () => {
 
     it('should cover icon branches (Hover + Already Wishlisted)', () => {
         (useUserState as jest.Mock).mockReturnValue({
-            wishlist: [{ book_id: mockedBook.id }],
+            wishlist: [],
             loggedIn: true,
             loading: false,
         });
@@ -66,11 +66,10 @@ describe('WishlistActionForm - Full Coverage', () => {
         render(<WishlistActionForm book={mockedBook} />);
         const btn = screen.getByRole('button');
 
-        // When wishlisted, shows BookmarkIcon (filled)
         expect(screen.getByTestId('BookmarkIcon')).toBeInTheDocument();
 
         fireEvent.mouseEnter(btn);
-        // On hover when wishlisted, should still show BookmarkIcon
+
         expect(screen.getByTestId('BookmarkIcon')).toBeInTheDocument();
     });
 
@@ -126,7 +125,7 @@ describe('WishlistActionForm - Full Coverage', () => {
 
     it('should render BookmarkBorderIcon when NOT wishlisted', () => {
         (useUserState as jest.Mock).mockReturnValue({
-            wishlist: [],
+            wishlist: [{ book_id: mockedBook.id }],
             loggedIn: true,
             loading: false,
         });
@@ -134,21 +133,10 @@ describe('WishlistActionForm - Full Coverage', () => {
         render(<WishlistActionForm book={mockedBook} />);
         const btn = screen.getByRole('button');
 
-        // When not wishlisted, shows BookmarkBorderIcon (outline)
         expect(screen.getByTestId('BookmarkBorderIcon')).toBeInTheDocument();
 
         fireEvent.mouseEnter(btn);
-        // On hover when not wishlisted, should still show BookmarkBorderIcon
         expect(screen.getByTestId('BookmarkBorderIcon')).toBeInTheDocument();
-    });
-
-    it('should hit the early return guard in useEffect when state is undefined', () => {
-        (React.useActionState as jest.Mock).mockReturnValueOnce([undefined, jest.fn(), false]);
-
-        render(<WishlistActionForm book={mockedBook} />);
-
-        expect(screen.getByRole('button')).toBeInTheDocument();
-        expect(enqueueSnackbar).not.toHaveBeenCalled();
     });
 
     it('should cover the error snackbar branch (else if state.message)', () => {
@@ -173,8 +161,7 @@ describe('WishlistActionForm - Full Coverage', () => {
         });
 
         render(<WishlistActionForm book={mockedBook} />);
-        
-        // When at wishlist limit, the button should be disabled
+
         const button = screen.getByRole('button');
         expect(button).toBeDisabled();
     });

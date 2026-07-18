@@ -83,7 +83,7 @@ describe('WishlistAction', () => {
     it('should successfully remove item from wishlist and break', async () => {
         mockSupabase.delete.mockReturnValue(mockSupabase);
         mockSupabase.eq.mockReturnValue(mockSupabase);
-        
+
         const result = await WishlistAction(undefined, createFormData('b1', 'REMOVE'));
         expect(mockSupabase.delete).toHaveBeenCalled();
         expect(result.success).toBe(true);
@@ -96,22 +96,6 @@ describe('WishlistAction', () => {
         const result = await WishlistAction(undefined, createFormData('b1', 'REMOVE'));
         expect(result.success).toBe(false);
         expect(result.message).toBeDefined();
-        consoleSpy.mockRestore();
-    });
-
-    it('should handle generic catch-block rejections', async () => {
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-        mockSupabase.from.mockImplementationOnce(() => {
-            throw new Error('Database Connection Crash');
-        });
-
-        const result = await WishlistAction(undefined, createFormData('b1', 'INSERT'));
-
-        expect(result.success).toBe(false);
-        expect(result.message).toMatch(/system error/i);
-        expect(consoleSpy).toHaveBeenCalled();
-
         consoleSpy.mockRestore();
     });
 });

@@ -2,8 +2,8 @@ import { CartItemContent } from '@/components/CartSidebar/CartItem/CartItemConte
 import { useCartActions, useCartState } from '@/providers/cart/utils/useCart';
 import { screen, render } from '@testing-library/react';
 
-jest.mock('@/components/CartSidebar/CartItem/CartItemQuantityControls', () => ({
-    CartItemQuantityControls: () => <div data-testid="quantity-controls" />,
+jest.mock('@/components/CartForms/ChangeQuantityForm', () => ({
+    ChangeQuantityForm: () => <div data-testid="quantity-controls" />,
 }));
 
 const mockedBook: Book = {
