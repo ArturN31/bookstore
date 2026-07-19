@@ -14,9 +14,9 @@ jest.mock('next/cache', () => ({
 describe('WishlistAction', () => {
     const mockedCreateBackendClient = createBackendClient as jest.Mock;
     const mockedGetUserData = getUserData as jest.Mock;
-    const mockedWishlistSchema = wishlistSchema as any;
+    const mockedWishlistSchema = wishlistSchema as unknown as { safeParse: jest.Mock };
 
-    const mockSupabase: any = {
+    const mockSupabase = {
         from: jest.fn().mockReturnThis(),
         insert: jest.fn().mockReturnThis(),
         delete: jest.fn().mockReturnThis(),
@@ -28,10 +28,12 @@ describe('WishlistAction', () => {
         mockedCreateBackendClient.mockResolvedValue(mockSupabase);
         mockedGetUserData.mockResolvedValue({ data: { id: 'user-123' }, error: null });
 
-        mockedWishlistSchema.safeParse.mockImplementation((data: any) => ({
-            success: true,
-            data: { bookId: data.bookId, actionType: data.actionType },
-        }));
+        mockedWishlistSchema.safeParse.mockImplementation(
+            (data: { bookId: string; actionType: string }) => ({
+                success: true,
+                data: { bookId: data.bookId, actionType: data.actionType },
+            }),
+        );
 
         mockSupabase.from.mockReturnValue(mockSupabase);
         mockSupabase.insert.mockResolvedValue({ error: null });
@@ -96,6 +98,21 @@ describe('WishlistAction', () => {
         const result = await WishlistAction(undefined, createFormData('b1', 'REMOVE'));
         expect(result.success).toBe(false);
         expect(result.message).toBeDefined();
+        consoleSpy.mockRestore();
+    });
+
+    it('should catch unhandled exceptions and return a system error message', async () => {
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+        const mockError = new Error('Simulated system failure');
+        mockedGetUserData.mockRejectedValueOnce(mockError);
+
+        const result = await WishlistAction(undefined, createFormData('b1', 'INSERT'));
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('A system error occurred. Please try again.');
+        expect(consoleSpy).toHaveBeenCalledWith('[WishlistAction] Pipeline Failure:', mockError);
+
         consoleSpy.mockRestore();
     });
 });

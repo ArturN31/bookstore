@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useMemo, useOptimistic, useState, useTransition } from 'react';
+import { useActionState, useEffect, useMemo, useOptimistic, useTransition } from 'react';
 import { enqueueSnackbar } from 'notistack';
 
 import { useCartActions, useCartState } from '@/providers/cart/utils/useCart';
@@ -46,16 +46,13 @@ export const ChangeQuantityForm = ({ bookID }: ChangeQuantityFormProps) => {
     const handleChange = async (newQuantity: number) => {
         if (isPending) return;
 
-        startTransition(() => {
-            setOptimisticQuantity(newQuantity);
-        });
-
         const formData = new FormData();
         formData.append('book-id', bookID);
         formData.append('book-quantity', newQuantity.toString());
         formData.append('action-type', 'UPDATE');
 
         startTransition(async () => {
+            setOptimisticQuantity(newQuantity);
             await formAction(formData);
         });
     };

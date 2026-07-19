@@ -50,8 +50,6 @@ export const WishlistActionForm = ({ book }: WishlistActionFormProps) => {
 
         const variant = state.success ? 'success' : 'error';
         enqueueSnackbar(state.message, { variant });
-
-        if (!state.success) startTransition(() => setOptimisticWishlisted(isActuallyWishlisted));
     }, [
         state.message,
         state.success,
@@ -63,8 +61,8 @@ export const WishlistActionForm = ({ book }: WishlistActionFormProps) => {
     const handleAction = (formData: FormData) => {
         startTransition(() => {
             setOptimisticWishlisted(!isActuallyWishlisted);
+            formAction(formData);
         });
-        formAction(formData);
     };
 
     const tooltipLabel = useMemo(() => {
