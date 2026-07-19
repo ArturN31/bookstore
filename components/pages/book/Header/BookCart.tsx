@@ -59,12 +59,14 @@ export const BookCart = ({ book }: { book: Book }) => {
                         </p>
                     </div>
                 ) : (
-                    <div className="flex flex-col gap-3">
-                        {cartEntry && <ChangeQuantityForm bookID={cartEntry.id} />}
-                        <CartActionForm
-                            bookID={book.id}
-                            stock={book.stock_quantity}
-                        />
+                    <div className="@container">
+                        <div className="flex flex-col items-center justify-center gap-4 @[300px]:flex-row">
+                            {cartEntry && <ChangeQuantityForm bookID={cartEntry.id} />}
+                            <CartActionForm
+                                bookID={book.id}
+                                stock={book.stock_quantity}
+                            />
+                        </div>
                     </div>
                 )}
             </div>

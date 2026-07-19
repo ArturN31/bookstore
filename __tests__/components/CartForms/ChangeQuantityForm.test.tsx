@@ -1,10 +1,9 @@
 import { ChangeQuantityForm } from '@/components/CartForms/ChangeQuantityForm';
-import { CartAction } from '@/data/actions/CartForm/CartAction';
 import { useCartActions, useCartState } from '@/providers/cart/utils/useCart';
 import { useUserState } from '@/providers/user/utils/useUser';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { enqueueSnackbar } from 'notistack';
-import React, { useActionState } from 'react';
+import { useActionState, useOptimistic, useTransition } from 'react';
 
 jest.mock('@/providers/cart/utils/useCart', () => ({
     useCartState: jest.fn(),
@@ -35,6 +34,7 @@ jest.mock('react', () => {
         ...actualReact,
         useActionState: jest.fn(),
         useTransition: jest.fn(() => [false, (cb: () => void) => cb()]),
+        useOptimistic: jest.fn((initial: number) => [initial, jest.fn()]),
     };
 });
 
@@ -64,6 +64,8 @@ describe('APP - CartForms - ChangeQuantityForm', () => {
             action,
             false,
         ]);
+        (useTransition as jest.Mock).mockImplementation(() => [false, (cb: () => void) => cb()]);
+        (useOptimistic as jest.Mock).mockImplementation((initial: number) => [initial, jest.fn()]);
     });
 
     it('should fallback to initial quantity of 1 if book is not in cartBooks', () => {
@@ -82,29 +84,6 @@ describe('APP - CartForms - ChangeQuantityForm', () => {
         render(<ChangeQuantityForm bookID="1" />);
         const select = screen.getByRole('combobox') as HTMLSelectElement;
         expect(select.value).toBe('2');
-    });
-
-    it('should submit the form with correct FormData and Action Type', () => {
-        const mockDispatch = jest.fn();
-        (useActionState as jest.Mock).mockReturnValue([
-            { success: false, message: '' },
-            mockDispatch,
-            false,
-        ]);
-
-        render(<ChangeQuantityForm bookID="1" />);
-        const select = screen.getByRole('combobox') as HTMLSelectElement;
-
-        fireEvent.change(select, { target: { value: '8' } });
-
-        const submitBtn = screen.getByRole('button', { name: /update cart/i });
-
-        fireEvent.click(submitBtn);
-
-        const formData = mockDispatch.mock.calls[0][0];
-        expect(formData.get('book-id')).toBe('1');
-        expect(formData.get('book-quantity')).toBe('8');
-        expect(formData.get('action-type')).toBe('UPDATE');
     });
 
     it('should call enqueueSnackbar when item is removed successfully', () => {
@@ -139,60 +118,28 @@ describe('APP - CartForms - ChangeQuantityForm', () => {
         });
     });
 
-    it('should show loading spinner when isPending is true', () => {
-        (React.useTransition as jest.Mock).mockReturnValueOnce([true, jest.fn()]);
+    it('should display the optimisticQuantity if it differs from currentBookQuantity', () => {
+        (useOptimistic as jest.Mock).mockReturnValueOnce([5, jest.fn()]);
 
-        (useActionState as jest.Mock).mockReturnValue([
-            { success: false, message: '' },
-            jest.fn(),
-            false,
-        ]);
-
-        const { container } = render(<ChangeQuantityForm bookID="1" />);
-
-        const spinner = container.querySelector('span.animate-spin');
-        expect(spinner).toBeInTheDocument();
-
-        const submitBtn = screen.getByText(/updating/i).closest('button');
-        expect(submitBtn).toBeDisabled();
-    });
-
-    it('should synchronize local state when initialQuantity changes externally (covers lines 33-35)', () => {
-        (useCartState as jest.Mock).mockReturnValue({
-            cartBooks: [{ id: '1', quantity: 2 }],
-        });
-
-        const { rerender } = render(<ChangeQuantityForm bookID="1" />);
+        render(<ChangeQuantityForm bookID="1" />);
         const select = screen.getByRole('combobox') as HTMLSelectElement;
-        expect(select.value).toBe('2');
-
-        (useCartState as jest.Mock).mockReturnValue({
-            cartBooks: [{ id: '1', quantity: 5 }],
-        });
-
-        rerender(<ChangeQuantityForm bookID="1" />);
 
         expect(select.value).toBe('5');
     });
 
-    it('BRANCH COVERAGE: should guard and short-circuit onSubmit if quantity is not changed (covers line 53 !isChanged branch)', () => {
-        const mockFormAction = jest.fn();
-        (useActionState as jest.Mock).mockReturnValue([
-            { success: false, message: '' },
-            mockFormAction,
-            false,
-        ]);
+    it('should parse integer and set optimistic state when onChange fires', () => {
+        const mockSetOptimistic = jest.fn();
+        (useOptimistic as jest.Mock).mockReturnValueOnce([2, mockSetOptimistic]);
 
         render(<ChangeQuantityForm bookID="1" />);
+        const select = screen.getByRole('combobox');
 
-        const form = screen.getByRole('button', { name: /saved/i }).closest('form')!;
+        fireEvent.change(select, { target: { value: '4' } });
 
-        fireEvent.submit(form);
-
-        expect(mockFormAction).not.toHaveBeenCalled();
+        expect(mockSetOptimistic).toHaveBeenCalledWith(4);
     });
 
-    it('BRANCH COVERAGE: should guard and short-circuit onSubmit if form submission is pending (covers line 53 isPending branch)', () => {
+    it('should format FormData correctly and submit formAction inside transition', () => {
         const mockFormAction = jest.fn();
         (useActionState as jest.Mock).mockReturnValue([
             { success: false, message: '' },
@@ -200,16 +147,42 @@ describe('APP - CartForms - ChangeQuantityForm', () => {
             false,
         ]);
 
-        (React.useTransition as jest.Mock).mockReturnValue([true, (cb: () => void) => cb()]);
+        render(<ChangeQuantityForm bookID="1" />);
+        const select = screen.getByRole('combobox');
+
+        fireEvent.change(select, { target: { value: '7' } });
+
+        expect(mockFormAction).toHaveBeenCalledTimes(1);
+
+        const submittedFormData = mockFormAction.mock.calls[0][0] as FormData;
+
+        expect(submittedFormData).toBeInstanceOf(FormData);
+        expect(submittedFormData.get('book-id')).toBe('1');
+        expect(submittedFormData.get('book-quantity')).toBe('7');
+        expect(submittedFormData.get('action-type')).toBe('UPDATE');
+    });
+
+    it('should disable select and block handleChange execution if isPending is true', () => {
+        const mockFormAction = jest.fn();
+        const mockSetOptimistic = jest.fn();
+
+        (useActionState as jest.Mock).mockReturnValue([
+            { success: false, message: '' },
+            mockFormAction,
+            false,
+        ]);
+
+        (useTransition as jest.Mock).mockReturnValueOnce([true, jest.fn()]);
+        (useOptimistic as jest.Mock).mockReturnValueOnce([2, mockSetOptimistic]);
 
         render(<ChangeQuantityForm bookID="1" />);
-
         const select = screen.getByRole('combobox') as HTMLSelectElement;
+
+        expect(select.disabled).toBe(true);
+
         fireEvent.change(select, { target: { value: '5' } });
 
-        const form = screen.getByRole('button', { name: /updating/i }).closest('form')!;
-        fireEvent.submit(form);
-
+        expect(mockSetOptimistic).not.toHaveBeenCalled();
         expect(mockFormAction).not.toHaveBeenCalled();
     });
 });

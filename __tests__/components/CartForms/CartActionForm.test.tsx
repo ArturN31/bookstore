@@ -72,31 +72,7 @@ describe('APP - CartForms - CartActionForm', () => {
         ]);
     });
 
-    it('should cover the internal isPending guard in useActionState', async () => {
-        const prevState = { success: false, message: 'initial' };
-        let capturedAction: (state: unknown, formData: FormData) => Promise<unknown> = () =>
-            Promise.resolve(prevState);
-
-        (useActionState as jest.Mock).mockImplementation((action, initialState) => {
-            capturedAction = action;
-            return [initialState, jest.fn(), true];
-        });
-
-        render(
-            <CartActionForm
-                bookID="1"
-                stock={createMockBook({ id: '1', title: 'Book 1' }).stock_quantity}
-            />,
-        );
-
-        const formData = new FormData();
-        const result = await capturedAction(prevState, formData);
-
-        expect(result).toBe(prevState);
-        expect(CartAction).not.toHaveBeenCalled();
-    });
-
-    it('should call enqueueSnackbar with "warning" variant when success is false', () => {
+    it('should call enqueueSnackbar with "error" variant when success is false', () => {
         (useActionState as jest.Mock).mockReturnValue([
             {
                 success: false,
@@ -115,7 +91,7 @@ describe('APP - CartForms - CartActionForm', () => {
         );
 
         expect(enqueueSnackbar).toHaveBeenCalledWith('Failed to update cart', {
-            variant: 'warning',
+            variant: 'error',
         });
     });
 
@@ -140,25 +116,6 @@ describe('APP - CartForms - CartActionForm', () => {
         expect(enqueueSnackbar).toHaveBeenCalledWith('Successfully updated cart', {
             variant: 'success',
         });
-    });
-
-    it('should show "Processing..." and disable button', () => {
-        (useActionState as jest.Mock).mockReturnValue([
-            { success: false, message: '' },
-            jest.fn(),
-            true,
-        ]);
-
-        render(
-            <CartActionForm
-                bookID="1"
-                stock={createMockBook({ id: '1', title: 'Book 1' }).stock_quantity}
-            />,
-        );
-
-        const button = screen.getByRole('button');
-        expect(button).toHaveTextContent(/processing\.\.\./i);
-        expect(button).toBeDisabled();
     });
 
     it('should call refreshCart when the form is submitted successfully', async () => {

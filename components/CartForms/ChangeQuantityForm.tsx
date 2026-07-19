@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useActionState, useEffect, useState, useTransition } from 'react';
+import { useActionState, useEffect, useMemo, useOptimistic, useTransition } from 'react';
 import { enqueueSnackbar } from 'notistack';
-import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 
 import { useCartActions, useCartState } from '@/providers/cart/utils/useCart';
 import { CartAction, CartFormState } from '@/data/actions/CartForm/CartAction';
@@ -17,11 +16,17 @@ export const ChangeQuantityForm = ({ bookID }: ChangeQuantityFormProps) => {
     const { refreshCart } = useCartActions();
     const { user } = useUserState();
 
-    const currentBook = cartBooks.find((cartBook) => cartBook.id === bookID);
-    const initialQuantity = currentBook?.quantity || 1;
+    const currentBook = useMemo(
+        () => cartBooks.find((cartBook) => cartBook.id === bookID),
+        [cartBooks, bookID],
+    );
+    const currentBookQuantity = currentBook?.quantity || 1;
 
-    const [quantity, setQuantity] = useState(initialQuantity);
-    const [prevInitialQuantity, setPrevInitialQuantity] = useState(initialQuantity);
+    const [optimisticQuantity, setOptimisticQuantity] = useOptimistic(
+        currentBookQuantity,
+        (_, next: number) => next,
+    );
+
     const [isPending, startTransition] = useTransition();
 
     const [state, formAction] = useActionState(CartAction, {
@@ -29,84 +34,71 @@ export const ChangeQuantityForm = ({ bookID }: ChangeQuantityFormProps) => {
         message: '',
     } as CartFormState);
 
-    if (initialQuantity !== prevInitialQuantity) {
-        setPrevInitialQuantity(initialQuantity);
-        setQuantity(initialQuantity);
-    }
-
     useEffect(() => {
         if (!state.message) return;
 
         const variant = state.success ? 'success' : 'error';
         enqueueSnackbar(state.message, { variant });
 
-        if (state.success) {
-            refreshCart(user.id);
-        }
+        if (state.success) refreshCart(user.id);
     }, [state.message, state.success, state.timestamp, refreshCart, user.id]);
 
-    const isChanged = quantity !== initialQuantity;
-
-    const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
-        event.preventDefault();
-
-        if (!isChanged || isPending) return;
+    const handleChange = async (newQuantity: number) => {
+        if (isPending) return;
 
         const formData = new FormData();
         formData.append('book-id', bookID);
-        formData.append('book-quantity', quantity.toString());
+        formData.append('book-quantity', newQuantity.toString());
         formData.append('action-type', 'UPDATE');
 
         startTransition(async () => {
+            setOptimisticQuantity(newQuantity);
             await formAction(formData);
         });
     };
 
     return (
-        <form
-            className="flex items-center justify-center gap-2"
-            onSubmit={handleSubmit}
-            aria-label={`Update quantity for ${currentBook?.title || 'book'}`}
-        >
-            <div className="relative">
-                <select
-                    id={`qty-select-${bookID}`}
-                    value={quantity}
-                    onChange={(e) => setQuantity(parseInt(e.target.value, 10))}
-                    name="book-quantity"
-                    disabled={isPending}
-                    aria-label="Select quantity"
-                    className="h-10 w-20 cursor-pointer rounded-md border border-slate-300 bg-white px-2 py-1 text-slate-900 shadow-sm transition-all hover:border-slate-400 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                    {Array.from({ length: 10 }, (_, i) => (
-                        <option
-                            key={i + 1}
-                            value={i + 1}
-                        >
-                            {i + 1}
-                        </option>
-                    ))}
-                </select>
-            </div>
-
-            <button
-                type="submit"
-                disabled={isPending || !isChanged}
-                className="group text-gunmetal relative flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md bg-yellow-400 px-4 font-bold shadow-sm transition-all hover:bg-yellow-500 active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
+        <div className="relative mx-auto inline-block h-10 w-20">
+            <select
+                id={`qty-select-${bookID}`}
+                value={
+                    currentBookQuantity !== optimisticQuantity
+                        ? optimisticQuantity
+                        : currentBookQuantity
+                }
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                    handleChange(parseInt(e.target.value, 10))
+                }
+                name="book-quantity"
+                disabled={isPending}
+                aria-label="Select quantity"
+                className="h-full w-full cursor-pointer appearance-none rounded-md border border-slate-300 bg-white text-center text-slate-900 shadow-sm transition-all hover:border-slate-400 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
             >
-                {isPending ? (
-                    <span
-                        className="h-4 w-4 animate-spin rounded-full border-2 border-slate-500 border-t-transparent"
-                        aria-hidden="true"
+                {Array.from({ length: 10 }, (_, i) => (
+                    <option
+                        key={i + 1}
+                        value={i + 1}
+                        className="text-center"
+                    >
+                        {i + 1}
+                    </option>
+                ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-1 text-slate-500">
+                <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
                     />
-                ) : (
-                    <ShoppingCartOutlinedIcon fontSize="small" />
-                )}
-
-                <span className="whitespace-nowrap">
-                    {isPending ? 'Updating...' : isChanged ? 'Update cart' : 'Saved'}
-                </span>
-            </button>
-        </form>
+                </svg>
+            </div>
+        </div>
     );
 };
