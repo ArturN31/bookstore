@@ -24,7 +24,7 @@ export default async function HomePage() {
         );
 
     return (
-        <main className="mx-auto max-w-7xl space-y-12 pb-20">
+        <main className="mx-auto max-w-7xl space-y-12 pr-8 pb-20">
             <HomepageHero booksAmount={response.data.total} />
 
             <div className="relative px-6">

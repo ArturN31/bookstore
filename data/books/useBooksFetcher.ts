@@ -11,7 +11,7 @@ interface ActionResponse<T> {
 interface UseBooksFetcherProps {
     initialData: ActionResponse<PaginatedBookResult>;
     filters?: Omit<FetchBooksFilters, 'page' | 'limit'>;
-    filterType: string;
+    sortByType: string;
 }
 
 interface FetchState {
@@ -20,9 +20,9 @@ interface FetchState {
     hasMore: boolean;
 }
 
-export const useBooksFetcher = ({ initialData, filters, filterType }: UseBooksFetcherProps) => {
+export const useBooksFetcher = ({ initialData, filters, sortByType }: UseBooksFetcherProps) => {
     const abortControllerRef = useRef<AbortController | null>(null);
-    const previousFilterTypeRef = useRef<string>(filterType);
+    const previousFilterTypeRef = useRef<string>(sortByType);
     const [isLoading, setIsLoading] = useState(false);
     const [state, setState] = useState<FetchState>({
         books: initialData.data?.data ?? [],
@@ -71,25 +71,25 @@ export const useBooksFetcher = ({ initialData, filters, filterType }: UseBooksFe
     );
 
     useEffect(() => {
-        const hasFilterChanged = previousFilterTypeRef.current !== filterType;
+        const hasFilterChanged = previousFilterTypeRef.current !== sortByType;
         if (!hasFilterChanged && initialData.data && state.page === 1) return;
 
-        previousFilterTypeRef.current = filterType;
+        previousFilterTypeRef.current = sortByType;
 
-        executeFetchOperation(false, 1, filters, filterType);
+        executeFetchOperation(false, 1, filters, sortByType);
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
         return () => {
             if (abortControllerRef.current) abortControllerRef.current.abort();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filterType, filters]);
+    }, [sortByType, filters]);
 
     const fetchBooks = useCallback(
         (isNextPage: boolean, currentPageNum: number) => {
-            executeFetchOperation(isNextPage, currentPageNum, filters, filterType);
+            executeFetchOperation(isNextPage, currentPageNum, filters, sortByType);
         },
-        [executeFetchOperation, filters, filterType],
+        [executeFetchOperation, filters, sortByType],
     );
 
     return { state, isLoading, fetchBooks };

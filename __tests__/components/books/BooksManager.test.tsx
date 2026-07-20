@@ -1,6 +1,6 @@
 import { BooksManager } from '@/components/books/BooksManager';
-import { useBookFilter } from '@/providers/BookFilterProvider';
-import { render, screen, waitFor } from '@testing-library/react';
+import { useBookSortBy } from '@/providers/BookSortByProvider';
+import { render, screen } from '@testing-library/react';
 import { useInView } from 'react-intersection-observer';
 import { useBooksFetcher } from '@/data/books/useBooksFetcher';
 import { PaginatedBookResult } from '@/data/books/BookConstants';
@@ -10,8 +10,8 @@ interface ActionResponse<T> {
     data: T | null;
 }
 
-jest.mock('@/providers/BookFilterProvider', () => ({
-    useBookFilter: jest.fn(),
+jest.mock('@/providers/BookSortByProvider', () => ({
+    useBookSortBy: jest.fn(),
 }));
 
 jest.mock('react-intersection-observer', () => ({
@@ -59,7 +59,7 @@ const mockInitialData: ActionResponse<PaginatedBookResult> = {
 };
 
 describe('BooksManager', () => {
-    const mockUseBookFilter = useBookFilter as jest.Mock;
+    const mockBookSortBy = useBookSortBy as jest.Mock;
     const mockUseInView = useInView as jest.Mock;
     const mockUseBooksFetcher = useBooksFetcher as jest.Mock;
     const mockFetchBooks = jest.fn();
@@ -67,7 +67,7 @@ describe('BooksManager', () => {
     beforeEach(() => {
         jest.clearAllMocks();
 
-        mockUseBookFilter.mockReturnValue({ filterType: 'Title: A-Z' });
+        mockBookSortBy.mockReturnValue({ sortByType: 'Title: A-Z' });
         mockUseInView.mockReturnValue({ ref: jest.fn(), inView: false });
 
         mockUseBooksFetcher.mockReturnValue({
@@ -128,15 +128,15 @@ describe('BooksManager', () => {
         expect(mockFetchBooks).toHaveBeenCalledWith(true, 1);
     });
 
-    it('resets and reloads books when filterType changes', async () => {
+    it('resets and reloads books when sortByType changes', async () => {
         const { rerender } = render(<BooksManager initialData={mockInitialData} />);
 
-        mockUseBookFilter.mockReturnValue({ filterType: 'Price: Low to High' });
+        mockBookSortBy.mockReturnValue({ sortByType: 'Price: Low to High' });
 
         rerender(<BooksManager initialData={mockInitialData} />);
 
         expect(mockUseBooksFetcher).toHaveBeenCalledWith(
-            expect.objectContaining({ filterType: 'Price: Low to High' }),
+            expect.objectContaining({ sortByType: 'Price: Low to High' }),
         );
     });
 

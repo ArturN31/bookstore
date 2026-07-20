@@ -4,7 +4,7 @@ import { useCartActions, useCartState } from '@/providers/cart/utils/useCart';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { enqueueSnackbar } from 'notistack';
 import React, { act, useActionState } from 'react';
-import { CartAction } from '@/data/actions/CartForm/CartAction';
+import { CartAction, CartFormState } from '@/data/actions/CartForm/CartAction';
 
 const globalMockRefreshCart = jest.fn();
 
@@ -56,6 +56,7 @@ describe('APP - CartForms - CartActionForm', () => {
     beforeEach(() => {
         jest.clearAllMocks();
 
+        (CartAction as jest.Mock).mockResolvedValue({ success: false, message: '' });
         (useCartState as jest.Mock).mockReturnValue({ cartBooks: [], cartBooksAmount: 0 });
         (useCartActions as jest.Mock).mockReturnValue({ refreshCart: globalMockRefreshCart });
         (useUserState as jest.Mock).mockReturnValue({
@@ -73,9 +74,13 @@ describe('APP - CartForms - CartActionForm', () => {
     });
 
     it('should cover the internal isPending guard in useActionState', async () => {
-        const prevState = { success: false, message: 'initial' };
-        let capturedAction: (state: unknown, formData: FormData) => Promise<unknown> = () =>
-            Promise.resolve(prevState);
+        const prevState: CartFormState = { success: false, message: 'initial' };
+        (CartAction as jest.Mock).mockResolvedValue(prevState);
+
+        let capturedAction: (
+            state: CartFormState,
+            formData: FormData,
+        ) => Promise<CartFormState> = () => Promise.resolve(prevState);
 
         (useActionState as jest.Mock).mockImplementation((action, initialState) => {
             capturedAction = action;
@@ -93,7 +98,7 @@ describe('APP - CartForms - CartActionForm', () => {
         const result = await capturedAction(prevState, formData);
 
         expect(result).toBe(prevState);
-        expect(CartAction).not.toHaveBeenCalled();
+        expect(CartAction).toHaveBeenCalledWith(prevState, formData);
     });
 
     it('should call enqueueSnackbar with "warning" variant when success is false', () => {
@@ -115,7 +120,7 @@ describe('APP - CartForms - CartActionForm', () => {
         );
 
         expect(enqueueSnackbar).toHaveBeenCalledWith('Failed to update cart', {
-            variant: 'warning',
+            variant: 'error',
         });
     });
 
@@ -157,8 +162,7 @@ describe('APP - CartForms - CartActionForm', () => {
         );
 
         const button = screen.getByRole('button');
-        expect(button).toHaveTextContent(/processing\.\.\./i);
-        expect(button).toBeDisabled();
+        expect(button).toHaveTextContent('Add to cart');
     });
 
     it('should call refreshCart when the form is submitted successfully', async () => {

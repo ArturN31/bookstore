@@ -1,7 +1,7 @@
 'use client';
 
 import { useInView } from 'react-intersection-observer';
-import { useBookFilter } from '@/providers/BookFilterProvider';
+import { useBookSortBy } from '@/providers/BookSortByProvider';
 import { BookCard } from '@/components/books/bookCard/BookCard';
 import { PaginatedBookResult } from '@/data/books/BookConstants';
 import { FetchBooksFilters } from '@/data/books/BookRepository';
@@ -13,12 +13,12 @@ interface BooksManagerProps {
 }
 
 export const BooksManager = ({ initialData, filters }: BooksManagerProps) => {
-    const { filterType } = useBookFilter();
+    const { sortByType } = useBookSortBy();
 
     const { state, isLoading, fetchBooks } = useBooksFetcher({
         initialData,
         filters,
-        filterType,
+        sortByType,
     });
 
     const { ref: observerRef } = useInView({
@@ -35,12 +35,12 @@ export const BooksManager = ({ initialData, filters }: BooksManagerProps) => {
         <div className="mx-auto w-full max-w-screen-2xl">
             <div className="flex flex-col gap-8">
                 <section
-                    className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                    className="grid grid-cols-1 gap-x-4 gap-y-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
                     aria-label="Books gallery"
                 >
                     {state.books.map((book) => (
                         <div
-                            key={`${book.id}-${filterType}`}
+                            key={`${book.id}-${sortByType}`}
                             className="flex justify-center transition-opacity duration-300"
                             style={{ opacity: isLoading && state.page === 1 ? 0.5 : 1 }}
                         >

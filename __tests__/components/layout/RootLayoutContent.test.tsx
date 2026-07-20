@@ -14,10 +14,23 @@ jest.mock('@/components/layout/LayoutSkeleton', () => ({
     LayoutSkeleton: () => <div data-testid="mock-skeleton">Loading...</div>,
 }));
 
-jest.mock('@/providers/BookFilterProvider', () => ({
-    BookFilterProvider: ({ children }: { children: React.ReactNode }) => (
-        <div data-testid="mock-filter-provider">{children}</div>
+jest.mock('@/providers/BookSortByProvider', () => ({
+    BookSortByProvider: ({ children }: { children: React.ReactNode }) => (
+        <div data-testid="mock-sortBy-provider">{children}</div>
     ),
+    useBookSortBy: jest.fn(() => ({
+        sortByType: 'Title: A-Z',
+    })),
+}));
+
+jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
+    BookAdvancedFilteringProvider: ({ children }: { children: React.ReactNode }) => (
+        <div data-testid="mock-advanced-filter-provider">{children}</div>
+    ),
+    useBookFilter: jest.fn(() => ({
+        advancedFilters: {},
+        isLoading: false,
+    })),
 }));
 
 jest.mock('@/components/layout/SessionProviderWrapper', () => ({
@@ -41,7 +54,9 @@ describe('RootLayoutContent', () => {
 
         const mainContent = screen.getByText('Main Content');
         expect(mainContent).toBeInTheDocument();
-        expect(mainContent.closest('main')).toHaveClass('flex-1 p-8');
+        expect(mainContent.closest('main')).toHaveClass(
+            'flex w-full flex-1 flex-row gap-8 bg-slate-50 md:flex',
+        );
     });
 
     it('has the correct CSS classes for full-page layout', () => {

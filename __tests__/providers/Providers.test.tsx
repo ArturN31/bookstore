@@ -7,7 +7,11 @@ jest.mock('notistack', () => ({
 
 jest.mock('@/providers/user/UserProvider', () => ({
     UserProvider: ({ children, initialUser, initialWishlist }: any) => (
-        <div data-testid="user-provider" data-user={initialUser?.id || 'none'} data-wishlist={initialWishlist?.length || 0}>
+        <div
+            data-testid="user-provider"
+            data-user={initialUser?.id || 'none'}
+            data-wishlist={initialWishlist?.length || 0}
+        >
             {children}
         </div>
     ),
@@ -15,7 +19,10 @@ jest.mock('@/providers/user/UserProvider', () => ({
 
 jest.mock('@/providers/cart/CartProvider', () => ({
     CartProvider: ({ children, initialCart }: any) => (
-        <div data-testid="cart-provider" data-cart={initialCart?.cartID || 'none'}>
+        <div
+            data-testid="cart-provider"
+            data-cart={initialCart?.cartID || 'none'}
+        >
             {children}
         </div>
     ),
@@ -26,7 +33,7 @@ describe('Providers', () => {
         render(
             <Providers>
                 <span>Test Content</span>
-            </Providers>
+            </Providers>,
         );
 
         expect(screen.getByTestId('user-provider')).toBeInTheDocument();
@@ -38,7 +45,7 @@ describe('Providers', () => {
         render(
             <Providers initialSessionData={null as any}>
                 <span>Test Content</span>
-            </Providers>
+            </Providers>,
         );
 
         expect(screen.getByTestId('user-provider')).toBeInTheDocument();
@@ -54,7 +61,7 @@ describe('Providers', () => {
         render(
             <Providers initialSessionData={initialSessionData}>
                 <span>Test Content</span>
-            </Providers>
+            </Providers>,
         );
 
         expect(screen.getByTestId('user-provider')).toHaveAttribute('data-user', 'user-123');
@@ -63,14 +70,14 @@ describe('Providers', () => {
     it('should pass initialWishlist to UserProvider', () => {
         const initialSessionData = {
             initialUser: null,
-            initialWishlist: [{ book_id: 'book-1' }, { book_id: 'book-2' }],
+            initialWishlist: [{ book_id: 'book-1' }, { book_id: 'book-2' }] as Wishlist[],
             initialCart: null,
         };
 
         render(
             <Providers initialSessionData={initialSessionData}>
                 <span>Test Content</span>
-            </Providers>
+            </Providers>,
         );
 
         expect(screen.getByTestId('user-provider')).toHaveAttribute('data-wishlist', '2');
@@ -86,7 +93,7 @@ describe('Providers', () => {
         render(
             <Providers initialSessionData={initialSessionData}>
                 <span>Test Content</span>
-            </Providers>
+            </Providers>,
         );
 
         expect(screen.getByTestId('cart-provider')).toHaveAttribute('data-cart', 'cart-123');
@@ -96,7 +103,7 @@ describe('Providers', () => {
         render(
             <Providers>
                 <div>Child Content</div>
-            </Providers>
+            </Providers>,
         );
 
         expect(screen.getByText('Child Content')).toBeInTheDocument();

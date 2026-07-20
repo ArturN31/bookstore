@@ -1,69 +1,69 @@
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { renderHook } from '@testing-library/react';
-import { BookFilterProvider, useBookFilter } from '@/providers/BookFilterProvider';
+import { BookSortByProvider, useBookSortBy } from '@/providers/BookSortByProvider';
 
 const TestConsumer = () => {
-    const { filterType, toggleFilter } = useBookFilter();
+    const { sortByType, toggleSortByType } = useBookSortBy();
     return (
         <div>
-            <span data-testid="filter-type">{filterType}</span>
+            <span data-testid="filter-type">{sortByType}</span>
             <button
                 data-testid="toggle-az"
-                onClick={() => toggleFilter('Title: A-Z')}
+                onClick={() => toggleSortByType('Title: A-Z')}
             >
                 A-Z
             </button>
             <button
                 data-testid="toggle-za"
-                onClick={() => toggleFilter('Title: Z-A')}
+                onClick={() => toggleSortByType('Title: Z-A')}
             >
                 Z-A
             </button>
             <button
                 data-testid="toggle-price-low"
-                onClick={() => toggleFilter('Price: Low to High')}
+                onClick={() => toggleSortByType('Price: Low to High')}
             >
                 Low
             </button>
             <button
                 data-testid="toggle-price-high"
-                onClick={() => toggleFilter('Price: High to Low')}
+                onClick={() => toggleSortByType('Price: High to Low')}
             >
                 High
             </button>
             <button
                 data-testid="toggle-newest"
-                onClick={() => toggleFilter('Release Date: Newest to Oldest')}
+                onClick={() => toggleSortByType('Release Date: Newest to Oldest')}
             >
                 Newest
             </button>
             <button
                 data-testid="toggle-oldest"
-                onClick={() => toggleFilter('Release Date: Oldest to Newest')}
+                onClick={() => toggleSortByType('Release Date: Oldest to Newest')}
             >
                 Oldest
             </button>
             <button
                 data-testid="toggle-highest"
-                onClick={() => toggleFilter('Highest Avg. customer rating')}
+                onClick={() => toggleSortByType('Highest Avg. customer rating')}
             >
                 Highest
             </button>
             <button
                 data-testid="toggle-lowest"
-                onClick={() => toggleFilter('Lowest Avg. customer rating')}
+                onClick={() => toggleSortByType('Lowest Avg. customer rating')}
             >
                 Lowest
             </button>
             <button
                 data-testid="toggle-bestsellers"
-                onClick={() => toggleFilter('Best Sellers')}
+                onClick={() => toggleSortByType('Best Sellers')}
             >
                 Bestsellers
             </button>
             <button
                 data-testid="toggle-invalid"
-                onClick={() => toggleFilter('Invalid Filter' as any)}
+                onClick={() => toggleSortByType('Invalid Filter' as any)}
             >
                 Invalid
             </button>
@@ -71,21 +71,21 @@ const TestConsumer = () => {
     );
 };
 
-describe('BookFilterProvider', () => {
+describe('BookSortByProvider', () => {
     it('should provide default filter type', () => {
         render(
-            <BookFilterProvider>
+            <BookSortByProvider>
                 <TestConsumer />
-            </BookFilterProvider>,
+            </BookSortByProvider>,
         );
         expect(screen.getByTestId('filter-type')).toHaveTextContent('Title: A-Z');
     });
 
     it('should toggle through all valid filter types', async () => {
         render(
-            <BookFilterProvider>
+            <BookSortByProvider>
                 <TestConsumer />
-            </BookFilterProvider>,
+            </BookSortByProvider>,
         );
 
         const cases = [
@@ -110,9 +110,9 @@ describe('BookFilterProvider', () => {
 
     it('should ignore invalid filter types', async () => {
         render(
-            <BookFilterProvider>
+            <BookSortByProvider>
                 <TestConsumer />
-            </BookFilterProvider>,
+            </BookSortByProvider>,
         );
 
         await act(async () => {
@@ -123,14 +123,14 @@ describe('BookFilterProvider', () => {
     });
 
     it('should exercise the default context values when no provider is present', () => {
-        const { result } = renderHook(() => useBookFilter());
+        const { result } = renderHook(() => useBookSortBy());
 
-        expect(result.current.filterType).toBe('Title: A-Z');
+        expect(result.current.sortByType).toBe('Title: A-Z');
 
         act(() => {
-            result.current.toggleFilter('Best Sellers');
+            result.current.toggleSortByType('Best Sellers');
         });
 
-        expect(result.current.filterType).toBe('Title: A-Z');
+        expect(result.current.sortByType).toBe('Title: A-Z');
     });
 });
