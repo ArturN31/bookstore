@@ -55,7 +55,7 @@ describe('UserRepository', () => {
             const result = await fetchUserProfileById(mockSupabase, 'user-123');
 
             expect(result.data).toBeNull();
-            expect(result.error).toBe(UserConstants.ERROR_PROFILE_NOT_FOUND);
+            expect(result.error).toBe(null);
         });
 
         it('should handle Supabase error object', async () => {
@@ -135,7 +135,7 @@ describe('UserRepository', () => {
             const result = await fetchWishlistByUserId(mockSupabase, 'user-123');
 
             expect(result.data).toEqual([]);
-            expect(result.error).toBe(UserConstants.ERROR_WISHLIST_NOT_FOUND);
+            expect(result.error).toBe(null);
         });
 
         it('should return error when supabase client is missing', async () => {

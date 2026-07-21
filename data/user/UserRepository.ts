@@ -28,10 +28,7 @@ export const fetchUserProfileById = async (
             return { data: null, error: UserConstants.ERROR_PROFILE_FETCH_FAILED };
         }
 
-        if (!data) {
-            console.error('[UserRepository] User not found');
-            return { data: null, error: UserConstants.ERROR_PROFILE_NOT_FOUND };
-        }
+        if (!data) return { data: null, error: null };
 
         return { data, error: null };
     } catch (err) {
@@ -58,7 +55,7 @@ export const fetchWishlistByUserId = async (
             return { data: null, error: UserConstants.ERROR_WISHLIST_FETCH_FAILED };
         }
 
-        if (data.length === 0) return { data: [], error: UserConstants.ERROR_WISHLIST_NOT_FOUND };
+        if (data.length === 0) return { data: [], error: null };
 
         return { data, error: null };
     } catch (err) {

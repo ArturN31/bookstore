@@ -65,6 +65,8 @@ describe('APP - Auth - SignInAction', () => {
         });
 
         const formData = new FormData();
+        formData.append('captchaToken', 'mocked-test-token');
+
         const result = await SignInAction(undefined, formData);
 
         expect(result.message).toBeDefined();
@@ -82,6 +84,7 @@ describe('APP - Auth - SignInAction', () => {
         const formData = new FormData();
         formData.append('email', 'test@example.com');
         formData.append('password', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
 
         const result = await SignInAction(undefined, formData);
 
@@ -96,6 +99,7 @@ describe('APP - Auth - SignInAction', () => {
         const formData = new FormData();
         formData.append('email', 'test@example.com');
         formData.append('password', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
 
         const result = await SignInAction(undefined, formData);
 
@@ -113,6 +117,7 @@ describe('APP - Auth - SignInAction', () => {
         const formData = new FormData();
         formData.append('email', 'test@example.com');
         formData.append('password', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
 
         const result = await SignInAction(undefined, formData);
 
@@ -126,6 +131,7 @@ describe('APP - Auth - SignInAction', () => {
         const formData = new FormData();
         formData.append('email', 'test@example.com');
         formData.append('password', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
 
         await SignInAction(undefined, formData);
 
@@ -140,6 +146,7 @@ describe('APP - Auth - SignInAction', () => {
         const formData = new FormData();
         formData.append('email', 'test@example.com');
         formData.append('password', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
         formData.append('returnTo', '/dashboard');
 
         await SignInAction(undefined, formData);
@@ -154,6 +161,7 @@ describe('APP - Auth - SignInAction', () => {
         const formData = new FormData();
         formData.append('email', 'test@example.com');
         formData.append('password', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
 
         await SignInAction(undefined, formData);
 
@@ -167,6 +175,7 @@ describe('APP - Auth - SignInAction', () => {
         const formData = new FormData();
         formData.append('email', 'test@example.com');
         formData.append('password', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
 
         const result = await SignInAction(undefined, formData);
 
@@ -178,16 +187,31 @@ describe('APP - Auth - SignInAction', () => {
     it('should re-throw redirect errors', async () => {
         mockSupabase.auth.signInWithPassword.mockResolvedValue({ error: null });
         (getUserData as jest.Mock).mockResolvedValue({ id: '123' });
-        
+
         const redirectError = new Error('NEXT_REDIRECT');
-        (redirect as jest.Mock).mockImplementation(() => {
+
+        (redirect as unknown as jest.Mock).mockImplementation(() => {
             throw redirectError;
         });
 
         const formData = new FormData();
         formData.append('email', 'test@example.com');
         formData.append('password', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
 
         await expect(SignInAction(undefined, formData)).rejects.toThrow('NEXT_REDIRECT');
+    });
+
+    it('BRANCH COVERAGE: should return security token error message if captchaToken is completely missing from formData', async () => {
+        const formData = new FormData();
+        formData.append('email', 'test@example.com');
+        formData.append('password', 'Password123!');
+
+        const result = await SignInAction(undefined, formData);
+
+        expect(result.message).toBe(
+            'Authentication rejected due to an invalid or missing security token.',
+        );
+        expect(result.validationErrors).toBeUndefined();
     });
 });
