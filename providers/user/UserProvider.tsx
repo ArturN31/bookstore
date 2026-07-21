@@ -45,7 +45,7 @@ export const UserProvider = ({ initialUser, initialWishlist, children }: UserPro
 
                 const [userData, wishlistData] = await Promise.all([
                     getUserData(),
-                    getUserWishlist(supabaseUser.id),
+                    getUserWishlist(),
                 ]);
 
                 const syncError = userData.error || wishlistData.error;
@@ -106,7 +106,7 @@ export const UserProvider = ({ initialUser, initialWishlist, children }: UserPro
         if (!userId) return;
 
         try {
-            const { data, error } = await getUserWishlist(userId);
+            const { data, error } = await getUserWishlist();
             if (error) throw new Error(error);
             if (activeUserId.current === userId)
                 dispatch({ type: 'UPDATE_WISHLIST', payload: data ?? [] });

@@ -21,7 +21,7 @@ export const SessionProviderWrapper = async ({ children }: { children: React.Rea
     if (user) {
         const [userRes, wishlistRes, cartRes] = await Promise.all([
             getUserData(),
-            getUserWishlist(user.id),
+            getUserWishlist(),
             getCartData(user.id),
         ]);
 
