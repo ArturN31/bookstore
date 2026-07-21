@@ -4,14 +4,15 @@ import { PostgrestResponse } from '@supabase/supabase-js';
 import { createBackendClient } from '@/utils/db/server';
 import { redirect } from 'next/navigation';
 import { CustomPopoverWithList } from '@/components/ui/CustomPopoverWithList';
+import { unstable_cache } from 'next/cache';
 
 export const handleFormatChoice = async (filter: string) => {
     const option = filter.slice(0, 1) + filter.slice(1, filter.length + 1).toLocaleLowerCase();
     redirect(`/books/format/${option}`);
 };
 
-export const Format = async () => {
-    const getFormats = async () => {
+const getCachedFormats = unstable_cache(
+    async () => {
         try {
             const supabase = await createBackendClient();
             const { data, error }: PostgrestResponse<Book> = await supabase
@@ -28,9 +29,16 @@ export const Format = async () => {
         } catch (error) {
             return { formats: [], message: 'Failed to retrieve books from database.' };
         }
-    };
+    },
+    ['books-formats-list'],
+    {
+        revalidate: 3600,
+        tags: ['books'],
+    },
+);
 
-    const formats = await getFormats();
+export const Format = async () => {
+    const formats = await getCachedFormats();
 
     return (
         <CustomPopoverWithList

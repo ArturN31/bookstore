@@ -4,14 +4,15 @@ import { CustomPopoverWithList } from '@/components/ui/CustomPopoverWithList';
 import { createBackendClient } from '@/utils/db/server';
 import { PostgrestResponse } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
+import { unstable_cache } from 'next/cache';
 
 export const handleGenreChoice = async (filter: string) => {
     const option = filter.slice(0, 1) + filter.slice(1, filter.length + 1).toLocaleLowerCase();
     redirect(`/books/genre/${option}`);
 };
 
-export const Genre = async () => {
-    const getGenres = async () => {
+const getCachedGenres = unstable_cache(
+    async () => {
         try {
             const supabase = await createBackendClient();
             const { data, error }: PostgrestResponse<Book> = await supabase
@@ -28,9 +29,16 @@ export const Genre = async () => {
         } catch (error) {
             return { genres: [], message: 'Failed to retrieve books from database.' };
         }
-    };
+    },
+    ['books-genres-list'],
+    {
+        revalidate: 3600,
+        tags: ['books'],
+    },
+);
 
-    const genres = await getGenres();
+export const Genre = async () => {
+    const genres = await getCachedGenres();
 
     return (
         <CustomPopoverWithList
