@@ -1,6 +1,6 @@
 'use server';
 
-import { createBackendClient } from '@/utils/db/server';
+import { createClient } from '@supabase/supabase-js';
 import {
     createBaseBookQuery,
     applyBookSorting,
@@ -10,24 +10,23 @@ import {
 import { mapToPaginatedBookResponse } from './BookMapper';
 import { PaginatedBookResult } from './BookConstants';
 import { withRetry } from '@/utils/network/retry';
+import { unstable_cache } from 'next/cache';
 
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 50;
 const MIN_PAGE_SIZE = 1;
 const MIN_PAGE_NUMBER = 1;
 
-export const fetchBooksWithReviews = async (
-    filters: FetchBooksFilters = {},
-): Promise<ActionResponse<PaginatedBookResult>> => {
-    const page = Math.max(MIN_PAGE_NUMBER, filters.page || 1);
-    const limit = Math.max(
-        MIN_PAGE_SIZE,
-        Math.min(filters.limit || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE),
-    );
+const getCachedBooksData = unstable_cache(
+    async (page: number, limit: number, filtersSerialized: string) => {
+        const filters: FetchBooksFilters = JSON.parse(filtersSerialized);
 
-    try {
-        const result = await withRetry(async () => {
-            const supabase = await createBackendClient();
+        return await withRetry(async () => {
+            const supabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_DB_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_PUBLIC_KEY!,
+            );
+
             const baseQuery = createBaseBookQuery(supabase, filters);
             const sortedQuery = applyBookSorting(baseQuery, filters.sortBy);
             const paginatedQuery = applyBookPagination(sortedQuery, page, limit);
@@ -41,6 +40,26 @@ export const fetchBooksWithReviews = async (
                 count: count || 0,
             };
         });
+    },
+    ['books-search-results'],
+    {
+        revalidate: 600,
+        tags: ['books'],
+    },
+);
+
+export const fetchBooksWithReviews = async (
+    filters: FetchBooksFilters = {},
+): Promise<ActionResponse<PaginatedBookResult>> => {
+    const page = Math.max(MIN_PAGE_NUMBER, filters.page || 1);
+    const limit = Math.max(
+        MIN_PAGE_SIZE,
+        Math.min(filters.limit || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE),
+    );
+
+    try {
+        const filtersSerialized = JSON.stringify(filters);
+        const result = await getCachedBooksData(page, limit, filtersSerialized);
 
         return {
             data: mapToPaginatedBookResponse(result.data, result.count, page, limit),

@@ -13,6 +13,10 @@ type UserDataResponse = {
     error: string | null;
 };
 
+const isValidUUID = (id: string): boolean => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+};
+
 export const getUserData = async (): Promise<ActionResponse<User>> => {
     try {
         const result = await withRetry(async (): Promise<UserDataResponse> => {
@@ -27,7 +31,7 @@ export const getUserData = async (): Promise<ActionResponse<User>> => {
 
             const { userID, email } = userAuth.data;
 
-            if (!userID || !email)
+            if (!userID || !email || !isValidUUID(userID))
                 return {
                     data: { user: null, email: null },
                     error: UserConstants.ERROR_AUTH_FAILED,
@@ -82,16 +86,22 @@ export const getUserData = async (): Promise<ActionResponse<User>> => {
     }
 };
 
-export const getUserWishlist = async (userID: string): Promise<ActionResponse<Wishlist[]>> => {
-    if (!userID) return { data: null, error: UserConstants.ERROR_MISSING_USER_ID };
-
+export const getUserWishlist = async (): Promise<ActionResponse<Wishlist[]>> => {
     try {
         const supabase = await createBackendClient();
+
+        const userAuth = await fetchUserAuthData(supabase);
+        if (!userAuth.data || !userAuth.data.userID)
+            return { data: null, error: UserConstants.ERROR_AUTH_FAILED };
+
+        const { userID } = userAuth.data;
+
+        if (!isValidUUID(userID)) return { data: null, error: UserConstants.ERROR_AUTH_FAILED };
+
         const result = await fetchWishlistByUserId(supabase, userID);
         const { data, error } = result;
 
-        if (error) return { data: null, error: UserConstants.ERROR_WISHLIST_FETCH_FAILED };
-        if (!data) return { data: null, error: UserConstants.ERROR_WISHLIST_FETCH_FAILED };
+        if (error || !data) return { data: null, error: UserConstants.ERROR_WISHLIST_FETCH_FAILED };
 
         return {
             data: data,
