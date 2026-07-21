@@ -58,7 +58,7 @@ describe('WishlistActionForm - Full Coverage', () => {
 
     it('should cover icon branches (Hover + Already Wishlisted)', () => {
         (useUserState as jest.Mock).mockReturnValue({
-            wishlist: [],
+            wishlist: [{ book_id: mockedBook.id }],
             loggedIn: true,
             loading: false,
         });
@@ -123,19 +123,16 @@ describe('WishlistActionForm - Full Coverage', () => {
         expect(WishlistAction).not.toHaveBeenCalled();
     });
 
-    it('should render BookmarkBorderIcon when NOT wishlisted', () => {
+    it('should render BookmarkBorderIcon when NOT wishlisted', async () => {
         (useUserState as jest.Mock).mockReturnValue({
-            wishlist: [{ book_id: mockedBook.id }],
+            wishlist: [],
             loggedIn: true,
             loading: false,
         });
 
-        render(<WishlistActionForm book={mockedBook} />);
-        const btn = screen.getByRole('button');
+        const mockBook = { id: 'mock-book-id-123', title: 'Test Book' } as Book;
+        render(<WishlistActionForm book={mockBook} />);
 
-        expect(screen.getByTestId('BookmarkBorderIcon')).toBeInTheDocument();
-
-        fireEvent.mouseEnter(btn);
         expect(screen.getByTestId('BookmarkBorderIcon')).toBeInTheDocument();
     });
 

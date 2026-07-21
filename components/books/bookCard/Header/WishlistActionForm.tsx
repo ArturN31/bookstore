@@ -118,16 +118,16 @@ export const WishlistActionForm = ({ book }: WishlistActionFormProps) => {
                         {!loggedIn ? (
                             <LockIcon className="text-[0.9rem] transition-transform group-hover:rotate-12" />
                         ) : isAddMode ? (
+                            <BookmarkBorderIcon className="text-[1.1rem] transition-transform group-hover:scale-110" />
+                        ) : (
                             <>
                                 <BookmarkIcon className="animate-in zoom-in text-[1.1rem] duration-300" />
                                 <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[#facc15] ring-2 ring-slate-100 group-hover:bg-red-500" />
                             </>
-                        ) : (
-                            <BookmarkBorderIcon className="text-[1.1rem] transition-transform group-hover:scale-110" />
                         )}
                     </div>
                     <span className="text-[10px] font-black tracking-widest uppercase">
-                        {isAddMode ? 'Saved' : 'Save'}
+                        {isAddMode ? 'Save' : 'Saved'}
                     </span>
                 </button>
             </form>
