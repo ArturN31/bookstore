@@ -70,6 +70,7 @@ describe('APP - Auth - SignUpAction', () => {
         const formData = new FormData();
         formData.append('email', 'newuser@example.com');
         formData.append('password', 'ValidPass123!');
+        formData.append('captchaToken', 'mocked-test-token');
 
         await SignUpAction(undefined, formData);
 
@@ -78,15 +79,37 @@ describe('APP - Auth - SignUpAction', () => {
         expect(redirect).toHaveBeenCalledWith('/user/profile');
     });
 
-    it('should handle critical server error in catch block (covers line 52 false branch)', async () => {
+    it('BRANCH COVERAGE: should return mapped auth error message when registerUser returns an error (covers lines 51-52 true branch)', async () => {
+        (signUpSchema.safeParse as jest.Mock).mockReturnValue({
+            success: true,
+            data: { email: 'test@example.com', password: 'Password123!' },
+        });
+
+        (registerUser as jest.Mock).mockResolvedValue({
+            error: { code: 'user_already_exists', message: 'User already registered' },
+        });
+
+        const formData = new FormData();
+        formData.append('captchaToken', 'mocked-test-token');
+
+        const result = await SignUpAction(undefined, formData);
+
+        expect(result.message).toBeDefined();
+        expect(result.validationErrors).toBeUndefined();
+    });
+
+    it('should handle critical server error in catch block (covers catch block error handling false branch)', async () => {
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         (signUpSchema.safeParse as jest.Mock).mockReturnValue({
             success: true,
             data: { email: 'test@example.com', password: 'Password123!' },
         });
+
         (registerUser as jest.Mock).mockRejectedValue(new Error('Database explosion'));
 
         const formData = new FormData();
+        formData.append('captchaToken', 'mocked-test-token');
+
         const result = await SignUpAction(undefined, formData);
 
         expect(result.message).toBe('A server error occurred during registration.');
@@ -94,14 +117,17 @@ describe('APP - Auth - SignUpAction', () => {
         consoleSpy.mockRestore();
     });
 
-    it('BRANCH COVERAGE: should re-throw NEXT_REDIRECT error caught inside try block (covers line 52 true branch)', async () => {
+    it('BRANCH COVERAGE: should re-throw NEXT_REDIRECT error caught inside try block (covers catch block NEXT_REDIRECT true branch)', async () => {
         (signUpSchema.safeParse as jest.Mock).mockReturnValue({
             success: true,
             data: { email: 'test@example.com', password: 'Password123!' },
         });
+
         (registerUser as jest.Mock).mockRejectedValue(new Error('NEXT_REDIRECT'));
 
         const formData = new FormData();
+        formData.append('captchaToken', 'mocked-token');
+
         await expect(SignUpAction(undefined, formData)).rejects.toThrow('NEXT_REDIRECT');
     });
 });

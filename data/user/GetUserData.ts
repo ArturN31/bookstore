@@ -44,8 +44,8 @@ export const getUserData = async (): Promise<ActionResponse<User>> => {
 
             if (!data)
                 return {
-                    data: { user: null, email: null },
-                    error: UserConstants.ERROR_PROFILE_NOT_FOUND,
+                    data: { user: null, email: email },
+                    error: null,
                 };
 
             return {
@@ -62,18 +62,28 @@ export const getUserData = async (): Promise<ActionResponse<User>> => {
             error,
         } = result;
 
-        if (!user || !email)
+        if (error) {
             return {
                 data: null,
                 error: error,
             };
+        }
+
+        if (!user) {
+            return {
+                data: null,
+                error: null,
+            };
+        }
+
+        if (!email) return { data: null, error: UserConstants.ERROR_AUTH_FAILED };
 
         return {
             data: {
                 ...user,
                 email: email,
             },
-            error: error,
+            error: null,
         };
     } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
