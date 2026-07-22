@@ -1,11 +1,16 @@
+import { FilteringTypes } from '@/data/advancedFiltering/FilteringConstants';
+import { useBookFilter } from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
 import { Box, TextField } from '@mui/material';
-import { useMemo, useState } from 'react';
+import { ChangeEvent, useMemo, useState } from 'react';
 
 interface DateRangeFilterProps {
+    category: keyof FilteringTypes;
     values: string[];
 }
 
-export const DateRangeFilter = ({ values }: DateRangeFilterProps) => {
+export const DateRangeFilter = ({ category, values }: DateRangeFilterProps) => {
+    const { chosenFilters, setChosenFilters } = useBookFilter();
+
     const sortedDates = useMemo(() => {
         return values
             .map((v) => String(v).slice(0, 10))
@@ -16,8 +21,64 @@ export const DateRangeFilter = ({ values }: DateRangeFilterProps) => {
     const minDate = sortedDates[0] || '';
     const maxDate = sortedDates[sortedDates.length - 1] || '';
 
-    const [startDate, setStartDate] = useState(minDate);
-    const [endDate, setEndDate] = useState(maxDate);
+    const activeFilterDates = chosenFilters[category] as string[] | undefined;
+
+    const [prevActiveFilterDates, setPrevActiveFilterDates] = useState(activeFilterDates);
+    const [prevMinDate, setPrevMinDate] = useState(minDate);
+    const [prevMaxDate, setPrevMaxDate] = useState(maxDate);
+
+    const [startDate, setStartDate] = useState<string>(() => {
+        if (Array.isArray(activeFilterDates) && activeFilterDates[0]) {
+            return activeFilterDates[0];
+        }
+        return minDate;
+    });
+
+    const [endDate, setEndDate] = useState<string>(() => {
+        if (Array.isArray(activeFilterDates) && activeFilterDates[1]) {
+            return activeFilterDates[1];
+        }
+        return maxDate;
+    });
+
+    if (
+        activeFilterDates !== prevActiveFilterDates ||
+        minDate !== prevMinDate ||
+        maxDate !== prevMaxDate
+    ) {
+        setPrevActiveFilterDates(activeFilterDates);
+        setPrevMinDate(minDate);
+        setPrevMaxDate(maxDate);
+
+        setStartDate(
+            Array.isArray(activeFilterDates) && activeFilterDates[0]
+                ? activeFilterDates[0]
+                : minDate,
+        );
+        setEndDate(
+            Array.isArray(activeFilterDates) && activeFilterDates[1]
+                ? activeFilterDates[1]
+                : maxDate,
+        );
+    }
+
+    const handleStartChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const newStart = e.target.value;
+        setStartDate(newStart);
+        setChosenFilters((prev) => ({
+            ...prev,
+            [category]: [newStart, endDate],
+        }));
+    };
+
+    const handleEndChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const newEnd = e.target.value;
+        setEndDate(newEnd);
+        setChosenFilters((prev) => ({
+            ...prev,
+            [category]: [startDate, newEnd],
+        }));
+    };
 
     return (
         <Box sx={{ display: 'flex', gap: 1, pt: 1, px: 0.5 }}>
@@ -26,7 +87,7 @@ export const DateRangeFilter = ({ values }: DateRangeFilterProps) => {
                 type="date"
                 size="small"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={handleStartChange}
                 slotProps={{
                     inputLabel: { shrink: true },
                     htmlInput: {
@@ -46,7 +107,7 @@ export const DateRangeFilter = ({ values }: DateRangeFilterProps) => {
                 type="date"
                 size="small"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={handleEndChange}
                 slotProps={{
                     inputLabel: { shrink: true },
                     htmlInput: {

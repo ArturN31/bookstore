@@ -11,6 +11,8 @@ type BookAdvancedFilteringContextType = {
     advancedFilters: FilteringTypes;
     setAdvancedFilters: React.Dispatch<React.SetStateAction<FilteringTypes>>;
     isLoading: boolean;
+    chosenFilters: FilteringTypes;
+    setChosenFilters: React.Dispatch<React.SetStateAction<FilteringTypes>>;
 };
 
 const BookAdvancedFilteringContext = createContext<BookAdvancedFilteringContextType | null>(null);
@@ -28,6 +30,7 @@ export const BookAdvancedFilteringProvider = ({
         initialFilters || DEFAULT_FILTERING_CONSTANTS,
     );
     const [isLoading, setIsLoading] = useState<boolean>(!initialFilters);
+    const [chosenFilters, setChosenFilters] = useState<FilteringTypes>(DEFAULT_FILTERING_CONSTANTS);
 
     useEffect(() => {
         if (initialFilters) return;
@@ -55,8 +58,10 @@ export const BookAdvancedFilteringProvider = ({
             advancedFilters,
             setAdvancedFilters,
             isLoading,
+            chosenFilters,
+            setChosenFilters,
         }),
-        [advancedFilters, isLoading],
+        [advancedFilters, isLoading, chosenFilters],
     );
 
     return (

@@ -8,8 +8,9 @@ import {
     TextField,
     Typography,
 } from '@mui/material';
-import { useMemo, useState } from 'react';
+import { ChangeEvent, useMemo, useState } from 'react';
 import SearchIcon from '@mui/icons-material/Search';
+import { useBookFilter } from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
 
 interface CategoricalFilterProps {
     category: keyof FilteringTypes;
@@ -17,6 +18,8 @@ interface CategoricalFilterProps {
 }
 
 export const CategoricalFilter = ({ category, values }: CategoricalFilterProps) => {
+    const { chosenFilters, setChosenFilters } = useBookFilter();
+
     const [searchQuery, setSearchQuery] = useState('');
 
     const formattedValues = useMemo(() => {
@@ -31,6 +34,38 @@ export const CategoricalFilter = ({ category, values }: CategoricalFilterProps) 
     }, [formattedValues, searchQuery]);
 
     const showSearch = formattedValues.length > 6;
+
+    const handleChoice = (e: ChangeEvent<HTMLInputElement>) => {
+        const { checked, value } = e.target;
+
+        setChosenFilters((prev) => {
+            const currentValues = (prev[category] as (string | number)[]) || [];
+            const stringifiedValues = currentValues.map(String);
+
+            let updatedValues: (string | number)[];
+
+            if (checked) {
+                updatedValues = stringifiedValues.includes(value)
+                    ? currentValues
+                    : [...currentValues, value];
+            } else {
+                updatedValues = currentValues.filter((val) => String(val) !== value);
+            }
+
+            return {
+                ...prev,
+                [category]: updatedValues,
+            };
+        });
+    };
+
+    const activeSelectedValues = useMemo(() => {
+        const categoryState = chosenFilters[category];
+        if (Array.isArray(categoryState)) {
+            return categoryState.map(String);
+        }
+        return [];
+    }, [chosenFilters, category]);
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -84,49 +119,55 @@ export const CategoricalFilter = ({ category, values }: CategoricalFilterProps) 
                         No matching options
                     </Typography>
                 ) : (
-                    filteredValues.map((valueStr) => (
-                        <FormControlLabel
-                            key={`${category}-${valueStr}`}
-                            control={
-                                <Checkbox
-                                    size="small"
-                                    name={category}
-                                    value={valueStr}
-                                    sx={{
-                                        p: 0.5,
-                                        color: 'text.secondary',
-                                        '&.Mui-checked': {
-                                            color: 'primary.main',
-                                        },
-                                    }}
-                                />
-                            }
-                            label={
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        color: 'text.primary',
-                                        fontSize: '0.8125rem',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap',
-                                    }}
-                                >
-                                    {valueStr}
-                                </Typography>
-                            }
-                            sx={{
-                                mx: 0,
-                                py: 0.25,
-                                px: 0.5,
-                                borderRadius: 1,
-                                width: '100%',
-                                '&:hover': {
-                                    backgroundColor: 'action.hover',
-                                },
-                            }}
-                        />
-                    ))
+                    filteredValues.map((valueStr) => {
+                        const isChecked = activeSelectedValues.includes(valueStr);
+
+                        return (
+                            <FormControlLabel
+                                key={`${category}-${valueStr}`}
+                                control={
+                                    <Checkbox
+                                        size="small"
+                                        name={category}
+                                        value={valueStr}
+                                        checked={isChecked}
+                                        onChange={handleChoice}
+                                        sx={{
+                                            p: 0.5,
+                                            color: 'text.secondary',
+                                            '&.Mui-checked': {
+                                                color: 'primary.main',
+                                            },
+                                        }}
+                                    />
+                                }
+                                label={
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            color: 'text.primary',
+                                            fontSize: '0.8125rem',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
+                                        }}
+                                    >
+                                        {valueStr}
+                                    </Typography>
+                                }
+                                sx={{
+                                    mx: 0,
+                                    py: 0.25,
+                                    px: 0.5,
+                                    borderRadius: 1,
+                                    width: '100%',
+                                    '&:hover': {
+                                        backgroundColor: 'action.hover',
+                                    },
+                                }}
+                            />
+                        );
+                    })
                 )}
             </FormGroup>
         </Box>

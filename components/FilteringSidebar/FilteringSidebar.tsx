@@ -15,6 +15,7 @@ import Typography from '@mui/material/Typography';
 
 import {
     CATEGORY_LABELS,
+    DEFAULT_FILTERING_CONSTANTS,
     FilteringTypes,
     NUMERIC_CATEGORIES,
 } from '@/data/advancedFiltering/FilteringConstants';
@@ -25,7 +26,7 @@ import { NumericRangeFilter } from './NumericRangeFilter';
 import { CategoricalFilter } from './CategoricalFilter';
 
 export const FilteringSidebar = () => {
-    const { advancedFilters, isLoading } = useBookFilter();
+    const { advancedFilters, isLoading, setChosenFilters, chosenFilters } = useBookFilter();
 
     const [expandedPanels, setExpandedPanels] = useState<Record<string, boolean>>({
         AUTHORS: true,
@@ -46,6 +47,12 @@ export const FilteringSidebar = () => {
         keyof FilteringTypes,
         FilteringTypes[keyof FilteringTypes],
     ][];
+
+    const handleReset = () => {
+        setChosenFilters(DEFAULT_FILTERING_CONSTANTS);
+    };
+
+    console.log(chosenFilters);
 
     if (isLoading) return <FilteringSidebarSkeleton />;
 
@@ -92,6 +99,7 @@ export const FilteringSidebar = () => {
                 <Button
                     size="small"
                     startIcon={<RestartAltIcon />}
+                    onClick={handleReset}
                     sx={{
                         textTransform: 'none',
                         fontSize: '0.75rem',
@@ -150,7 +158,10 @@ export const FilteringSidebar = () => {
 
                             <AccordionDetails sx={{ px: 0.5, pt: 0, pb: 2 }}>
                                 {isPublicationDate ? (
-                                    <DateRangeFilter values={values as string[]} />
+                                    <DateRangeFilter
+                                        category={category}
+                                        values={values as string[]}
+                                    />
                                 ) : isNumeric ? (
                                     <NumericRangeFilter
                                         category={category}
