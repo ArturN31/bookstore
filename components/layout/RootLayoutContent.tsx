@@ -3,7 +3,6 @@ import { Footer } from '@/components/layout/Footer';
 import { Suspense } from 'react';
 import { SessionProviderWrapper } from '@/components/layout/SessionProviderWrapper';
 import { LayoutSkeleton } from '@/components/layout/LayoutSkeleton';
-import { FilteringSidebar } from '../FilteringSidebar/FilteringSidebar';
 
 export const RootLayoutContent = ({ children }: { children: React.ReactNode }) => {
     return (
@@ -15,7 +14,6 @@ export const RootLayoutContent = ({ children }: { children: React.ReactNode }) =
                 >
                     <Header />
                     <main className="flex w-full flex-1 flex-row gap-8 bg-slate-50 md:flex">
-                        <FilteringSidebar />
                         <div className="flex w-full flex-1 flex-col py-8">{children}</div>
                     </main>
                     <Footer />

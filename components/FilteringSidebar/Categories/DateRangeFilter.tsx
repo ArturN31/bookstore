@@ -1,15 +1,18 @@
 import { FilteringTypes } from '@/data/advancedFiltering/FilteringConstants';
-import { useBookFilter } from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
+import { useCategoryFilter } from '@/data/advancedFiltering/useCategoryFilter';
 import { Box, TextField } from '@mui/material';
-import { ChangeEvent, useMemo, useState } from 'react';
+import { ChangeEvent, useMemo } from 'react';
 
-interface DateRangeFilterProps {
-    category: keyof FilteringTypes;
+interface DateRangeFilterProps<K extends keyof FilteringTypes> {
+    category: K;
     values: string[];
 }
 
-export const DateRangeFilter = ({ category, values }: DateRangeFilterProps) => {
-    const { chosenFilters, setChosenFilters } = useBookFilter();
+export const DateRangeFilter = <K extends keyof FilteringTypes>({
+    category,
+    values,
+}: DateRangeFilterProps<K>) => {
+    const { categoryValue, setValue } = useCategoryFilter(category);
 
     const sortedDates = useMemo(() => {
         return values
@@ -21,63 +24,26 @@ export const DateRangeFilter = ({ category, values }: DateRangeFilterProps) => {
     const minDate = sortedDates[0] || '';
     const maxDate = sortedDates[sortedDates.length - 1] || '';
 
-    const activeFilterDates = chosenFilters[category] as string[] | undefined;
+    const activeFilterDates = categoryValue as string[] | undefined;
 
-    const [prevActiveFilterDates, setPrevActiveFilterDates] = useState(activeFilterDates);
-    const [prevMinDate, setPrevMinDate] = useState(minDate);
-    const [prevMaxDate, setPrevMaxDate] = useState(maxDate);
+    const startDate =
+        Array.isArray(activeFilterDates) && Boolean(activeFilterDates[0])
+            ? activeFilterDates[0]
+            : minDate;
 
-    const [startDate, setStartDate] = useState<string>(() => {
-        if (Array.isArray(activeFilterDates) && activeFilterDates[0]) {
-            return activeFilterDates[0];
-        }
-        return minDate;
-    });
-
-    const [endDate, setEndDate] = useState<string>(() => {
-        if (Array.isArray(activeFilterDates) && activeFilterDates[1]) {
-            return activeFilterDates[1];
-        }
-        return maxDate;
-    });
-
-    if (
-        activeFilterDates !== prevActiveFilterDates ||
-        minDate !== prevMinDate ||
-        maxDate !== prevMaxDate
-    ) {
-        setPrevActiveFilterDates(activeFilterDates);
-        setPrevMinDate(minDate);
-        setPrevMaxDate(maxDate);
-
-        setStartDate(
-            Array.isArray(activeFilterDates) && activeFilterDates[0]
-                ? activeFilterDates[0]
-                : minDate,
-        );
-        setEndDate(
-            Array.isArray(activeFilterDates) && activeFilterDates[1]
-                ? activeFilterDates[1]
-                : maxDate,
-        );
-    }
+    const endDate =
+        Array.isArray(activeFilterDates) && Boolean(activeFilterDates[1])
+            ? activeFilterDates[1]
+            : maxDate;
 
     const handleStartChange = (e: ChangeEvent<HTMLInputElement>) => {
         const newStart = e.target.value;
-        setStartDate(newStart);
-        setChosenFilters((prev) => ({
-            ...prev,
-            [category]: [newStart, endDate],
-        }));
+        setValue([newStart, endDate] as FilteringTypes[K]);
     };
 
     const handleEndChange = (e: ChangeEvent<HTMLInputElement>) => {
         const newEnd = e.target.value;
-        setEndDate(newEnd);
-        setChosenFilters((prev) => ({
-            ...prev,
-            [category]: [startDate, newEnd],
-        }));
+        setValue([startDate, newEnd] as FilteringTypes[K]);
     };
 
     return (

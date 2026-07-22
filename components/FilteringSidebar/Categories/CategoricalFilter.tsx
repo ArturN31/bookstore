@@ -1,4 +1,5 @@
-import { CATEGORY_LABELS, FilteringTypes } from '@/data/advancedFiltering/FilteringConstants';
+import { ChangeEvent, useMemo, useState } from 'react';
+import SearchIcon from '@mui/icons-material/Search';
 import {
     Box,
     Checkbox,
@@ -8,17 +9,20 @@ import {
     TextField,
     Typography,
 } from '@mui/material';
-import { ChangeEvent, useMemo, useState } from 'react';
-import SearchIcon from '@mui/icons-material/Search';
-import { useBookFilter } from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
 
-interface CategoricalFilterProps {
-    category: keyof FilteringTypes;
+import { CATEGORY_LABELS, FilteringTypes } from '@/data/advancedFiltering/FilteringConstants';
+import { useCategoryFilter } from '@/data/advancedFiltering/useCategoryFilter';
+
+interface CategoricalFilterProps<K extends keyof FilteringTypes> {
+    category: K;
     values: (string | number)[];
 }
 
-export const CategoricalFilter = ({ category, values }: CategoricalFilterProps) => {
-    const { chosenFilters, setChosenFilters } = useBookFilter();
+export const CategoricalFilter = <K extends keyof FilteringTypes>({
+    category,
+    values,
+}: CategoricalFilterProps<K>) => {
+    const { categoryValue, toggleItem } = useCategoryFilter(category);
 
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -36,36 +40,15 @@ export const CategoricalFilter = ({ category, values }: CategoricalFilterProps) 
     const showSearch = formattedValues.length > 6;
 
     const handleChoice = (e: ChangeEvent<HTMLInputElement>) => {
-        const { checked, value } = e.target;
-
-        setChosenFilters((prev) => {
-            const currentValues = (prev[category] as (string | number)[]) || [];
-            const stringifiedValues = currentValues.map(String);
-
-            let updatedValues: (string | number)[];
-
-            if (checked) {
-                updatedValues = stringifiedValues.includes(value)
-                    ? currentValues
-                    : [...currentValues, value];
-            } else {
-                updatedValues = currentValues.filter((val) => String(val) !== value);
-            }
-
-            return {
-                ...prev,
-                [category]: updatedValues,
-            };
-        });
+        toggleItem(e.target.value);
     };
 
     const activeSelectedValues = useMemo(() => {
-        const categoryState = chosenFilters[category];
-        if (Array.isArray(categoryState)) {
-            return categoryState.map(String);
+        if (Array.isArray(categoryValue)) {
+            return (categoryValue as (string | number)[]).map(String);
         }
         return [];
-    }, [chosenFilters, category]);
+    }, [categoryValue]);
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -124,11 +107,11 @@ export const CategoricalFilter = ({ category, values }: CategoricalFilterProps) 
 
                         return (
                             <FormControlLabel
-                                key={`${category}-${valueStr}`}
+                                key={`${String(category)}-${valueStr}`}
                                 control={
                                     <Checkbox
                                         size="small"
-                                        name={category}
+                                        name={String(category)}
                                         value={valueStr}
                                         checked={isChecked}
                                         onChange={handleChoice}

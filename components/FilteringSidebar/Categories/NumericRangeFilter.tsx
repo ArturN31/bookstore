@@ -1,39 +1,44 @@
 import { FilteringTypes } from '@/data/advancedFiltering/FilteringConstants';
-import { useBookFilter } from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
+import { useCategoryFilter } from '@/data/advancedFiltering/useCategoryFilter';
 import { Box, Slider, Typography } from '@mui/material';
 import { SyntheticEvent, useMemo, useState } from 'react';
 
-interface NumericRangeFilterProps {
-    category: keyof FilteringTypes;
+interface NumericRangeFilterProps<K extends keyof FilteringTypes> {
+    category: K;
     values: number[];
 }
 
-export const NumericRangeFilter = ({ category, values }: NumericRangeFilterProps) => {
-    const { chosenFilters, setChosenFilters } = useBookFilter();
+export const NumericRangeFilter = <K extends keyof FilteringTypes>({
+    category,
+    values,
+}: NumericRangeFilterProps<K>) => {
+    const { categoryValue, setValue } = useCategoryFilter(category);
 
     const min = useMemo(() => (values.length ? Math.min(...values) : 0), [values]);
     const max = useMemo(() => (values.length ? Math.max(...values) : 100), [values]);
 
-    const activeFilterRange = chosenFilters[category] as number[] | undefined;
+    const activeFilterRange = categoryValue as number[] | undefined;
+    const activeMin = activeFilterRange?.[0];
+    const activeMax = activeFilterRange?.[1];
 
-    const [prevActiveFilterRange, setPrevActiveFilterRange] = useState(activeFilterRange);
-    const [prevMin, setPrevMin] = useState(min);
-    const [prevMax, setPrevMax] = useState(max);
-
+    const [prevSync, setPrevSync] = useState({ activeMin, activeMax, min, max });
     const [range, setRange] = useState<number[]>(() => {
-        if (Array.isArray(activeFilterRange) && activeFilterRange.length === 2) {
-            return activeFilterRange;
+        if (typeof activeMin === 'number' && typeof activeMax === 'number') {
+            return [activeMin, activeMax];
         }
         return [min, max];
     });
 
-    if (activeFilterRange !== prevActiveFilterRange || min !== prevMin || max !== prevMax) {
-        setPrevActiveFilterRange(activeFilterRange);
-        setPrevMin(min);
-        setPrevMax(max);
+    if (
+        prevSync.activeMin !== activeMin ||
+        prevSync.activeMax !== activeMax ||
+        prevSync.min !== min ||
+        prevSync.max !== max
+    ) {
+        setPrevSync({ activeMin, activeMax, min, max });
         setRange(
-            Array.isArray(activeFilterRange) && activeFilterRange.length === 2
-                ? activeFilterRange
+            typeof activeMin === 'number' && typeof activeMax === 'number'
+                ? [activeMin, activeMax]
                 : [min, max],
         );
     }
@@ -50,10 +55,7 @@ export const NumericRangeFilter = ({ category, values }: NumericRangeFilterProps
 
     const handleSliderCommitted = (_: Event | SyntheticEvent, newValue: number | number[]) => {
         if (Array.isArray(newValue)) {
-            setChosenFilters((prev) => ({
-                ...prev,
-                [category]: newValue,
-            }));
+            setValue(newValue as FilteringTypes[K]);
         }
     };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
     DEFAULT_FILTERING_CONSTANTS,
     FilteringTypes,
@@ -13,6 +13,15 @@ type BookAdvancedFilteringContextType = {
     isLoading: boolean;
     chosenFilters: FilteringTypes;
     setChosenFilters: React.Dispatch<React.SetStateAction<FilteringTypes>>;
+    setCategoryFilter: <K extends keyof FilteringTypes>(
+        category: K,
+        value: FilteringTypes[K],
+    ) => void;
+    toggleFilterItem: <K extends keyof FilteringTypes>(
+        category: K,
+        itemValue: string | number,
+    ) => void;
+    resetAllFilters: () => void;
 };
 
 const BookAdvancedFilteringContext = createContext<BookAdvancedFilteringContextType | null>(null);
@@ -27,10 +36,12 @@ export const BookAdvancedFilteringProvider = ({
     initialFilters,
 }: BookAdvancedFilteringProviderProps) => {
     const [advancedFilters, setAdvancedFilters] = useState<FilteringTypes>(
-        initialFilters || DEFAULT_FILTERING_CONSTANTS,
+        () => initialFilters || { ...DEFAULT_FILTERING_CONSTANTS },
     );
     const [isLoading, setIsLoading] = useState<boolean>(!initialFilters);
-    const [chosenFilters, setChosenFilters] = useState<FilteringTypes>(DEFAULT_FILTERING_CONSTANTS);
+    const [chosenFilters, setChosenFilters] = useState<FilteringTypes>(() => ({
+        ...DEFAULT_FILTERING_CONSTANTS,
+    }));
 
     useEffect(() => {
         if (initialFilters) return;
@@ -39,10 +50,17 @@ export const BookAdvancedFilteringProvider = ({
 
         const fetchFilters = async () => {
             setIsLoading(true);
-            const data = await getFilteringConstants();
-            if (isMounted) {
-                setAdvancedFilters(data);
-                setIsLoading(false);
+            try {
+                const data = await getFilteringConstants();
+                if (isMounted) {
+                    setAdvancedFilters(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch filtering constants:', error);
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false);
+                }
             }
         };
 
@@ -53,6 +71,43 @@ export const BookAdvancedFilteringProvider = ({
         };
     }, [initialFilters]);
 
+    const setCategoryFilter = useCallback(
+        <K extends keyof FilteringTypes>(category: K, value: FilteringTypes[K]) => {
+            setChosenFilters((prev) => ({
+                ...prev,
+                [category]: value,
+            }));
+        },
+        [],
+    );
+
+    const toggleFilterItem = useCallback(
+        <K extends keyof FilteringTypes>(category: K, itemValue: string | number) => {
+            setChosenFilters((prev) => {
+                const rawValue = prev[category];
+                const currentArray = Array.isArray(rawValue)
+                    ? (rawValue as (string | number)[])
+                    : [];
+                const stringifiedValues = currentArray.map(String);
+                const itemStr = String(itemValue);
+
+                const updated = stringifiedValues.includes(itemStr)
+                    ? currentArray.filter((val) => String(val) !== itemStr)
+                    : [...currentArray, itemValue];
+
+                return {
+                    ...prev,
+                    [category]: updated as FilteringTypes[K],
+                };
+            });
+        },
+        [],
+    );
+
+    const resetAllFilters = useCallback(() => {
+        setChosenFilters({ ...DEFAULT_FILTERING_CONSTANTS });
+    }, []);
+
     const contextValue = useMemo(
         () => ({
             advancedFilters,
@@ -60,8 +115,18 @@ export const BookAdvancedFilteringProvider = ({
             isLoading,
             chosenFilters,
             setChosenFilters,
+            setCategoryFilter,
+            toggleFilterItem,
+            resetAllFilters,
         }),
-        [advancedFilters, isLoading, chosenFilters],
+        [
+            advancedFilters,
+            isLoading,
+            chosenFilters,
+            setCategoryFilter,
+            toggleFilterItem,
+            resetAllFilters,
+        ],
     );
 
     return (
