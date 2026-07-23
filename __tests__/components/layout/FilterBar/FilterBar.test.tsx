@@ -1,5 +1,6 @@
-import { FilterBar } from '@/components/layout/FilterBar/FilterBar';
+import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { FilterBar } from '@/components/layout/FilterBar/FilterBar';
 
 const mockUsePathname = jest.fn();
 jest.mock('next/navigation', () => ({
@@ -10,7 +11,14 @@ jest.mock('next/navigation', () => ({
 }));
 
 jest.mock('next/link', () => {
-    const MockedLink = ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
+    const MockedLink = ({
+        children,
+        href,
+        ...props
+    }: {
+        children: React.ReactNode;
+        href: string;
+    }) => (
         <a
             href={href}
             {...props}
@@ -21,6 +29,19 @@ jest.mock('next/link', () => {
     MockedLink.displayName = 'Link';
     return MockedLink;
 });
+
+jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
+    useBookFilter: () => ({
+        advancedFilters: {
+            AUTHORS: [],
+            GENRES: [],
+            PRICES: [],
+            PUBLICATIONS: [],
+        },
+        isLoading: false,
+        resetAllFilters: jest.fn(),
+    }),
+}));
 
 jest.mock('@/components/layout/FilterBar/Home', () => ({
     Home: () => <div data-testid="filterbar-home">Home</div>,

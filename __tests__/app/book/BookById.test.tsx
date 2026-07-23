@@ -7,6 +7,12 @@ interface BookByIdProps {
     searchParams: Promise<{ reviewPagination?: string }>;
 }
 
+jest.mock('next/cache', () => ({
+    unstable_cache: <T extends (...args: unknown[]) => Promise<unknown>>(fn: T) => fn,
+    revalidatePath: jest.fn(),
+    revalidateTag: jest.fn(),
+}));
+
 const mockedFetchBooks = fetchBooksWithReviews as jest.Mock;
 jest.mock('@/data/books/GetBooksData');
 
@@ -28,7 +34,7 @@ jest.mock('next/navigation', () => ({
     }),
 }));
 
-const mockBookData: Book = {
+const mockBookData = {
     id: 'mock-book-id-123',
     created_at: new Date().getUTCDate().toString(),
     updated_at: new Date().getUTCDate().toString(),
@@ -144,7 +150,7 @@ describe('App - Book[slug]', () => {
     });
 
     it('should return metadata with default description when book description is empty (covers ?? branch)', async () => {
-        const bookWithEmptyDescription: Book = { ...mockBookData, description: '' };
+        const bookWithEmptyDescription = { ...mockBookData, description: '' };
 
         mockedFetchBooks.mockResolvedValue({
             error: null,
@@ -165,7 +171,7 @@ describe('App - Book[slug]', () => {
     });
 
     it('should return metadata with default description when book description is null (covers ?? branch)', async () => {
-        const bookWithNullDescription: Book = {
+        const bookWithNullDescription = {
             ...mockBookData,
             description: null as unknown as string,
         };
@@ -216,7 +222,7 @@ describe('App - Book[slug]', () => {
     });
 
     it('Should fallback to an empty array and fallback totals when properties are missing (covers lines 58-62 branch)', async () => {
-        const bookWithNoReviews: Book = { ...mockBookData, reviews: undefined };
+        const bookWithNoReviews = { ...mockBookData, reviews: undefined };
 
         mockedFetchBooks.mockResolvedValue({
             error: null,
@@ -234,7 +240,7 @@ describe('App - Book[slug]', () => {
     });
 
     it('Should cover missing image_url fallback branch rendering (covers line 82 branches)', async () => {
-        const bookWithNoImage: Book = { ...mockBookData, image_url: null as unknown as string };
+        const bookWithNoImage = { ...mockBookData, image_url: null as unknown as string };
 
         mockedFetchBooks.mockResolvedValue({
             error: null,

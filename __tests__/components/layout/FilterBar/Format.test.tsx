@@ -4,6 +4,12 @@ import { Format, handleFormatChoice } from '@/components/layout/FilterBar/Format
 const mockFrom = jest.fn();
 const mockSelect = jest.fn();
 
+jest.mock('next/cache', () => ({
+    unstable_cache: <T extends (...args: unknown[]) => Promise<unknown>>(fn: T) => fn,
+    revalidatePath: jest.fn(),
+    revalidateTag: jest.fn(),
+}));
+
 jest.mock('@/utils/db/server', () => ({
     createBackendClient: jest.fn(() => ({
         from: mockFrom.mockReturnValue({
@@ -13,14 +19,16 @@ jest.mock('@/utils/db/server', () => ({
 }));
 
 jest.mock('@/components/ui/CustomPopoverWithList', () => ({
-    CustomPopoverWithList: jest.fn(({ formats, message }) => {
-        return (
-            <div data-testid="mock-dropdown-list">
-                {formats && <p>Format: {formats.join(', ')}</p>}
-                {message && <p>Message: {message}</p>}
-            </div>
-        );
-    }),
+    CustomPopoverWithList: jest.fn(
+        ({ formats, message }: { formats?: string[]; message?: string }) => {
+            return (
+                <div data-testid="mock-dropdown-list">
+                    {formats && <p>Format: {formats.join(', ')}</p>}
+                    {message && <p>Message: {message}</p>}
+                </div>
+            );
+        },
+    ),
 }));
 
 jest.mock('next/navigation', () => ({
@@ -41,7 +49,8 @@ describe('FilterBar - Format', () => {
 
         render(await Format());
 
-        const MockedPopover = require('@/components/ui/CustomPopoverWithList').CustomPopoverWithList;
+        const MockedPopover =
+            require('@/components/ui/CustomPopoverWithList').CustomPopoverWithList;
 
         expect(MockedPopover).toHaveBeenCalledWith(
             expect.objectContaining({

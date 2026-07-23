@@ -10,6 +10,10 @@ import * as Repo from '@/data/cart/CartRepository';
 import { createBackendClient } from '@/utils/db/server';
 import { mapDatabaseCartToDomain } from '@/data/cart/CartMapper';
 
+jest.mock('next/cache', () => ({
+    revalidateTag: jest.fn(),
+}));
+
 jest.mock('@/utils/db/server');
 jest.mock('@/data/cart/CartRepository');
 jest.mock('@/data/cart/CartMapper');
@@ -18,12 +22,23 @@ jest.mock('@/utils/network/retry', () => ({
 }));
 
 describe('GetCartData', () => {
-    const mockSupabase = { test: true };
     const validUUID = '550e8400-e29b-41d4-a716-446655440000';
+    const validCartID = '123e4567-e89b-12d3-a456-426614174000';
+    const validBookID = '987e6543-e21b-12d3-a456-426614174000';
+
+    const mockSupabase = {
+        auth: {
+            getUser: jest.fn(),
+        },
+    };
 
     beforeEach(() => {
         jest.clearAllMocks();
         (createBackendClient as jest.Mock).mockResolvedValue(mockSupabase);
+        mockSupabase.auth.getUser.mockResolvedValue({
+            data: { user: { id: validUUID } },
+            error: null,
+        });
     });
 
     describe('getUsersCartID', () => {
@@ -129,12 +144,12 @@ describe('GetCartData', () => {
         it('should add item successfully', async () => {
             (Repo.upsertItem as jest.Mock).mockResolvedValue({ data: true, error: null });
 
-            const result = await addItemToUsersCart('cart-123', 'book-1', 2);
+            const result = await addItemToUsersCart(validCartID, validBookID, 2);
 
             expect(result.data).toBe(true);
             expect(result.error).toBeNull();
             expect(createBackendClient).toHaveBeenCalled();
-            expect(Repo.upsertItem).toHaveBeenCalledWith(mockSupabase, 'cart-123', 'book-1', 2);
+            expect(Repo.upsertItem).toHaveBeenCalledWith(mockSupabase, validCartID, validBookID, 2);
         });
 
         it('should handle database error', async () => {
@@ -144,7 +159,7 @@ describe('GetCartData', () => {
                 error: { message: 'Add failed', details: '', hint: '', code: '' },
             });
 
-            const result = await addItemToUsersCart('cart-123', 'book-1', 2);
+            const result = await addItemToUsersCart(validCartID, validBookID, 2);
 
             expect(consoleSpy).toHaveBeenCalled();
             expect(result.error).toContain('Unable to add item');
@@ -155,7 +170,7 @@ describe('GetCartData', () => {
         it('should handle connection timeout', async () => {
             (Repo.upsertItem as jest.Mock).mockRejectedValue(new Error('Timeout'));
 
-            const result = await addItemToUsersCart('cart-123', 'book-1', 2);
+            const result = await addItemToUsersCart(validCartID, validBookID, 2);
 
             expect(result.data).toBe(false);
             expect(result.error).toBe('Could not add item. Connection timed out.');
@@ -166,12 +181,12 @@ describe('GetCartData', () => {
         it('should update item successfully', async () => {
             (Repo.updateItem as jest.Mock).mockResolvedValue({ data: true, error: null });
 
-            const result = await updateItemInUsersCart('cart-123', 'book-1', 3);
+            const result = await updateItemInUsersCart(validCartID, validBookID, 3);
 
             expect(result.data).toBe(true);
             expect(result.error).toBeNull();
             expect(createBackendClient).toHaveBeenCalled();
-            expect(Repo.updateItem).toHaveBeenCalledWith(mockSupabase, 'cart-123', 'book-1', 3);
+            expect(Repo.updateItem).toHaveBeenCalledWith(mockSupabase, validCartID, validBookID, 3);
         });
 
         it('should handle database error', async () => {
@@ -181,7 +196,7 @@ describe('GetCartData', () => {
                 error: { message: 'Update failed', details: '', hint: '', code: '' },
             });
 
-            const result = await updateItemInUsersCart('cart-123', 'book-1', 3);
+            const result = await updateItemInUsersCart(validCartID, validBookID, 3);
 
             expect(consoleSpy).toHaveBeenCalled();
             expect(result.error).toContain('Unable to update');
@@ -192,7 +207,7 @@ describe('GetCartData', () => {
         it('should handle network error', async () => {
             (Repo.updateItem as jest.Mock).mockRejectedValue(new Error('Network error'));
 
-            const result = await updateItemInUsersCart('cart-123', 'book-1', 3);
+            const result = await updateItemInUsersCart(validCartID, validBookID, 3);
 
             expect(result.data).toBe(false);
             expect(result.error).toBe('Update failed due to network error.');
@@ -203,12 +218,12 @@ describe('GetCartData', () => {
         it('should remove item successfully', async () => {
             (Repo.deleteItem as jest.Mock).mockResolvedValue({ data: true, error: null });
 
-            const result = await removeItemFromUsersCart('cart-123', 'book-1');
+            const result = await removeItemFromUsersCart(validCartID, validBookID);
 
             expect(result.data).toBe(true);
             expect(result.error).toBeNull();
             expect(createBackendClient).toHaveBeenCalled();
-            expect(Repo.deleteItem).toHaveBeenCalledWith(mockSupabase, 'cart-123', 'book-1');
+            expect(Repo.deleteItem).toHaveBeenCalledWith(mockSupabase, validCartID, validBookID);
         });
 
         it('should handle database error', async () => {
@@ -218,7 +233,7 @@ describe('GetCartData', () => {
                 error: { message: 'Remove failed', details: '', hint: '', code: '' },
             });
 
-            const result = await removeItemFromUsersCart('cart-123', 'book-1');
+            const result = await removeItemFromUsersCart(validCartID, validBookID);
 
             expect(consoleSpy).toHaveBeenCalled();
             expect(result.error).toContain('Unable to remove');
@@ -229,7 +244,7 @@ describe('GetCartData', () => {
         it('should handle connection error', async () => {
             (Repo.deleteItem as jest.Mock).mockRejectedValue(new Error('Connection error'));
 
-            const result = await removeItemFromUsersCart('cart-123', 'book-1');
+            const result = await removeItemFromUsersCart(validCartID, validBookID);
 
             expect(result.data).toBe(false);
             expect(result.error).toBe('Removal failed. Check your connection.');

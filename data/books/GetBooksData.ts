@@ -1,6 +1,5 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
 import {
     createBaseBookQuery,
     applyBookSorting,
@@ -9,6 +8,7 @@ import {
 } from './BookRepository';
 import { mapToPaginatedBookResponse } from './BookMapper';
 import { PaginatedBookResult } from './BookConstants';
+import { createBackendClient } from '@/utils/db/server';
 import { withRetry } from '@/utils/network/retry';
 import { unstable_cache } from 'next/cache';
 
@@ -22,10 +22,7 @@ const getCachedBooksData = unstable_cache(
         const filters: FetchBooksFilters = JSON.parse(filtersSerialized);
 
         return await withRetry(async () => {
-            const supabase = createClient(
-                process.env.NEXT_PUBLIC_SUPABASE_DB_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_PUBLIC_KEY!,
-            );
+            const supabase = await createBackendClient();
 
             const baseQuery = createBaseBookQuery(supabase, filters);
             const sortedQuery = applyBookSorting(baseQuery, filters.sortBy);
@@ -33,7 +30,15 @@ const getCachedBooksData = unstable_cache(
 
             const { data, error, count } = await paginatedQuery;
 
-            if (error) throw error;
+            if (error) {
+                if (error.code === 'PGRST116') {
+                    return {
+                        data: [],
+                        count: 0,
+                    };
+                }
+                throw error;
+            }
 
             return {
                 data: data || [],
@@ -51,28 +56,40 @@ const getCachedBooksData = unstable_cache(
 export const fetchBooksWithReviews = async (
     filters: FetchBooksFilters = {},
 ): Promise<ActionResponse<PaginatedBookResult>> => {
-    const page = Math.max(MIN_PAGE_NUMBER, filters.page || 1);
-    const limit = Math.max(
-        MIN_PAGE_SIZE,
-        Math.min(filters.limit || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE),
-    );
+    const rawPage = filters.page ?? 1;
+    const rawLimit = filters.limit ?? DEFAULT_PAGE_SIZE;
+
+    if (rawPage < MIN_PAGE_NUMBER || rawLimit < MIN_PAGE_SIZE || rawLimit > MAX_PAGE_SIZE) {
+        const safePage = Math.max(MIN_PAGE_NUMBER, rawPage);
+        const safeLimit = Math.max(MIN_PAGE_SIZE, Math.min(rawLimit, MAX_PAGE_SIZE));
+
+        return {
+            data: mapToPaginatedBookResponse([], 0, safePage, safeLimit),
+            error: null,
+        };
+    }
 
     try {
         const filtersSerialized = JSON.stringify(filters);
-        const result = await getCachedBooksData(page, limit, filtersSerialized);
+        const result = await getCachedBooksData(rawPage, rawLimit, filtersSerialized);
 
         return {
-            data: mapToPaginatedBookResponse(result.data, result.count, page, limit),
+            data: mapToPaginatedBookResponse(result.data, result.count, rawPage, rawLimit),
             error: null,
         };
     } catch (err) {
         console.error('[GetBooksData] Orchestration Error:', err);
+
+        const errorMessage =
+            err instanceof Error
+                ? err.message
+                : typeof err === 'string'
+                  ? err
+                  : 'Failed to retrieve book records after multiple attempts.';
+
         return {
             data: null,
-            error:
-                err instanceof Error
-                    ? err.message
-                    : 'Failed to retrieve book records after multiple attempts.',
+            error: errorMessage,
         };
     }
 };

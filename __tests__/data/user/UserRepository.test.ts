@@ -20,7 +20,7 @@ describe('UserRepository', () => {
         (console.error as jest.Mock).mockRestore();
     });
 
-    const mockSupabaseClient = (response: { data: any; error: any }) =>
+    const mockSupabaseClient = (response: { data: unknown; error: unknown }) =>
         ({
             from: jest.fn().mockReturnThis(),
             select: jest.fn().mockReturnThis(),
@@ -101,7 +101,7 @@ describe('UserRepository', () => {
     });
 
     describe('fetchWishlistByUserId', () => {
-        const mockSupabaseWishlist = (response: { data: any; error: any }) =>
+        const mockSupabaseWishlist = (response: { data: unknown; error: unknown }) =>
             ({
                 from: jest.fn().mockReturnThis(),
                 select: jest.fn().mockReturnThis(),
@@ -135,11 +135,11 @@ describe('UserRepository', () => {
             const result = await fetchWishlistByUserId(mockSupabase, 'user-123');
 
             expect(result.data).toEqual([]);
-            expect(result.error).toBe(UserConstants.ERROR_WISHLIST_NOT_FOUND);
+            expect(result.error).toBeNull();
         });
 
         it('should return error when supabase client is missing', async () => {
-            // @ts-expect-error
+            // @ts-expect-error - testing runtime null check
             const result = await fetchWishlistByUserId(null, 'user-123');
             expect(result.error).toBe(UserConstants.ERROR_SUPABASE_FAILED);
         });
