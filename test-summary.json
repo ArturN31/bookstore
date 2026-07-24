@@ -1,10 +1,10 @@
 {
   "total": {
-    "statements": 93.1,
-    "branches": 99.24,
-    "functions": 96.17,
-    "lines": 93.1,
-    "average": 95.4
+    "statements": 93.85,
+    "branches": 99.33,
+    "functions": 96.56,
+    "lines": 93.85,
+    "average": 95.9
   },
   "paths": {
     "app/page.tsx": {
@@ -70,6 +70,13 @@
       "lines": "100.00%",
       "average": "100.00%"
     },
+    "components/FilteringSidebar": {
+      "statements": "100.00%",
+      "branches": "100.00%",
+      "functions": "100.00%",
+      "lines": "100.00%",
+      "average": "100.00%"
+    },
     "components/books": {
       "statements": "100.00%",
       "branches": "100.00%",
@@ -112,6 +119,13 @@
       "lines": "100.00%",
       "average": "100.00%"
     },
+    "data/advancedFiltering": {
+      "statements": "100.00%",
+      "branches": "100.00%",
+      "functions": "100.00%",
+      "lines": "100.00%",
+      "average": "100.00%"
+    },
     "data/books": {
       "statements": "100.00%",
       "branches": "100.00%",
@@ -147,7 +161,7 @@
       "lines": "100.00%",
       "average": "100.00%"
     },
-    "providers/BookFilterProvider.tsx": {
+    "providers/BookSortByProvider.tsx": {
       "statements": "100.00%",
       "branches": "100.00%",
       "functions": "100.00%",
@@ -155,6 +169,13 @@
       "average": "100.00%"
     },
     "providers/Providers.tsx": {
+      "statements": "100.00%",
+      "branches": "100.00%",
+      "functions": "100.00%",
+      "lines": "100.00%",
+      "average": "100.00%"
+    },
+    "providers/advancedFiltering": {
       "statements": "100.00%",
       "branches": "100.00%",
       "functions": "100.00%",

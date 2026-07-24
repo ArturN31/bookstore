@@ -23,9 +23,8 @@ export const NumericRangeFilter = <K extends keyof FilteringTypes>({
 
     const [prevSync, setPrevSync] = useState({ activeMin, activeMax, min, max });
     const [range, setRange] = useState<number[]>(() => {
-        if (typeof activeMin === 'number' && typeof activeMax === 'number') {
+        if (typeof activeMin === 'number' && typeof activeMax === 'number')
             return [activeMin, activeMax];
-        }
         return [min, max];
     });
 
@@ -48,15 +47,11 @@ export const NumericRangeFilter = <K extends keyof FilteringTypes>({
     const formatValue = (val: number) => (isPrice ? `£${val.toFixed(2)}` : val.toLocaleString());
 
     const handleSliderChange = (_: Event | SyntheticEvent, newValue: number | number[]) => {
-        if (Array.isArray(newValue)) {
-            setRange(newValue);
-        }
+        if (Array.isArray(newValue)) setRange(newValue);
     };
 
     const handleSliderCommitted = (_: Event | SyntheticEvent, newValue: number | number[]) => {
-        if (Array.isArray(newValue)) {
-            setValue(newValue as FilteringTypes[K]);
-        }
+        if (Array.isArray(newValue)) setValue(newValue as FilteringTypes[K]);
     };
 
     return (
@@ -67,7 +62,7 @@ export const NumericRangeFilter = <K extends keyof FilteringTypes>({
                     color="text.secondary"
                     sx={{ fontWeight: 'bold' }}
                 >
-                    {formatValue(range[0] ?? min)}
+                    {formatValue(range[0]!)}
                 </Typography>
 
                 <Typography
@@ -75,7 +70,7 @@ export const NumericRangeFilter = <K extends keyof FilteringTypes>({
                     color="text.secondary"
                     sx={{ fontWeight: 'bold' }}
                 >
-                    {formatValue(range[1] ?? max)}
+                    {formatValue(range[1]!)}
                 </Typography>
             </Box>
 

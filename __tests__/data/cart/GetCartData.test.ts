@@ -23,6 +23,7 @@ jest.mock('@/utils/network/retry', () => ({
 
 describe('GetCartData', () => {
     const validUUID = '550e8400-e29b-41d4-a716-446655440000';
+    const otherValidUUID = '660e8400-e29b-41d4-a716-446655440000';
     const validCartID = '123e4567-e89b-12d3-a456-426614174000';
     const validBookID = '987e6543-e21b-12d3-a456-426614174000';
 
@@ -46,6 +47,28 @@ describe('GetCartData', () => {
             const result = await getUsersCartID('invalid-id');
 
             expect(result).toEqual({ data: null, error: 'User session is invalid.' });
+        });
+
+        it('should handle unauthenticated session or auth error', async () => {
+            mockSupabase.auth.getUser.mockResolvedValueOnce({
+                data: { user: null },
+                error: { message: 'Auth session missing' },
+            });
+
+            const result = await getUsersCartID(validUUID);
+
+            expect(result.error).toBe('Connection timeout. Please try again.');
+        });
+
+        it('should throw error when authenticated user does not match target user ID', async () => {
+            mockSupabase.auth.getUser.mockResolvedValueOnce({
+                data: { user: { id: otherValidUUID } },
+                error: null,
+            });
+
+            const result = await getUsersCartID(validUUID);
+
+            expect(result.error).toBe('Connection timeout. Please try again.');
         });
 
         it('should return cart ID when found', async () => {
@@ -102,6 +125,17 @@ describe('GetCartData', () => {
             expect(result).toEqual({ data: null, error: 'User session is invalid.' });
         });
 
+        it('should throw error when authenticated user does not match target user ID', async () => {
+            mockSupabase.auth.getUser.mockResolvedValueOnce({
+                data: { user: { id: otherValidUUID } },
+                error: null,
+            });
+
+            const result = await createUsersCart(validUUID);
+
+            expect(result.error).toBe('Failed to create cart due to connection issues.');
+        });
+
         it('should create cart and return ID', async () => {
             (Repo.createCart as jest.Mock).mockResolvedValue({
                 data: { id: 'new-cart' },
@@ -141,6 +175,31 @@ describe('GetCartData', () => {
     });
 
     describe('addItemToUsersCart', () => {
+        it('should return error for invalid cart or book UUID format', async () => {
+            const invalidCart = await addItemToUsersCart('invalid-cart', validBookID, 1);
+            expect(invalidCart).toEqual({ data: false, error: 'Malformed identifier parameters.' });
+
+            const invalidBook = await addItemToUsersCart(validCartID, 'invalid-book', 1);
+            expect(invalidBook).toEqual({ data: false, error: 'Malformed identifier parameters.' });
+        });
+
+        it('should return error for invalid quantity less than 1', async () => {
+            const result = await addItemToUsersCart(validCartID, validBookID, 0);
+            expect(result).toEqual({ data: false, error: 'Invalid quantity assignment.' });
+        });
+
+        it('should handle unauthenticated session context', async () => {
+            mockSupabase.auth.getUser.mockResolvedValueOnce({
+                data: { user: null },
+                error: null,
+            });
+
+            const result = await addItemToUsersCart(validCartID, validBookID, 1);
+
+            expect(result.data).toBe(false);
+            expect(result.error).toBe('Could not add item. Connection timed out.');
+        });
+
         it('should add item successfully', async () => {
             (Repo.upsertItem as jest.Mock).mockResolvedValue({ data: true, error: null });
 
@@ -178,6 +237,26 @@ describe('GetCartData', () => {
     });
 
     describe('updateItemInUsersCart', () => {
+        it('should return error for invalid cart or book UUID format', async () => {
+            const invalidCart = await updateItemInUsersCart('invalid-cart', validBookID, 2);
+            expect(invalidCart).toEqual({ data: false, error: 'Malformed identifier parameters.' });
+
+            const invalidBook = await updateItemInUsersCart(validCartID, 'invalid-book', 2);
+            expect(invalidBook).toEqual({ data: false, error: 'Malformed identifier parameters.' });
+        });
+
+        it('should handle unauthenticated session context', async () => {
+            mockSupabase.auth.getUser.mockResolvedValueOnce({
+                data: { user: null },
+                error: null,
+            });
+
+            const result = await updateItemInUsersCart(validCartID, validBookID, 3);
+
+            expect(result.data).toBe(false);
+            expect(result.error).toBe('Update failed due to network error.');
+        });
+
         it('should update item successfully', async () => {
             (Repo.updateItem as jest.Mock).mockResolvedValue({ data: true, error: null });
 
@@ -215,6 +294,26 @@ describe('GetCartData', () => {
     });
 
     describe('removeItemFromUsersCart', () => {
+        it('should return error for invalid cart or book UUID format', async () => {
+            const invalidCart = await removeItemFromUsersCart('invalid-cart', validBookID);
+            expect(invalidCart).toEqual({ data: false, error: 'Malformed identifier parameters.' });
+
+            const invalidBook = await removeItemFromUsersCart(validCartID, 'invalid-book');
+            expect(invalidBook).toEqual({ data: false, error: 'Malformed identifier parameters.' });
+        });
+
+        it('should handle unauthenticated session context', async () => {
+            mockSupabase.auth.getUser.mockResolvedValueOnce({
+                data: { user: null },
+                error: null,
+            });
+
+            const result = await removeItemFromUsersCart(validCartID, validBookID);
+
+            expect(result.data).toBe(false);
+            expect(result.error).toBe('Removal failed. Check your connection.');
+        });
+
         it('should remove item successfully', async () => {
             (Repo.deleteItem as jest.Mock).mockResolvedValue({ data: true, error: null });
 
@@ -256,6 +355,24 @@ describe('GetCartData', () => {
             const result = await getCartData('invalid-id');
 
             expect(result).toEqual({ data: null, error: 'Session identification failed.' });
+        });
+
+        it('should throw error when authenticated user does not match target user ID', async () => {
+            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            mockSupabase.auth.getUser.mockResolvedValueOnce({
+                data: { user: { id: otherValidUUID } },
+                error: null,
+            });
+
+            const result = await getCartData(validUUID);
+
+            expect(consoleSpy).toHaveBeenCalledWith(
+                '[CartService] Pipeline Error:',
+                expect.any(Error),
+            );
+            expect(result.error).toBe('Internal system error or connection timeout.');
+
+            consoleSpy.mockRestore();
         });
 
         it('should return cart data with books', async () => {
