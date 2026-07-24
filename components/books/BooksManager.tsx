@@ -1,23 +1,62 @@
 'use client';
 
+import { useState, useEffect, useMemo } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useBookSortBy } from '@/providers/BookSortByProvider';
 import { BookCard } from '@/components/books/bookCard/BookCard';
 import { PaginatedBookResult } from '@/data/books/BookConstants';
-import { FetchBooksFilters } from '@/data/books/BookRepository';
+import { BookQueryParams } from '@/data/books/BookRepository';
 import { useBooksFetcher } from '@/data/books/useBooksFetcher';
+import { useBookFilter } from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
+
+interface ActionResponse<T> {
+    data: T | null;
+    error: string | null;
+}
 
 interface BooksManagerProps {
     initialData: ActionResponse<PaginatedBookResult>;
-    filters?: Omit<FetchBooksFilters, 'page' | 'limit'>;
+    queryParams?: Omit<BookQueryParams, 'page' | 'limit'>;
 }
 
-export const BooksManager = ({ initialData, filters }: BooksManagerProps) => {
+export const BooksManager = ({ initialData, queryParams }: BooksManagerProps) => {
     const { sortByType } = useBookSortBy();
+    const { chosenFilters } = useBookFilter();
+
+    const [debouncedFilters, setDebouncedFilters] = useState(chosenFilters);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedFilters(chosenFilters);
+        }, 1000);
+
+        return () => clearTimeout(timer);
+    }, [chosenFilters]);
+
+    const mergedParams = useMemo<Omit<BookQueryParams, 'page' | 'limit'>>(() => {
+        return {
+            ...queryParams,
+            authors: debouncedFilters.AUTHORS.length > 0 ? debouncedFilters.AUTHORS : undefined,
+            formats: debouncedFilters.FORMATS.length > 0 ? debouncedFilters.FORMATS : undefined,
+            genres: debouncedFilters.GENRES.length > 0 ? debouncedFilters.GENRES : undefined,
+            publishers:
+                debouncedFilters.PUBLISHERS.length > 0 ? debouncedFilters.PUBLISHERS : undefined,
+            pages:
+                debouncedFilters.PAGES.length > 0 ? debouncedFilters.PAGES.map(String) : undefined,
+            prices:
+                debouncedFilters.PRICES.length > 0
+                    ? debouncedFilters.PRICES.map(String)
+                    : undefined,
+            publications:
+                debouncedFilters.PUBLICATIONS.length > 0
+                    ? debouncedFilters.PUBLICATIONS
+                    : undefined,
+        };
+    }, [queryParams, debouncedFilters]);
 
     const { state, isLoading, fetchBooks } = useBooksFetcher({
         initialData,
-        filters,
+        queryParams: mergedParams,
         sortByType,
     });
 
@@ -25,9 +64,7 @@ export const BooksManager = ({ initialData, filters }: BooksManagerProps) => {
         threshold: 0,
         rootMargin: '400px',
         onChange: (inView) => {
-            if (inView && state.hasMore && !isLoading) {
-                fetchBooks(true, state.page);
-            }
+            if (inView && state.hasMore && !isLoading) fetchBooks(true, state.page);
         },
     });
 
