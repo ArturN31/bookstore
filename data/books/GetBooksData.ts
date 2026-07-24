@@ -8,9 +8,9 @@ import {
 } from './BookRepository';
 import { mapToPaginatedBookResponse } from './BookMapper';
 import { PaginatedBookResult } from './BookConstants';
-import { createBackendClient } from '@/utils/db/server';
 import { withRetry } from '@/utils/network/retry';
 import { unstable_cache } from 'next/cache';
+import { createPublicServerClient } from '@/utils/db/publicServer';
 
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 50;
@@ -22,7 +22,7 @@ const getCachedBooksData = unstable_cache(
         const filters: FetchBooksFilters = JSON.parse(filtersSerialized);
 
         return await withRetry(async () => {
-            const supabase = await createBackendClient();
+            const supabase = await createPublicServerClient();
 
             const baseQuery = createBaseBookQuery(supabase, filters);
             const sortedQuery = applyBookSorting(baseQuery, filters.sortBy);
@@ -31,12 +31,11 @@ const getCachedBooksData = unstable_cache(
             const { data, error, count } = await paginatedQuery;
 
             if (error) {
-                if (error.code === 'PGRST116') {
+                if (error.code === 'PGRST116')
                     return {
                         data: [],
                         count: 0,
                     };
-                }
                 throw error;
             }
 

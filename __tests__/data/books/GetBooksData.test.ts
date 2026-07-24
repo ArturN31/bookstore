@@ -1,6 +1,6 @@
 import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
 import { BOOK_SORT_OPTIONS } from '@/data/books/BookConstants';
-import { createBackendClient } from '@/utils/db/server';
+import { createPublicServerClient } from '@/utils/db/publicServer';
 
 jest.mock('next/cache', () => ({
     unstable_cache: jest.fn(
@@ -10,12 +10,12 @@ jest.mock('next/cache', () => ({
     ),
 }));
 
-jest.mock('@/utils/db/server', () => ({
-    createBackendClient: jest.fn(),
+jest.mock('@/utils/db/publicServer', () => ({
+    createPublicServerClient: jest.fn(),
 }));
 
 describe('fetchBooksWithReviews', () => {
-    const mockedCreateBackendClient = createBackendClient as jest.Mock;
+    const mockedCreatePublicServerClient = createPublicServerClient as jest.Mock;
 
     interface MockSupabaseResponse {
         data: Record<string, unknown>[] | null;
@@ -62,7 +62,7 @@ describe('fetchBooksWithReviews', () => {
             count: 0,
         });
 
-        mockedCreateBackendClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
 
         await fetchBooksWithReviews({ bookID: testID });
 
@@ -80,7 +80,7 @@ describe('fetchBooksWithReviews', () => {
             count: 0,
         });
 
-        mockedCreateBackendClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
 
         await fetchBooksWithReviews({});
 
@@ -101,7 +101,7 @@ describe('fetchBooksWithReviews', () => {
             count: 2,
         });
 
-        mockedCreateBackendClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
 
         const result = await fetchBooksWithReviews();
 
@@ -118,7 +118,7 @@ describe('fetchBooksWithReviews', () => {
             count: 0,
         });
 
-        mockedCreateBackendClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
 
         await fetchBooksWithReviews({ bookIDs: ids });
 
@@ -132,7 +132,7 @@ describe('fetchBooksWithReviews', () => {
             count: 0,
         });
 
-        mockedCreateBackendClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
 
         await fetchBooksWithReviews({ group: 'genre', type: 'Fantasy' });
 
@@ -157,7 +157,7 @@ describe('fetchBooksWithReviews', () => {
             count: 1,
         });
 
-        mockedCreateBackendClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
 
         const result = await fetchBooksWithReviews();
 
@@ -171,7 +171,7 @@ describe('fetchBooksWithReviews', () => {
             count: 0,
         });
 
-        mockedCreateBackendClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
 
         const result = await fetchBooksWithReviews();
 
@@ -186,7 +186,7 @@ describe('fetchBooksWithReviews', () => {
             count: 0,
         });
 
-        mockedCreateBackendClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
 
         const result = await fetchBooksWithReviews();
 
@@ -194,7 +194,7 @@ describe('fetchBooksWithReviews', () => {
     });
 
     it('should handle non-Error objects thrown during execution', async () => {
-        mockedCreateBackendClient.mockImplementation(() => {
+        mockedCreatePublicServerClient.mockImplementation(() => {
             throw 'A literal string exception';
         });
 
@@ -205,7 +205,7 @@ describe('fetchBooksWithReviews', () => {
 
     it('should handle Error objects thrown during execution', async () => {
         const errorMessage = 'Database connection timeout';
-        mockedCreateBackendClient.mockImplementation(() => {
+        mockedCreatePublicServerClient.mockImplementation(() => {
             throw new Error(errorMessage);
         });
 
@@ -221,7 +221,7 @@ describe('fetchBooksWithReviews', () => {
             count: 0,
         });
 
-        mockedCreateBackendClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
 
         const result = await fetchBooksWithReviews();
 
@@ -236,7 +236,7 @@ describe('fetchBooksWithReviews', () => {
             count: 10,
         });
 
-        mockedCreateBackendClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
 
         await fetchBooksWithReviews({
             sortBy: BOOK_SORT_OPTIONS.PRICE_HIGH,
