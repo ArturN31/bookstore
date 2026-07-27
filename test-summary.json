@@ -1,10 +1,10 @@
 {
   "total": {
-    "statements": 93.85,
-    "branches": 99.33,
+    "statements": 93.91,
+    "branches": 99.35,
     "functions": 96.56,
-    "lines": 93.85,
-    "average": 95.9
+    "lines": 93.91,
+    "average": 95.93
   },
   "paths": {
     "app/page.tsx": {

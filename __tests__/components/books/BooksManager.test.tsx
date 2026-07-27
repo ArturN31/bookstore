@@ -1,7 +1,7 @@
 import { BooksManager } from '@/components/books/BooksManager';
 import { useBookSortBy } from '@/providers/BookSortByProvider';
 import { useBookFilter } from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { useInView } from 'react-intersection-observer';
 import { useBooksFetcher } from '@/data/books/useBooksFetcher';
 import { PaginatedBookResult } from '@/data/books/BookConstants';
@@ -231,5 +231,78 @@ describe('BooksManager', () => {
         const cardContainer = mockCardElement.parentElement;
 
         expect(cardContainer).toHaveStyle('opacity: 0.5');
+    });
+
+    it('debounces filter changes and maps prices and publications correctly after 1000ms', () => {
+        jest.useFakeTimers();
+
+        mockBookFilter.mockReturnValue({
+            chosenFilters: {
+                AUTHORS: [],
+                FORMATS: [],
+                GENRES: [],
+                PUBLISHERS: [],
+                PAGES: [],
+                PRICES: [10, 25],
+                PUBLICATIONS: ['2025-01-01', '2026-01-01'],
+            },
+        });
+
+        const { rerender } = render(<BooksManager initialData={mockInitialData} />);
+
+        act(() => {
+            jest.advanceTimersByTime(1000);
+        });
+
+        rerender(<BooksManager initialData={mockInitialData} />);
+
+        expect(mockUseBooksFetcher).toHaveBeenCalledWith(
+            expect.objectContaining({
+                queryParams: expect.objectContaining({
+                    prices: ['10', '25'],
+                    publications: ['2025-01-01', '2026-01-01'],
+                }),
+            }),
+        );
+
+        jest.useRealTimers();
+    });
+
+    it('debounces and maps authors, formats, genres, publishers, and pages filters correctly after 1000ms', () => {
+        jest.useFakeTimers();
+
+        mockBookFilter.mockReturnValue({
+            chosenFilters: {
+                AUTHORS: ['Author One', 'Author Two'],
+                FORMATS: ['Hardcover'],
+                GENRES: ['Fantasy'],
+                PUBLISHERS: ['Pub Inc'],
+                PAGES: [100, 300],
+                PRICES: [],
+                PUBLICATIONS: [],
+            },
+        });
+
+        const { rerender } = render(<BooksManager initialData={mockInitialData} />);
+
+        act(() => {
+            jest.advanceTimersByTime(1000);
+        });
+
+        rerender(<BooksManager initialData={mockInitialData} />);
+
+        expect(mockUseBooksFetcher).toHaveBeenCalledWith(
+            expect.objectContaining({
+                queryParams: expect.objectContaining({
+                    authors: ['Author One', 'Author Two'],
+                    formats: ['Hardcover'],
+                    genres: ['Fantasy'],
+                    publishers: ['Pub Inc'],
+                    pages: ['100', '300'],
+                }),
+            }),
+        );
+
+        jest.useRealTimers();
     });
 });

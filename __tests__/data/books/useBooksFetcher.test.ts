@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { PaginatedBookResult } from '@/data/books/BookConstants';
 import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
 import { useBooksFetcher } from '@/data/books/useBooksFetcher';
@@ -13,7 +13,7 @@ describe('useBooksFetcher hook coverage', () => {
     type Book = PaginatedBookResult['data'][number];
     const mockBookA: Book = { id: 'a', title: 'Book A' } as Book;
     const mockBookB: Book = { id: 'b', title: 'Book B' } as Book;
-    const stableFilters = {};
+    const stableQueryParams = {};
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -37,8 +37,8 @@ describe('useBooksFetcher hook coverage', () => {
                     data: { data: [], currentPage: 1, totalPages: 2, total: 2 },
                     error: null,
                 },
-                filterType: 'Title: A-Z',
-                filters: stableFilters,
+                sortByType: 'Title: A-Z',
+                queryParams: stableQueryParams,
             }),
         );
 
@@ -54,7 +54,7 @@ describe('useBooksFetcher hook coverage', () => {
     });
 
     it('should return early if the controller signal is aborted', async () => {
-        let resolve1: (value: any) => void;
+        let resolve1: (value: { data: PaginatedBookResult | null; error: string | null }) => void;
         const promise1 = new Promise((r) => {
             resolve1 = r;
         });
@@ -67,8 +67,8 @@ describe('useBooksFetcher hook coverage', () => {
         const { result } = renderHook(() =>
             useBooksFetcher({
                 initialData: { data: null, error: null },
-                filterType: 'Title: A-Z',
-                filters: stableFilters,
+                sortByType: 'Title: A-Z',
+                queryParams: stableQueryParams,
             }),
         );
 
@@ -99,16 +99,16 @@ describe('useBooksFetcher hook coverage', () => {
         const { result } = renderHook(() =>
             useBooksFetcher({
                 initialData: { data: null, error: null },
-                filterType: 'Popularity',
-                filters: stableFilters,
+                sortByType: 'Popularity',
+                queryParams: stableQueryParams,
             }),
         );
 
         await act(async () => {
             try {
                 await result.current.fetchBooks(false, 1);
-            } catch (e) {
-                //
+            } catch (e: unknown) {
+                // Ignored
             }
         });
 
@@ -125,16 +125,16 @@ describe('useBooksFetcher hook coverage', () => {
         const { result } = renderHook(() =>
             useBooksFetcher({
                 initialData: { data: null, error: null },
-                filterType: 'Popularity',
-                filters: stableFilters,
+                sortByType: 'Popularity',
+                queryParams: stableQueryParams,
             }),
         );
 
         await act(async () => {
             try {
                 await result.current.fetchBooks(false, 1);
-            } catch (e) {
-                //
+            } catch (e: unknown) {
+                // Ignored
             }
         });
 
@@ -151,8 +151,8 @@ describe('useBooksFetcher hook coverage', () => {
                     data: { data: [mockBookA], currentPage: 1, totalPages: 1, total: 1 },
                     error: null,
                 },
-                filterType: 'Title: A-Z',
-                filters: stableFilters,
+                sortByType: 'Title: A-Z',
+                queryParams: stableQueryParams,
             }),
         );
 
@@ -161,5 +161,42 @@ describe('useBooksFetcher hook coverage', () => {
         });
 
         expect(result.current.state.books).toEqual([mockBookA]);
+    });
+
+    it('should fetch and scroll to top when sortByType or queryParams changes', async () => {
+        mockFetch.mockResolvedValue({
+            data: { data: [mockBookB], currentPage: 1, totalPages: 1, total: 1 },
+            error: null,
+        });
+
+        const { rerender } = renderHook(
+            (props: { sortByType: string; queryParams: Record<string, unknown> }) =>
+                useBooksFetcher({
+                    initialData: {
+                        data: { data: [mockBookA], currentPage: 1, totalPages: 1, total: 1 },
+                        error: null,
+                    },
+                    sortByType: props.sortByType,
+                    queryParams: props.queryParams,
+                }),
+            {
+                initialProps: {
+                    sortByType: 'Title: A-Z',
+                    queryParams: {},
+                },
+            },
+        );
+
+        await act(async () => {
+            rerender({ sortByType: 'Price: Low to High', queryParams: {} });
+        });
+
+        expect(mockFetch).toHaveBeenCalledWith(
+            expect.objectContaining({
+                sortBy: 'Price: Low to High',
+                page: 1,
+            }),
+        );
+        expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
     });
 });
