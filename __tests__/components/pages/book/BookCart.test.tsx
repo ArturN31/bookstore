@@ -1,4 +1,4 @@
-import { BookCart } from '@/components/pages/book/BookCart';
+import { BookCart } from '@/components/pages/book/Header/BookCart';
 import { useCartState } from '@/providers/cart/utils/useCart';
 import { useUserState } from '@/providers/user/utils/useUser';
 import { screen, render } from '@testing-library/react';
@@ -18,6 +18,7 @@ const mockedBook: Book = {
     page_count: 300,
     image_url: 'http://example.com/mock.jpg',
     stock_quantity: 30,
+    sales_count: 100,
     is_active: true,
     reviews: [],
     rating: 5,

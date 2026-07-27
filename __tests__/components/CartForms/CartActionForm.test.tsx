@@ -121,6 +121,7 @@ describe('APP - CartForms - CartActionForm', () => {
 
         expect(enqueueSnackbar).toHaveBeenCalledWith('Failed to update cart', {
             variant: 'error',
+            variant: 'error',
         });
     });
 

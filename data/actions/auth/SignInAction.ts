@@ -34,10 +34,17 @@ export async function SignInAction(
             message: 'Please correct the highlighted errors.',
         };
 
+    const captchaToken = rawData.captchaToken as string | undefined;
+    if (!captchaToken)
+        return { message: 'Authentication rejected due to an invalid or missing security token.' };
+
     try {
         const supabase = await createBackendClient();
 
-        const { error: authError } = await authenticateUser(supabase, validated.data);
+        const { error: authError } = await authenticateUser(supabase, {
+            ...validated.data,
+            options: { captchaToken },
+        });
 
         if (authError)
             return {

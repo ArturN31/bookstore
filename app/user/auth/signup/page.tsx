@@ -1,6 +1,6 @@
 'use client';
 
-import { ChangeEvent, useActionState, useState, useTransition, useMemo } from 'react';
+import { ChangeEvent, useActionState, useState, useTransition, useMemo, useRef } from 'react';
 import { EmailField } from '@/components/formItems/EmailField';
 import { FormBtns } from '@/components/formItems/FormBtns';
 import { FormErrors } from '@/components/formItems/FormErrors';
@@ -9,8 +9,12 @@ import { SignUpAction } from '@/data/actions/auth/SignUpAction';
 import { signUpSchema } from '@/data/schemas/authSchemas';
 import Link from 'next/link';
 import { z } from 'zod';
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 
 export default function SignUpPage() {
+    const captchaRef = useRef<HCaptcha>(null);
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+
     const [localFields, setLocalFields] = useState({
         email: '',
         password: '',
@@ -51,6 +55,16 @@ export default function SignUpPage() {
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
+        if (!captchaToken) {
+            setClientErrors([
+                {
+                    code: 'custom',
+                    path: ['captcha'],
+                    message: 'Please complete the Captcha challenge before submitting the form',
+                } as z.core.$ZodIssue,
+            ]);
+        }
+
         const result = signUpSchema.safeParse(localFields);
 
         if (!result.success) {
@@ -64,9 +78,13 @@ export default function SignUpPage() {
         submitData.append('email', localFields.email);
         submitData.append('password', localFields.password);
         submitData.append('cnfPassword', localFields.cnfPassword);
+        submitData.append('captchaToken', captchaToken || '');
 
         startTransitionSubmit(() => {
             formAction(submitData);
+
+            captchaRef.current?.resetCaptcha();
+            setCaptchaToken(null);
         });
     };
 
@@ -77,6 +95,8 @@ export default function SignUpPage() {
             cnfPassword: '',
         });
         setClientErrors([]);
+        captchaRef.current?.resetCaptcha();
+        setCaptchaToken(null);
 
         startTransitionReset(() => {
             const resetData = new FormData();
@@ -132,6 +152,15 @@ export default function SignUpPage() {
                             value={localFields.cnfPassword}
                             onChange={handleFieldChange}
                         />
+
+                        <div className="flex justify-center py-2">
+                            <HCaptcha
+                                ref={captchaRef}
+                                sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || ''}
+                                onVerify={(token) => setCaptchaToken(token)}
+                                onExpire={() => setCaptchaToken(null)}
+                            />
+                        </div>
 
                         <div className="pt-2">
                             <FormBtns

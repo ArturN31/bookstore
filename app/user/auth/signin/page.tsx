@@ -1,6 +1,6 @@
 'use client';
 
-import { ChangeEvent, useActionState, useMemo, useState, useTransition } from 'react';
+import { ChangeEvent, useActionState, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { EmailField } from '@/components/formItems/EmailField';
 import { FormBtns } from '@/components/formItems/FormBtns';
@@ -10,10 +10,14 @@ import { SignInAction } from '@/data/actions/auth/SignInAction';
 import { useSearchParams } from 'next/navigation';
 import { signInSchema } from '@/data/schemas/authSchemas';
 import z from 'zod';
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 
 export default function SignInPage() {
     const searchParams = useSearchParams();
     const returnTo = searchParams.get('returnTo');
+
+    const captchaRef = useRef<HCaptcha>(null);
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
     const [localFields, setLocalFields] = useState({
         email: '',
@@ -50,6 +54,17 @@ export default function SignInPage() {
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
+        if (!captchaToken) {
+            setClientErrors([
+                {
+                    code: 'custom',
+                    path: ['captcha'],
+                    message: 'Please complete the captcha challenge before submitting the form',
+                } as z.core.$ZodIssue,
+            ]);
+            return;
+        }
+
         const result = signInSchema.safeParse(localFields);
 
         if (!result.success) {
@@ -62,16 +77,22 @@ export default function SignInPage() {
         const submitData = new FormData();
         submitData.append('email', localFields.email);
         submitData.append('password', localFields.password);
+        submitData.append('captchaToken', captchaToken);
         if (returnTo) submitData.append('returnTo', returnTo);
 
         startTransitionSubmit(() => {
             formAction(submitData);
+
+            captchaRef.current?.resetCaptcha();
+            setCaptchaToken(null);
         });
     };
 
     const handleReset = () => {
         setLocalFields({ email: '', password: '' });
         setClientErrors([]);
+        captchaRef.current?.resetCaptcha();
+        setCaptchaToken(null);
 
         startTransitionReset(() => {
             const resetData = new FormData();
@@ -124,6 +145,15 @@ export default function SignInPage() {
                             name="returnTo"
                             value={returnTo ?? ''}
                         />
+
+                        <div className="flex justify-center py-2">
+                            <HCaptcha
+                                ref={captchaRef}
+                                sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || ''}
+                                onVerify={(token) => setCaptchaToken(token)}
+                                onExpire={() => setCaptchaToken(null)}
+                            />
+                        </div>
 
                         <FormBtns
                             isTransitioningSubmit={isTransitioningSubmit}

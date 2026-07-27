@@ -1,29 +1,14 @@
 import Link from 'next/link';
 
-export const BookMainDetails = ({
-    stock,
-    title,
-    author,
-    publicationDate,
-    publisher,
-    format,
-    genre,
-}: {
-    stock: number;
-    title: string;
-    author: string;
-    publicationDate: string;
-    publisher: string;
-    format: string;
-    genre: string;
-}) => {
-    const isLowStock = stock > 0 && stock <= 25;
+export const BookHeaderDetails = ({ book }: { book: Book }) => {
+    const { stock_quantity, title, author, publisher, format, genre, publication_date } = book;
+    const isLowStock = stock_quantity > 0 && stock_quantity <= 25;
 
     return (
         <div className="grid items-center rounded-md border p-5 text-center shadow-[0px_2px_6px_-2px_#000]">
             {isLowStock && (
                 <p className="m-auto grid h-fit w-fit items-center rounded-full bg-red-500 px-4 py-1 text-sm font-medium text-white">
-                    {stock} left
+                    {stock_quantity} left
                 </p>
             )}
 
@@ -44,7 +29,7 @@ export const BookMainDetails = ({
 
             <div className="space-y-1 text-sm text-slate-700">
                 <p>
-                    <span className="font-medium">Published:</span> {publicationDate}
+                    <span className="font-medium">Published:</span> {publication_date}
                 </p>
                 <p>
                     <span className="font-medium">Publisher: </span>

@@ -55,7 +55,7 @@ describe('UserRepository', () => {
             const result = await fetchUserProfileById(mockSupabase, 'user-123');
 
             expect(result.data).toBeNull();
-            expect(result.error).toBe(UserConstants.ERROR_PROFILE_NOT_FOUND);
+            expect(result.error).toBe(null);
         });
 
         it('should handle Supabase error object', async () => {

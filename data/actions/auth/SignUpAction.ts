@@ -33,12 +33,17 @@ export async function SignUpAction(
             message: 'Please resolve the validation errors.',
         };
 
+    const captchaToken = rawData.captchaToken as string | undefined;
+    if (!captchaToken)
+        return { message: 'Registration rejected due to an invalid or missing security token.' };
+
     try {
         const supabase = await createBackendClient();
 
         const { error: authError } = await registerUser(supabase, {
             email: validated.data.email,
             password: validated.data.password,
+            options: { captchaToken },
         });
 
         if (authError)

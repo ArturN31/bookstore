@@ -1,7 +1,7 @@
 import Image from 'next/image';
-import { CartItemQuantityControls } from '@/components/CartSidebar/CartItem/CartItemQuantityControls';
 import { useCartState } from '@/providers/cart/utils/useCart';
 import { useMemo } from 'react';
+import { ChangeQuantityForm } from '@/components/CartForms/ChangeQuantityForm';
 
 export const CartItemContent = ({ book }: { book: Book }) => {
     const { cartBooks } = useCartState();
@@ -57,10 +57,7 @@ export const CartItemContent = ({ book }: { book: Book }) => {
                 </div>
 
                 <div className="flex items-end">
-                    <CartItemQuantityControls
-                        quantity={quantity}
-                        book={book}
-                    />
+                    <ChangeQuantityForm bookID={String(book.id)} />
                 </div>
             </div>
         </div>

@@ -2,6 +2,7 @@
 'use client';
 
 import { useActionState, useEffect, useMemo, useOptimistic, startTransition } from 'react';
+import { useActionState, useEffect, useMemo, useOptimistic, startTransition } from 'react';
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import RemoveShoppingCartOutlinedIcon from '@mui/icons-material/RemoveShoppingCartOutlined';
 import { useUserState } from '@/providers/user/utils/useUser';
@@ -27,6 +28,7 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
     const initialState: CartFormState = { success: false, message: '' };
 
     const [state, formAction] = useActionState(
+    const [state, formAction] = useActionState(
         async (prevState: CartFormState, formData: FormData) => {
             const result = await CartAction(prevState, formData);
             if (result.success) await refreshCart(user.id);
@@ -35,6 +37,7 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
         initialState,
     );
 
+    const isAddMode = !optimisticInCart;
     const isAddMode = !optimisticInCart;
     const isCartFull = cartBooksAmount >= 10;
     const isOutOfStock = stock === 0;
@@ -97,6 +100,7 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
                     type="hidden"
                     name="action-type"
                     value={!isInCart ? 'INSERT' : 'REMOVE'}
+                    value={!isInCart ? 'INSERT' : 'REMOVE'}
                 />
                 <input
                     type="hidden"
@@ -117,8 +121,29 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
                         )}
                         <span>{isAddMode ? 'Add to cart' : 'Remove from cart'}</span>
                     </div>
+                    <div className="flex items-center gap-2">
+                        {isAddMode ? (
+                            <ShoppingCartOutlinedIcon />
+                        ) : (
+                            <RemoveShoppingCartOutlinedIcon />
+                        )}
+                        <span>{isAddMode ? 'Add to cart' : 'Remove from cart'}</span>
+                    </div>
                 </button>
             </form>
+            {status && (
+                <div className="4k:h-10 flex h-5 items-center justify-center">
+                    {status ? (
+                        <p
+                            className={`4k:text-xl text-[10px] font-bold tracking-tight uppercase ${status.color} ${status.animate ? 'animate-pulse' : ''}`}
+                        >
+                            {status.text}
+                        </p>
+                    ) : (
+                        <div className="h-px w-4 bg-transparent" />
+                    )}
+                </div>
+            )}
             {status && (
                 <div className="4k:h-10 flex h-5 items-center justify-center">
                     {status ? (

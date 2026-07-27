@@ -16,11 +16,11 @@ jest.mock('next/cache', () => ({
 const mockedFetchBooks = fetchBooksWithReviews as jest.Mock;
 jest.mock('@/data/books/GetBooksData');
 
-jest.mock('@/components/pages/book/BookMainDetails', () => ({
-    BookMainDetails: () => <div data-testid="book-main-details" />,
+jest.mock('@/components/pages/book/BookDetails', () => ({
+    BookDetails: () => <div data-testid="book-details" />,
 }));
 
-jest.mock('@/components/pages/book/BookCart', () => ({
+jest.mock('@/components/pages/book/Header/BookCart', () => ({
     BookCart: () => <div data-testid="book-cart" />,
 }));
 
@@ -91,8 +91,7 @@ describe('App - Book[slug]', () => {
         const element = await BookById(defaultProps);
         render(element);
 
-        expect(screen.getByText(mockBookData.description as string)).toBeInTheDocument();
-        expect(screen.getByTestId('book-main-details')).toBeInTheDocument();
+        expect(screen.getByTestId('book-details')).toBeInTheDocument();
         expect(screen.getByTestId('book-cart')).toBeInTheDocument();
         expect(screen.getByTestId('book-reviews')).toBeInTheDocument();
     });
@@ -127,7 +126,7 @@ describe('App - Book[slug]', () => {
         const element = await BookById(defaultProps);
         render(element);
 
-        expect(screen.queryByTestId('book-main-details')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('book-details')).not.toBeInTheDocument();
     });
 
     it('should return correct metadata when book exists', async () => {
