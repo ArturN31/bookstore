@@ -1,5 +1,6 @@
 import { BooksManager } from '@/components/books/BooksManager';
 import { useBookSortBy } from '@/providers/BookSortByProvider';
+import { useBookFilter } from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
 import { render, screen } from '@testing-library/react';
 import { useInView } from 'react-intersection-observer';
 import { useBooksFetcher } from '@/data/books/useBooksFetcher';
@@ -12,6 +13,10 @@ interface ActionResponse<T> {
 
 jest.mock('@/providers/BookSortByProvider', () => ({
     useBookSortBy: jest.fn(),
+}));
+
+jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
+    useBookFilter: jest.fn(),
 }));
 
 jest.mock('react-intersection-observer', () => ({
@@ -60,6 +65,7 @@ const mockInitialData: ActionResponse<PaginatedBookResult> = {
 
 describe('BooksManager', () => {
     const mockBookSortBy = useBookSortBy as jest.Mock;
+    const mockBookFilter = useBookFilter as jest.Mock;
     const mockUseInView = useInView as jest.Mock;
     const mockUseBooksFetcher = useBooksFetcher as jest.Mock;
     const mockFetchBooks = jest.fn();
@@ -68,6 +74,17 @@ describe('BooksManager', () => {
         jest.clearAllMocks();
 
         mockBookSortBy.mockReturnValue({ sortByType: 'Title: A-Z' });
+        mockBookFilter.mockReturnValue({
+            chosenFilters: {
+                AUTHORS: [],
+                FORMATS: [],
+                GENRES: [],
+                PUBLISHERS: [],
+                PAGES: [],
+                PRICES: [],
+                PUBLICATIONS: [],
+            },
+        });
         mockUseInView.mockReturnValue({ ref: jest.fn(), inView: false });
 
         mockUseBooksFetcher.mockReturnValue({

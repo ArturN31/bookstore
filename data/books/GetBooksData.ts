@@ -22,7 +22,7 @@ const getCachedBooksData = unstable_cache(
         const params: BookQueryParams = JSON.parse(paramsSerialized);
 
         return await withRetry(async () => {
-            const supabase = createPublicServerClient();
+            const supabase = await createPublicServerClient();
 
             const baseQuery = createBaseBookQuery(supabase, params);
             const sortedQuery = applyBookSorting(baseQuery, params.sortBy);

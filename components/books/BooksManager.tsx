@@ -63,7 +63,7 @@ export const BooksManager = ({ initialData, queryParams }: BooksManagerProps) =>
     const { ref: observerRef } = useInView({
         threshold: 0,
         rootMargin: '400px',
-        onChange: (inView) => {
+        onChange: (inView: boolean) => {
             if (inView && state.hasMore && !isLoading) fetchBooks(true, state.page);
         },
     });
