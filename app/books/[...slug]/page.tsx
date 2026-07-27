@@ -74,7 +74,7 @@ export default async function BooksByGroupAndType({
             <section aria-label={`${formattedType} collection`}>
                 <BooksManager
                     initialData={response}
-                    filters={{
+                    queryParams={{
                         group: group as FilterableBookColumns,
                         type: type,
                     }}
