@@ -19,7 +19,7 @@ describe('FilteringConstants', () => {
 
     describe('getFilteringConstants', () => {
         it('should fetch and process unique filter values correctly from Supabase', async () => {
-            const mockSelect = jest.fn().mockResolvedValue({
+            const mockEq = jest.fn().mockResolvedValue({
                 data: [
                     {
                         author: 'Author A',
@@ -52,6 +52,10 @@ describe('FilteringConstants', () => {
                 error: null,
             });
 
+            const mockSelect = jest.fn().mockReturnValue({
+                eq: mockEq,
+            });
+
             const mockFrom = jest.fn().mockReturnValue({
                 select: mockSelect,
             });
@@ -72,9 +76,13 @@ describe('FilteringConstants', () => {
         });
 
         it('should return default constants when supabase returns an error', async () => {
-            const mockSelect = jest.fn().mockResolvedValue({
+            const mockEq = jest.fn().mockResolvedValue({
                 data: null,
                 error: { message: 'Database error' },
+            });
+
+            const mockSelect = jest.fn().mockReturnValue({
+                eq: mockEq,
             });
 
             const mockFrom = jest.fn().mockReturnValue({
@@ -96,9 +104,13 @@ describe('FilteringConstants', () => {
         });
 
         it('should return default constants when data is null', async () => {
-            const mockSelect = jest.fn().mockResolvedValue({
+            const mockEq = jest.fn().mockResolvedValue({
                 data: null,
                 error: null,
+            });
+
+            const mockSelect = jest.fn().mockReturnValue({
+                eq: mockEq,
             });
 
             const mockFrom = jest.fn().mockReturnValue({
