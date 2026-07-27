@@ -2,7 +2,6 @@
 'use client';
 
 import { useActionState, useEffect, useMemo, useOptimistic, startTransition } from 'react';
-import { useActionState, useEffect, useMemo, useOptimistic, startTransition } from 'react';
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import RemoveShoppingCartOutlinedIcon from '@mui/icons-material/RemoveShoppingCartOutlined';
 import { useUserState } from '@/providers/user/utils/useUser';
@@ -28,7 +27,6 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
     const initialState: CartFormState = { success: false, message: '' };
 
     const [state, formAction] = useActionState(
-    const [state, formAction] = useActionState(
         async (prevState: CartFormState, formData: FormData) => {
             const result = await CartAction(prevState, formData);
             if (result.success) await refreshCart(user.id);
@@ -37,7 +35,6 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
         initialState,
     );
 
-    const isAddMode = !optimisticInCart;
     const isAddMode = !optimisticInCart;
     const isCartFull = cartBooksAmount >= 10;
     const isOutOfStock = stock === 0;
@@ -99,7 +96,6 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
                 <input
                     type="hidden"
                     name="action-type"
-                    value={!isInCart ? 'INSERT' : 'REMOVE'}
                     value={!isInCart ? 'INSERT' : 'REMOVE'}
                 />
                 <input
