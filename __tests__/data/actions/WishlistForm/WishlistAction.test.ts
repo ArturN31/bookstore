@@ -14,9 +14,9 @@ jest.mock('next/cache', () => ({
 describe('WishlistAction', () => {
     const mockedCreateBackendClient = createBackendClient as jest.Mock;
     const mockedGetUserData = getUserData as jest.Mock;
-    const mockedWishlistSchema = wishlistSchema as any;
+    const mockedWishlistSchema = wishlistSchema as unknown as { safeParse: jest.Mock };
 
-    const mockSupabase: any = {
+    const mockSupabase = {
         from: jest.fn().mockReturnThis(),
         insert: jest.fn().mockReturnThis(),
         delete: jest.fn().mockReturnThis(),
@@ -28,10 +28,12 @@ describe('WishlistAction', () => {
         mockedCreateBackendClient.mockResolvedValue(mockSupabase);
         mockedGetUserData.mockResolvedValue({ data: { id: 'user-123' }, error: null });
 
-        mockedWishlistSchema.safeParse.mockImplementation((data: any) => ({
-            success: true,
-            data: { bookId: data.bookId, actionType: data.actionType },
-        }));
+        mockedWishlistSchema.safeParse.mockImplementation(
+            (data: { bookId: string; actionType: string }) => ({
+                success: true,
+                data: { bookId: data.bookId, actionType: data.actionType },
+            }),
+        );
 
         mockSupabase.from.mockReturnValue(mockSupabase);
         mockSupabase.insert.mockResolvedValue({ error: null });
@@ -83,7 +85,7 @@ describe('WishlistAction', () => {
     it('should successfully remove item from wishlist and break', async () => {
         mockSupabase.delete.mockReturnValue(mockSupabase);
         mockSupabase.eq.mockReturnValue(mockSupabase);
-        
+
         const result = await WishlistAction(undefined, createFormData('b1', 'REMOVE'));
         expect(mockSupabase.delete).toHaveBeenCalled();
         expect(result.success).toBe(true);
@@ -99,18 +101,17 @@ describe('WishlistAction', () => {
         consoleSpy.mockRestore();
     });
 
-    it('should handle generic catch-block rejections', async () => {
+    it('should catch unhandled exceptions and return a system error message', async () => {
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-        mockSupabase.from.mockImplementationOnce(() => {
-            throw new Error('Database Connection Crash');
-        });
+        const mockError = new Error('Simulated system failure');
+        mockedGetUserData.mockRejectedValueOnce(mockError);
 
         const result = await WishlistAction(undefined, createFormData('b1', 'INSERT'));
 
         expect(result.success).toBe(false);
-        expect(result.message).toMatch(/system error/i);
-        expect(consoleSpy).toHaveBeenCalled();
+        expect(result.message).toBe('A system error occurred. Please try again.');
+        expect(consoleSpy).toHaveBeenCalledWith('[WishlistAction] Pipeline Failure:', mockError);
 
         consoleSpy.mockRestore();
     });

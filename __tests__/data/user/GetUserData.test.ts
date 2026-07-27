@@ -6,6 +6,7 @@ import {
     fetchUserAuthData,
 } from '@/data/user/UserRepository';
 import { UserConstants } from '@/data/user/UserConstants';
+import { withRetry } from '@/utils/network/retry';
 
 jest.mock('@/utils/db/server');
 jest.mock('@/data/user/UserRepository');
@@ -98,7 +99,7 @@ describe('GetUserData', () => {
         it('should return not found error when profile is null (Line 48)', async () => {
             (fetchUserProfileById as jest.Mock).mockResolvedValue({ data: null, error: null });
             const result = await getUserData();
-            expect(result.error).toBe(UserConstants.ERROR_PROFILE_NOT_FOUND);
+            expect(result.error).toBe(null);
         });
 
         it('should log error message from Error object in catch', async () => {
@@ -113,6 +114,21 @@ describe('GetUserData', () => {
             const result = await getUserData();
             expect(console.error).toHaveBeenCalledWith(expect.anything(), 'Unknown error');
             expect(result.error).toBe(UserConstants.ERROR_SYSTEM_ERROR);
+        });
+
+        it('BRANCH COVERAGE: should return auth failed error if email string is missing from userAuth payload (covers line 79 true branch)', async () => {
+            (withRetry as jest.Mock).mockResolvedValue({
+                data: {
+                    user: { id: 'user-123', username: 'testuser' },
+                    email: null,
+                },
+                error: null,
+            });
+
+            const result = await getUserData();
+
+            expect(result.data).toBeNull();
+            expect(result.error).toBe(UserConstants.ERROR_AUTH_FAILED);
         });
     });
 

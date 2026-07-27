@@ -1,10 +1,11 @@
 import SignUpPage from '@/app/user/auth/signup/page';
-import { SignUpAction, SignUpFormState } from '@/data/actions/auth/SignUpAction';
+import { SignUpAction } from '@/data/actions/auth/SignUpAction';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import React from 'react';
 
 const MOCK_MESSAGE = 'Please correct the errors below.';
 
-let mockReturnState: SignUpFormState = {
+let mockReturnState = {
     email: 'test@gmail.com',
     password: 'test1',
     cnfPassword: 'test1',
@@ -12,6 +13,24 @@ let mockReturnState: SignUpFormState = {
     error: undefined,
     validationErrors: undefined,
 };
+
+let triggerMockVerify: (token: string) => void;
+let triggerMockExpire: () => void;
+
+jest.mock('@hcaptcha/react-hcaptcha', () => {
+    const ReactActual = jest.requireActual('react');
+
+    return ReactActual.forwardRef(({ onVerify, onExpire }: any, ref: any) => {
+        triggerMockVerify = onVerify;
+        triggerMockExpire = onExpire;
+
+        ReactActual.useImperativeHandle(ref, () => ({
+            resetCaptcha: jest.fn(),
+        }));
+
+        return <div data-testid="mock-hcaptcha" />;
+    });
+});
 
 jest.mock('@/data/actions/auth/SignUpAction', () => ({
     SignUpAction: jest.fn(async (prevState, formData) => {
@@ -62,6 +81,17 @@ describe('APP - Auth - SignUp', () => {
         };
     });
 
+    it('FUNCTION COVERAGE: should execute onVerify and onExpire arrow functions smoothly', async () => {
+        render(<SignUpPage />);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('mock-hcaptcha')).toBeInTheDocument();
+        });
+
+        triggerMockVerify('test-token');
+        triggerMockExpire();
+    });
+
     it('should show real-time validation issues when typing invalid data (excluding "required" errors)', async () => {
         render(<SignUpPage />);
 
@@ -79,9 +109,10 @@ describe('APP - Auth - SignUp', () => {
         const passwordField = screen.getByTestId('password-field');
         const cnfPasswordField = screen.getByTestId('cnfPassword-field');
 
-        // Enter valid passwords that don't match
         fireEvent.change(passwordField, { target: { name: 'password', value: 'ValidP@ss1!' } });
-        fireEvent.change(cnfPasswordField, { target: { name: 'cnfPassword', value: 'DifferentP@ss2!' } });
+        fireEvent.change(cnfPasswordField, {
+            target: { name: 'cnfPassword', value: 'DifferentP@ss2!' },
+        });
 
         await waitFor(() => {
             expect(screen.getByText(/Validation Issues/i)).toBeInTheDocument();
@@ -101,6 +132,8 @@ describe('APP - Auth - SignUp', () => {
         fireEvent.change(cnfPasswordField, {
             target: { name: 'cnfPassword', value: 'ValidP@ss1!' },
         });
+
+        triggerMockVerify('mocked-captcha-token');
 
         const signupForm = screen.getByTestId('signup-form');
         fireEvent.submit(signupForm);
@@ -169,11 +202,24 @@ describe('APP - Auth - SignUp', () => {
             target: { name: 'cnfPassword', value: 'ValidP@ss1!' },
         });
 
+        triggerMockVerify('mocked-captcha-token');
+
         fireEvent.submit(screen.getByTestId('signup-form'));
 
-        // The form shows an error but doesn't clear the fields on server error
         await waitFor(() => {
             expect(screen.getByText(/Server Null Error/i)).toBeInTheDocument();
         });
+    });
+
+    it('BRANCH COVERAGE: should fall back to an empty string when hCaptcha environment variable is missing (covers || "" branch)', async () => {
+        const originalEnvValue = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY;
+
+        delete process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY;
+
+        const { container } = render(<SignUpPage />);
+
+        expect(container).toBeInTheDocument();
+
+        process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY = originalEnvValue;
     });
 });

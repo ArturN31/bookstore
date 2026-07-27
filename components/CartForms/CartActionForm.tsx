@@ -48,7 +48,7 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
         if (!state.message) return;
         const variant = state.success ? 'success' : 'error';
         enqueueSnackbar(state.message, { variant });
-    }, [state.message, state.success, state.timestamp]);
+    }, [state.message, state.success, state.timestamp, isInCart, setOptimisticInCart]);
 
     const handleAction = (formData: FormData) => {
         startTransition(() => {
