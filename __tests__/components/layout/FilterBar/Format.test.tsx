@@ -10,8 +10,8 @@ jest.mock('next/cache', () => ({
     revalidateTag: jest.fn(),
 }));
 
-jest.mock('@/utils/db/server', () => ({
-    createBackendClient: jest.fn(() => ({
+jest.mock('@/utils/db/publicServer', () => ({
+    createPublicServerClient: jest.fn(() => ({
         from: mockFrom.mockReturnValue({
             select: mockSelect,
         }),

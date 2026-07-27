@@ -1,10 +1,10 @@
 'use server';
 
 import { CustomPopoverWithList } from '@/components/ui/CustomPopoverWithList';
-import { createBackendClient } from '@/utils/db/server';
 import { PostgrestResponse } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
 import { unstable_cache } from 'next/cache';
+import { createPublicServerClient } from '@/utils/db/publicServer';
 
 export const handleGenreChoice = async (filter: string) => {
     const option = filter.slice(0, 1) + filter.slice(1, filter.length + 1).toLocaleLowerCase();
@@ -14,7 +14,7 @@ export const handleGenreChoice = async (filter: string) => {
 const getCachedGenres = unstable_cache(
     async () => {
         try {
-            const supabase = await createBackendClient();
+            const supabase = await createPublicServerClient();
             const { data, error }: PostgrestResponse<Book> = await supabase
                 .from('books')
                 .select('genre');
