@@ -45,7 +45,8 @@ export const getFilteringConstants = async (): Promise<FilteringTypes> => {
 
     const { data, error } = await supabase
         .from('books')
-        .select('author, format, genre, page_count, price, publication_date, publisher');
+        .select('author, format, genre, page_count, price, publication_date, publisher')
+        .eq('is_active', true);
 
     if (error || !data) {
         console.error('Failed to load filter constants:', error);

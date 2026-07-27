@@ -1,83 +1,145 @@
-import { Database } from '@/database.types';
-import { createFrontendClient } from '@/utils/db/client';
+'use client';
 
-type BookRow = Database['public']['Tables']['books']['Row'];
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+    DEFAULT_FILTERING_CONSTANTS,
+    FilteringTypes,
+    getFilteringConstants,
+} from '@/data/advancedFiltering/FilteringConstants';
 
-export type FilteringTypes = {
-    AUTHORS: NonNullable<BookRow['author']>[];
-    FORMATS: NonNullable<BookRow['format']>[];
-    GENRES: NonNullable<BookRow['genre']>[];
-    PAGES: NonNullable<BookRow['page_count']>[];
-    PRICES: NonNullable<BookRow['price']>[];
-    PUBLICATIONS: NonNullable<BookRow['publication_date']>[];
-    PUBLISHERS: NonNullable<BookRow['publisher']>[];
+type BookAdvancedFilteringContextType = {
+    advancedFilters: FilteringTypes;
+    setAdvancedFilters: React.Dispatch<React.SetStateAction<FilteringTypes>>;
+    isLoading: boolean;
+    chosenFilters: FilteringTypes;
+    setChosenFilters: React.Dispatch<React.SetStateAction<FilteringTypes>>;
+    setCategoryFilter: <K extends keyof FilteringTypes>(
+        category: K,
+        value: FilteringTypes[K],
+    ) => void;
+    toggleFilterItem: <K extends keyof FilteringTypes>(
+        category: K,
+        itemValue: string | number,
+    ) => void;
+    resetAllFilters: () => void;
 };
 
-export const DEFAULT_FILTERING_CONSTANTS: FilteringTypes = {
-    AUTHORS: [],
-    FORMATS: [],
-    GENRES: [],
-    PAGES: [],
-    PRICES: [],
-    PUBLICATIONS: [],
-    PUBLISHERS: [],
+const BookAdvancedFilteringContext = createContext<BookAdvancedFilteringContextType | null>(null);
+
+interface BookAdvancedFilteringProviderProps {
+    children: React.ReactNode;
+    initialFilters?: FilteringTypes;
+}
+
+export const BookAdvancedFilteringProvider = ({
+    children,
+    initialFilters,
+}: BookAdvancedFilteringProviderProps) => {
+    const [advancedFilters, setAdvancedFilters] = useState<FilteringTypes>(
+        () => initialFilters || { ...DEFAULT_FILTERING_CONSTANTS },
+    );
+    const [isLoading, setIsLoading] = useState<boolean>(!initialFilters);
+    const [chosenFilters, setChosenFilters] = useState<FilteringTypes>(() => ({
+        ...DEFAULT_FILTERING_CONSTANTS,
+    }));
+
+    useEffect(() => {
+        if (initialFilters) return;
+
+        let isMounted = true;
+
+        const fetchFilters = async () => {
+            setIsLoading(true);
+            try {
+                const data = await getFilteringConstants();
+                if (isMounted) {
+                    setAdvancedFilters(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch filtering constants:', error);
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        fetchFilters();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [initialFilters]);
+
+    const setCategoryFilter = useCallback(
+        <K extends keyof FilteringTypes>(category: K, value: FilteringTypes[K]) => {
+            setChosenFilters((prev) => ({
+                ...prev,
+                [category]: value,
+            }));
+        },
+        [],
+    );
+
+    const toggleFilterItem = useCallback(
+        <K extends keyof FilteringTypes>(category: K, itemValue: string | number) => {
+            setChosenFilters((prev) => {
+                const rawValue = prev[category];
+                const currentArray = Array.isArray(rawValue)
+                    ? (rawValue as (string | number)[])
+                    : [];
+                const stringifiedValues = currentArray.map(String);
+                const itemStr = String(itemValue);
+
+                const updated = stringifiedValues.includes(itemStr)
+                    ? currentArray.filter((val) => String(val) !== itemStr)
+                    : [...currentArray, itemValue];
+
+                return {
+                    ...prev,
+                    [category]: updated as FilteringTypes[K],
+                };
+            });
+        },
+        [],
+    );
+
+    const resetAllFilters = useCallback(() => {
+        setChosenFilters({ ...DEFAULT_FILTERING_CONSTANTS });
+    }, []);
+
+    const contextValue = useMemo(
+        () => ({
+            advancedFilters,
+            setAdvancedFilters,
+            isLoading,
+            chosenFilters,
+            setChosenFilters,
+            setCategoryFilter,
+            toggleFilterItem,
+            resetAllFilters,
+        }),
+        [
+            advancedFilters,
+            isLoading,
+            chosenFilters,
+            setCategoryFilter,
+            toggleFilterItem,
+            resetAllFilters,
+        ],
+    );
+
+    return (
+        <BookAdvancedFilteringContext.Provider value={contextValue}>
+            {children}
+        </BookAdvancedFilteringContext.Provider>
+    );
 };
 
-type BookFilterRow = Pick<
-    BookRow,
-    'author' | 'format' | 'genre' | 'page_count' | 'price' | 'publication_date' | 'publisher'
->;
-
-export const CATEGORY_LABELS: Record<keyof FilteringTypes, string> = {
-    AUTHORS: 'Authors',
-    FORMATS: 'Format',
-    GENRES: 'Genre',
-    PAGES: 'Page Count',
-    PRICES: 'Price (£)',
-    PUBLICATIONS: 'Publication Date',
-    PUBLISHERS: 'Publisher',
-};
-
-export const NUMERIC_CATEGORIES: (keyof FilteringTypes)[] = ['PAGES', 'PRICES'];
-
-export const getFilteringConstants = async (): Promise<FilteringTypes> => {
-    const supabase = await createFrontendClient();
-
-    const { data, error } = await supabase
-        .from('books')
-        .select('author, format, genre, page_count, price, publication_date, publisher')
-        .eq('is_active', true);
-
-    if (error || !data) {
-        console.error('Failed to load filter constants:', error);
-        return DEFAULT_FILTERING_CONSTANTS;
+export const useBookFilter = (): BookAdvancedFilteringContextType => {
+    const context = useContext(BookAdvancedFilteringContext);
+    if (!context) {
+        throw new Error('useBookFilter must be used within a BookAdvancedFilteringProvider');
     }
-
-    const authors = new Set<NonNullable<BookRow['author']>>();
-    const formats = new Set<NonNullable<BookRow['format']>>();
-    const genres = new Set<NonNullable<BookRow['genre']>>();
-    const pages = new Set<NonNullable<BookRow['page_count']>>();
-    const prices = new Set<NonNullable<BookRow['price']>>();
-    const publications = new Set<NonNullable<BookRow['publication_date']>>();
-    const publishers = new Set<NonNullable<BookRow['publisher']>>();
-
-    (data as BookFilterRow[]).forEach((book) => {
-        if (book.author) authors.add(book.author);
-        if (book.format) formats.add(book.format);
-        if (book.genre) genres.add(book.genre);
-        if (book.page_count !== null) pages.add(book.page_count);
-        if (book.price !== null) prices.add(book.price);
-        if (book.publication_date) publications.add(book.publication_date);
-        if (book.publisher) publishers.add(book.publisher);
-    });
-
-    return {
-        AUTHORS: Array.from(authors),
-        FORMATS: Array.from(formats),
-        GENRES: Array.from(genres),
-        PAGES: Array.from(pages),
-        PRICES: Array.from(prices),
-        PUBLICATIONS: Array.from(publications),
-        PUBLISHERS: Array.from(publishers),
-    };
+    return context;
 };
