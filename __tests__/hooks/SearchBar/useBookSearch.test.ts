@@ -2,7 +2,15 @@ import { renderHook, act } from '@testing-library/react';
 import { useBookSearch } from '@/hooks/SearchBar/useBookSearch';
 import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
 
-jest.mock('@/data/books/GetBooksData');
+jest.mock('next/cache', () => ({
+    unstable_cache: <T extends (...args: unknown[]) => Promise<unknown>>(fn: T) => fn,
+    revalidatePath: jest.fn(),
+    revalidateTag: jest.fn(),
+}));
+
+jest.mock('@/data/books/GetBooksData', () => ({
+    fetchBooksWithReviews: jest.fn(),
+}));
 
 describe('useBookSearch', () => {
     beforeEach(() => {
@@ -36,8 +44,8 @@ describe('useBookSearch', () => {
     });
 
     it('should handle request aborts gracefully', async () => {
-        let resolvePromise: (value: { error: null; data: { data: Book[] } }) => void;
-        const promise = new Promise<{ error: null; data: { data: Book[] } }>((resolve) => {
+        let resolvePromise: (value: { error: null; data: { data: unknown[] } }) => void = () => {};
+        const promise = new Promise<{ error: null; data: { data: unknown[] } }>((resolve) => {
             resolvePromise = resolve;
         });
         (fetchBooksWithReviews as jest.Mock).mockReturnValue(promise);
@@ -131,7 +139,11 @@ describe('useBookSearch', () => {
         const { result } = renderHook(() => useBookSearch());
 
         act(() => {
-            result.current.setSearchResults([{ id: '1', title: 'Test' } as Book]);
+            result.current.setSearchResults([
+                { id: '1', title: 'Test' } as unknown as ReturnType<
+                    typeof useBookSearch
+                >['searchResults'][number],
+            ]);
         });
 
         act(() => {
@@ -167,7 +179,7 @@ describe('useBookSearch', () => {
     });
 
     it('should abort pending request when input is cleared to empty', async () => {
-        const promise = new Promise<{ error: null; data: { data: Book[] } }>(() => {});
+        const promise = new Promise<{ error: null; data: { data: unknown[] } }>(() => {});
         (fetchBooksWithReviews as jest.Mock).mockReturnValue(promise);
 
         const { result } = renderHook(() => useBookSearch());
@@ -232,29 +244,6 @@ describe('useBookSearch', () => {
         });
 
         expect(result.current.errorMessage).toBe('Database Error');
-    });
-
-    it('should abort pending request when input is cleared to empty', async () => {
-        (fetchBooksWithReviews as jest.Mock).mockReturnValue(new Promise(() => {}));
-        const { result } = renderHook(() => useBookSearch());
-
-        act(() => {
-            result.current.handleInputChange({
-                target: { value: 'test' },
-            } as React.ChangeEvent<HTMLInputElement>);
-        });
-
-        await act(async () => {
-            jest.advanceTimersByTime(600);
-        });
-
-        act(() => {
-            result.current.handleInputChange({
-                target: { value: '' },
-            } as React.ChangeEvent<HTMLInputElement>);
-        });
-
-        expect(result.current.isLoading).toBe(false);
     });
 
     it('should show default error message when response data is missing (Line 39)', async () => {

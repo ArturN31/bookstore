@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { PaginatedBookResult } from './BookConstants';
-import { FetchBooksFilters } from './BookRepository';
+import { BookQueryParams } from './BookRepository';
 import { fetchBooksWithReviews } from './GetBooksData';
 
 interface ActionResponse<T> {
@@ -10,8 +10,8 @@ interface ActionResponse<T> {
 
 interface UseBooksFetcherProps {
     initialData: ActionResponse<PaginatedBookResult>;
-    filters?: Omit<FetchBooksFilters, 'page' | 'limit'>;
-    filterType: string;
+    queryParams?: Omit<BookQueryParams, 'page' | 'limit'>;
+    sortByType: string;
 }
 
 interface FetchState {
@@ -20,9 +20,11 @@ interface FetchState {
     hasMore: boolean;
 }
 
-export const useBooksFetcher = ({ initialData, filters, filterType }: UseBooksFetcherProps) => {
+export const useBooksFetcher = ({ initialData, queryParams, sortByType }: UseBooksFetcherProps) => {
     const abortControllerRef = useRef<AbortController | null>(null);
-    const previousFilterTypeRef = useRef<string>(filterType);
+    const previousSortByTypeRef = useRef<string>(sortByType);
+    const previousParamsRef = useRef<string>(JSON.stringify(queryParams));
+
     const [isLoading, setIsLoading] = useState(false);
     const [state, setState] = useState<FetchState>({
         books: initialData.data?.data ?? [],
@@ -34,7 +36,7 @@ export const useBooksFetcher = ({ initialData, filters, filterType }: UseBooksFe
         async (
             isNextPage: boolean,
             currentPageNum: number,
-            targetFilters: Omit<FetchBooksFilters, 'page' | 'limit'> | undefined,
+            targetParams: Omit<BookQueryParams, 'page' | 'limit'> | undefined,
             targetSortOrder: string,
         ) => {
             if (abortControllerRef.current) abortControllerRef.current.abort();
@@ -44,7 +46,7 @@ export const useBooksFetcher = ({ initialData, filters, filterType }: UseBooksFe
             setIsLoading(true);
             try {
                 const response = await fetchBooksWithReviews({
-                    ...targetFilters,
+                    ...targetParams,
                     sortBy: targetSortOrder,
                     page: isNextPage ? currentPageNum + 1 : 1,
                     limit: 18,
@@ -61,8 +63,9 @@ export const useBooksFetcher = ({ initialData, filters, filterType }: UseBooksFe
                     }));
                 }
             } catch (err: unknown) {
-                if (!(err instanceof DOMException && err.name === 'AbortError'))
+                if (!(err instanceof DOMException && err.name === 'AbortError')) {
                     console.error('Failed to fetch books:', err);
+                }
             } finally {
                 if (abortControllerRef.current === controller) setIsLoading(false);
             }
@@ -71,25 +74,28 @@ export const useBooksFetcher = ({ initialData, filters, filterType }: UseBooksFe
     );
 
     useEffect(() => {
-        const hasFilterChanged = previousFilterTypeRef.current !== filterType;
-        if (!hasFilterChanged && initialData.data && state.page === 1) return;
+        const currentParamsStr = JSON.stringify(queryParams);
+        const hasSortByChanged = previousSortByTypeRef.current !== sortByType;
+        const haveParamsChanged = previousParamsRef.current !== currentParamsStr;
 
-        previousFilterTypeRef.current = filterType;
+        if (hasSortByChanged || haveParamsChanged) {
+            previousSortByTypeRef.current = sortByType;
+            previousParamsRef.current = currentParamsStr;
 
-        executeFetchOperation(false, 1, filters, filterType);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+            executeFetchOperation(false, 1, queryParams, sortByType);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
 
         return () => {
             if (abortControllerRef.current) abortControllerRef.current.abort();
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filterType, filters]);
+    }, [sortByType, queryParams, executeFetchOperation]);
 
     const fetchBooks = useCallback(
         (isNextPage: boolean, currentPageNum: number) => {
-            executeFetchOperation(isNextPage, currentPageNum, filters, filterType);
+            executeFetchOperation(isNextPage, currentPageNum, queryParams, sortByType);
         },
-        [executeFetchOperation, filters, filterType],
+        [executeFetchOperation, queryParams, sortByType],
     );
 
     return { state, isLoading, fetchBooks };

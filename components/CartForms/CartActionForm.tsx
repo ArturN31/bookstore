@@ -1,3 +1,4 @@
+// CartActionForm.tsx
 'use client';
 
 import { useActionState, useEffect, useMemo, useOptimistic, startTransition } from 'react';
@@ -23,12 +24,6 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
         (_, next: boolean) => next,
     );
 
-    useEffect(() => {
-        startTransition(() => {
-            setOptimisticInCart(isInCart);
-        });
-    }, [isInCart, setOptimisticInCart]);
-
     const initialState: CartFormState = { success: false, message: '' };
 
     const [state, formAction] = useActionState(
@@ -51,28 +46,28 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
 
     useEffect(() => {
         if (!state.message) return;
-
         const variant = state.success ? 'success' : 'error';
         enqueueSnackbar(state.message, { variant });
-    }, [state.message, state.success, state.timestamp, isInCart, setOptimisticInCart]);
+    }, [state.message, state.success, state.timestamp]);
+
+    const handleAction = (formData: FormData) => {
+        startTransition(() => {
+            setOptimisticInCart(!isInCart);
+            formAction(formData);
+        });
+    };
 
     const getStatusContent = () => {
         if (userLoading) return null;
-
         if (isOutOfStock) return { text: 'Out of stock', color: 'text-slate-400', animate: false };
-
         if (!loggedIn)
             return { text: 'Sign in to use cart', color: 'text-gray-400', animate: false };
-
         if (loggedIn && !profileExists)
             return { text: 'Complete your user profile', color: 'text-gray-400', animate: false };
-
         if (isCartFull && isAddMode)
             return { text: 'Cart is full (Max 10 items)', color: 'text-red-400', animate: false };
-
         if (isLowStock && isAddMode)
             return { text: `Limited Stock: ${stock} left`, color: 'text-red-500', animate: true };
-
         return null;
     };
 
@@ -85,8 +80,11 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
     return (
         <div className="flex w-full flex-col">
             <form
-                action={formAction}
-                onSubmit={(e) => isButtonDisabled && e.preventDefault()}
+                action={handleAction}
+                onSubmit={(e) => {
+                    if (isButtonDisabled) e.preventDefault();
+                    e.stopPropagation();
+                }}
                 className="mt-1"
                 aria-label="cart-form"
             >
@@ -95,13 +93,11 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
                     name="book-id"
                     value={bookID}
                 />
-
                 <input
                     type="hidden"
                     name="action-type"
                     value={!isInCart ? 'INSERT' : 'REMOVE'}
                 />
-
                 <input
                     type="hidden"
                     name="book-quantity"
@@ -111,11 +107,6 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
                 <button
                     type="submit"
                     disabled={isButtonDisabled}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        if (!isButtonDisabled)
-                            startTransition(() => setOptimisticInCart(!isInCart));
-                    }}
                     className={`flex min-h-12 w-full cursor-pointer items-center justify-center rounded-sm px-2 font-bold transition-all hover:scale-[1.02] disabled:transform-none disabled:bg-[#b3b3b3] disabled:text-[#666] ${buttonStyles} 4k:min-h-24 4k:text-3xl}`}
                 >
                     <div className="flex items-center gap-2">

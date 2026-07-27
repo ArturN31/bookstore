@@ -2,7 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/database.types';
 import { SORT_MAP, BOOK_SORT_OPTIONS, FilterableBookColumns } from './BookConstants';
 
-export interface FetchBooksFilters {
+export interface BookQueryParams {
     bookID?: string;
     bookIDs?: string[];
     group?: FilterableBookColumns;
@@ -11,20 +11,64 @@ export interface FetchBooksFilters {
     limit?: number;
     onlyActive?: boolean;
     sortBy?: string;
+
+    authors?: string[];
+    formats?: string[];
+    genres?: string[];
+    publishers?: string[];
+    pages?: string[];
+    prices?: string[];
+    publications?: string[];
 }
 
 export const createBaseBookQuery = (
     supabase: SupabaseClient<Database>,
-    filters: FetchBooksFilters,
+    params: BookQueryParams,
 ) => {
-    const selector = filters.bookID ? 'book_reviews(*)' : 'book_reviews(rating)';
+    const selector = params.bookID ? 'book_reviews(*)' : 'book_reviews(rating)';
 
     let query = supabase.from('books_with_stats').select(`*, ${selector}`, { count: 'exact' });
 
-    if (filters.bookID) query = query.eq('id', filters.bookID);
-    if (filters.bookIDs?.length) query = query.in('id', filters.bookIDs);
-    if (filters.group && filters.type) query = query.eq(filters.group, filters.type);
-    if (filters.onlyActive !== false) query = query.eq('is_active', true);
+    if (params.bookID) query = query.eq('id', params.bookID);
+    if (params.bookIDs?.length) query = query.in('id', params.bookIDs);
+    if (params.group && params.type) query = query.eq(params.group, params.type);
+    if (params.onlyActive !== false) query = query.eq('is_active', true);
+
+    if (params.authors && params.authors.length > 0) query = query.in('author', params.authors);
+    if (params.formats && params.formats.length > 0) query = query.in('format', params.formats);
+    if (params.genres && params.genres.length > 0) query = query.in('genre', params.genres);
+    if (params.publishers && params.publishers.length > 0)
+        query = query.in('publisher', params.publishers);
+
+    if (params.pages && params.pages.length > 0) {
+        const numericPages = params.pages.map(Number).filter((n) => !isNaN(n));
+        if (numericPages.length === 1) query = query.eq('page_count', numericPages[0]);
+        else if (numericPages.length >= 2) {
+            const min = Math.min(...numericPages);
+            const max = Math.max(...numericPages);
+            query = query.gte('page_count', min).lte('page_count', max);
+        }
+    }
+
+    if (params.prices && params.prices.length > 0) {
+        const numericPrices = params.prices.map(Number).filter((n) => !isNaN(n));
+        if (numericPrices.length === 1) query = query.eq('price', numericPrices[0].toString());
+        else if (numericPrices.length >= 2) {
+            const min = Math.min(...numericPrices);
+            const max = Math.max(...numericPrices);
+            query = query.gte('price', min.toString()).lte('price', max.toString());
+        }
+    }
+
+    if (params.publications && params.publications.length > 0) {
+        const validDates = params.publications.filter(Boolean).sort();
+        if (validDates.length === 1) query = query.eq('publication_date', validDates[0]);
+        else if (validDates.length >= 2) {
+            query = query
+                .gte('publication_date', validDates[0])
+                .lte('publication_date', validDates[validDates.length - 1]);
+        }
+    }
 
     return query;
 };

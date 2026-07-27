@@ -15,10 +15,18 @@ jest.mock('@/utils/network/retry', () => ({
     withRetry: jest.fn(<T>(fn: () => Promise<T>) => fn()),
 }));
 
+const VALID_UUID = '123e4567-e89b-12d3-a456-426614174000';
+
 describe('GetUserData', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         jest.spyOn(console, 'error').mockImplementation(() => {});
+
+        (createBackendClient as jest.Mock).mockResolvedValue({});
+        (fetchUserAuthData as jest.Mock).mockResolvedValue({
+            data: { userID: VALID_UUID, email: 'test@test.com' },
+            error: null,
+        });
     });
 
     afterEach(() => {
@@ -27,13 +35,8 @@ describe('GetUserData', () => {
 
     describe('getUserData', () => {
         it('should return user data on success', async () => {
-            (createBackendClient as jest.Mock).mockResolvedValue({});
-            (fetchUserAuthData as jest.Mock).mockResolvedValue({
-                data: { userID: 'user-123', email: 'test@test.com' },
-                error: null,
-            });
             (fetchUserProfileById as jest.Mock).mockResolvedValue({
-                data: { id: 'user-123', username: 'testuser' },
+                data: { id: VALID_UUID, username: 'testuser' },
                 error: null,
             });
 
@@ -42,13 +45,8 @@ describe('GetUserData', () => {
         });
 
         it('should exercise the || null branch on line 54', async () => {
-            (createBackendClient as jest.Mock).mockResolvedValue({});
-            (fetchUserAuthData as jest.Mock).mockResolvedValue({
-                data: { userID: 'user-123', email: 'test@test.com' },
-                error: null,
-            });
             (fetchUserProfileById as jest.Mock).mockResolvedValue({
-                data: { id: 'user-123' },
+                data: { id: VALID_UUID },
                 error: null,
             });
 
@@ -57,14 +55,12 @@ describe('GetUserData', () => {
         });
 
         it('should return auth error when data is null (Line 26)', async () => {
-            (createBackendClient as jest.Mock).mockResolvedValue({});
             (fetchUserAuthData as jest.Mock).mockResolvedValue({ data: null, error: 'fail' });
             const result = await getUserData();
             expect(result.error).toBe(UserConstants.ERROR_AUTH_FAILED);
         });
 
         it('should return auth error when userID is missing (Line 32)', async () => {
-            (createBackendClient as jest.Mock).mockResolvedValue({});
             (fetchUserAuthData as jest.Mock).mockResolvedValue({
                 data: { userID: '', email: 'test@test.com' },
                 error: null,
@@ -74,9 +70,17 @@ describe('GetUserData', () => {
         });
 
         it('should return auth error when email is missing (Line 32)', async () => {
-            (createBackendClient as jest.Mock).mockResolvedValue({});
             (fetchUserAuthData as jest.Mock).mockResolvedValue({
-                data: { userID: 'user-123', email: null },
+                data: { userID: VALID_UUID, email: null },
+                error: null,
+            });
+            const result = await getUserData();
+            expect(result.error).toBe(UserConstants.ERROR_AUTH_FAILED);
+        });
+
+        it('should return auth error when userID is not a valid UUID', async () => {
+            (fetchUserAuthData as jest.Mock).mockResolvedValue({
+                data: { userID: 'invalid-uuid', email: 'test@test.com' },
                 error: null,
             });
             const result = await getUserData();
@@ -84,11 +88,6 @@ describe('GetUserData', () => {
         });
 
         it('should return DB error when profile fetch fails (Line 42)', async () => {
-            (createBackendClient as jest.Mock).mockResolvedValue({});
-            (fetchUserAuthData as jest.Mock).mockResolvedValue({
-                data: { userID: 'user-123', email: 'test@test.com' },
-                error: null,
-            });
             (fetchUserProfileById as jest.Mock).mockResolvedValue({
                 data: null,
                 error: 'DB error',
@@ -98,11 +97,6 @@ describe('GetUserData', () => {
         });
 
         it('should return not found error when profile is null (Line 48)', async () => {
-            (createBackendClient as jest.Mock).mockResolvedValue({});
-            (fetchUserAuthData as jest.Mock).mockResolvedValue({
-                data: { userID: 'user-123', email: 'test@test.com' },
-                error: null,
-            });
             (fetchUserProfileById as jest.Mock).mockResolvedValue({ data: null, error: null });
             const result = await getUserData();
             expect(result.error).toBe(null);
@@ -110,14 +104,16 @@ describe('GetUserData', () => {
 
         it('should log error message from Error object in catch', async () => {
             (createBackendClient as jest.Mock).mockRejectedValue(new Error('Hard Fail'));
-            await getUserData();
+            const result = await getUserData();
             expect(console.error).toHaveBeenCalledWith(expect.anything(), 'Hard Fail');
+            expect(result.error).toBe(UserConstants.ERROR_SYSTEM_ERROR);
         });
 
         it('should log Unknown error when catch receives a string', async () => {
             (createBackendClient as jest.Mock).mockRejectedValue('String Fail');
-            await getUserData();
+            const result = await getUserData();
             expect(console.error).toHaveBeenCalledWith(expect.anything(), 'Unknown error');
+            expect(result.error).toBe(UserConstants.ERROR_SYSTEM_ERROR);
         });
 
         it('BRANCH COVERAGE: should return auth failed error if email string is missing from userAuth payload (covers line 79 true branch)', async () => {
@@ -137,41 +133,50 @@ describe('GetUserData', () => {
     });
 
     describe('getUserWishlist', () => {
-        it('should return missing ID error', async () => {
-            const result = await getUserWishlist('');
-            expect(result.error).toBe(UserConstants.ERROR_MISSING_USER_ID);
+        it('should return auth error when user auth fails', async () => {
+            (fetchUserAuthData as jest.Mock).mockResolvedValue({ data: null, error: 'fail' });
+            const result = await getUserWishlist();
+            expect(result.error).toBe(UserConstants.ERROR_AUTH_FAILED);
+        });
+
+        it('should return auth error when userID is not a valid UUID', async () => {
+            (fetchUserAuthData as jest.Mock).mockResolvedValue({
+                data: { userID: 'invalid-uuid' },
+                error: null,
+            });
+            const result = await getUserWishlist();
+            expect(result.error).toBe(UserConstants.ERROR_AUTH_FAILED);
         });
 
         it('should return fetch failed error when error exists (Line 93)', async () => {
-            (createBackendClient as jest.Mock).mockResolvedValue({});
             (fetchWishlistByUserId as jest.Mock).mockResolvedValue({ data: null, error: 'fail' });
-            const result = await getUserWishlist('user-123');
+            const result = await getUserWishlist();
             expect(result.error).toBe(UserConstants.ERROR_WISHLIST_FETCH_FAILED);
         });
 
         it('should return fetch failed error when data is null (Line 93)', async () => {
-            (createBackendClient as jest.Mock).mockResolvedValue({});
             (fetchWishlistByUserId as jest.Mock).mockResolvedValue({ data: null, error: null });
-            const result = await getUserWishlist('user-123');
+            const result = await getUserWishlist();
             expect(result.error).toBe(UserConstants.ERROR_WISHLIST_FETCH_FAILED);
         });
 
         it('should handle Error object in wishlist catch', async () => {
             (createBackendClient as jest.Mock).mockRejectedValue(new Error('Wishlist Fail'));
-            await getUserWishlist('user-123');
+            const result = await getUserWishlist();
             expect(console.error).toHaveBeenCalledWith(expect.anything(), 'Wishlist Fail');
+            expect(result.error).toBe(UserConstants.ERROR_WISHLIST_SYSTEM_ERROR);
         });
 
         it('should handle non-Error in wishlist catch', async () => {
             (createBackendClient as jest.Mock).mockRejectedValue(null);
-            await getUserWishlist('user-123');
+            const result = await getUserWishlist();
             expect(console.error).toHaveBeenCalledWith(expect.anything(), 'Unknown error');
+            expect(result.error).toBe(UserConstants.ERROR_WISHLIST_SYSTEM_ERROR);
         });
 
         it('should return data on success', async () => {
-            (createBackendClient as jest.Mock).mockResolvedValue({});
             (fetchWishlistByUserId as jest.Mock).mockResolvedValue({ data: [], error: null });
-            const result = await getUserWishlist('user-123');
+            const result = await getUserWishlist();
             expect(result.data).toEqual([]);
         });
     });

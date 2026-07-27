@@ -1,59 +1,94 @@
 'use server';
 
-import { createBackendClient } from '@/utils/db/server';
 import {
     createBaseBookQuery,
     applyBookSorting,
     applyBookPagination,
-    FetchBooksFilters,
+    BookQueryParams,
 } from './BookRepository';
 import { mapToPaginatedBookResponse } from './BookMapper';
 import { PaginatedBookResult } from './BookConstants';
 import { withRetry } from '@/utils/network/retry';
+import { unstable_cache } from 'next/cache';
+import { createPublicServerClient } from '@/utils/db/publicServer';
 
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 50;
 const MIN_PAGE_SIZE = 1;
 const MIN_PAGE_NUMBER = 1;
 
-export const fetchBooksWithReviews = async (
-    filters: FetchBooksFilters = {},
-): Promise<ActionResponse<PaginatedBookResult>> => {
-    const page = Math.max(MIN_PAGE_NUMBER, filters.page || 1);
-    const limit = Math.max(
-        MIN_PAGE_SIZE,
-        Math.min(filters.limit || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE),
-    );
+const getCachedBooksData = unstable_cache(
+    async (page: number, limit: number, paramsSerialized: string) => {
+        const params: BookQueryParams = JSON.parse(paramsSerialized);
 
-    try {
-        const result = await withRetry(async () => {
-            const supabase = await createBackendClient();
-            const baseQuery = createBaseBookQuery(supabase, filters);
-            const sortedQuery = applyBookSorting(baseQuery, filters.sortBy);
+        return await withRetry(async () => {
+            const supabase = await createPublicServerClient();
+
+            const baseQuery = createBaseBookQuery(supabase, params);
+            const sortedQuery = applyBookSorting(baseQuery, params.sortBy);
             const paginatedQuery = applyBookPagination(sortedQuery, page, limit);
 
             const { data, error, count } = await paginatedQuery;
 
-            if (error) throw error;
+            if (error) {
+                if (error.code === 'PGRST116')
+                    return {
+                        data: [],
+                        count: 0,
+                    };
+                throw error;
+            }
 
             return {
                 data: data || [],
                 count: count || 0,
             };
         });
+    },
+    ['books-search-results'],
+    {
+        revalidate: 600,
+        tags: ['books'],
+    },
+);
+
+export const fetchBooksWithReviews = async (
+    params: BookQueryParams = {},
+): Promise<ActionResponse<PaginatedBookResult>> => {
+    const rawPage = params.page ?? 1;
+    const rawLimit = params.limit ?? DEFAULT_PAGE_SIZE;
+
+    if (rawPage < MIN_PAGE_NUMBER || rawLimit < MIN_PAGE_SIZE || rawLimit > MAX_PAGE_SIZE) {
+        const safePage = Math.max(MIN_PAGE_NUMBER, rawPage);
+        const safeLimit = Math.max(MIN_PAGE_SIZE, Math.min(rawLimit, MAX_PAGE_SIZE));
 
         return {
-            data: mapToPaginatedBookResponse(result.data, result.count, page, limit),
+            data: mapToPaginatedBookResponse([], 0, safePage, safeLimit),
             error: null,
         };
-    } catch (err) {
+    }
+
+    try {
+        const paramsSerialized = JSON.stringify(params);
+        const result = await getCachedBooksData(rawPage, rawLimit, paramsSerialized);
+
+        return {
+            data: mapToPaginatedBookResponse(result.data, result.count, rawPage, rawLimit),
+            error: null,
+        };
+    } catch (err: unknown) {
         console.error('[GetBooksData] Orchestration Error:', err);
+
+        const errorMessage =
+            err instanceof Error
+                ? err.message
+                : typeof err === 'string'
+                  ? err
+                  : 'Failed to retrieve book records after multiple attempts.';
+
         return {
             data: null,
-            error:
-                err instanceof Error
-                    ? err.message
-                    : 'Failed to retrieve book records after multiple attempts.',
+            error: errorMessage,
         };
     }
 };

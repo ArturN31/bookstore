@@ -7,7 +7,14 @@ import {
     removeItemFromUsersCart,
 } from '@/data/cart/GetCartData';
 
-jest.mock('@/data/cart/GetCartData');
+// Explicit factory mock prevents Jest from loading GetCartData.ts and its Next.js server dependencies
+jest.mock('@/data/cart/GetCartData', () => ({
+    getUsersCartID: jest.fn(),
+    createUsersCart: jest.fn(),
+    addItemToUsersCart: jest.fn(),
+    updateItemInUsersCart: jest.fn(),
+    removeItemFromUsersCart: jest.fn(),
+}));
 
 describe('CartService', () => {
     const mockedGetUsersCartID = getUsersCartID as jest.Mock;

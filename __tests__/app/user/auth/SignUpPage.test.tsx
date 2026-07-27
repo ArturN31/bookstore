@@ -1,7 +1,6 @@
 import SignUpPage from '@/app/user/auth/signup/page';
 import { SignUpAction } from '@/data/actions/auth/SignUpAction';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 
 const MOCK_MESSAGE = 'Please correct the errors below.';
 

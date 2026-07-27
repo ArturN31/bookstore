@@ -1,9 +1,9 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { useBookFilter } from '@/providers/BookFilterProvider';
+import { useBookSortBy } from '@/providers/BookSortByProvider';
 import { SortBy } from '@/components/layout/FilterBar/SortBy';
 
-jest.mock('@/providers/BookFilterProvider', () => ({
-    useBookFilter: jest.fn(),
+jest.mock('@/providers/BookSortByProvider', () => ({
+    useBookSortBy: jest.fn(),
 }));
 
 jest.mock('@/components/ui/CustomPopoverWithList', () => ({
@@ -25,16 +25,16 @@ jest.mock('@/components/ui/CustomPopoverWithList', () => ({
 }));
 
 describe('SortBy Component', () => {
-    const mockToggleFilter = jest.fn();
+    const mockToggleSortByType = jest.fn();
 
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
     it('should display "Sort By" when no filterType is selected', () => {
-        (useBookFilter as jest.Mock).mockReturnValue({
-            filterType: '',
-            toggleFilter: mockToggleFilter,
+        (useBookSortBy as jest.Mock).mockReturnValue({
+            sortByType: '',
+            toggleSortByType: mockToggleSortByType,
         });
 
         render(<SortBy />);
@@ -44,9 +44,9 @@ describe('SortBy Component', () => {
     });
 
     it('should display the active filterType text when selected', () => {
-        (useBookFilter as jest.Mock).mockReturnValue({
-            filterType: 'Price: Low to High',
-            toggleFilter: mockToggleFilter,
+        (useBookSortBy as jest.Mock).mockReturnValue({
+            sortByType: 'Price: Low to High',
+            toggleSortByType: mockToggleSortByType,
         });
 
         render(<SortBy />);
@@ -55,10 +55,10 @@ describe('SortBy Component', () => {
         expect(button).toHaveTextContent('Price: Low to High');
     });
 
-    it('should call toggleFilter with the correct choice when an item is clicked', () => {
-        (useBookFilter as jest.Mock).mockReturnValue({
-            filterType: 'Title: A-Z',
-            toggleFilter: mockToggleFilter,
+    it('should call toggleSortByType with the correct choice when an item is clicked', () => {
+        (useBookSortBy as jest.Mock).mockReturnValue({
+            sortByType: 'Title: A-Z',
+            toggleSortByType: mockToggleSortByType,
         });
 
         render(<SortBy />);
@@ -66,6 +66,6 @@ describe('SortBy Component', () => {
         const choice = screen.getByText('Best Sellers');
         fireEvent.click(choice);
 
-        expect(mockToggleFilter).toHaveBeenCalledWith('Best Sellers');
+        expect(mockToggleSortByType).toHaveBeenCalledWith('Best Sellers');
     });
 });

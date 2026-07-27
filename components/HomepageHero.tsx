@@ -1,6 +1,6 @@
 export const HomepageHero = ({ booksAmount }: { booksAmount: number }) => {
     return (
-        <header className="1080p:pb-8 4k:pb-16 mx-auto flex flex-col justify-between gap-4 border-b border-b-slate-100 pb-4 lg:flex-row lg:items-center">
+        <header className="1080p:pb-8 4k:pb-16 mx-auto flex flex-col justify-between gap-4 border-b border-b-slate-100 pb-4 xl:flex-row xl:items-center">
             <div className="1080p:max-w-4xl 4k:max-w-7xl max-w-xl">
                 <h1 className="xs:text-3xl 1080p:text-5xl 1440p:text-7xl 4k:text-9xl text-2xl font-[1000] tracking-tight text-slate-900 sm:text-4xl lg:text-5xl xl:text-6xl">
                     Discover Books.

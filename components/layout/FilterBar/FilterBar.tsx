@@ -1,5 +1,6 @@
 import dynamic from 'next/dynamic';
 import { Home } from '@/components/layout/FilterBar/Home';
+import { FilteringSidebar } from '@/components/FilteringSidebar/FilteringSidebar';
 
 const Genre = dynamic(
     () => import('@/components/layout/FilterBar/Genre').then((mod) => mod.Genre),
@@ -34,6 +35,9 @@ export const FilterBar = () => {
                     </li>
                     <li className="shrink-0 bg-transparent px-4 py-2 text-gray-700 hover:text-blue-600 focus:outline-none">
                         <SortBy />
+                    </li>
+                    <li className="shrink-0 bg-transparent px-4 py-2 text-gray-700 hover:text-blue-600 focus:outline-none">
+                        <FilteringSidebar />
                     </li>
                 </ul>
             </div>

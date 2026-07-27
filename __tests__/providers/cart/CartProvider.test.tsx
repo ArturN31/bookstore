@@ -18,7 +18,9 @@ jest.mock('@/utils/db/client', () => ({
         removeChannel: jest.fn(),
     })),
 }));
-jest.mock('@/data/cart/GetCartData');
+jest.mock('@/data/cart/GetCartData', () => ({
+    getCartData: jest.fn(),
+}));
 jest.mock('@/providers/cart/utils/useCartListeners', () => ({
     useCartListeners: jest.fn(({ onCartChange }) => {
         capturedOnCartChange = onCartChange;

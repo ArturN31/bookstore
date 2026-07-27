@@ -13,7 +13,9 @@ export const RootLayoutContent = ({ children }: { children: React.ReactNode }) =
                     data-testid="root-layout-wrapper"
                 >
                     <Header />
-                    <main className="flex-1 p-8">{children}</main>
+                    <main className="flex w-full flex-1 flex-row gap-8 bg-slate-50 md:flex">
+                        <div className="flex w-full flex-1 flex-col py-8">{children}</div>
+                    </main>
                     <Footer />
                 </div>
             </SessionProviderWrapper>

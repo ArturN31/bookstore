@@ -1,179 +1,200 @@
 {
-  "total": {
-    "statements": 93.07,
-    "branches": 99.24,
-    "functions": 96.23,
-    "lines": 93.07,
-    "average": 95.4
-  },
-  "paths": {
-    "app/page.tsx": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
+    "total": {
+        "statements": 93.91,
+        "branches": 99.35,
+        "functions": 96.56,
+        "lines": 93.91,
+        "average": 95.93
     },
-    "app/book": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "app/books": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "app/dev-tools": {
-      "statements": "40.00%",
-      "branches": "40.00%",
-      "functions": "40.00%",
-      "lines": "40.00%",
-      "average": "40.00%"
-    },
-    "app/infos": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "app/user": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "components/HomepageHero.tsx": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "components/CartForms": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "components/CartSidebar": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "components/books": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "components/formItems": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "components/layout": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "components/pages": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "components/ui": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "data/actions": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "data/books": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "data/cart": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "data/schemas": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "data/user": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "hooks/SearchBar": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "providers/BookFilterProvider.tsx": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "providers/Providers.tsx": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "providers/cart": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "providers/user": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
+    "paths": {
+        "app/page.tsx": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "app/book": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "app/books": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "app/dev-tools": {
+            "statements": "40.00%",
+            "branches": "40.00%",
+            "functions": "40.00%",
+            "lines": "40.00%",
+            "average": "40.00%"
+        },
+        "app/infos": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "app/user": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "components/HomepageHero.tsx": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "components/CartForms": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "components/CartSidebar": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "components/FilteringSidebar": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "components/books": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "components/formItems": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "components/layout": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "components/pages": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "components/ui": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "data/actions": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "data/advancedFiltering": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "data/books": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "data/cart": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "data/schemas": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "data/user": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "hooks/SearchBar": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "providers/BookSortByProvider.tsx": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "providers/Providers.tsx": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "providers/advancedFiltering": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "providers/cart": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        },
+        "providers/user": {
+            "statements": "100.00%",
+            "branches": "100.00%",
+            "functions": "100.00%",
+            "lines": "100.00%",
+            "average": "100.00%"
+        }
     }
-  }
 }

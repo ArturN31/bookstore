@@ -4,8 +4,14 @@ import { Genre, handleGenreChoice } from '@/components/layout/FilterBar/Genre';
 const mockFrom = jest.fn();
 const mockSelect = jest.fn();
 
-jest.mock('@/utils/db/server', () => ({
-    createBackendClient: jest.fn(() => ({
+jest.mock('next/cache', () => ({
+    unstable_cache: <T extends (...args: unknown[]) => Promise<unknown>>(fn: T) => fn,
+    revalidatePath: jest.fn(),
+    revalidateTag: jest.fn(),
+}));
+
+jest.mock('@/utils/db/publicServer', () => ({
+    createPublicServerClient: jest.fn(() => ({
         from: mockFrom.mockReturnValue({
             select: mockSelect,
         }),
@@ -13,14 +19,16 @@ jest.mock('@/utils/db/server', () => ({
 }));
 
 jest.mock('@/components/ui/CustomPopoverWithList', () => ({
-    CustomPopoverWithList: jest.fn(({ genres, message }) => {
-        return (
-            <div data-testid="mock-dropdown-list">
-                {genres && <p>Genre: {genres.join(', ')}</p>}
-                {message && <p>Message: {message}</p>}
-            </div>
-        );
-    }),
+    CustomPopoverWithList: jest.fn(
+        ({ genres, message }: { genres?: string[]; message?: string }) => {
+            return (
+                <div data-testid="mock-dropdown-list">
+                    {genres && <p>Genre: {genres.join(', ')}</p>}
+                    {message && <p>Message: {message}</p>}
+                </div>
+            );
+        },
+    ),
 }));
 
 jest.mock('next/navigation', () => ({
@@ -38,7 +46,8 @@ describe('FilterBar - Genre', () => {
 
         render(await Genre());
 
-        const MockedPopover = require('@/components/ui/CustomPopoverWithList').CustomPopoverWithList;
+        const MockedPopover =
+            require('@/components/ui/CustomPopoverWithList').CustomPopoverWithList;
 
         expect(MockedPopover).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -59,7 +68,8 @@ describe('FilterBar - Genre', () => {
 
         render(await Genre());
 
-        const MockedPopover = require('@/components/ui/CustomPopoverWithList').CustomPopoverWithList;
+        const MockedPopover =
+            require('@/components/ui/CustomPopoverWithList').CustomPopoverWithList;
 
         expect(MockedPopover).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -84,7 +94,8 @@ describe('FilterBar - Genre', () => {
         const dropdownList = getByTestId('mock-dropdown-list');
         expect(dropdownList).toBeInTheDocument();
 
-        const MockedPopover = require('@/components/ui/CustomPopoverWithList').CustomPopoverWithList;
+        const MockedPopover =
+            require('@/components/ui/CustomPopoverWithList').CustomPopoverWithList;
 
         expect(MockedPopover).toHaveBeenCalledWith(
             expect.objectContaining({

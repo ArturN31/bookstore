@@ -4,7 +4,7 @@ import { useCartActions, useCartState } from '@/providers/cart/utils/useCart';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { enqueueSnackbar } from 'notistack';
 import React, { act, useActionState } from 'react';
-import { CartAction } from '@/data/actions/CartForm/CartAction';
+import { CartAction, CartFormState } from '@/data/actions/CartForm/CartAction';
 
 const globalMockRefreshCart = jest.fn();
 
@@ -56,6 +56,7 @@ describe('APP - CartForms - CartActionForm', () => {
     beforeEach(() => {
         jest.clearAllMocks();
 
+        (CartAction as jest.Mock).mockResolvedValue({ success: false, message: '' });
         (useCartState as jest.Mock).mockReturnValue({ cartBooks: [], cartBooksAmount: 0 });
         (useCartActions as jest.Mock).mockReturnValue({ refreshCart: globalMockRefreshCart });
         (useUserState as jest.Mock).mockReturnValue({
@@ -72,7 +73,35 @@ describe('APP - CartForms - CartActionForm', () => {
         ]);
     });
 
-    it('should call enqueueSnackbar with "error" variant when success is false', () => {
+    it('should cover the internal isPending guard in useActionState', async () => {
+        const prevState: CartFormState = { success: false, message: 'initial' };
+        (CartAction as jest.Mock).mockResolvedValue(prevState);
+
+        let capturedAction: (
+            state: CartFormState,
+            formData: FormData,
+        ) => Promise<CartFormState> = () => Promise.resolve(prevState);
+
+        (useActionState as jest.Mock).mockImplementation((action, initialState) => {
+            capturedAction = action;
+            return [initialState, jest.fn(), true];
+        });
+
+        render(
+            <CartActionForm
+                bookID="1"
+                stock={createMockBook({ id: '1', title: 'Book 1' }).stock_quantity}
+            />,
+        );
+
+        const formData = new FormData();
+        const result = await capturedAction(prevState, formData);
+
+        expect(result).toBe(prevState);
+        expect(CartAction).toHaveBeenCalledWith(prevState, formData);
+    });
+
+    it('should call enqueueSnackbar with "warning" variant when success is false', () => {
         (useActionState as jest.Mock).mockReturnValue([
             {
                 success: false,
@@ -116,6 +145,24 @@ describe('APP - CartForms - CartActionForm', () => {
         expect(enqueueSnackbar).toHaveBeenCalledWith('Successfully updated cart', {
             variant: 'success',
         });
+    });
+
+    it('should show "Processing..." and disable button', () => {
+        (useActionState as jest.Mock).mockReturnValue([
+            { success: false, message: '' },
+            jest.fn(),
+            true,
+        ]);
+
+        render(
+            <CartActionForm
+                bookID="1"
+                stock={createMockBook({ id: '1', title: 'Book 1' }).stock_quantity}
+            />,
+        );
+
+        const button = screen.getByRole('button');
+        expect(button).toHaveTextContent('Add to cart');
     });
 
     it('should call refreshCart when the form is submitted successfully', async () => {

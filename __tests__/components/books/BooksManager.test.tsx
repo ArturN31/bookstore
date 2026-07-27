@@ -1,6 +1,7 @@
 import { BooksManager } from '@/components/books/BooksManager';
-import { useBookFilter } from '@/providers/BookFilterProvider';
-import { render, screen, waitFor } from '@testing-library/react';
+import { useBookSortBy } from '@/providers/BookSortByProvider';
+import { useBookFilter } from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
+import { render, screen, act } from '@testing-library/react';
 import { useInView } from 'react-intersection-observer';
 import { useBooksFetcher } from '@/data/books/useBooksFetcher';
 import { PaginatedBookResult } from '@/data/books/BookConstants';
@@ -10,7 +11,11 @@ interface ActionResponse<T> {
     data: T | null;
 }
 
-jest.mock('@/providers/BookFilterProvider', () => ({
+jest.mock('@/providers/BookSortByProvider', () => ({
+    useBookSortBy: jest.fn(),
+}));
+
+jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
     useBookFilter: jest.fn(),
 }));
 
@@ -59,7 +64,8 @@ const mockInitialData: ActionResponse<PaginatedBookResult> = {
 };
 
 describe('BooksManager', () => {
-    const mockUseBookFilter = useBookFilter as jest.Mock;
+    const mockBookSortBy = useBookSortBy as jest.Mock;
+    const mockBookFilter = useBookFilter as jest.Mock;
     const mockUseInView = useInView as jest.Mock;
     const mockUseBooksFetcher = useBooksFetcher as jest.Mock;
     const mockFetchBooks = jest.fn();
@@ -67,7 +73,18 @@ describe('BooksManager', () => {
     beforeEach(() => {
         jest.clearAllMocks();
 
-        mockUseBookFilter.mockReturnValue({ filterType: 'Title: A-Z' });
+        mockBookSortBy.mockReturnValue({ sortByType: 'Title: A-Z' });
+        mockBookFilter.mockReturnValue({
+            chosenFilters: {
+                AUTHORS: [],
+                FORMATS: [],
+                GENRES: [],
+                PUBLISHERS: [],
+                PAGES: [],
+                PRICES: [],
+                PUBLICATIONS: [],
+            },
+        });
         mockUseInView.mockReturnValue({ ref: jest.fn(), inView: false });
 
         mockUseBooksFetcher.mockReturnValue({
@@ -128,15 +145,15 @@ describe('BooksManager', () => {
         expect(mockFetchBooks).toHaveBeenCalledWith(true, 1);
     });
 
-    it('resets and reloads books when filterType changes', async () => {
+    it('resets and reloads books when sortByType changes', async () => {
         const { rerender } = render(<BooksManager initialData={mockInitialData} />);
 
-        mockUseBookFilter.mockReturnValue({ filterType: 'Price: Low to High' });
+        mockBookSortBy.mockReturnValue({ sortByType: 'Price: Low to High' });
 
         rerender(<BooksManager initialData={mockInitialData} />);
 
         expect(mockUseBooksFetcher).toHaveBeenCalledWith(
-            expect.objectContaining({ filterType: 'Price: Low to High' }),
+            expect.objectContaining({ sortByType: 'Price: Low to High' }),
         );
     });
 
@@ -214,5 +231,78 @@ describe('BooksManager', () => {
         const cardContainer = mockCardElement.parentElement;
 
         expect(cardContainer).toHaveStyle('opacity: 0.5');
+    });
+
+    it('debounces filter changes and maps prices and publications correctly after 1000ms', () => {
+        jest.useFakeTimers();
+
+        mockBookFilter.mockReturnValue({
+            chosenFilters: {
+                AUTHORS: [],
+                FORMATS: [],
+                GENRES: [],
+                PUBLISHERS: [],
+                PAGES: [],
+                PRICES: [10, 25],
+                PUBLICATIONS: ['2025-01-01', '2026-01-01'],
+            },
+        });
+
+        const { rerender } = render(<BooksManager initialData={mockInitialData} />);
+
+        act(() => {
+            jest.advanceTimersByTime(1000);
+        });
+
+        rerender(<BooksManager initialData={mockInitialData} />);
+
+        expect(mockUseBooksFetcher).toHaveBeenCalledWith(
+            expect.objectContaining({
+                queryParams: expect.objectContaining({
+                    prices: ['10', '25'],
+                    publications: ['2025-01-01', '2026-01-01'],
+                }),
+            }),
+        );
+
+        jest.useRealTimers();
+    });
+
+    it('debounces and maps authors, formats, genres, publishers, and pages filters correctly after 1000ms', () => {
+        jest.useFakeTimers();
+
+        mockBookFilter.mockReturnValue({
+            chosenFilters: {
+                AUTHORS: ['Author One', 'Author Two'],
+                FORMATS: ['Hardcover'],
+                GENRES: ['Fantasy'],
+                PUBLISHERS: ['Pub Inc'],
+                PAGES: [100, 300],
+                PRICES: [],
+                PUBLICATIONS: [],
+            },
+        });
+
+        const { rerender } = render(<BooksManager initialData={mockInitialData} />);
+
+        act(() => {
+            jest.advanceTimersByTime(1000);
+        });
+
+        rerender(<BooksManager initialData={mockInitialData} />);
+
+        expect(mockUseBooksFetcher).toHaveBeenCalledWith(
+            expect.objectContaining({
+                queryParams: expect.objectContaining({
+                    authors: ['Author One', 'Author Two'],
+                    formats: ['Hardcover'],
+                    genres: ['Fantasy'],
+                    publishers: ['Pub Inc'],
+                    pages: ['100', '300'],
+                }),
+            }),
+        );
+
+        jest.useRealTimers();
     });
 });

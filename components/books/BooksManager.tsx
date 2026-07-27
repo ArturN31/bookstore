@@ -1,33 +1,70 @@
 'use client';
 
+import { useState, useEffect, useMemo } from 'react';
 import { useInView } from 'react-intersection-observer';
-import { useBookFilter } from '@/providers/BookFilterProvider';
+import { useBookSortBy } from '@/providers/BookSortByProvider';
 import { BookCard } from '@/components/books/bookCard/BookCard';
 import { PaginatedBookResult } from '@/data/books/BookConstants';
-import { FetchBooksFilters } from '@/data/books/BookRepository';
+import { BookQueryParams } from '@/data/books/BookRepository';
 import { useBooksFetcher } from '@/data/books/useBooksFetcher';
+import { useBookFilter } from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
+
+interface ActionResponse<T> {
+    data: T | null;
+    error: string | null;
+}
 
 interface BooksManagerProps {
     initialData: ActionResponse<PaginatedBookResult>;
-    filters?: Omit<FetchBooksFilters, 'page' | 'limit'>;
+    queryParams?: Omit<BookQueryParams, 'page' | 'limit'>;
 }
 
-export const BooksManager = ({ initialData, filters }: BooksManagerProps) => {
-    const { filterType } = useBookFilter();
+export const BooksManager = ({ initialData, queryParams }: BooksManagerProps) => {
+    const { sortByType } = useBookSortBy();
+    const { chosenFilters } = useBookFilter();
+
+    const [debouncedFilters, setDebouncedFilters] = useState(chosenFilters);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedFilters(chosenFilters);
+        }, 1000);
+
+        return () => clearTimeout(timer);
+    }, [chosenFilters]);
+
+    const mergedParams = useMemo<Omit<BookQueryParams, 'page' | 'limit'>>(() => {
+        return {
+            ...queryParams,
+            authors: debouncedFilters.AUTHORS.length > 0 ? debouncedFilters.AUTHORS : undefined,
+            formats: debouncedFilters.FORMATS.length > 0 ? debouncedFilters.FORMATS : undefined,
+            genres: debouncedFilters.GENRES.length > 0 ? debouncedFilters.GENRES : undefined,
+            publishers:
+                debouncedFilters.PUBLISHERS.length > 0 ? debouncedFilters.PUBLISHERS : undefined,
+            pages:
+                debouncedFilters.PAGES.length > 0 ? debouncedFilters.PAGES.map(String) : undefined,
+            prices:
+                debouncedFilters.PRICES.length > 0
+                    ? debouncedFilters.PRICES.map(String)
+                    : undefined,
+            publications:
+                debouncedFilters.PUBLICATIONS.length > 0
+                    ? debouncedFilters.PUBLICATIONS
+                    : undefined,
+        };
+    }, [queryParams, debouncedFilters]);
 
     const { state, isLoading, fetchBooks } = useBooksFetcher({
         initialData,
-        filters,
-        filterType,
+        queryParams: mergedParams,
+        sortByType,
     });
 
     const { ref: observerRef } = useInView({
         threshold: 0,
         rootMargin: '400px',
-        onChange: (inView) => {
-            if (inView && state.hasMore && !isLoading) {
-                fetchBooks(true, state.page);
-            }
+        onChange: (inView: boolean) => {
+            if (inView && state.hasMore && !isLoading) fetchBooks(true, state.page);
         },
     });
 
@@ -35,12 +72,12 @@ export const BooksManager = ({ initialData, filters }: BooksManagerProps) => {
         <div className="mx-auto w-full max-w-screen-2xl">
             <div className="flex flex-col gap-8">
                 <section
-                    className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                    className="grid grid-cols-1 gap-x-4 gap-y-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
                     aria-label="Books gallery"
                 >
                     {state.books.map((book) => (
                         <div
-                            key={`${book.id}-${filterType}`}
+                            key={`${book.id}-${sortByType}`}
                             className="flex justify-center transition-opacity duration-300"
                             style={{ opacity: isLoading && state.page === 1 ? 0.5 : 1 }}
                         >
