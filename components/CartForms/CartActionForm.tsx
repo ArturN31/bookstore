@@ -117,29 +117,8 @@ export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: numbe
                         )}
                         <span>{isAddMode ? 'Add to cart' : 'Remove from cart'}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        {isAddMode ? (
-                            <ShoppingCartOutlinedIcon />
-                        ) : (
-                            <RemoveShoppingCartOutlinedIcon />
-                        )}
-                        <span>{isAddMode ? 'Add to cart' : 'Remove from cart'}</span>
-                    </div>
                 </button>
             </form>
-            {status && (
-                <div className="4k:h-10 flex h-5 items-center justify-center">
-                    {status ? (
-                        <p
-                            className={`4k:text-xl text-[10px] font-bold tracking-tight uppercase ${status.color} ${status.animate ? 'animate-pulse' : ''}`}
-                        >
-                            {status.text}
-                        </p>
-                    ) : (
-                        <div className="h-px w-4 bg-transparent" />
-                    )}
-                </div>
-            )}
             {status && (
                 <div className="4k:h-10 flex h-5 items-center justify-center">
                     {status ? (
