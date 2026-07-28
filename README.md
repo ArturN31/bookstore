@@ -331,7 +331,7 @@ The following features are partially or not yet implemented:
 ### 2. Enhanced User Experience
 
 - [X] **Optimistic UI Updates**: Leverage React 19's `useOptimistic` hook for "Add to Cart" and "Wishlist" actions to provide instantaneous visual feedback while background processes resolve.
-- [ ] **Advanced Multi-Select Filtering**: Support simultaneous filtering by multiple genres and price ranges with real-time result updates.
+- [X] **Advanced Multi-Select Filtering**: Support simultaneous filtering by multiple genres and price ranges with real-time result updates.
 - [X] **Skeleton Loading States**: Implement shimmering MUI Skeleton components to replace basic loading spinners during SSR data fetching, improving perceived performance.
 - [X] **Image Optimisation**: Implement Next.js Image component with WebP conversion and responsive srcset for book cover art.
 
@@ -354,7 +354,7 @@ The following features are partially or not yet implemented:
 
 ### 5. Security & Compliance Enhancements
 
-- [ ] **Centralized Error Handler**: Create a centralized error handling system that sanitizes all Supabase error messages before client exposure to prevent information leakage.
+- [X] **Centralized Error Handler**: Create a centralized error handling system that sanitizes all Supabase error messages before client exposure to prevent information leakage.
 - [ ] **Rate Limiting**: Implement distributed rate limiting on authentication endpoints to prevent brute force attacks and credential stuffing.
 - [ ] **Security Audit Logging**: Add comprehensive logging for sensitive operations like password changes, failed authentication attempts, and administrative actions.
 - [ ] **Security Headers**: Implement security headers (CSP, HSTS, X-Frame-Options, etc.) via Next.js configuration and middleware for enhanced protection.
