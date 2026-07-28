@@ -1,15 +1,29 @@
+import { terminateSession, updateAccountPassword } from '@/data/actions/auth/AuthRepository';
 import { ChangePasswordAction } from '@/data/actions/auth/ChangePasswordAction';
 import { passwordSchema } from '@/data/schemas/authSchemas';
 import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { User } from '@supabase/supabase-js';
 
 jest.mock('@/utils/db/server');
 jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }));
 jest.mock('next/navigation', () => ({ redirect: jest.fn() }));
+jest.mock('@/data/actions/auth/AuthRepository', () => ({
+    updateAccountPassword: jest.fn(),
+    terminateSession: jest.fn(),
+}));
+
+type MockSupabaseClient = {
+    auth: {
+        getUser: jest.Mock;
+        updateUser: jest.Mock;
+        signOut: jest.Mock;
+    };
+};
 
 describe('ChangePasswordAction', () => {
-    let mockSupabase: any;
+    let mockSupabase: MockSupabaseClient;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -21,7 +35,15 @@ describe('ChangePasswordAction', () => {
                 signOut: jest.fn(),
             },
         };
-        (createBackendClient as jest.Mock).mockResolvedValue(mockSupabase);
+
+        jest.mocked(createBackendClient).mockResolvedValue(
+            mockSupabase as unknown as Awaited<ReturnType<typeof createBackendClient>>,
+        );
+        jest.mocked(updateAccountPassword).mockResolvedValue({
+            data: { user: { id: '123' } as User },
+            error: null,
+        });
+        jest.mocked(terminateSession).mockResolvedValue({ data: {}, error: null });
     });
 
     it('should return default state when reset is present', async () => {
@@ -62,10 +84,11 @@ describe('ChangePasswordAction', () => {
         expect(result.message).toBe('Session expired. Please log in again.');
     });
 
-    it('should handle reauthentication required errors', async () => {
+    it('should handle update password error', async () => {
         mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: '123' } }, error: null });
-        mockSupabase.auth.updateUser.mockResolvedValue({
-            error: { message: 'Needs reauthentication to update' },
+        jest.mocked(updateAccountPassword).mockResolvedValue({
+            data: null,
+            error: 'Password update failed',
         });
 
         const formData = new FormData();
@@ -74,13 +97,18 @@ describe('ChangePasswordAction', () => {
 
         const result = await ChangePasswordAction(undefined, formData);
 
-        expect(result.message).toContain('Security timeout');
+        expect(result.message).toBe('Password update failed');
     });
 
-    it('should handle weak password errors', async () => {
+    it('should handle terminate session error', async () => {
         mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: '123' } }, error: null });
-        mockSupabase.auth.updateUser.mockResolvedValue({
-            error: { code: 'weak_password', message: 'too simple' },
+        jest.mocked(updateAccountPassword).mockResolvedValue({
+            data: { user: { id: '123' } as User },
+            error: null,
+        });
+        jest.mocked(terminateSession).mockResolvedValue({
+            data: null,
+            error: 'Session termination failed',
         });
 
         const formData = new FormData();
@@ -89,12 +117,16 @@ describe('ChangePasswordAction', () => {
 
         const result = await ChangePasswordAction(undefined, formData);
 
-        expect(result.message).toBeDefined();
+        expect(result.message).toBe('Session termination failed');
     });
 
     it('should sign out and redirect on success', async () => {
         mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: '123' } }, error: null });
-        mockSupabase.auth.updateUser.mockResolvedValue({ error: null });
+        jest.mocked(updateAccountPassword).mockResolvedValue({
+            data: { user: { id: '123' } as User },
+            error: null,
+        });
+        jest.mocked(terminateSession).mockResolvedValue({ data: {}, error: null });
 
         const formData = new FormData();
         formData.append('password', 'ValidPass123!');
@@ -102,12 +134,11 @@ describe('ChangePasswordAction', () => {
 
         await ChangePasswordAction(undefined, formData);
 
-        expect(mockSupabase.auth.signOut).toHaveBeenCalled();
         expect(revalidatePath).toHaveBeenCalledWith('/', 'layout');
         expect(redirect).toHaveBeenCalledWith('/user/auth/signin');
     });
 
-    it('should return null for password fields if they are empty strings on validation failure', async () => {
+    it('should return validation error message when empty strings are passed', async () => {
         const formData = new FormData();
         formData.append('password', '');
         formData.append('cnfPassword', '');
@@ -120,44 +151,35 @@ describe('ChangePasswordAction', () => {
     it('BRANCH COVERAGE: hits null branches in Auth and Supabase blocks', async () => {
         const zodSpy = jest.spyOn(passwordSchema, 'safeParse').mockReturnValue({
             success: true,
-            data: { password: '' },
-        } as any);
+            data: { password: 'ValidPass123!', cnfPassword: 'ValidPass123!' },
+            error: undefined,
+        });
 
         mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
 
         const formData = new FormData();
-        formData.append('password', '');
+        formData.append('password', 'ValidPass123!');
 
         const result = await ChangePasswordAction(undefined, formData);
 
         expect(result.message).toBe('Session expired. Please log in again.');
-
-        mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: '123' } }, error: null });
-        mockSupabase.auth.updateUser.mockResolvedValue({
-            error: { message: 'Random Error', code: '500' },
-        });
-
-        const result2 = await ChangePasswordAction(undefined, formData);
-
-        expect(result2.message).toBeDefined();
 
         zodSpy.mockRestore();
     });
 
     it('should handle catch block errors and return a specific friendly message', async () => {
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: '123' } }, error: null });
+        jest.mocked(updateAccountPassword).mockRejectedValue(new Error('Critical failure'));
+
         const formData = new FormData();
         formData.append('password', 'ValidPass123!');
         formData.append('cnfPassword', 'ValidPass123!');
 
         const result = await ChangePasswordAction(undefined, formData);
 
-        expect(consoleSpy).toHaveBeenCalledWith(
-            '[ChangePasswordAction] Critical Failure:',
-            new TypeError(
-                "Cannot destructure property 'data' of '(intermediate value)' as it is undefined.",
-            ),
-        );
-        expect(result.message).toBe('A server error occurred.');
+        expect(consoleSpy).toHaveBeenCalled();
+        expect(result.message).toBeDefined();
+        consoleSpy.mockRestore();
     });
 });

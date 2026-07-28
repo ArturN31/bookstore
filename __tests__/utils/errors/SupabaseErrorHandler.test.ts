@@ -1,4 +1,17 @@
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { AuthError } from '@supabase/supabase-js';
+
+jest.mock('@supabase/supabase-js', () => ({
+    AuthError: class MockAuthError extends Error {
+        status?: number;
+        code?: string;
+        constructor(message: string, status?: number) {
+            super(message);
+            this.name = 'AuthApiError';
+            this.status = status;
+        }
+    },
+}));
 
 describe('SupabaseErrorHandler', () => {
     let consoleErrorSpy: jest.SpyInstance;
@@ -13,6 +26,13 @@ describe('SupabaseErrorHandler', () => {
     });
 
     describe('sanitizeSupabaseError', () => {
+        it('should return default message for falsy error values', () => {
+            expect(sanitizeSupabaseError(null)).toBe('An unknown error occurred.');
+            expect(sanitizeSupabaseError(undefined)).toBe('An unknown error occurred.');
+            expect(sanitizeSupabaseError('')).toBe('An unknown error occurred.');
+            expect(sanitizeSupabaseError(false)).toBe('An unknown error occurred.');
+        });
+
         describe('PostgREST Database Errors', () => {
             it('should sanitize 23505 (unique_violation) error', () => {
                 const mockPostgrestError = {
@@ -31,6 +51,21 @@ describe('SupabaseErrorHandler', () => {
                     mockPostgrestError.code,
                     mockPostgrestError.details,
                 );
+            });
+
+            it('should recognize PostgREST error via hint when details is missing', () => {
+                const mockPostgrestError = {
+                    code: '99999',
+                    message: 'Error with hint only',
+                    hint: 'Check your query parameters',
+                };
+
+                const result = sanitizeSupabaseError(mockPostgrestError);
+
+                expect(result).toBe(
+                    'An unexpected database error occurred. Please try again later.',
+                );
+                expect(consoleErrorSpy).toHaveBeenCalled();
             });
 
             it('should sanitize 23503 (foreign_key_violation) error', () => {
@@ -134,6 +169,40 @@ describe('SupabaseErrorHandler', () => {
         });
 
         describe('Supabase Auth Errors', () => {
+            it('should handle native AuthError instances correctly', () => {
+                const authErrorInstance = new AuthError('Token expired', 401);
+
+                const result = sanitizeSupabaseError(authErrorInstance);
+
+                expect(result).toBe(
+                    'You are not authorized to perform this action. Please log in.',
+                );
+            });
+
+            it('should handle auth error object matching by name prefix without status', () => {
+                const mockAuthError = {
+                    name: 'AuthApiError',
+                    message: 'Some auth error',
+                };
+
+                const result = sanitizeSupabaseError(mockAuthError);
+
+                expect(result).toBe(
+                    'An authentication error occurred. Please try again or log in again.',
+                );
+            });
+
+            it('should handle auth error object matching by status number only', () => {
+                const mockAuthError = {
+                    status: 403,
+                    message: 'Forbidden action',
+                };
+
+                const result = sanitizeSupabaseError(mockAuthError);
+
+                expect(result).toBe('Access to this resource is forbidden.');
+            });
+
             it('should sanitize status 400 Auth errors', () => {
                 const mockAuthError = {
                     name: 'AuthApiError',
@@ -211,6 +280,19 @@ describe('SupabaseErrorHandler', () => {
                     'An authentication error occurred. Please try again or log in again.',
                 );
             });
+
+            it('should sanitize auth error with recognized error code', () => {
+                const mockAuthError = {
+                    name: 'AuthApiError',
+                    code: 'weak_password',
+                    message: 'Password is too weak',
+                    status: 400,
+                };
+
+                const result = sanitizeSupabaseError(mockAuthError);
+
+                expect(result).toBe('The new password does not meet security requirements.');
+            });
         });
 
         describe('Standard and Unknown Errors', () => {
@@ -222,6 +304,19 @@ describe('SupabaseErrorHandler', () => {
                 expect(consoleErrorSpy).toHaveBeenCalledWith(
                     '[Standard Error]:',
                     standardError.message,
+                );
+            });
+
+            it('should handle generic error objects with a recognized auth code', () => {
+                const genericError = {
+                    code: 'reauthentication_needed',
+                    message: 'Some error message',
+                };
+
+                const result = sanitizeSupabaseError(genericError);
+
+                expect(result).toBe(
+                    'Security timeout: Please sign out and back in to change your password.',
                 );
             });
 

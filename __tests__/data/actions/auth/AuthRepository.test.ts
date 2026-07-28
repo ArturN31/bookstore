@@ -71,6 +71,6 @@ describe('AuthRepository', () => {
             password: 'password',
         });
 
-        expect(result.error).toEqual(error);
+        expect(result.error).toEqual('Failed');
     });
 });

@@ -7,7 +7,7 @@ import { createBackendClient } from '@/utils/db/server';
 import { getUserData } from '@/data/user/GetUserData';
 import { signInSchema } from '@/data/schemas/authSchemas';
 import { authenticateUser } from './AuthRepository';
-import { mapAuthErrorToMessage } from './AuthErrorHandler';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 
 export type SignInFormState = {
     validationErrors?: z.core.$ZodIssue[];
@@ -38,6 +38,8 @@ export async function SignInAction(
     if (!captchaToken)
         return { message: 'Authentication rejected due to an invalid or missing security token.' };
 
+    let destinationUrl = '/';
+
     try {
         const supabase = await createBackendClient();
 
@@ -45,26 +47,22 @@ export async function SignInAction(
             ...validated.data,
             options: { captchaToken },
         });
-
-        if (authError)
-            return {
-                message: mapAuthErrorToMessage(authError),
-            };
+        if (authError) return { message: authError };
 
         const { data: dbUser } = await getUserData();
 
         revalidatePath('/', 'layout');
 
-        if (!dbUser) redirect('/user/profile');
-
-        const returnTo = rawData.returnTo as string | undefined;
-        if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) redirect(returnTo);
-    } catch (err) {
-        if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
-
+        if (!dbUser) destinationUrl = '/user/profile';
+        else {
+            const returnTo = rawData.returnTo as string | undefined;
+            if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//'))
+                destinationUrl = returnTo;
+        }
+    } catch (err: unknown) {
         console.error('[SignInAction] Critical Failure:', err);
-        return { message: 'A server error occurred during authentication.' };
+        return { message: sanitizeSupabaseError(err) };
     }
 
-    redirect('/');
+    redirect(destinationUrl);
 }

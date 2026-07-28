@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { createBackendClient } from '@/utils/db/server';
 import { passwordSchema } from '@/data/schemas/authSchemas';
 import { updateAccountPassword, terminateSession } from './AuthRepository';
-import { mapAuthErrorToMessage } from './AuthErrorHandler';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 
 export type ChangePasswordFormState = {
     validationErrors?: z.core.$ZodIssue[];
@@ -47,16 +47,13 @@ export async function ChangePasswordAction(
             supabase,
             validated.data.password,
         );
+        if (updateError) return { message: updateError };
 
-        if (updateError)
-            return {
-                message: mapAuthErrorToMessage(updateError),
-            };
-
-        await terminateSession(supabase);
-    } catch (err) {
+        const { error: terminateError } = await terminateSession(supabase);
+        if (terminateError) return { message: terminateError };
+    } catch (err: unknown) {
         console.error('[ChangePasswordAction] Critical Failure:', err);
-        return { message: 'A server error occurred.' };
+        return { message: sanitizeSupabaseError(err) };
     }
 
     revalidatePath('/', 'layout');

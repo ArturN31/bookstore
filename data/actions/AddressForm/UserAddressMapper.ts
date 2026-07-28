@@ -13,12 +13,13 @@ const DB_COLUMN_MAP: Record<string, keyof UserUpdate> = {
     country: 'country',
 };
 
-export const mapToUserPayload = (data: Record<string, any>): UserUpdate => {
+export const mapToUserPayload = (data: Record<string, unknown>): UserUpdate => {
     const payload: UserUpdate = {};
 
     for (const [key, value] of Object.entries(data)) {
         const dbKey = DB_COLUMN_MAP[key];
-        if (dbKey) (payload as any)[dbKey] = value;
+        if (dbKey && value !== undefined)
+            (payload as Record<keyof UserUpdate, unknown>)[dbKey] = value;
     }
 
     return payload;

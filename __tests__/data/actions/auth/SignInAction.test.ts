@@ -10,8 +10,14 @@ jest.mock('@/data/user/GetUserData');
 jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }));
 jest.mock('next/navigation', () => ({ redirect: jest.fn() }));
 
+type MockSupabaseClient = {
+    auth: {
+        signInWithPassword: jest.Mock;
+    };
+};
+
 describe('APP - Auth - SignInAction', () => {
-    let mockSupabase: any;
+    let mockSupabase: MockSupabaseClient;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -21,7 +27,9 @@ describe('APP - Auth - SignInAction', () => {
                 signInWithPassword: jest.fn(),
             },
         };
-        (createBackendClient as jest.Mock).mockResolvedValue(mockSupabase);
+        jest.mocked(createBackendClient).mockResolvedValue(
+            mockSupabase as unknown as Awaited<ReturnType<typeof createBackendClient>>,
+        );
     });
 
     it('should return reset state when rawData.reset is present', async () => {
@@ -58,7 +66,7 @@ describe('APP - Auth - SignInAction', () => {
         const spy = jest.spyOn(signInSchema, 'safeParse').mockReturnValue({
             success: true,
             data: { email: 'mock@test.com', password: 'Password123!' },
-        } as any);
+        } as ReturnType<typeof signInSchema.safeParse>);
 
         mockSupabase.auth.signInWithPassword.mockResolvedValue({
             error: { code: 'invalid_credentials' },
@@ -126,7 +134,10 @@ describe('APP - Auth - SignInAction', () => {
 
     it('should redirect to profile if user data is missing', async () => {
         mockSupabase.auth.signInWithPassword.mockResolvedValue({ error: null });
-        (getUserData as jest.Mock).mockResolvedValue({ data: null, error: null });
+        jest.mocked(getUserData).mockResolvedValue({
+            data: null,
+            error: null,
+        } as unknown as Awaited<ReturnType<typeof getUserData>>);
 
         const formData = new FormData();
         formData.append('email', 'test@example.com');
@@ -141,22 +152,28 @@ describe('APP - Auth - SignInAction', () => {
 
     it('should redirect to returnTo URL if valid', async () => {
         mockSupabase.auth.signInWithPassword.mockResolvedValue({ error: null });
-        (getUserData as jest.Mock).mockResolvedValue({ id: '123' });
+        jest.mocked(getUserData).mockResolvedValue({
+            data: { id: '123' },
+            error: null,
+        } as unknown as Awaited<ReturnType<typeof getUserData>>);
 
         const formData = new FormData();
         formData.append('email', 'test@example.com');
         formData.append('password', 'Password123!');
         formData.append('captchaToken', 'mocked-test-token');
-        formData.append('returnTo', '/dashboard');
+        formData.append('returnTo', '/user/account');
 
         await SignInAction(undefined, formData);
 
-        expect(redirect).toHaveBeenCalledWith('/dashboard');
+        expect(redirect).toHaveBeenCalledWith('/user/account');
     });
 
     it('should redirect to home by default if user exists and no returnTo provided', async () => {
         mockSupabase.auth.signInWithPassword.mockResolvedValue({ error: null });
-        (getUserData as jest.Mock).mockResolvedValue({ id: '123' });
+        jest.mocked(getUserData).mockResolvedValue({
+            data: { id: '123' },
+            error: null,
+        } as unknown as Awaited<ReturnType<typeof getUserData>>);
 
         const formData = new FormData();
         formData.append('email', 'test@example.com');
@@ -170,7 +187,7 @@ describe('APP - Auth - SignInAction', () => {
 
     it('should handle critical server error in catch block', async () => {
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-        mockSupabase.auth.signInWithPassword.mockRejectedValue(new Error('Critical failure'));
+        jest.mocked(createBackendClient).mockRejectedValueOnce(new Error('Critical failure'));
 
         const formData = new FormData();
         formData.append('email', 'test@example.com');
@@ -179,18 +196,24 @@ describe('APP - Auth - SignInAction', () => {
 
         const result = await SignInAction(undefined, formData);
 
-        expect(result.message).toBe('A server error occurred during authentication.');
-        expect(consoleSpy).toHaveBeenCalled();
+        expect(result.message).toBe('An unexpected error occurred. We are looking into it.');
+        expect(consoleSpy).toHaveBeenCalledWith(
+            '[SignInAction] Critical Failure:',
+            expect.any(Error),
+        );
         consoleSpy.mockRestore();
     });
 
     it('should re-throw redirect errors', async () => {
         mockSupabase.auth.signInWithPassword.mockResolvedValue({ error: null });
-        (getUserData as jest.Mock).mockResolvedValue({ id: '123' });
+        jest.mocked(getUserData).mockResolvedValue({
+            data: { id: '123' },
+            error: null,
+        } as unknown as Awaited<ReturnType<typeof getUserData>>);
 
         const redirectError = new Error('NEXT_REDIRECT');
 
-        (redirect as unknown as jest.Mock).mockImplementation(() => {
+        jest.mocked(redirect).mockImplementation(() => {
             throw redirectError;
         });
 

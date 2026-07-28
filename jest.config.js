@@ -16,6 +16,7 @@ const customJestConfig = {
         "providers/**/*.{js,jsx,ts,tsx}",
         "hooks/**/*.{js,jsx,ts,tsx}",
         "utils/errors/SupabaseErrorHandler.ts",
+        "utils/db/safeSupabaseQuery.ts",
         "!**/node_modules/**",
         "!**/.next/**",
         "!**/app/globals.css.js",

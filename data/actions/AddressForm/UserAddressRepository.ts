@@ -1,21 +1,27 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/database.types';
+import { SafeQueryResult, safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 
 type UserTable = Database['public']['Tables']['users'];
 type UserInsert = UserTable['Insert'];
 type UserUpdate = UserTable['Update'];
+type UserRow = UserTable['Row'];
 
 export const insertUserAddress = async (
     supabase: SupabaseClient<Database>,
     payload: UserInsert,
-) => {
-    return supabase.from('users').insert(payload);
+): Promise<SafeQueryResult<UserRow[]>> => {
+    return safeSupabaseQuery(async () => {
+        return await supabase.from('users').insert(payload).select();
+    });
 };
 
 export const updateUserAddress = async (
     supabase: SupabaseClient<Database>,
     userId: string,
     payload: UserUpdate,
-) => {
-    return supabase.from('users').update(payload).eq('id', userId);
+): Promise<SafeQueryResult<UserRow[]>> => {
+    return safeSupabaseQuery(async () => {
+        return await supabase.from('users').update(payload).eq('id', userId).select();
+    });
 };

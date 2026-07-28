@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { createBackendClient } from '@/utils/db/server';
 import { signUpSchema } from '@/data/schemas/authSchemas';
 import { registerUser } from './AuthRepository';
-import { mapAuthErrorToMessage } from './AuthErrorHandler';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 
 export type SignUpFormState = {
     validationErrors?: z.core.$ZodIssue[];
@@ -45,19 +45,13 @@ export async function SignUpAction(
             password: validated.data.password,
             options: { captchaToken },
         });
-
-        if (authError)
-            return {
-                message: mapAuthErrorToMessage(authError),
-            };
+        if (authError) return { message: authError };
 
         revalidatePath('/', 'layout');
         revalidatePath('/user/profile');
-    } catch (err) {
-        if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
-
+    } catch (err: unknown) {
         console.error('[SignUpAction] Critical Failure:', err);
-        return { message: 'A server error occurred during registration.' };
+        return { message: sanitizeSupabaseError(err) };
     }
 
     redirect('/user/profile');

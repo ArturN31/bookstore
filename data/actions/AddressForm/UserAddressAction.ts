@@ -7,16 +7,20 @@ import { mapToUserPayload } from './UserAddressMapper';
 import { insertUserAddress, updateUserAddress } from './UserAddressRepository';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { Database } from '@/database.types';
+
+type UserInsert = Database['public']['Tables']['users']['Insert'];
 
 export type UserAddressFormState = {
     message?: string | null;
     validationErrors?: z.core.$ZodIssue[];
-    error?: unknown;
+    error?: string | null;
 };
 
 const INITIAL_EMPTY_STATE: UserAddressFormState = {
     message: null,
     validationErrors: undefined,
+    error: null,
 };
 
 export async function UserAddressAction(
@@ -37,27 +41,27 @@ export async function UserAddressAction(
             message: 'Please correct the highlighted errors.',
         };
 
-    try {
-        const supabase = await createBackendClient();
+    const supabase = await createBackendClient();
 
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser();
-        if (authError || !user) return { message: 'Session expired. Please log in again.' };
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
 
-        const payload = mapToUserPayload(validated.data);
+    if (authError || !user) return { message: 'Session expired. Please log in again.' };
 
-        const { error: dbError } =
-            mode === 'add'
-                ? await insertUserAddress(supabase, { id: user.id, ...payload } as any)
-                : await updateUserAddress(supabase, user.id, payload);
+    const payload = mapToUserPayload(validated.data);
 
-        if (dbError) throw dbError;
-    } catch (err) {
-        console.error('[UserAddressAction] Error:', err);
-        return { message: 'Failed to save address details.', error: err };
-    }
+    const { error: dbError } =
+        mode === 'add'
+            ? await insertUserAddress(supabase, { id: user.id, ...payload } as UserInsert)
+            : await updateUserAddress(supabase, user.id, payload);
+
+    if (dbError)
+        return {
+            message: 'Failed to save address details.',
+            error: dbError,
+        };
 
     revalidatePath('/user/profile');
     redirect('/user/profile');

@@ -1,23 +1,23 @@
+import { registerUser } from '@/data/actions/auth/AuthRepository';
 import { SignUpAction } from '@/data/actions/auth/SignUpAction';
 import { createBackendClient } from '@/utils/db/server';
-import { signUpSchema } from '@/data/schemas/authSchemas';
-import { registerUser } from '@/data/actions/auth/AuthRepository';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 jest.mock('@/utils/db/server');
 jest.mock('@/data/actions/auth/AuthRepository');
-jest.mock('@/data/schemas/authSchemas');
 jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }));
 jest.mock('next/navigation', () => ({ redirect: jest.fn() }));
 
 describe('APP - Auth - SignUpAction', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        (createBackendClient as jest.Mock).mockResolvedValue({});
+        jest.mocked(createBackendClient).mockResolvedValue(
+            {} as unknown as Awaited<ReturnType<typeof createBackendClient>>,
+        );
     });
 
-    it('should return reset state when reset flag is present', async () => {
+    it('should return reset state when rawData.reset is present', async () => {
         const formData = new FormData();
         formData.append('reset', 'true');
 
@@ -29,47 +29,59 @@ describe('APP - Auth - SignUpAction', () => {
         });
     });
 
-    it('should return validation errors', async () => {
-        (signUpSchema.safeParse as jest.Mock).mockReturnValue({
-            success: false,
-            error: { issues: [{ message: 'Invalid input' }] },
-        });
-
+    it('should return validation errors when input is invalid', async () => {
         const formData = new FormData();
+        formData.append('email', 'invalid-email');
+        formData.append('password', '123');
+
         const result = await SignUpAction(undefined, formData);
 
         expect(result.validationErrors).toBeDefined();
         expect(result.message).toBe('Please resolve the validation errors.');
     });
 
-    it('should return mapped error message when signUp fails', async () => {
-        (signUpSchema.safeParse as jest.Mock).mockReturnValue({
-            success: true,
-            data: { email: 'test@example.com', password: 'Password123!' },
-        });
-        (registerUser as jest.Mock).mockResolvedValue({
-            error: { code: 'email_exists', message: 'Already exists' },
+    it('should return security token error message if captchaToken is missing', async () => {
+        const formData = new FormData();
+        formData.append('email', 'test@example.com');
+        formData.append('password', 'Password123!');
+        formData.append('cnfPassword', 'Password123!');
+
+        const result = await SignUpAction(undefined, formData);
+
+        expect(result.message).toBe(
+            'Registration rejected due to an invalid or missing security token.',
+        );
+        expect(result.validationErrors).toBeUndefined();
+    });
+
+    it('should return mapped error message when registerUser returns an error', async () => {
+        jest.mocked(registerUser).mockResolvedValue({
+            data: null,
+            error: 'User already registered',
         });
 
         const formData = new FormData();
         formData.append('email', 'test@example.com');
         formData.append('password', 'Password123!');
+        formData.append('cnfPassword', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
 
         const result = await SignUpAction(undefined, formData);
 
-        expect(result.message).toBeDefined();
+        expect(result.message).toBe('User already registered');
+        expect(result.validationErrors).toBeUndefined();
     });
 
-    it('should redirect to profile on success', async () => {
-        (signUpSchema.safeParse as jest.Mock).mockReturnValue({
-            success: true,
-            data: { email: 'newuser@example.com', password: 'ValidPass123!' },
+    it('should revalidate paths and redirect to profile on success', async () => {
+        jest.mocked(registerUser).mockResolvedValue({
+            data: { user: null, session: null },
+            error: null,
         });
-        (registerUser as jest.Mock).mockResolvedValue({ error: null });
 
         const formData = new FormData();
         formData.append('email', 'newuser@example.com');
         formData.append('password', 'ValidPass123!');
+        formData.append('cnfPassword', 'ValidPass123!');
         formData.append('captchaToken', 'mocked-test-token');
 
         await SignUpAction(undefined, formData);
@@ -79,54 +91,43 @@ describe('APP - Auth - SignUpAction', () => {
         expect(redirect).toHaveBeenCalledWith('/user/profile');
     });
 
-    it('BRANCH COVERAGE: should return mapped auth error message when registerUser returns an error (covers lines 51-52 true branch)', async () => {
-        (signUpSchema.safeParse as jest.Mock).mockReturnValue({
-            success: true,
-            data: { email: 'test@example.com', password: 'Password123!' },
-        });
-
-        (registerUser as jest.Mock).mockResolvedValue({
-            error: { code: 'user_already_exists', message: 'User already registered' },
-        });
-
-        const formData = new FormData();
-        formData.append('captchaToken', 'mocked-test-token');
-
-        const result = await SignUpAction(undefined, formData);
-
-        expect(result.message).toBeDefined();
-        expect(result.validationErrors).toBeUndefined();
-    });
-
-    it('should handle critical server error in catch block (covers catch block error handling false branch)', async () => {
+    it('should handle critical server error in catch block', async () => {
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-        (signUpSchema.safeParse as jest.Mock).mockReturnValue({
-            success: true,
-            data: { email: 'test@example.com', password: 'Password123!' },
-        });
-
-        (registerUser as jest.Mock).mockRejectedValue(new Error('Database explosion'));
+        jest.mocked(createBackendClient).mockRejectedValueOnce(new Error('Database explosion'));
 
         const formData = new FormData();
+        formData.append('email', 'test@example.com');
+        formData.append('password', 'Password123!');
+        formData.append('cnfPassword', 'Password123!');
         formData.append('captchaToken', 'mocked-test-token');
 
         const result = await SignUpAction(undefined, formData);
 
-        expect(result.message).toBe('A server error occurred during registration.');
-        expect(consoleSpy).toHaveBeenCalled();
+        expect(result.message).toBe('An unexpected error occurred. We are looking into it.');
+        expect(consoleSpy).toHaveBeenCalledWith(
+            '[SignUpAction] Critical Failure:',
+            expect.any(Error),
+        );
         consoleSpy.mockRestore();
     });
 
-    it('BRANCH COVERAGE: should re-throw NEXT_REDIRECT error caught inside try block (covers catch block NEXT_REDIRECT true branch)', async () => {
-        (signUpSchema.safeParse as jest.Mock).mockReturnValue({
-            success: true,
-            data: { email: 'test@example.com', password: 'Password123!' },
+    it('should re-throw redirect errors', async () => {
+        jest.mocked(registerUser).mockResolvedValue({
+            data: { user: null, session: null },
+            error: null,
         });
 
-        (registerUser as jest.Mock).mockRejectedValue(new Error('NEXT_REDIRECT'));
+        const redirectError = new Error('NEXT_REDIRECT');
+
+        jest.mocked(redirect).mockImplementation(() => {
+            throw redirectError;
+        });
 
         const formData = new FormData();
-        formData.append('captchaToken', 'mocked-token');
+        formData.append('email', 'test@example.com');
+        formData.append('password', 'Password123!');
+        formData.append('cnfPassword', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
 
         await expect(SignUpAction(undefined, formData)).rejects.toThrow('NEXT_REDIRECT');
     });
