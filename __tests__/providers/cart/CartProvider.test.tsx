@@ -2,7 +2,7 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import { CartProvider } from '@/providers/cart/CartProvider';
 import { useCartState, useCartActions } from '@/providers/cart/utils/useCart';
 import { useUserState } from '@/providers/user/utils/useUser';
-import { getCartData } from '@/data/cart/GetCartData';
+import { getCartData } from '@/data/cart/CartService';
 import { ComponentProps } from 'react';
 
 type TargetCartType = ComponentProps<typeof CartProvider>['initialCart'];

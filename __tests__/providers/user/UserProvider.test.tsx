@@ -2,7 +2,7 @@ import { render, screen, act } from '@testing-library/react';
 import { useContext } from 'react';
 import { UserProvider } from '@/providers/user/UserProvider';
 import { UserStateContext, UserActionsContext } from '@/providers/user/UserContext';
-import { getUserData, getUserWishlist } from '@/data/user/GetUserData';
+import { getUserData, getUserWishlist } from '@/data/user/UserService';
 import { createFrontendClient } from '@/utils/db/client';
 import { SupabaseClient, User as SupabaseUser } from '@supabase/supabase-js';
 import { useUserListeners } from '@/providers/user/utils/useUserListeners';

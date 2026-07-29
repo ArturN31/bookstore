@@ -1,6 +1,6 @@
 import { SignInAction } from '@/data/actions/auth/SignInAction';
 import { signInSchema } from '@/data/schemas/authSchemas';
-import { getUserData } from '@/data/user/GetUserData';
+import { getUserData } from '@/data/user/UserService';
 import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';

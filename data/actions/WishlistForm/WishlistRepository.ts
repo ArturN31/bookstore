@@ -1,48 +1,54 @@
 import { createBackendClient } from '@/utils/db/server';
-import { withRetry } from '@/utils/network/retry';
-import { PostgrestError } from '@supabase/supabase-js';
-
-const handleDatabaseError = (error: PostgrestError, context: string): ActionResponse<never> => {
-    console.error(`[CartService] ${context} failure:`, error.message);
-    return {
-        data: null,
-        error: `Unable to ${context.toLowerCase()} at this time.`,
-    };
-};
+import { safeSupabaseQuery, SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 
 export const addToWishlist = async (
     userId: string,
     bookId: string,
-): Promise<ActionResponse<boolean>> => {
+): Promise<SafeQueryResult<boolean>> => {
     try {
-        const result = await withRetry(async () => {
-            const supabase = await createBackendClient();
-            return await supabase.from('wishlist').insert([{ user_id: userId, book_id: bookId }]);
-        });
+        const supabase = await createBackendClient();
+        const result = await safeSupabaseQuery(async () =>
+            supabase
+                .from('wishlist')
+                .insert([{ user_id: userId, book_id: bookId }])
+                .select(),
+        );
 
-        if (result.error) return handleDatabaseError(result.error, 'Add to Wishlist');
+        if (result.error)
+            return {
+                data: null,
+                error: sanitizeSupabaseError(result.error),
+            };
         return { data: true, error: null };
-    } catch (err) {
-        return { data: false, error: 'Connection timeout. Please try again.' };
+    } catch (err: unknown) {
+        return {
+            data: null,
+            error: sanitizeSupabaseError(err),
+        };
     }
 };
 
 export const removeFromWishlist = async (
     userId: string,
     bookId: string,
-): Promise<ActionResponse<boolean>> => {
+): Promise<SafeQueryResult<boolean>> => {
     try {
-        const result = await withRetry(async () => {
-            const supabase = await createBackendClient();
-            return await supabase
-                .from('wishlist')
-                .delete()
-                .eq('user_id', userId)
-                .eq('book_id', bookId);
-        });
-        if (result.error) return handleDatabaseError(result.error, 'Remove from Wishlist');
+        const supabase = await createBackendClient();
+        const result = await safeSupabaseQuery(async () =>
+            supabase.from('wishlist').delete().eq('user_id', userId).eq('book_id', bookId).select(),
+        );
+
+        if (result.error)
+            return {
+                data: null,
+                error: sanitizeSupabaseError(result.error),
+            };
         return { data: true, error: null };
-    } catch (err) {
-        return { data: false, error: 'Connection timeout. Please try again.' };
+    } catch (err: unknown) {
+        return {
+            data: null,
+            error: sanitizeSupabaseError(err),
+        };
     }
 };

@@ -5,7 +5,7 @@ import {
     updateItemInUsersCart,
     removeItemFromUsersCart,
     getCartData,
-} from '@/data/cart/GetCartData';
+} from '@/data/cart/CartService';
 import * as Repo from '@/data/cart/CartRepository';
 import { createBackendClient } from '@/utils/db/server';
 import { mapDatabaseCartToDomain } from '@/data/cart/CartMapper';

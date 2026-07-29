@@ -8,9 +8,10 @@ import {
 } from './BookRepository';
 import { mapToPaginatedBookResponse } from './BookMapper';
 import { PaginatedBookResult } from './BookConstants';
-import { withRetry } from '@/utils/network/retry';
 import { unstable_cache } from 'next/cache';
 import { createPublicServerClient } from '@/utils/db/publicServer';
+import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 50;
@@ -21,27 +22,30 @@ const getCachedBooksData = unstable_cache(
     async (page: number, limit: number, paramsSerialized: string) => {
         const params: BookQueryParams = JSON.parse(paramsSerialized);
 
-        return await withRetry(async () => {
-            const supabase = await createPublicServerClient();
+        const supabase = await createPublicServerClient();
 
-            const baseQuery = createBaseBookQuery(supabase, params);
-            const sortedQuery = applyBookSorting(baseQuery, params.sortBy);
-            const paginatedQuery = applyBookPagination(sortedQuery, page, limit);
+        const baseQuery = createBaseBookQuery(supabase, params);
+        const sortedQuery = applyBookSorting(baseQuery, params.sortBy);
+        const paginatedQuery = applyBookPagination(sortedQuery, page, limit);
 
-            const { data, error, count } = await paginatedQuery;
+        return await safeSupabaseQuery(async () => {
+            const response = await paginatedQuery;
 
-            if (error) {
-                if (error.code === 'PGRST116')
+            if (response.error) {
+                if (response.error.code === 'PGRST116')
                     return {
-                        data: [],
-                        count: 0,
+                        data: { data: [], count: 0 },
+                        error: null,
                     };
-                throw error;
+                return { data: null, error: response.error };
             }
 
             return {
-                data: data || [],
-                count: count || 0,
+                data: {
+                    data: response.data || [],
+                    count: response.count || 0,
+                },
+                error: null,
             };
         });
     },
@@ -71,24 +75,32 @@ export const fetchBooksWithReviews = async (
     try {
         const paramsSerialized = JSON.stringify(params);
         const result = await getCachedBooksData(rawPage, rawLimit, paramsSerialized);
+        if (result.error)
+            return {
+                data: null,
+                error: sanitizeSupabaseError(result.error),
+            };
+        if (!result.data)
+            return {
+                data: mapToPaginatedBookResponse([], 0, rawPage, rawLimit),
+                error: null,
+            };
 
         return {
-            data: mapToPaginatedBookResponse(result.data, result.count, rawPage, rawLimit),
+            data: mapToPaginatedBookResponse(
+                result.data.data,
+                result.data.count,
+                rawPage,
+                rawLimit,
+            ),
             error: null,
         };
     } catch (err: unknown) {
-        console.error('[GetBooksData] Orchestration Error:', err);
-
-        const errorMessage =
-            err instanceof Error
-                ? err.message
-                : typeof err === 'string'
-                  ? err
-                  : 'Failed to retrieve book records after multiple attempts.';
+        console.error('[BookService] Orchestration Error:', err);
 
         return {
             data: null,
-            error: errorMessage,
+            error: sanitizeSupabaseError(err),
         };
     }
 };

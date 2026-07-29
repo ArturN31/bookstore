@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createBackendClient } from '@/utils/db/server';
-import { getUserData } from '@/data/user/GetUserData';
+import { getUserData } from '@/data/user/UserService';
 import { signInSchema } from '@/data/schemas/authSchemas';
 import { authenticateUser } from './AuthRepository';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';

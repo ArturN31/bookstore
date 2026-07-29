@@ -1,4 +1,4 @@
-import { getUserData, getUserWishlist } from '@/data/user/GetUserData';
+import { getUserData, getUserWishlist } from '@/data/user/UserService';
 import { createBackendClient } from '@/utils/db/server';
 import {
     fetchUserProfileById,

@@ -1,6 +1,6 @@
 import ChangeAddressPage from '@/app/user/profile/change_address/page';
 import { UserAddressFormState } from '@/data/actions/AddressForm/UserAddressAction';
-import { getUserData } from '@/data/user/GetUserData';
+import { getUserData } from '@/data/user/UserService';
 import { render, screen } from '@testing-library/react';
 import { redirect } from 'next/navigation';
 

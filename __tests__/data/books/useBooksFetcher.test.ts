@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { PaginatedBookResult } from '@/data/books/BookConstants';
-import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
+import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { useBooksFetcher } from '@/data/books/useBooksFetcher';
 
 jest.mock('@/data/books/GetBooksData', () => ({

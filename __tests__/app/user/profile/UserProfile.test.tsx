@@ -1,5 +1,5 @@
 import UserProfile from '@/app/user/profile/page';
-import { getUserData } from '@/data/user/GetUserData';
+import { getUserData } from '@/data/user/UserService';
 import { createBackendClient } from '@/utils/db/server';
 import { render, screen } from '@testing-library/react';
 import { redirect } from 'next/navigation';
@@ -115,9 +115,9 @@ describe('APP - User - UserProfile', () => {
                 }),
             },
         });
-        mockedGetUserData.mockResolvedValue({ 
-            data: null, 
-            error: 'Custom database error' 
+        mockedGetUserData.mockResolvedValue({
+            data: null,
+            error: 'Custom database error',
         });
 
         render(await UserProfile());

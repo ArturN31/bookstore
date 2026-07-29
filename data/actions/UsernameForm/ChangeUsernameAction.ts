@@ -4,13 +4,13 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createBackendClient } from '@/utils/db/server';
-import { getUserData } from '@/data/user/GetUserData';
+import { getUserData } from '@/data/user/UserService';
 import { updateUsername } from './UsernameRepository';
-import { handleUsernameUpdateError } from './DatabaseErrorHandler';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 
 export type ChangeUsernameFormState = {
     username?: string | null;
-    validationErrors?: z.core.$ZodIssue[];
+    validationErrors?: z.ZodIssue[];
     message?: string | null;
     isUsernameTaken?: boolean;
 };
@@ -53,7 +53,11 @@ export async function ChangeUsernameAction(
         const supabase = await createBackendClient();
 
         const { data: user, error: authError } = await getUserData();
-        if (authError || !user) return { message: 'Session expired. Please log in again.' };
+        if (authError || !user)
+            return {
+                message:
+                    sanitizeSupabaseError(authError) || 'Session expired. Please log in again.',
+            };
 
         if (user.username === username)
             return {
@@ -64,17 +68,20 @@ export async function ChangeUsernameAction(
         const { error: dbError } = await updateUsername(supabase, user.id, username);
 
         if (dbError) {
-            const errorState = handleUsernameUpdateError(dbError);
+            const isTaken = dbError === 'This record already exists. Please use a different value.';
             return {
                 username,
-                ...errorState,
+                message: isTaken ? 'This username is already taken.' : dbError,
+                isUsernameTaken: isTaken,
             };
         }
-    } catch (err) {
+    } catch (err: unknown) {
         if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
 
         console.error('[ChangeUsernameAction] Pipeline Failure:', err);
-        return { message: 'A critical server error occurred.' };
+        return {
+            message: sanitizeSupabaseError(err),
+        };
     }
 
     revalidatePath('/user/profile');

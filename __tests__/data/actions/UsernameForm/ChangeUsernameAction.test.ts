@@ -1,5 +1,5 @@
 import { ChangeUsernameAction } from '@/data/actions/UsernameForm/ChangeUsernameAction';
-import { getUserData } from '@/data/user/GetUserData';
+import { getUserData } from '@/data/user/UserService';
 import { updateUsername } from '@/data/actions/UsernameForm/UsernameRepository';
 import { handleUsernameUpdateError } from '@/data/actions/UsernameForm/DatabaseErrorHandler';
 import { revalidatePath } from 'next/cache';

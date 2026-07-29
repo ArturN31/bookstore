@@ -11,7 +11,7 @@ import {
 import { userReducer } from '@/providers/user/UserReducer';
 import { createInitialState } from '@/providers/user/utils/UserMapper';
 import { useUserListeners } from '@/providers/user/utils/useUserListeners';
-import { getUserData, getUserWishlist } from '@/data/user/GetUserData';
+import { getUserData, getUserWishlist } from '@/data/user/UserService';
 
 interface UserProviderProps {
     initialUser: User | null;

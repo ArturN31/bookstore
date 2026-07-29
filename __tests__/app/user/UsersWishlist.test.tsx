@@ -1,6 +1,6 @@
 import UsersWishlist from '@/app/user/wishlist/page';
 import { FetchBooksFilters } from '@/data/books/BookRepository';
-import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
+import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { UserStateContext } from '@/providers/user/UserContext';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { act } from 'react';

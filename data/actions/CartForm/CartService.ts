@@ -4,14 +4,38 @@ import {
     addItemToUsersCart,
     updateItemInUsersCart,
     removeItemFromUsersCart,
-} from '@/data/cart/GetCartData';
+} from '@/data/cart/CartService';
+import { SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 
-export const ensureCartExists = async (userId: string): Promise<ActionResponse<string>> => {
-    const lookup = await getUsersCartID(userId);
-    if (lookup.error) return lookup;
-    if (lookup.data) return { data: lookup.data, error: null };
+export const ensureCartExists = async (userId: string): Promise<SafeQueryResult<string>> => {
+    try {
+        const lookup = await getUsersCartID(userId);
+        if (lookup.error)
+            return {
+                data: null,
+                error: sanitizeSupabaseError(lookup.error),
+            };
+        if (lookup.data) return { data: lookup.data, error: null };
 
-    return createUsersCart(userId);
+        const created = await createUsersCart(userId);
+        if (created.error)
+            return {
+                data: null,
+                error: sanitizeSupabaseError(created.error),
+            };
+        if (!created.data)
+            return {
+                data: null,
+                error: 'Cart creation failed.',
+            };
+        return { data: created.data, error: null };
+    } catch (err: unknown) {
+        return {
+            data: null,
+            error: sanitizeSupabaseError(err),
+        };
+    }
 };
 
 const SUCCESS_MESSAGES: Record<string, string> = {
@@ -22,11 +46,23 @@ const SUCCESS_MESSAGES: Record<string, string> = {
 
 const CART_OPERATIONS: Record<
     string,
-    (cartId: string, bookId: string, qty: number) => Promise<ActionResponse<boolean>>
+    (cartId: string, bookId: string, qty: number) => Promise<SafeQueryResult<boolean>>
 > = {
-    INSERT: addItemToUsersCart,
-    UPDATE: updateItemInUsersCart,
-    REMOVE: (cartId, bookId) => removeItemFromUsersCart(cartId, bookId),
+    INSERT: async (cartId, bookId, qty) => {
+        const result = await addItemToUsersCart(cartId, bookId, qty);
+        if (result.error) return { data: null, error: sanitizeSupabaseError(result.error) };
+        return { data: result.data ?? true, error: null };
+    },
+    UPDATE: async (cartId, bookId, qty) => {
+        const result = await updateItemInUsersCart(cartId, bookId, qty);
+        if (result.error) return { data: null, error: sanitizeSupabaseError(result.error) };
+        return { data: result.data ?? true, error: null };
+    },
+    REMOVE: async (cartId, bookId) => {
+        const result = await removeItemFromUsersCart(cartId, bookId);
+        if (result.error) return { data: null, error: sanitizeSupabaseError(result.error) };
+        return { data: result.data ?? true, error: null };
+    },
 };
 
 export const executeCartOperation = async (
@@ -34,17 +70,26 @@ export const executeCartOperation = async (
     cartId: string,
     bookId: string,
     quantity: number,
-): Promise<ActionResponse<boolean> & { message?: string }> => {
+): Promise<SafeQueryResult<boolean> & { message?: string }> => {
     const operation = CART_OPERATIONS[type];
 
     if (!operation) return { data: null, error: 'Unsupported action type.' };
 
-    const result = await operation(cartId, bookId, quantity);
-
-    if (result.error) return result;
-
-    return {
-        ...result,
-        message: SUCCESS_MESSAGES[type] || 'Cart updated successfully.',
-    };
+    try {
+        const result = await operation(cartId, bookId, quantity);
+        if (result.error)
+            return {
+                data: null,
+                error: sanitizeSupabaseError(result.error),
+            };
+        return {
+            ...result,
+            message: SUCCESS_MESSAGES[type] || 'Cart updated successfully.',
+        };
+    } catch (err: unknown) {
+        return {
+            data: null,
+            error: sanitizeSupabaseError(err),
+        };
+    }
 };

@@ -1,4 +1,4 @@
-import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
+import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { BOOK_SORT_OPTIONS } from '@/data/books/BookConstants';
 import { createPublicServerClient } from '@/utils/db/publicServer';
 

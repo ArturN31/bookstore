@@ -1,6 +1,6 @@
 import BooksByGroupAndType, { generateMetadata } from '@/app/books/[...slug]/page';
 import { render, screen } from '@testing-library/react';
-import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
+import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { BreadcrumbItem } from '@/components/ui/AppBreadcrumbs';

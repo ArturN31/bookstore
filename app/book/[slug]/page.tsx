@@ -1,4 +1,4 @@
-import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
+import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { BookReviews } from '@/components/pages/book/Reviews/BookReviews';
 import { notFound } from 'next/navigation';
 import { ErrorState } from '@/components/ui/ErrorState';

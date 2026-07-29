@@ -1,4 +1,4 @@
-import { getUserData } from '@/data/user/GetUserData';
+import { getUserData } from '@/data/user/UserService';
 import { AddressForm } from '@/components/pages/user/profile/AddressForm/AddressForm';
 import { UserProfilePage } from '@/components/pages/user/profile/UserProfilePage/UserProfilePage';
 import { ErrorState } from '@/components/ui/ErrorState';

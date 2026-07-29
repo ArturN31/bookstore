@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
+import { fetchBooksWithReviews } from '@/data/books/BookService';
 import BookById, { generateMetadata } from '@/app/book/[slug]/page';
 
 interface BookByIdProps {

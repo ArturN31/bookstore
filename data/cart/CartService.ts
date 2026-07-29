@@ -1,25 +1,25 @@
 'use server';
 
 import { createBackendClient } from '@/utils/db/server';
-import { PostgrestError } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/database.types';
 import * as Repo from './CartRepository';
-import { mapDatabaseCartToDomain } from './CartMapper';
+import { mapDatabaseCartToDomain, CartItem } from './CartMapper';
 import { withRetry } from '@/utils/network/retry';
+import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { revalidateTag } from 'next/cache';
 
-const handleDatabaseError = (error: PostgrestError, context: string): ActionResponse<never> => {
-    console.error(`[CartService] ${context} failure:`, error.message);
-    return {
-        data: null,
-        error: `Unable to ${context.toLowerCase()} at this time.`,
-    };
-};
+interface ActionResponse<T> {
+    data: T | null;
+    error: string | null;
+}
 
 const isValidUUID = (id: string): boolean => {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 };
 
-const verifyUserSession = async (supabase: any): Promise<string | null> => {
+const verifyUserSession = async (supabase: SupabaseClient<Database>): Promise<string | null> => {
     const {
         data: { user },
         error,
@@ -28,7 +28,7 @@ const verifyUserSession = async (supabase: any): Promise<string | null> => {
     return user.id;
 };
 
-export const getUsersCartID = async (userID: string): Promise<ActionResponse<string>> => {
+export const getUsersCartID = async (userID: string): Promise<ActionResponse<string | null>> => {
     if (!isValidUUID(userID)) return { data: null, error: 'User session is invalid.' };
 
     try {
@@ -38,13 +38,19 @@ export const getUsersCartID = async (userID: string): Promise<ActionResponse<str
             const authenticatedId = await verifyUserSession(supabase);
             if (authenticatedId !== userID) throw new Error('Unauthorized access token');
 
-            return await Repo.findCartIdByUserId(supabase, userID);
+            return await safeSupabaseQuery(
+                async () => await Repo.findCartIdByUserId(supabase, userID),
+            );
         });
 
-        if (result.error) return handleDatabaseError(result.error, 'Fetch Cart');
+        if (result.error) {
+            if (result.error === 'No data returned.') return { data: null, error: null };
+            return { data: null, error: sanitizeSupabaseError(result.error) };
+        }
+
         return { data: result.data?.id || null, error: null };
-    } catch (err) {
-        return { data: null, error: 'Connection timeout. Please try again.' };
+    } catch (err: unknown) {
+        return { data: null, error: sanitizeSupabaseError(err) };
     }
 };
 
@@ -58,13 +64,14 @@ export const createUsersCart = async (userID: string): Promise<ActionResponse<st
             const authenticatedId = await verifyUserSession(supabase);
             if (authenticatedId !== userID) throw new Error('Unauthorized access token');
 
-            return await Repo.createCart(supabase, userID);
+            return await safeSupabaseQuery(async () => await Repo.createCart(supabase, userID));
         });
 
-        if (result.error) return handleDatabaseError(result.error, 'Create Cart');
+        if (result.error) return { data: null, error: sanitizeSupabaseError(result.error) };
+        if (!result.data) return { data: null, error: 'Failed to create cart.' };
         return { data: result.data.id, error: null };
-    } catch (err) {
-        return { data: null, error: 'Failed to create cart due to connection issues.' };
+    } catch (err: unknown) {
+        return { data: null, error: sanitizeSupabaseError(err) };
     }
 };
 
@@ -84,15 +91,17 @@ export const addItemToUsersCart = async (
             const authenticatedId = await verifyUserSession(supabase);
             if (!authenticatedId) throw new Error('Unauthenticated user context');
 
-            return await Repo.upsertItem(supabase, cartID, bookID, bookQuantity);
+            return await safeSupabaseQuery(
+                async () => await Repo.upsertItem(supabase, cartID, bookID, bookQuantity),
+            );
         });
 
-        if (result.error) return handleDatabaseError(result.error, 'Add Item');
+        if (result.error) return { data: false, error: sanitizeSupabaseError(result.error) };
 
         revalidateTag(`cart_${cartID}`, 'max');
         return { data: true, error: null };
-    } catch (err) {
-        return { data: false, error: 'Could not add item. Connection timed out.' };
+    } catch (err: unknown) {
+        return { data: false, error: sanitizeSupabaseError(err) };
     }
 };
 
@@ -111,15 +120,17 @@ export const updateItemInUsersCart = async (
             const authenticatedId = await verifyUserSession(supabase);
             if (!authenticatedId) throw new Error('Unauthenticated user context');
 
-            return await Repo.updateItem(supabase, cartID, bookID, bookQuantity);
+            return await safeSupabaseQuery(
+                async () => await Repo.updateItem(supabase, cartID, bookID, bookQuantity),
+            );
         });
 
-        if (result.error) return handleDatabaseError(result.error, 'Update Item');
+        if (result.error) return { data: false, error: sanitizeSupabaseError(result.error) };
 
         revalidateTag(`cart_${cartID}`, 'max');
         return { data: true, error: null };
-    } catch (err) {
-        return { data: false, error: 'Update failed due to network error.' };
+    } catch (err: unknown) {
+        return { data: false, error: sanitizeSupabaseError(err) };
     }
 };
 
@@ -137,15 +148,17 @@ export const removeItemFromUsersCart = async (
             const authenticatedId = await verifyUserSession(supabase);
             if (!authenticatedId) throw new Error('Unauthenticated user context');
 
-            return await Repo.deleteItem(supabase, cartID, bookID);
+            return await safeSupabaseQuery(
+                async () => await Repo.deleteItem(supabase, cartID, bookID),
+            );
         });
 
-        if (result.error) return handleDatabaseError(result.error, 'Remove Item');
+        if (result.error) return { data: false, error: sanitizeSupabaseError(result.error) };
 
         revalidateTag(`cart_${cartID}`, 'max');
         return { data: true, error: null };
-    } catch (err) {
-        return { data: false, error: 'Removal failed. Check your connection.' };
+    } catch (err: unknown) {
+        return { data: false, error: sanitizeSupabaseError(err) };
     }
 };
 
@@ -161,17 +174,26 @@ export const getCartData = async (
             const authenticatedId = await verifyUserSession(supabase);
             if (authenticatedId !== userID) throw new Error('Unauthorized access token');
 
-            return await Repo.fetchFullCartWithBooks(supabase, userID);
+            return await safeSupabaseQuery(
+                async () => await Repo.fetchFullCartWithBooks(supabase, userID),
+            );
         });
 
-        if (result.error) return handleDatabaseError(result.error, 'Retrieve Cart Content');
+        if (result.error) {
+            if (result.error === 'No data returned.')
+                return {
+                    data: { cartID: null, books: [] },
+                    error: null,
+                };
+            return { data: null, error: sanitizeSupabaseError(result.error) };
+        }
 
         return {
             data: mapDatabaseCartToDomain(result.data),
             error: null,
         };
-    } catch (err) {
+    } catch (err: unknown) {
         console.error('[CartService] Pipeline Error:', err);
-        return { data: null, error: 'Internal system error or connection timeout.' };
+        return { data: null, error: sanitizeSupabaseError(err) };
     }
 };

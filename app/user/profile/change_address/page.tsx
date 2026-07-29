@@ -1,5 +1,5 @@
 import { AddressForm } from '@/components/pages/user/profile/AddressForm/AddressForm';
-import { getUserData } from '@/data/user/GetUserData';
+import { getUserData } from '@/data/user/UserService';
 import { redirect } from 'next/navigation';
 
 const sanitize = (value: string | null): string => value ?? '';

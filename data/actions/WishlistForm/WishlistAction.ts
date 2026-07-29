@@ -2,14 +2,15 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { getUserData } from '@/data/user/GetUserData';
+import { getUserData } from '@/data/user/UserService';
 import { wishlistSchema } from '@/data/schemas/wishlistSchema';
 import { executeWishlistOperation } from './WishlistService';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 
 export type WishlistFormState = {
     success: boolean;
     message: string;
-    validationErrors?: z.core.$ZodIssue[];
+    validationErrors?: z.ZodIssue[];
     timestamp?: number;
 };
 
@@ -37,26 +38,29 @@ export async function WishlistAction(
         if (authError || !user)
             return {
                 success: false,
-                message: 'Login required to manage wishlist.',
+                message: sanitizeSupabaseError(authError) || 'Login required to manage wishlist.',
             };
 
         const result = await executeWishlistOperation(actionType, user.id, bookId);
-
-        if (result.error) return { success: false, message: result.error };
+        if (result.error)
+            return {
+                success: false,
+                message: sanitizeSupabaseError(result.error),
+            };
 
         revalidatePath('/', 'layout');
 
         const actionVerb = actionType === 'INSERT' ? 'added to' : 'removed from';
         return {
             success: true,
-            message: `Item successfully ${actionVerb} wishlist.`,
+            message: result.message || `Item successfully ${actionVerb} wishlist.`,
             timestamp: Date.now(),
         };
-    } catch (err) {
+    } catch (err: unknown) {
         console.error('[WishlistAction] Pipeline Failure:', err);
         return {
             success: false,
-            message: 'A system error occurred. Please try again.',
+            message: sanitizeSupabaseError(err),
         };
     }
 }

@@ -1,6 +1,6 @@
 import { WishlistAction } from '@/data/actions/WishlistForm/WishlistAction';
 import { createBackendClient } from '@/utils/db/server';
-import { getUserData } from '@/data/user/GetUserData';
+import { getUserData } from '@/data/user/UserService';
 import { wishlistSchema } from '@/data/schemas/wishlistSchema';
 import { revalidatePath } from 'next/cache';
 

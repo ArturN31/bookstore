@@ -5,7 +5,7 @@ import { CartStateContext, CartActionsContext } from '@/providers/cart/CartConte
 import { cartReducer } from '@/providers/cart/CartReducer';
 import { createInitialCartState } from '@/providers/cart/utils/CartMapper';
 import { useCartListeners } from '@/providers/cart/utils/useCartListeners';
-import { getCartData } from '@/data/cart/GetCartData';
+import { getCartData } from '@/data/cart/CartService';
 import { useUserState } from '@/providers/user/utils/useUser';
 
 interface CartProviderProps {

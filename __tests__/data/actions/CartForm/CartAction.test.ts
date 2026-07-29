@@ -1,6 +1,6 @@
 import { CartAction } from '@/data/actions/CartForm/CartAction';
-import { getUserData } from '@/data/user/GetUserData';
-import { getUsersCartID } from '@/data/cart/GetCartData';
+import { getUserData } from '@/data/user/UserService';
+import { getUsersCartID } from '@/data/cart/CartService';
 import { revalidatePath } from 'next/cache';
 import { cartSchema } from '@/data/schemas/cartSchema';
 import { ZodError } from 'zod';
