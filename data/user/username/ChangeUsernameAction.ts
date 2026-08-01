@@ -5,8 +5,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createBackendClient } from '@/utils/db/server';
 import { getUserData } from '@/data/user/UserService';
-import { updateUsername } from './UsernameRepository';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { updateUsername } from '../UserRepository';
 
 export type ChangeUsernameFormState = {
     username?: string | null;

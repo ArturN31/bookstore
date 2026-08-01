@@ -4,7 +4,7 @@ import {
     terminateSession,
     authenticateUser,
     registerUser,
-} from '@/data/actions/auth/AuthRepository';
+} from '@/data/auth/AuthRepository';
 
 describe('AuthRepository', () => {
     let mockSupabase: { auth: Record<string, jest.Mock> };

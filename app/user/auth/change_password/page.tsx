@@ -3,10 +3,7 @@
 import { FormBtns } from '@/components/formItems/FormBtns';
 import { FormErrors } from '@/components/formItems/FormErrors';
 import { PasswordField } from '@/components/formItems/PasswordField';
-import {
-    ChangePasswordAction,
-    ChangePasswordFormState,
-} from '@/data/actions/auth/ChangePasswordAction';
+import { ChangePasswordAction, ChangePasswordFormState } from '@/data/auth/ChangePasswordAction';
 import { passwordSchema } from '@/data/schemas/authSchemas';
 import { useActionState, useState, useTransition } from 'react';
 

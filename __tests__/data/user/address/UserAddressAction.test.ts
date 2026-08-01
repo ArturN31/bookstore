@@ -1,8 +1,5 @@
-import { UserAddressAction } from '@/data/actions/AddressForm/UserAddressAction';
-import {
-    insertUserAddress,
-    updateUserAddress,
-} from '@/data/actions/AddressForm/UserAddressRepository';
+import { UserAddressAction } from '@/data/user/address/UserAddressAction';
+import { insertUserAddress, updateUserAddress } from '@/data/user/address/UserAddressRepository';
 import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -16,7 +13,7 @@ jest.mock('next/navigation', () => ({
 }));
 
 jest.mock('@/utils/db/server');
-jest.mock('@/data/actions/AddressForm/UserAddressRepository');
+jest.mock('@/data/user/address/UserAddressRepository');
 
 type MockSupabaseClient = {
     auth: {

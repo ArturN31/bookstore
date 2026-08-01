@@ -1,5 +1,5 @@
 import SignInPage from '@/app/user/auth/signin/page';
-import { SignInFormState } from '@/data/actions/auth/SignInAction';
+import { SignInFormState } from '@/data/auth/SignInAction';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 const MOCK_ACTION_MESSAGE = 'Please correct the errors below.';
@@ -16,7 +16,7 @@ jest.mock('next/navigation', () => ({
     }),
 }));
 
-jest.mock('@/data/actions/auth/SignInAction', () => ({
+jest.mock('@/data/auth/SignInAction', () => ({
     SignInAction: jest.fn(async (prevState, formData) => {
         const reset = formData.get('reset');
         if (reset === 'yes') {
@@ -87,7 +87,7 @@ describe('APP - Auth - SignIn', () => {
         fireEvent.click(screen.getByText('Submit'));
 
         await waitFor(() => {
-            const { SignInAction } = require('@/data/actions/auth/SignInAction');
+            const { SignInAction } = require('@/data/auth/SignInAction');
             expect(SignInAction).not.toHaveBeenCalled();
         });
     });
@@ -164,7 +164,7 @@ describe('APP - Auth - SignIn', () => {
     });
 
     it('should clear client errors on successful validation (covers setClientErrors([]) branch)', async () => {
-        const { SignInAction } = require('@/data/actions/auth/SignInAction');
+        const { SignInAction } = require('@/data/auth/SignInAction');
 
         mockReturnState = {
             ...mockReturnState,
@@ -198,7 +198,7 @@ describe('APP - Auth - SignIn', () => {
     });
 
     it('should append returnTo when present in URL', async () => {
-        const { SignInAction } = require('@/data/actions/auth/SignInAction');
+        const { SignInAction } = require('@/data/auth/SignInAction');
 
         mockGetParam.mockReturnValue('/profile');
 
@@ -220,7 +220,7 @@ describe('APP - Auth - SignIn', () => {
     });
 
     it('should NOT append returnTo when not present in URL (covers if branch false)', async () => {
-        const { SignInAction } = require('@/data/actions/auth/SignInAction');
+        const { SignInAction } = require('@/data/auth/SignInAction');
 
         mockGetParam.mockReturnValue(null);
 
@@ -300,7 +300,7 @@ describe('APP - Auth - SignIn', () => {
         fireEvent.submit(formElement as HTMLElement);
 
         await waitFor(() => {
-            const { SignInAction } = require('@/data/actions/auth/SignInAction');
+            const { SignInAction } = require('@/data/auth/SignInAction');
             expect(SignInAction).not.toHaveBeenCalled();
         });
     });

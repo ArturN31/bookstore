@@ -54,7 +54,6 @@ export const getUserWishlist = async (): Promise<ActionResponse<Wishlist[]>> => 
         const supabase = await createBackendClient();
 
         const authResult = await Repo.fetchUserAuthData(supabase);
-
         if (authResult.error || !authResult.data?.user)
             return { data: null, error: UserConstants.ERROR_AUTH_FAILED };
 

@@ -5,11 +5,11 @@ import { getUserData, getUserWishlist } from '@/data/user/UserService';
 import { getCartData } from '@/data/cart/CartService';
 
 jest.mock('@/utils/db/server', () => ({ createBackendClient: jest.fn() }));
-jest.mock('@/data/user/GetUserData', () => ({
+jest.mock('@/data/user/UserService', () => ({
     getUserData: jest.fn(),
     getUserWishlist: jest.fn(),
 }));
-jest.mock('@/data/cart/GetCartData', () => ({ getCartData: jest.fn() }));
+jest.mock('@/data/cart/CartService', () => ({ getCartData: jest.fn() }));
 jest.mock('@/providers/user/utils/UserMapper', () => ({ mapUserData: jest.fn((d) => d) }));
 jest.mock('@/providers/cart/utils/CartMapper', () => ({ mapCartData: jest.fn((d) => d) }));
 

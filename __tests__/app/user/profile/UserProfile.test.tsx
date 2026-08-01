@@ -34,7 +34,7 @@ jest.mock('@/utils/db/server', () => ({
     })),
 }));
 
-jest.mock('@/data/user/GetUserData', () => ({
+jest.mock('@/data/user/UserService', () => ({
     getUserData: jest.fn(),
 }));
 
@@ -54,7 +54,7 @@ jest.mock('@/components/pages/user/profile/UserProfilePage/UserProfilePage', () 
     )),
 }));
 
-jest.mock('@/data/actions/AddressForm/UserAddressAction', () => ({
+jest.mock('@/data/user/address/UserAddressAction', () => ({
     UserAddressAction: jest.fn(async (prevState, formData) => {
         return {};
     }),

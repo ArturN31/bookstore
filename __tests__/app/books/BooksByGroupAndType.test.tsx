@@ -39,10 +39,10 @@ jest.mock('next/navigation', () => ({
     }),
 }));
 
-jest.mock('@/data/books/GetBooksData');
+jest.mock('@/data/books/BookService');
 const mockedFetchBooks = fetchBooksWithReviews as jest.Mock;
 
-jest.mock('@/data/actions/WishlistForm/WishlistAction');
+jest.mock('@/data/user/wishlist/WishlistAction');
 
 jest.mock('@/providers/cart/CartProvider', () => ({
     CartProvider: ({ children }: { children: ReactNode }) => <div>{children}</div>,

@@ -3,7 +3,7 @@ import { PaginatedBookResult } from '@/data/books/BookConstants';
 import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { useBooksFetcher } from '@/data/books/useBooksFetcher';
 
-jest.mock('@/data/books/GetBooksData', () => ({
+jest.mock('@/data/books/BookService', () => ({
     fetchBooksWithReviews: jest.fn(),
 }));
 

@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { UserAddressFormState } from '@/data/actions/AddressForm/UserAddressAction';
+import { UserAddressFormState } from '@/data/user/address/UserAddressAction';
 import { UserPersonalFields } from '@/components/pages/user/profile/AddressForm/UserPersonalFields';
 
 describe('APP - pages/user - AddressForm - UserPersonalFields', () => {

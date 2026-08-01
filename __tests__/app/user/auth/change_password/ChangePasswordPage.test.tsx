@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import ChangePasswordPage from '@/app/user/auth/change_password/page';
-import { ChangePasswordAction } from '@/data/actions/auth/ChangePasswordAction';
+import { ChangePasswordAction } from '@/data/auth/ChangePasswordAction';
 
 interface ValidationErrorObject {
     message: string;
@@ -11,7 +11,7 @@ interface MockFormState {
     validationErrors: ValidationErrorObject[];
 }
 
-jest.mock('@/data/actions/auth/ChangePasswordAction', () => ({
+jest.mock('@/data/auth/ChangePasswordAction', () => ({
     ChangePasswordAction: jest.fn(),
 }));
 

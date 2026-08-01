@@ -3,242 +3,174 @@ import {
     fetchWishlistByUserId,
     fetchUserAuthData,
 } from '@/data/user/UserRepository';
-import { createBackendClient } from '@/utils/db/server';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/database.types';
-import { UserConstants } from '@/data/user/UserConstants';
-
-jest.mock('@/utils/db/server');
 
 describe('UserRepository', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        jest.spyOn(console, 'error').mockImplementation(() => {});
     });
-
-    afterEach(() => {
-        (console.error as jest.Mock).mockRestore();
-    });
-
-    const mockSupabaseClient = (response: { data: unknown; error: unknown }) =>
-        ({
-            from: jest.fn().mockReturnThis(),
-            select: jest.fn().mockReturnThis(),
-            eq: jest.fn().mockReturnThis(),
-            maybeSingle: jest.fn().mockResolvedValue(response),
-        }) as unknown as SupabaseClient<Database>;
 
     describe('fetchUserProfileById', () => {
-        it('should return user data when query succeeds', async () => {
-            const mockSupabase = mockSupabaseClient({
-                data: { id: 'user-123', username: 'testuser' },
-                error: null,
-            });
-            (createBackendClient as jest.Mock).mockReturnValue(mockSupabase);
+        it('should return user profile data when query succeeds', async () => {
+            const mockData = { id: 'user-123', username: 'testuser' };
+            const mockResponse = { data: mockData, error: null };
+
+            const mockMaybeSingle = jest.fn().mockResolvedValue(mockResponse);
+            const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+            const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+            const mockFrom = jest.fn().mockReturnValue({ select: mockSelect });
+
+            const mockSupabase = {
+                from: mockFrom,
+            } as unknown as SupabaseClient<Database>;
 
             const result = await fetchUserProfileById(mockSupabase, 'user-123');
 
-            expect(result.data).toEqual({ id: 'user-123', username: 'testuser' });
-            expect(result.error).toBeNull();
+            expect(mockFrom).toHaveBeenCalledWith('users');
+            expect(mockSelect).toHaveBeenCalledWith('*');
+            expect(mockEq).toHaveBeenCalledWith('id', 'user-123');
+            expect(mockMaybeSingle).toHaveBeenCalled();
+            expect(result).toEqual(mockResponse);
         });
 
         it('should return error when database query fails', async () => {
-            const mockSupabase = mockSupabaseClient({ data: null, error: { message: 'DB error' } });
-            const result = await fetchUserProfileById(mockSupabase, 'user-123');
+            const mockError = { message: 'DB error', code: 'PGRST100' };
+            const mockResponse = { data: null, error: mockError };
 
-            expect(result.data).toBeNull();
-            expect(result.error).toBe(UserConstants.ERROR_PROFILE_FETCH_FAILED);
-        });
+            const mockMaybeSingle = jest.fn().mockResolvedValue(mockResponse);
+            const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+            const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+            const mockFrom = jest.fn().mockReturnValue({ select: mockSelect });
 
-        it('should return null data when user not found (no error)', async () => {
-            const mockSupabase = mockSupabaseClient({ data: null, error: null });
-            const result = await fetchUserProfileById(mockSupabase, 'user-123');
-
-            expect(result.data).toBeNull();
-            expect(result.error).toBe(null);
-        });
-
-        it('should handle Supabase error object', async () => {
-            const mockSupabase = mockSupabaseClient({
-                data: null,
-                error: new Error('Supabase error'),
-            });
-            const result = await fetchUserProfileById(mockSupabase, 'user-123');
-
-            expect(result.data).toBeNull();
-            expect(result.error).toBe(UserConstants.ERROR_PROFILE_FETCH_FAILED);
-        });
-
-        it('should return error when supabase client is missing', async () => {
-            // @ts-expect-error - testing runtime null check
-            const result = await fetchUserProfileById(null, 'user-123');
-            expect(result.error).toBe(UserConstants.ERROR_SUPABASE_FAILED);
-        });
-
-        it('should handle generic catch block with Error object (Line 38 true branch)', async () => {
             const mockSupabase = {
-                from: jest.fn().mockImplementation(() => {
-                    throw new Error('Standard Error');
-                }),
+                from: mockFrom,
             } as unknown as SupabaseClient<Database>;
 
             const result = await fetchUserProfileById(mockSupabase, 'user-123');
-            expect(result.error).toBe(UserConstants.ERROR_DATABASE_QUERY_FAILED);
-            expect(console.error).toHaveBeenCalledWith(expect.anything(), 'Standard Error');
+
+            expect(result.data).toBeNull();
+            expect(result.error).toEqual(mockError);
         });
 
-        it('should handle generic catch block with a string (Line 38 false branch)', async () => {
+        it('should return null data when user is not found (no error)', async () => {
+            const mockResponse = { data: null, error: null };
+
+            const mockMaybeSingle = jest.fn().mockResolvedValue(mockResponse);
+            const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+            const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+            const mockFrom = jest.fn().mockReturnValue({ select: mockSelect });
+
             const mockSupabase = {
-                from: jest.fn().mockImplementation(() => {
-                    throw 'String Error';
-                }),
+                from: mockFrom,
             } as unknown as SupabaseClient<Database>;
 
             const result = await fetchUserProfileById(mockSupabase, 'user-123');
-            expect(result.error).toBe(UserConstants.ERROR_DATABASE_QUERY_FAILED);
-            expect(console.error).toHaveBeenCalledWith(expect.anything(), 'Unknown error');
+
+            expect(result.data).toBeNull();
+            expect(result.error).toBeNull();
         });
     });
 
     describe('fetchWishlistByUserId', () => {
-        const mockSupabaseWishlist = (response: { data: unknown; error: unknown }) =>
-            ({
-                from: jest.fn().mockReturnThis(),
-                select: jest.fn().mockReturnThis(),
-                eq: jest.fn().mockResolvedValue(response),
-            }) as unknown as SupabaseClient<Database>;
-
         it('should return wishlist items when query succeeds', async () => {
-            const mockSupabase = mockSupabaseWishlist({
-                data: [{ id: '1', book_id: 'book-1' }],
-                error: null,
-            });
+            const mockData = [{ id: '1', book_id: 'book-1' }];
+            const mockResponse = { data: mockData, error: null };
+
+            const mockEq = jest.fn().mockResolvedValue(mockResponse);
+            const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+            const mockFrom = jest.fn().mockReturnValue({ select: mockSelect });
+
+            const mockSupabase = {
+                from: mockFrom,
+            } as unknown as SupabaseClient<Database>;
+
             const result = await fetchWishlistByUserId(mockSupabase, 'user-123');
 
-            expect(result.data).toEqual([{ id: '1', book_id: 'book-1' }]);
-            expect(result.error).toBeNull();
+            expect(mockFrom).toHaveBeenCalledWith('wishlist');
+            expect(mockSelect).toHaveBeenCalledWith('*');
+            expect(mockEq).toHaveBeenCalledWith('user_id', 'user-123');
+            expect(result).toEqual(mockResponse);
         });
 
         it('should return error when database query fails', async () => {
-            const mockSupabase = mockSupabaseWishlist({
-                data: null,
-                error: { message: 'DB error' },
-            });
+            const mockError = { message: 'DB error', code: 'PGRST100' };
+            const mockResponse = { data: null, error: mockError };
+
+            const mockEq = jest.fn().mockResolvedValue(mockResponse);
+            const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+            const mockFrom = jest.fn().mockReturnValue({ select: mockSelect });
+
+            const mockSupabase = {
+                from: mockFrom,
+            } as unknown as SupabaseClient<Database>;
+
             const result = await fetchWishlistByUserId(mockSupabase, 'user-123');
 
             expect(result.data).toBeNull();
-            expect(result.error).toBe(UserConstants.ERROR_WISHLIST_FETCH_FAILED);
+            expect(result.error).toEqual(mockError);
         });
 
-        it('should return empty array when wishlist not found (no error)', async () => {
-            const mockSupabase = mockSupabaseWishlist({ data: [], error: null });
+        it('should return empty array when wishlist is empty (no error)', async () => {
+            const mockResponse = { data: [], error: null };
+
+            const mockEq = jest.fn().mockResolvedValue(mockResponse);
+            const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+            const mockFrom = jest.fn().mockReturnValue({ select: mockSelect });
+
+            const mockSupabase = {
+                from: mockFrom,
+            } as unknown as SupabaseClient<Database>;
+
             const result = await fetchWishlistByUserId(mockSupabase, 'user-123');
 
             expect(result.data).toEqual([]);
             expect(result.error).toBeNull();
         });
-
-        it('should return error when supabase client is missing', async () => {
-            // @ts-expect-error - testing runtime null check
-            const result = await fetchWishlistByUserId(null, 'user-123');
-            expect(result.error).toBe(UserConstants.ERROR_SUPABASE_FAILED);
-        });
-
-        it('should handle generic catch block with Error object (Line 65 true branch)', async () => {
-            const mockSupabase = {
-                from: jest.fn().mockImplementation(() => {
-                    throw new Error('Wishlist Error');
-                }),
-            } as unknown as SupabaseClient<Database>;
-
-            const result = await fetchWishlistByUserId(mockSupabase, 'user-123');
-            expect(result.error).toBe(UserConstants.ERROR_DATABASE_QUERY_FAILED);
-            expect(console.error).toHaveBeenCalledWith(expect.anything(), 'Wishlist Error');
-        });
-
-        it('should handle generic catch block with a plain object (Line 65 false branch)', async () => {
-            const mockSupabase = {
-                from: jest.fn().mockImplementation(() => {
-                    throw { message: 'Object error' };
-                }),
-            } as unknown as SupabaseClient<Database>;
-
-            const result = await fetchWishlistByUserId(mockSupabase, 'user-123');
-            expect(result.error).toBe(UserConstants.ERROR_DATABASE_QUERY_FAILED);
-            expect(console.error).toHaveBeenCalledWith(expect.anything(), 'Unknown error');
-        });
     });
 
     describe('fetchUserAuthData', () => {
         it('should return auth data when user is authenticated', async () => {
+            const mockAuthResponse = {
+                data: { user: { id: 'user-123', email: 'test@example.com' } },
+                error: null,
+            };
+
+            const mockGetUser = jest.fn().mockResolvedValue(mockAuthResponse);
             const mockSupabase = {
                 auth: {
-                    getUser: jest.fn().mockResolvedValue({
-                        data: { user: { email: 'test@example.com', id: 'user-123' } },
-                    }),
+                    getUser: mockGetUser,
                 },
             } as unknown as SupabaseClient<Database>;
 
             const result = await fetchUserAuthData(mockSupabase);
 
-            expect(result.data).toEqual({ email: 'test@example.com', userID: 'user-123' });
-            expect(result.error).toBeNull();
+            expect(mockGetUser).toHaveBeenCalled();
+            expect(result).toEqual(mockAuthResponse);
         });
 
-        it('should return error when auth user is not found', async () => {
+        it('should return auth error when authentication fails', async () => {
+            const mockAuthError = {
+                message: 'Auth session missing',
+                name: 'AuthApiError',
+                status: 400,
+            };
+            const mockAuthResponse = {
+                data: { user: null },
+                error: mockAuthError,
+            };
+
+            const mockGetUser = jest.fn().mockResolvedValue(mockAuthResponse);
             const mockSupabase = {
                 auth: {
-                    getUser: jest.fn().mockResolvedValue({
-                        data: { user: null },
-                    }),
+                    getUser: mockGetUser,
                 },
             } as unknown as SupabaseClient<Database>;
 
             const result = await fetchUserAuthData(mockSupabase);
 
-            expect(result.data).toEqual({ email: null, userID: null });
-            expect(result.error).toBe(UserConstants.ERROR_AUTH_FAILED);
-        });
-
-        it('should return error when email is missing', async () => {
-            const mockSupabase = {
-                auth: {
-                    getUser: jest.fn().mockResolvedValue({
-                        data: { user: { id: 'user-123' } },
-                    }),
-                },
-            } as unknown as SupabaseClient<Database>;
-
-            const result = await fetchUserAuthData(mockSupabase);
-
-            expect(result.data).toEqual({ email: null, userID: null });
-            expect(result.error).toBe(UserConstants.ERROR_EMAIL_NOT_FOUND);
-        });
-
-        it('should handle generic catch block with Error object (Line 93 true branch)', async () => {
-            const mockSupabase = {
-                auth: {
-                    getUser: jest.fn().mockRejectedValue(new Error('Auth Exception')),
-                },
-            } as unknown as SupabaseClient<Database>;
-
-            const result = await fetchUserAuthData(mockSupabase);
-            expect(result.error).toBe(UserConstants.ERROR_SYSTEM_ERROR);
-            expect(console.error).toHaveBeenCalledWith(expect.anything(), 'Auth Exception');
-        });
-
-        it('should handle generic catch block with null (Line 93 false branch)', async () => {
-            const mockSupabase = {
-                auth: {
-                    getUser: jest.fn().mockImplementation(() => {
-                        throw null;
-                    }),
-                },
-            } as unknown as SupabaseClient<Database>;
-
-            const result = await fetchUserAuthData(mockSupabase);
-            expect(result.error).toBe(UserConstants.ERROR_SYSTEM_ERROR);
-            expect(console.error).toHaveBeenCalledWith(expect.anything(), 'Unknown error');
+            expect(result.data.user).toBeNull();
+            expect(result.error).toEqual(mockAuthError);
         });
     });
 });

@@ -1,5 +1,5 @@
 import { AddressForm } from '@/components/pages/user/profile/AddressForm/AddressForm';
-import { UserAddressAction } from '@/data/actions/AddressForm/UserAddressAction';
+import { UserAddressAction } from '@/data/user/address/UserAddressAction';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { z } from 'zod';
 
@@ -14,7 +14,7 @@ interface MockAddressFormFields {
     phoneNumber: string;
 }
 
-jest.mock('@/data/actions/AddressForm/UserAddressAction', () => ({
+jest.mock('@/data/user/address/UserAddressAction', () => ({
     UserAddressAction: jest.fn(),
 }));
 

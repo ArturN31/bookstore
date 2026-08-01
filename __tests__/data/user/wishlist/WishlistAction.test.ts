@@ -1,32 +1,40 @@
-import { WishlistAction } from '@/data/actions/WishlistForm/WishlistAction';
-import { createBackendClient } from '@/utils/db/server';
+import { WishlistAction } from '@/data/user/wishlist/WishlistAction';
 import { getUserData } from '@/data/user/UserService';
 import { wishlistSchema } from '@/data/schemas/wishlistSchema';
 import { revalidatePath } from 'next/cache';
+import { executeWishlistOperation } from '@/data/user/wishlist/WishlistService';
 
-jest.mock('@/utils/db/server');
-jest.mock('@/data/user/GetUserData');
+jest.mock('@/data/user/UserService');
 jest.mock('@/data/schemas/wishlistSchema');
+jest.mock('@/data/user/wishlist/WishlistService');
+jest.mock('@/utils/errors/SupabaseErrorHandler', () => ({
+    sanitizeSupabaseError: jest.fn((err: unknown) => {
+        if (!err) return null;
+        if (err instanceof Error) return 'A system error occurred. Please try again.';
+        if (typeof err === 'string') return err;
+        return 'Sanitized error';
+    }),
+}));
 jest.mock('next/cache', () => ({
     revalidatePath: jest.fn(),
 }));
 
 describe('WishlistAction', () => {
-    const mockedCreateBackendClient = createBackendClient as jest.Mock;
-    const mockedGetUserData = getUserData as jest.Mock;
+    const mockedGetUserData = getUserData as jest.MockedFunction<typeof getUserData>;
+    const mockedExecuteWishlistOperation = executeWishlistOperation as jest.MockedFunction<
+        typeof executeWishlistOperation
+    >;
     const mockedWishlistSchema = wishlistSchema as unknown as { safeParse: jest.Mock };
-
-    const mockSupabase = {
-        from: jest.fn().mockReturnThis(),
-        insert: jest.fn().mockReturnThis(),
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-    };
 
     beforeEach(() => {
         jest.clearAllMocks();
-        mockedCreateBackendClient.mockResolvedValue(mockSupabase);
-        mockedGetUserData.mockResolvedValue({ data: { id: 'user-123' }, error: null });
+
+        mockedGetUserData.mockResolvedValue({
+            data: { id: 'user-123', email: 'test@test.com' } as unknown as NonNullable<
+                Awaited<ReturnType<typeof getUserData>>['data']
+            >,
+            error: null,
+        });
 
         mockedWishlistSchema.safeParse.mockImplementation(
             (data: { bookId: string; actionType: string }) => ({
@@ -35,10 +43,11 @@ describe('WishlistAction', () => {
             }),
         );
 
-        mockSupabase.from.mockReturnValue(mockSupabase);
-        mockSupabase.insert.mockResolvedValue({ error: null });
-        mockSupabase.delete.mockReturnValue(mockSupabase);
-        mockSupabase.eq.mockResolvedValue({ error: null });
+        mockedExecuteWishlistOperation.mockResolvedValue({
+            data: true,
+            message: 'Success',
+            error: null,
+        });
     });
 
     const createFormData = (bookId: string, action: string) => {
@@ -59,46 +68,46 @@ describe('WishlistAction', () => {
     });
 
     it('should return failure if user is not logged in', async () => {
-        mockedGetUserData.mockResolvedValue({ data: null, error: 'Not logged in' });
+        mockedGetUserData.mockResolvedValue({ data: null, error: null });
         const result = await WishlistAction(undefined, createFormData('b1', 'INSERT'));
         expect(result.success).toBe(false);
         expect(result.message).toMatch(/login required/i);
     });
 
-    it('should successfully add item to wishlist and break', async () => {
+    it('should successfully add item to wishlist and revalidate path', async () => {
         const result = await WishlistAction(undefined, createFormData('b1', 'INSERT'));
-        expect(mockSupabase.from).toHaveBeenCalledWith('wishlist');
-        expect(mockSupabase.insert).toHaveBeenCalledWith([{ user_id: 'user-123', book_id: 'b1' }]);
-        expect(revalidatePath).toHaveBeenCalled();
+        expect(mockedExecuteWishlistOperation).toHaveBeenCalledWith('INSERT', 'user-123', 'b1');
+        expect(revalidatePath).toHaveBeenCalledWith('/', 'layout');
         expect(result.success).toBe(true);
     });
 
     it('should return failure message when insertError exists', async () => {
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-        mockSupabase.insert.mockResolvedValue({ error: { message: 'DB Error' } });
+        mockedExecuteWishlistOperation.mockResolvedValue({
+            data: null,
+            message: '',
+            error: 'DB Error',
+        });
         const result = await WishlistAction(undefined, createFormData('b1', 'INSERT'));
         expect(result.success).toBe(false);
         expect(result.message).toBeDefined();
-        consoleSpy.mockRestore();
     });
 
-    it('should successfully remove item from wishlist and break', async () => {
-        mockSupabase.delete.mockReturnValue(mockSupabase);
-        mockSupabase.eq.mockReturnValue(mockSupabase);
-
+    it('should successfully remove item from wishlist and revalidate path', async () => {
         const result = await WishlistAction(undefined, createFormData('b1', 'REMOVE'));
-        expect(mockSupabase.delete).toHaveBeenCalled();
+        expect(mockedExecuteWishlistOperation).toHaveBeenCalledWith('REMOVE', 'user-123', 'b1');
+        expect(revalidatePath).toHaveBeenCalledWith('/', 'layout');
         expect(result.success).toBe(true);
     });
 
     it('should return failure message when removeError exists', async () => {
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-        mockSupabase.eq.mockReturnValueOnce(mockSupabase);
-        mockSupabase.eq.mockResolvedValueOnce({ error: { message: 'Delete Fail' } });
+        mockedExecuteWishlistOperation.mockResolvedValue({
+            data: null,
+            message: '',
+            error: 'Delete Fail',
+        });
         const result = await WishlistAction(undefined, createFormData('b1', 'REMOVE'));
         expect(result.success).toBe(false);
         expect(result.message).toBeDefined();
-        consoleSpy.mockRestore();
     });
 
     it('should catch unhandled exceptions and return a system error message', async () => {

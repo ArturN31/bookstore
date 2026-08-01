@@ -8,7 +8,7 @@ jest.mock('next/cache', () => ({
     revalidateTag: jest.fn(),
 }));
 
-jest.mock('@/data/books/GetBooksData', () => ({
+jest.mock('@/data/books/BookService', () => ({
     fetchBooksWithReviews: jest.fn(),
 }));
 

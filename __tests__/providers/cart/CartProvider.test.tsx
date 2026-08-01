@@ -18,7 +18,7 @@ jest.mock('@/utils/db/client', () => ({
         removeChannel: jest.fn(),
     })),
 }));
-jest.mock('@/data/cart/GetCartData', () => ({
+jest.mock('@/data/cart/CartService', () => ({
     getCartData: jest.fn(),
 }));
 jest.mock('@/providers/cart/utils/useCartListeners', () => ({

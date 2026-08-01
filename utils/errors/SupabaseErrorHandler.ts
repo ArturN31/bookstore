@@ -19,6 +19,19 @@ interface GenericErrorPayload {
     message?: string;
 }
 
+export const APP_ERROR_MESSAGES = {
+    INVALID_USER_SESSION: 'User session is invalid.',
+    MALFORMED_IDENTIFIER: 'Malformed identifier parameters.',
+    INVALID_QUANTITY: 'Invalid quantity assignment.',
+    UNAUTHORIZED_ACCESS: 'Unauthorized access token',
+    UNAUTHENTICATED_USER: 'Unauthenticated user context',
+    NO_DATA_RETURNED: 'No data returned.',
+    FAILED_TO_CREATE_CART: 'Failed to create cart.',
+    CART_CREATION_FAILED: 'Cart creation failed.',
+    SESSION_IDENTIFICATION_FAILED: 'Session identification failed.',
+    UNSUPPORTED_ACTION_TYPE: 'Unsupported action type.',
+} as const;
+
 const DB_ERROR_MAP: Record<string, string> = {
     '23505': 'This record already exists. Please use a different value.',
     '23503': 'The requested operation cannot be completed because related data is missing.',
@@ -45,6 +58,13 @@ const AUTH_CODE_MAP: Record<string, string> = {
 
 export const sanitizeSupabaseError = (error: unknown): string => {
     if (!error) return 'An unknown error occurred.';
+
+    if (typeof error === 'string') {
+        if (error.trim().length > 0) {
+            return error;
+        }
+        return 'An unknown error occurred.';
+    }
 
     const isPostgrestError =
         typeof error === 'object' &&

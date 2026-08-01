@@ -14,7 +14,9 @@ jest.mock('next/cache', () => ({
 }));
 
 const mockedFetchBooks = fetchBooksWithReviews as jest.Mock;
-jest.mock('@/data/books/GetBooksData');
+jest.mock('@/data/books/BookService', () => ({
+    fetchBooksWithReviews: jest.fn(),
+}));
 
 jest.mock('@/components/pages/book/BookDetails', () => ({
     BookDetails: () => <div data-testid="book-details" />,

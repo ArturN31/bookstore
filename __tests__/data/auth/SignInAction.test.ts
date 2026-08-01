@@ -1,4 +1,4 @@
-import { SignInAction } from '@/data/actions/auth/SignInAction';
+import { SignInAction } from '@/data/auth/SignInAction';
 import { signInSchema } from '@/data/schemas/authSchemas';
 import { getUserData } from '@/data/user/UserService';
 import { createBackendClient } from '@/utils/db/server';
@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 jest.mock('@/utils/db/server');
-jest.mock('@/data/user/GetUserData');
+jest.mock('@/data/user/UserService');
 jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }));
 jest.mock('next/navigation', () => ({ redirect: jest.fn() }));
 

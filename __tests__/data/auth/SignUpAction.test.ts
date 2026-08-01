@@ -1,11 +1,11 @@
-import { registerUser } from '@/data/actions/auth/AuthRepository';
-import { SignUpAction } from '@/data/actions/auth/SignUpAction';
+import { registerUser } from '@/data/auth/AuthRepository';
+import { SignUpAction } from '@/data/auth/SignUpAction';
 import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 jest.mock('@/utils/db/server');
-jest.mock('@/data/actions/auth/AuthRepository');
+jest.mock('@/data/auth/AuthRepository');
 jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }));
 jest.mock('next/navigation', () => ({ redirect: jest.fn() }));
 

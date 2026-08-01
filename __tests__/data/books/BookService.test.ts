@@ -1,6 +1,7 @@
 import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { BOOK_SORT_OPTIONS } from '@/data/books/BookConstants';
 import { createPublicServerClient } from '@/utils/db/publicServer';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 
 jest.mock('next/cache', () => ({
     unstable_cache: jest.fn(
@@ -194,24 +195,26 @@ describe('fetchBooksWithReviews', () => {
     });
 
     it('should handle non-Error objects thrown during execution', async () => {
+        const literalError = 'A literal string exception';
         mockedCreatePublicServerClient.mockImplementation(() => {
-            throw 'A literal string exception';
+            throw literalError;
         });
 
         const result = await fetchBooksWithReviews();
 
-        expect(result.error).toBe('A literal string exception');
+        expect(result.error).toBe(sanitizeSupabaseError(literalError));
     });
 
     it('should handle Error objects thrown during execution', async () => {
         const errorMessage = 'Database connection timeout';
+        const errorObj = new Error(errorMessage);
         mockedCreatePublicServerClient.mockImplementation(() => {
-            throw new Error(errorMessage);
+            throw errorObj;
         });
 
         const result = await fetchBooksWithReviews();
 
-        expect(result.error).toBe(errorMessage);
+        expect(result.error).toBe(sanitizeSupabaseError(errorObj));
     });
 
     it('should return empty data when the database returns null', async () => {

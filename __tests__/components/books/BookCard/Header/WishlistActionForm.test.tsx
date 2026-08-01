@@ -1,6 +1,6 @@
 import React from 'react';
 import { WishlistActionForm } from '@/components/books/bookCard/Header/WishlistActionForm';
-import { WishlistAction } from '@/data/actions/WishlistForm/WishlistAction';
+import { WishlistAction } from '@/data/user/wishlist/WishlistAction';
 import { useUserActions, useUserState } from '@/providers/user/utils/useUser';
 import { screen, render, fireEvent, waitFor, act } from '@testing-library/react';
 import { enqueueSnackbar } from 'notistack';
@@ -14,7 +14,7 @@ jest.mock('notistack', () => ({
     enqueueSnackbar: jest.fn(),
 }));
 
-jest.mock('@/data/actions/WishlistForm/WishlistAction', () => ({
+jest.mock('@/data/user/wishlist/WishlistAction', () => ({
     WishlistAction: jest.fn(),
 }));
 

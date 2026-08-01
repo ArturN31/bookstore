@@ -5,7 +5,7 @@ import { EmailField } from '@/components/formItems/EmailField';
 import { FormBtns } from '@/components/formItems/FormBtns';
 import { FormErrors } from '@/components/formItems/FormErrors';
 import { PasswordField } from '@/components/formItems/PasswordField';
-import { SignUpAction } from '@/data/actions/auth/SignUpAction';
+import { SignUpAction } from '@/data/auth/SignUpAction';
 import { signUpSchema } from '@/data/schemas/authSchemas';
 import Link from 'next/link';
 import { z } from 'zod';

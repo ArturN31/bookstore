@@ -13,7 +13,7 @@ type ResetFn = () => void;
 const mockedRouter = { push: jest.fn(), refresh: jest.fn() };
 jest.mock('next/navigation', () => ({ useRouter: jest.fn(() => mockedRouter) }));
 jest.mock('@/utils/db/client', () => ({ createFrontendClient: jest.fn() }));
-jest.mock('@/data/user/GetUserData', () => ({
+jest.mock('@/data/user/UserService', () => ({
     getUserData: jest.fn(),
     getUserWishlist: jest.fn(),
 }));

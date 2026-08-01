@@ -1,5 +1,5 @@
-import { terminateSession, updateAccountPassword } from '@/data/actions/auth/AuthRepository';
-import { ChangePasswordAction } from '@/data/actions/auth/ChangePasswordAction';
+import { terminateSession, updateAccountPassword } from '@/data/auth/AuthRepository';
+import { ChangePasswordAction } from '@/data/auth/ChangePasswordAction';
 import { passwordSchema } from '@/data/schemas/authSchemas';
 import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
@@ -9,7 +9,7 @@ import { User } from '@supabase/supabase-js';
 jest.mock('@/utils/db/server');
 jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }));
 jest.mock('next/navigation', () => ({ redirect: jest.fn() }));
-jest.mock('@/data/actions/auth/AuthRepository', () => ({
+jest.mock('@/data/auth/AuthRepository', () => ({
     updateAccountPassword: jest.fn(),
     terminateSession: jest.fn(),
 }));

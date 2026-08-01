@@ -4,11 +4,11 @@ import { useCartActions, useCartState } from '@/providers/cart/utils/useCart';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { enqueueSnackbar } from 'notistack';
 import React, { act, useActionState } from 'react';
-import { CartAction, CartFormState } from '@/data/actions/CartForm/CartAction';
+import { CartAction, CartFormState } from '@/data/cart/CartAction';
 
 const globalMockRefreshCart = jest.fn();
 
-jest.mock('@/data/actions/CartForm/CartAction', () => ({
+jest.mock('@/data/cart/CartAction', () => ({
     CartAction: jest.fn(),
 }));
 

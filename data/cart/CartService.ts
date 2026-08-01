@@ -5,12 +5,13 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/database.types';
 import * as Repo from './CartRepository';
 import { mapDatabaseCartToDomain, CartItem } from './CartMapper';
+import { CART_SUCCESS_MESSAGES, CART_OPERATION_TYPES } from './CartConstants';
 import { withRetry } from '@/utils/network/retry';
-import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
-import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { safeSupabaseQuery, SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
+import { sanitizeSupabaseError, APP_ERROR_MESSAGES } from '@/utils/errors/SupabaseErrorHandler';
 import { revalidateTag } from 'next/cache';
 
-interface ActionResponse<T> {
+export interface ActionResponse<T> {
     data: T | null;
     error: string | null;
 }
@@ -29,14 +30,14 @@ const verifyUserSession = async (supabase: SupabaseClient<Database>): Promise<st
 };
 
 export const getUsersCartID = async (userID: string): Promise<ActionResponse<string | null>> => {
-    if (!isValidUUID(userID)) return { data: null, error: 'User session is invalid.' };
+    if (!isValidUUID(userID)) return { data: null, error: APP_ERROR_MESSAGES.INVALID_USER_SESSION };
 
     try {
         const result = await withRetry(async () => {
             const supabase = await createBackendClient();
 
             const authenticatedId = await verifyUserSession(supabase);
-            if (authenticatedId !== userID) throw new Error('Unauthorized access token');
+            if (authenticatedId !== userID) throw new Error(APP_ERROR_MESSAGES.UNAUTHORIZED_ACCESS);
 
             return await safeSupabaseQuery(
                 async () => await Repo.findCartIdByUserId(supabase, userID),
@@ -44,7 +45,8 @@ export const getUsersCartID = async (userID: string): Promise<ActionResponse<str
         });
 
         if (result.error) {
-            if (result.error === 'No data returned.') return { data: null, error: null };
+            if (result.error === APP_ERROR_MESSAGES.NO_DATA_RETURNED)
+                return { data: null, error: null };
             return { data: null, error: sanitizeSupabaseError(result.error) };
         }
 
@@ -55,20 +57,20 @@ export const getUsersCartID = async (userID: string): Promise<ActionResponse<str
 };
 
 export const createUsersCart = async (userID: string): Promise<ActionResponse<string>> => {
-    if (!isValidUUID(userID)) return { data: null, error: 'User session is invalid.' };
+    if (!isValidUUID(userID)) return { data: null, error: APP_ERROR_MESSAGES.INVALID_USER_SESSION };
 
     try {
         const result = await withRetry(async () => {
             const supabase = await createBackendClient();
 
             const authenticatedId = await verifyUserSession(supabase);
-            if (authenticatedId !== userID) throw new Error('Unauthorized access token');
+            if (authenticatedId !== userID) throw new Error(APP_ERROR_MESSAGES.UNAUTHORIZED_ACCESS);
 
             return await safeSupabaseQuery(async () => await Repo.createCart(supabase, userID));
         });
 
         if (result.error) return { data: null, error: sanitizeSupabaseError(result.error) };
-        if (!result.data) return { data: null, error: 'Failed to create cart.' };
+        if (!result.data) return { data: null, error: APP_ERROR_MESSAGES.FAILED_TO_CREATE_CART };
         return { data: result.data.id, error: null };
     } catch (err: unknown) {
         return { data: null, error: sanitizeSupabaseError(err) };
@@ -81,15 +83,15 @@ export const addItemToUsersCart = async (
     bookQuantity: number,
 ): Promise<ActionResponse<boolean>> => {
     if (!isValidUUID(cartID) || !isValidUUID(bookID))
-        return { data: false, error: 'Malformed identifier parameters.' };
-    if (bookQuantity < 1) return { data: false, error: 'Invalid quantity assignment.' };
+        return { data: false, error: APP_ERROR_MESSAGES.MALFORMED_IDENTIFIER };
+    if (bookQuantity < 1) return { data: false, error: APP_ERROR_MESSAGES.INVALID_QUANTITY };
 
     try {
         const result = await withRetry(async () => {
             const supabase = await createBackendClient();
 
             const authenticatedId = await verifyUserSession(supabase);
-            if (!authenticatedId) throw new Error('Unauthenticated user context');
+            if (!authenticatedId) throw new Error(APP_ERROR_MESSAGES.UNAUTHENTICATED_USER);
 
             return await safeSupabaseQuery(
                 async () => await Repo.upsertItem(supabase, cartID, bookID, bookQuantity),
@@ -111,14 +113,14 @@ export const updateItemInUsersCart = async (
     bookQuantity: number,
 ): Promise<ActionResponse<boolean>> => {
     if (!isValidUUID(cartID) || !isValidUUID(bookID))
-        return { data: false, error: 'Malformed identifier parameters.' };
+        return { data: false, error: APP_ERROR_MESSAGES.MALFORMED_IDENTIFIER };
 
     try {
         const result = await withRetry(async () => {
             const supabase = await createBackendClient();
 
             const authenticatedId = await verifyUserSession(supabase);
-            if (!authenticatedId) throw new Error('Unauthenticated user context');
+            if (!authenticatedId) throw new Error(APP_ERROR_MESSAGES.UNAUTHENTICATED_USER);
 
             return await safeSupabaseQuery(
                 async () => await Repo.updateItem(supabase, cartID, bookID, bookQuantity),
@@ -139,14 +141,14 @@ export const removeItemFromUsersCart = async (
     bookID: string,
 ): Promise<ActionResponse<boolean>> => {
     if (!isValidUUID(cartID) || !isValidUUID(bookID))
-        return { data: false, error: 'Malformed identifier parameters.' };
+        return { data: false, error: APP_ERROR_MESSAGES.MALFORMED_IDENTIFIER };
 
     try {
         const result = await withRetry(async () => {
             const supabase = await createBackendClient();
 
             const authenticatedId = await verifyUserSession(supabase);
-            if (!authenticatedId) throw new Error('Unauthenticated user context');
+            if (!authenticatedId) throw new Error(APP_ERROR_MESSAGES.UNAUTHENTICATED_USER);
 
             return await safeSupabaseQuery(
                 async () => await Repo.deleteItem(supabase, cartID, bookID),
@@ -165,14 +167,15 @@ export const removeItemFromUsersCart = async (
 export const getCartData = async (
     userID: string,
 ): Promise<ActionResponse<{ cartID: string | null; books: CartItem[] }>> => {
-    if (!isValidUUID(userID)) return { data: null, error: 'Session identification failed.' };
+    if (!isValidUUID(userID))
+        return { data: null, error: APP_ERROR_MESSAGES.SESSION_IDENTIFICATION_FAILED };
 
     try {
         const result = await withRetry(async () => {
             const supabase = await createBackendClient();
 
             const authenticatedId = await verifyUserSession(supabase);
-            if (authenticatedId !== userID) throw new Error('Unauthorized access token');
+            if (authenticatedId !== userID) throw new Error(APP_ERROR_MESSAGES.UNAUTHORIZED_ACCESS);
 
             return await safeSupabaseQuery(
                 async () => await Repo.fetchFullCartWithBooks(supabase, userID),
@@ -180,7 +183,7 @@ export const getCartData = async (
         });
 
         if (result.error) {
-            if (result.error === 'No data returned.')
+            if (result.error === APP_ERROR_MESSAGES.NO_DATA_RETURNED)
                 return {
                     data: { cartID: null, books: [] },
                     error: null,
@@ -195,5 +198,87 @@ export const getCartData = async (
     } catch (err: unknown) {
         console.error('[CartService] Pipeline Error:', err);
         return { data: null, error: sanitizeSupabaseError(err) };
+    }
+};
+
+export const ensureCartExists = async (userId: string): Promise<SafeQueryResult<string>> => {
+    try {
+        const lookup = await getUsersCartID(userId);
+        if (lookup.error)
+            return {
+                data: null,
+                error: sanitizeSupabaseError(lookup.error),
+            };
+        if (lookup.data) return { data: lookup.data, error: null };
+
+        const created = await createUsersCart(userId);
+        if (created.error)
+            return {
+                data: null,
+                error: sanitizeSupabaseError(created.error),
+            };
+        if (!created.data)
+            return {
+                data: null,
+                error: APP_ERROR_MESSAGES.CART_CREATION_FAILED,
+            };
+        return { data: created.data, error: null };
+    } catch (err: unknown) {
+        return {
+            data: null,
+            error: sanitizeSupabaseError(err),
+        };
+    }
+};
+
+const CART_OPERATIONS: Record<
+    string,
+    (cartId: string, bookId: string, qty: number) => Promise<SafeQueryResult<boolean>>
+> = {
+    [CART_OPERATION_TYPES.INSERT]: async (cartId, bookId, qty) => {
+        const result = await addItemToUsersCart(cartId, bookId, qty);
+        if (result.error) return { data: null, error: sanitizeSupabaseError(result.error) };
+        return { data: result.data ?? true, error: null };
+    },
+    [CART_OPERATION_TYPES.UPDATE]: async (cartId, bookId, qty) => {
+        const result = await updateItemInUsersCart(cartId, bookId, qty);
+        if (result.error) return { data: null, error: sanitizeSupabaseError(result.error) };
+        return { data: result.data ?? true, error: null };
+    },
+    [CART_OPERATION_TYPES.REMOVE]: async (cartId, bookId) => {
+        const result = await removeItemFromUsersCart(cartId, bookId);
+        if (result.error) return { data: null, error: sanitizeSupabaseError(result.error) };
+        return { data: result.data ?? true, error: null };
+    },
+};
+
+export const executeCartOperation = async (
+    type: string,
+    cartId: string,
+    bookId: string,
+    quantity: number,
+): Promise<SafeQueryResult<boolean> & { message?: string }> => {
+    const operation = CART_OPERATIONS[type];
+
+    if (!operation) return { data: null, error: APP_ERROR_MESSAGES.UNSUPPORTED_ACTION_TYPE };
+
+    try {
+        const result = await operation(cartId, bookId, quantity);
+        if (result.error)
+            return {
+                data: null,
+                error: sanitizeSupabaseError(result.error),
+            };
+        return {
+            ...result,
+            message:
+                CART_SUCCESS_MESSAGES[type as keyof typeof CART_SUCCESS_MESSAGES] ||
+                CART_SUCCESS_MESSAGES.DEFAULT,
+        };
+    } catch (err: unknown) {
+        return {
+            data: null,
+            error: sanitizeSupabaseError(err),
+        };
     }
 };

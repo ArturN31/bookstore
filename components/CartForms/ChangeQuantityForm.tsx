@@ -4,7 +4,7 @@ import { useActionState, useEffect, useMemo, useOptimistic, useTransition } from
 import { enqueueSnackbar } from 'notistack';
 
 import { useCartActions, useCartState } from '@/providers/cart/utils/useCart';
-import { CartAction, CartFormState } from '@/data/actions/CartForm/CartAction';
+import { CartAction, CartFormState } from '@/data/cart/CartAction';
 import { useUserState } from '@/providers/user/utils/useUser';
 
 interface ChangeQuantityFormProps {

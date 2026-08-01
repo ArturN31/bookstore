@@ -1,9 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/database.types';
-import {
-    insertUserAddress,
-    updateUserAddress,
-} from '@/data/actions/AddressForm/UserAddressRepository';
+import { insertUserAddress, updateUserAddress } from '@/data/user/address/UserAddressRepository';
 
 jest.mock('@/utils/db/safeSupabaseQuery', () => ({
     safeSupabaseQuery: jest.fn(async (callback) => await callback()),

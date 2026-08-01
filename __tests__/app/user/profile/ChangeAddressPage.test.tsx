@@ -1,5 +1,5 @@
 import ChangeAddressPage from '@/app/user/profile/change_address/page';
-import { UserAddressFormState } from '@/data/actions/AddressForm/UserAddressAction';
+import { UserAddressFormState } from '@/data/user/address/UserAddressAction';
 import { getUserData } from '@/data/user/UserService';
 import { render, screen } from '@testing-library/react';
 import { redirect } from 'next/navigation';
@@ -7,16 +7,12 @@ import { redirect } from 'next/navigation';
 const MOCK_MESSAGE = 'Please correct the errors below.';
 
 let mockReturnState: UserAddressFormState = {
-    streetAddress: '',
-    postcode: '',
-    city: '',
-    country: '',
     validationErrors: undefined,
     message: MOCK_MESSAGE,
     error: undefined,
 };
 
-jest.mock('@/data/actions/AddressForm/UserAddressAction', () => ({
+jest.mock('@/data/user/address/UserAddressAction', () => ({
     UserAddressAction: jest.fn(async () => mockReturnState),
 }));
 
@@ -24,7 +20,7 @@ jest.mock('next/navigation', () => ({
     redirect: jest.fn(),
 }));
 
-jest.mock('@/data/user/GetUserData', () => ({
+jest.mock('@/data/user/UserService', () => ({
     getUserData: jest.fn(),
 }));
 

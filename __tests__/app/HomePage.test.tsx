@@ -80,7 +80,7 @@ jest.mock('next/navigation', () => ({
     useServerInsertedHTML: jest.fn((callback: () => React.ReactNode) => callback()),
 }));
 
-jest.mock('@/data/books/GetBooksData', () => ({
+jest.mock('@/data/books/BookService', () => ({
     fetchBooksWithReviews: jest.fn(),
 }));
 

@@ -1,14 +1,15 @@
-import { ChangeUsernameAction } from '@/data/actions/UsernameForm/ChangeUsernameAction';
+import { ChangeUsernameAction } from '@/data/user/username/ChangeUsernameAction';
+import { updateUsername } from '@/data/user/UserRepository';
 import { getUserData } from '@/data/user/UserService';
-import { updateUsername } from '@/data/actions/UsernameForm/UsernameRepository';
-import { handleUsernameUpdateError } from '@/data/actions/UsernameForm/DatabaseErrorHandler';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { Database } from '@/database.types';
+
+type UserRow = Database['public']['Tables']['users']['Row'];
 
 jest.mock('@/utils/db/server');
-jest.mock('@/data/user/GetUserData');
-jest.mock('@/data/actions/UsernameForm/UsernameRepository');
-jest.mock('@/data/actions/UsernameForm/DatabaseErrorHandler');
+jest.mock('@/data/user/UserService');
+jest.mock('@/data/user/UserRepository');
 jest.mock('next/cache', () => ({
     revalidatePath: jest.fn(),
 }));
@@ -19,11 +20,13 @@ jest.mock('next/navigation', () => ({
 describe('ChangeUsernameAction', () => {
     const mockedRedirect = redirect as jest.MockedFunction<typeof redirect>;
     const mockedRevalidatePath = revalidatePath as jest.MockedFunction<typeof revalidatePath>;
+    const mockedUpdateUsername = updateUsername as jest.MockedFunction<typeof updateUsername>;
 
     beforeEach(() => {
         jest.clearAllMocks();
         mockedRevalidatePath.mockImplementation(() => {});
         mockedRedirect.mockImplementation(() => undefined as never);
+        mockedUpdateUsername.mockResolvedValue({ data: [] as UserRow[], error: null });
     });
 
     it('should return initial state when reset is requested', async () => {
@@ -72,7 +75,7 @@ describe('ChangeUsernameAction', () => {
 
         const result = await ChangeUsernameAction(undefined, formData);
 
-        expect(result.message).toBe('Session expired. Please log in again.');
+        expect(result.message).toBe('Not authenticated');
     });
 
     it('should return message when username is unchanged', async () => {
@@ -95,19 +98,14 @@ describe('ChangeUsernameAction', () => {
             data: { id: 'user-123', username: 'olduser' },
             error: null,
         });
-        (updateUsername as jest.Mock).mockResolvedValue({
+        mockedUpdateUsername.mockResolvedValue({
             data: null,
-            error: { code: '23505', message: 'Unique violation' },
-        });
-        (handleUsernameUpdateError as jest.Mock).mockReturnValue({
-            message: 'Username taken',
-            isUsernameTaken: true,
-            error: { code: '23505' },
+            error: 'This record already exists. Please use a different value.',
         });
 
         const result = await ChangeUsernameAction(undefined, formData);
 
-        expect(result.message).toBe('Username taken');
+        expect(result.message).toBe('This username is already taken.');
         expect(result.isUsernameTaken).toBe(true);
     });
 
@@ -118,7 +116,7 @@ describe('ChangeUsernameAction', () => {
             data: { id: 'user-123', username: 'olduser' },
             error: null,
         });
-        (updateUsername as jest.Mock).mockResolvedValue({ data: null, error: null });
+        mockedUpdateUsername.mockResolvedValue({ data: [] as UserRow[], error: null });
 
         await ChangeUsernameAction(undefined, formData);
 
@@ -134,7 +132,7 @@ describe('ChangeUsernameAction', () => {
 
         const result = await ChangeUsernameAction(undefined, formData);
 
-        expect(result.message).toBe('A critical server error occurred.');
+        expect(result.message).toBe('An unexpected error occurred. We are looking into it.');
         expect(consoleSpy).toHaveBeenCalled();
         consoleSpy.mockRestore();
     });
@@ -146,7 +144,7 @@ describe('ChangeUsernameAction', () => {
             data: { id: 'user-123', username: 'olduser' },
             error: null,
         });
-        (updateUsername as jest.Mock).mockResolvedValue({ data: null, error: null });
+        mockedUpdateUsername.mockResolvedValue({ data: [] as UserRow[], error: null });
 
         await ChangeUsernameAction(undefined, formData);
 
@@ -160,7 +158,7 @@ describe('ChangeUsernameAction', () => {
             data: { id: 'user-123', username: 'olduser' },
             error: null,
         });
-        (updateUsername as jest.Mock).mockResolvedValue({ data: null, error: null });
+        mockedUpdateUsername.mockResolvedValue({ data: [] as UserRow[], error: null });
 
         const prevState = { username: 'previous', message: 'Previous message' };
         await ChangeUsernameAction(prevState, formData);
@@ -190,7 +188,7 @@ describe('ChangeUsernameAction', () => {
 
         const result = await ChangeUsernameAction(undefined, formData);
 
-        expect(result.message).toBe('A critical server error occurred.');
+        expect(result.message).toBe('An unexpected error occurred. We are looking into it.');
         expect(consoleSpy).toHaveBeenCalled();
         consoleSpy.mockRestore();
     });

@@ -4,8 +4,8 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { getUserData } from '@/data/user/UserService';
 import { cartSchema } from '@/data/schemas/cartSchema';
-import { ensureCartExists, executeCartOperation } from './CartService';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { ensureCartExists, executeCartOperation } from '@/data/cart/CartService';
 
 export type CartFormState = {
     success: boolean;
