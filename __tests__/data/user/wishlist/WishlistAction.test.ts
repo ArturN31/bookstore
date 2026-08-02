@@ -7,14 +7,18 @@ import { executeWishlistOperation } from '@/data/user/wishlist/WishlistService';
 jest.mock('@/data/user/UserService');
 jest.mock('@/data/schemas/wishlistSchema');
 jest.mock('@/data/user/wishlist/WishlistService');
-jest.mock('@/utils/errors/SupabaseErrorHandler', () => ({
-    sanitizeSupabaseError: jest.fn((err: unknown) => {
-        if (!err) return null;
-        if (err instanceof Error) return 'A system error occurred. Please try again.';
-        if (typeof err === 'string') return err;
-        return 'Sanitized error';
-    }),
-}));
+jest.mock('@/utils/errors/SupabaseErrorHandler', () => {
+    const actual = jest.requireActual('@/utils/errors/SupabaseErrorHandler');
+    return {
+        ...actual,
+        sanitizeSupabaseError: jest.fn((err: unknown) => {
+            if (!err) return null;
+            if (err instanceof Error) return 'A system error occurred. Please try again.';
+            if (typeof err === 'string') return err;
+            return 'Sanitized error';
+        }),
+    };
+});
 jest.mock('next/cache', () => ({
     revalidatePath: jest.fn(),
 }));
@@ -81,6 +85,17 @@ describe('WishlistAction', () => {
         expect(result.success).toBe(true);
     });
 
+    it('should use fallback success message for INSERT when result.message is empty', async () => {
+        mockedExecuteWishlistOperation.mockResolvedValue({
+            data: true,
+            message: '',
+            error: null,
+        });
+        const result = await WishlistAction(undefined, createFormData('b1', 'INSERT'));
+        expect(result.success).toBe(true);
+        expect(result.message).toBe('Item successfully added to wishlist.');
+    });
+
     it('should return failure message when insertError exists', async () => {
         mockedExecuteWishlistOperation.mockResolvedValue({
             data: null,
@@ -97,6 +112,17 @@ describe('WishlistAction', () => {
         expect(mockedExecuteWishlistOperation).toHaveBeenCalledWith('REMOVE', 'user-123', 'b1');
         expect(revalidatePath).toHaveBeenCalledWith('/', 'layout');
         expect(result.success).toBe(true);
+    });
+
+    it('should use fallback success message for REMOVE when result.message is empty', async () => {
+        mockedExecuteWishlistOperation.mockResolvedValue({
+            data: true,
+            message: '',
+            error: null,
+        });
+        const result = await WishlistAction(undefined, createFormData('b1', 'REMOVE'));
+        expect(result.success).toBe(true);
+        expect(result.message).toBe('Item successfully removed from wishlist.');
     });
 
     it('should return failure message when removeError exists', async () => {

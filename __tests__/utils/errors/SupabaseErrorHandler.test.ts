@@ -33,6 +33,18 @@ describe('SupabaseErrorHandler', () => {
             expect(sanitizeSupabaseError(false)).toBe('An unknown error occurred.');
         });
 
+        describe('String Errors', () => {
+            it('should return the string itself if it is non-empty', () => {
+                const result = sanitizeSupabaseError('Custom error message');
+                expect(result).toBe('Custom error message');
+            });
+
+            it('should return default message if the string is empty or whitespace only', () => {
+                expect(sanitizeSupabaseError('')).toBe('An unknown error occurred.');
+                expect(sanitizeSupabaseError('   ')).toBe('An unknown error occurred.');
+            });
+        });
+
         describe('PostgREST Database Errors', () => {
             it('should sanitize 23505 (unique_violation) error', () => {
                 const mockPostgrestError = {
@@ -326,6 +338,88 @@ describe('SupabaseErrorHandler', () => {
 
                 expect(result).toBe('An unknown error occurred. Please try again later.');
                 expect(consoleErrorSpy).toHaveBeenCalledWith('[Unknown Error]:', unknownError);
+            });
+        });
+
+        describe('Fallback Error Handling and Catch Blocks', () => {
+            it('should return string input directly from fallbackErrorMessage when exception is thrown during try block execution', () => {
+                const originalTrim = String.prototype.trim;
+                String.prototype.trim = (): string => {
+                    throw new Error('Trim method failure');
+                };
+
+                const result = sanitizeSupabaseError('Fallback string message');
+
+                expect(result).toBe('Fallback string message');
+
+                String.prototype.trim = originalTrim;
+            });
+
+            it('should return Error.message from fallbackErrorMessage when an Error instance is thrown in the try block', () => {
+                class ThrowingPostgrestError extends Error {
+                    readonly code = '23505';
+                    get details(): string {
+                        throw new Error('Trigger catch');
+                    }
+                }
+
+                const throwingErrorInstance = new ThrowingPostgrestError(
+                    'Error instance fallback message',
+                );
+                const result = sanitizeSupabaseError(throwingErrorInstance);
+
+                expect(result).toBe('Error instance fallback message');
+            });
+
+            it('should return message property from fallbackErrorMessage when error parameter is an object with valid non-empty string message', () => {
+                const throwingErrorObject: Record<string, unknown> = {
+                    message: 'Object fallback message',
+                    get code(): string {
+                        throw new Error('Property getter exception');
+                    },
+                };
+
+                const result = sanitizeSupabaseError(throwingErrorObject);
+
+                expect(result).toBe('Object fallback message');
+            });
+
+            it('should return default fallback message when error object has empty or whitespace-only message property', () => {
+                const throwingErrorObject: Record<string, unknown> = {
+                    message: '    ',
+                    get code(): string {
+                        throw new Error('Property getter exception');
+                    },
+                };
+
+                const result = sanitizeSupabaseError(throwingErrorObject);
+
+                expect(result).toBe('An unexpected error occurred.');
+            });
+
+            it('should return default fallback message when error object has non-string message property', () => {
+                const throwingErrorObject: Record<string, unknown> = {
+                    message: 500,
+                    get code(): string {
+                        throw new Error('Property getter exception');
+                    },
+                };
+
+                const result = sanitizeSupabaseError(throwingErrorObject);
+
+                expect(result).toBe('An unexpected error occurred.');
+            });
+
+            it('should return default fallback message when error object does not have message property', () => {
+                const throwingErrorObject: Record<string, unknown> = {
+                    get code(): string {
+                        throw new Error('Property getter exception');
+                    },
+                };
+
+                const result = sanitizeSupabaseError(throwingErrorObject);
+
+                expect(result).toBe('An unexpected error occurred.');
             });
         });
     });

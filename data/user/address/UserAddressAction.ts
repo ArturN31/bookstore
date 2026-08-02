@@ -8,6 +8,8 @@ import { insertUserAddress, updateUserAddress } from './UserAddressRepository';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { Database } from '@/database.types';
+import { USER_ROUTES } from '../UserConstants';
+import { APP_ERROR_MESSAGES } from '@/utils/errors/SupabaseErrorHandler';
 
 type UserInsert = Database['public']['Tables']['users']['Insert'];
 
@@ -38,7 +40,7 @@ export async function UserAddressAction(
     if (!validated.success)
         return {
             validationErrors: validated.error.issues,
-            message: 'Please correct the highlighted errors.',
+            message: APP_ERROR_MESSAGES.VALIDATION_ERROR,
         };
 
     const supabase = await createBackendClient();
@@ -48,7 +50,7 @@ export async function UserAddressAction(
         error: authError,
     } = await supabase.auth.getUser();
 
-    if (authError || !user) return { message: 'Session expired. Please log in again.' };
+    if (authError || !user) return { message: APP_ERROR_MESSAGES.SESSION_EXPIRED };
 
     const payload = mapToUserPayload(validated.data);
 
@@ -59,10 +61,10 @@ export async function UserAddressAction(
 
     if (dbError)
         return {
-            message: 'Failed to save address details.',
+            message: APP_ERROR_MESSAGES.SAVE_ADDRESS_ERROR,
             error: dbError,
         };
 
-    revalidatePath('/user/profile');
-    redirect('/user/profile');
+    revalidatePath(USER_ROUTES.PROFILE);
+    redirect(USER_ROUTES.PROFILE);
 }

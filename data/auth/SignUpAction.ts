@@ -7,6 +7,7 @@ import { createBackendClient } from '@/utils/db/server';
 import { signUpSchema } from '@/data/schemas/authSchemas';
 import { registerUser } from './AuthRepository';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { AUTH_ROUTES, AUTH_MESSAGES } from './AuthConstants';
 
 export type SignUpFormState = {
     validationErrors?: z.core.$ZodIssue[];
@@ -30,12 +31,11 @@ export async function SignUpAction(
     if (!validated.success)
         return {
             validationErrors: validated.error.issues,
-            message: 'Please resolve the validation errors.',
+            message: AUTH_MESSAGES.SIGN_UP_VALIDATION,
         };
 
     const captchaToken = rawData.captchaToken as string | undefined;
-    if (!captchaToken)
-        return { message: 'Registration rejected due to an invalid or missing security token.' };
+    if (!captchaToken) return { message: AUTH_MESSAGES.SIGN_UP_CAPTCHA_ERROR };
 
     try {
         const supabase = await createBackendClient();
@@ -47,12 +47,12 @@ export async function SignUpAction(
         });
         if (authError) return { message: authError };
 
-        revalidatePath('/', 'layout');
-        revalidatePath('/user/profile');
+        revalidatePath(AUTH_ROUTES.ROOT, 'layout');
+        revalidatePath(AUTH_ROUTES.PROFILE);
     } catch (err: unknown) {
         console.error('[SignUpAction] Critical Failure:', err);
         return { message: sanitizeSupabaseError(err) };
     }
 
-    redirect('/user/profile');
+    redirect(AUTH_ROUTES.PROFILE);
 }

@@ -1,48 +1,27 @@
 import { executeWishlistOperation } from '@/data/user/wishlist/WishlistService';
-import { createBackendClient } from '@/utils/db/server';
-import { withRetry } from '@/utils/network/retry';
+import { addToWishlist, removeFromWishlist } from '@/data/user/wishlist/WishlistRepository';
 
-jest.mock('@/utils/db/server', () => ({
-    createBackendClient: jest.fn(),
+jest.mock('@/data/user/wishlist/WishlistRepository', () => ({
+    addToWishlist: jest.fn(),
+    removeFromWishlist: jest.fn(),
 }));
-
-jest.mock('@/utils/network/retry', () => ({
-    withRetry: jest.fn((fn: () => unknown) => fn()),
-}));
-
-interface MockSupabaseClient {
-    from: jest.Mock;
-    insert: jest.Mock;
-    delete: jest.Mock;
-    eq: jest.Mock;
-    select: jest.Mock;
-}
 
 describe('WishlistService', () => {
-    let mockSupabase: MockSupabaseClient;
-
     beforeEach(() => {
         jest.clearAllMocks();
 
-        mockSupabase = {
-            from: jest.fn(),
-            insert: jest.fn(),
-            delete: jest.fn(),
-            eq: jest.fn(),
-            select: jest.fn(),
-        };
+        jest.spyOn(console, 'error').mockImplementation(() => {});
+        jest.spyOn(console, 'warn').mockImplementation(() => {});
+    });
 
-        (createBackendClient as jest.Mock).mockResolvedValue(mockSupabase);
-        mockSupabase.from.mockReturnValue(mockSupabase);
-        mockSupabase.insert.mockReturnValue(mockSupabase);
-        mockSupabase.delete.mockReturnValue(mockSupabase);
-        mockSupabase.eq.mockReturnValue(mockSupabase);
-        mockSupabase.select.mockReturnValue(mockSupabase);
+    afterEach(() => {
+        (console.error as jest.Mock<unknown, unknown[]>).mockRestore();
+        (console.warn as jest.Mock<unknown, unknown[]>).mockRestore();
     });
 
     it('should execute INSERT operation successfully', async () => {
-        mockSupabase.select.mockResolvedValueOnce({
-            data: [{ user_id: 'user-123', book_id: 'book-1' }],
+        (addToWishlist as jest.Mock).mockResolvedValueOnce({
+            data: true,
             error: null,
         });
 
@@ -50,11 +29,12 @@ describe('WishlistService', () => {
 
         expect(result.data).toBe(true);
         expect(result.error).toBeNull();
+        expect(result.message).toBe('Item added to wishlist.');
     });
 
     it('should execute REMOVE operation successfully', async () => {
-        mockSupabase.select.mockResolvedValueOnce({
-            data: [{ user_id: 'user-123', book_id: 'book-1' }],
+        (removeFromWishlist as jest.Mock).mockResolvedValueOnce({
+            data: true,
             error: null,
         });
 
@@ -62,21 +42,18 @@ describe('WishlistService', () => {
 
         expect(result.data).toBe(true);
         expect(result.error).toBeNull();
+        expect(result.message).toBe('Item removed from wishlist.');
     });
 
     it('should return error for unsupported operation type', async () => {
-        const result = await executeWishlistOperation(
-            'INVALID_OP' as unknown as 'INSERT',
-            'user-123',
-            'book-1',
-        );
+        const result = await executeWishlistOperation('INVALID_OP', 'user-123', 'book-1');
 
         expect(result.data).toBeNull();
         expect(result.error).toBe('Unsupported wishlist action.');
     });
 
-    it('should handle INSERT operation error (DB level)', async () => {
-        mockSupabase.select.mockResolvedValueOnce({
+    it('should handle INSERT operation error (DB level / result.error)', async () => {
+        (addToWishlist as jest.Mock).mockResolvedValueOnce({
             data: null,
             error: { message: 'Insert failed' },
         });
@@ -86,8 +63,8 @@ describe('WishlistService', () => {
         expect(result.error).toBe('Insert failed');
     });
 
-    it('should handle INSERT operation error (Catch block / Timeout)', async () => {
-        (withRetry as jest.Mock).mockRejectedValueOnce(new Error('Network failure'));
+    it('should handle INSERT operation error (Catch block / Thrown exception)', async () => {
+        (addToWishlist as jest.Mock).mockRejectedValueOnce(new Error('Network failure'));
 
         const result = await executeWishlistOperation('INSERT', 'user-123', 'book-1');
 

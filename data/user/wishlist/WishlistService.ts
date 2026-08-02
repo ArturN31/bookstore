@@ -1,6 +1,6 @@
 import { addToWishlist, removeFromWishlist } from './WishlistRepository';
 import { SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
-import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { sanitizeSupabaseError, APP_ERROR_MESSAGES } from '@/utils/errors/SupabaseErrorHandler';
 
 const WISHLIST_OPERATIONS: Record<
     string,
@@ -16,7 +16,7 @@ export const executeWishlistOperation = async (
     bookId: string,
 ): Promise<SafeQueryResult<boolean> & { message?: string }> => {
     const operation = WISHLIST_OPERATIONS[type];
-    if (!operation) return { data: null, error: 'Unsupported wishlist action.' };
+    if (!operation) return { data: null, error: APP_ERROR_MESSAGES.UNSUPPORTED_WISHLIST_ACTION };
 
     try {
         const result = await operation(userId, bookId);

@@ -2,6 +2,7 @@ import { createBackendClient } from '@/utils/db/server';
 import { safeSupabaseQuery, SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { withRetry } from '@/utils/network/retry';
+import { WISHLIST_TABLE } from '../UserConstants';
 
 export const addToWishlist = async (
     userId: string,
@@ -12,7 +13,7 @@ export const addToWishlist = async (
             const supabase = await createBackendClient();
             const result = await safeSupabaseQuery(async () =>
                 supabase
-                    .from('wishlist')
+                    .from(WISHLIST_TABLE)
                     .insert([{ user_id: userId, book_id: bookId }])
                     .select(),
             );
@@ -41,7 +42,7 @@ export const removeFromWishlist = async (
             const supabase = await createBackendClient();
             const result = await safeSupabaseQuery(async () =>
                 supabase
-                    .from('wishlist')
+                    .from(WISHLIST_TABLE)
                     .delete()
                     .eq('user_id', userId)
                     .eq('book_id', bookId)

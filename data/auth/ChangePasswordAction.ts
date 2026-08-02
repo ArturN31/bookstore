@@ -7,6 +7,7 @@ import { createBackendClient } from '@/utils/db/server';
 import { passwordSchema } from '@/data/schemas/authSchemas';
 import { updateAccountPassword, terminateSession } from './AuthRepository';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { AUTH_ROUTES, AUTH_MESSAGES } from './AuthConstants';
 
 export type ChangePasswordFormState = {
     validationErrors?: z.core.$ZodIssue[];
@@ -31,7 +32,7 @@ export async function ChangePasswordAction(
     if (!validated.success)
         return {
             validationErrors: validated.error.issues,
-            message: 'Validation failed. Please check the requirements.',
+            message: AUTH_MESSAGES.CHANGE_PASSWORD_VALIDATION,
         };
 
     try {
@@ -41,7 +42,7 @@ export async function ChangePasswordAction(
             data: { user },
             error: authError,
         } = await supabase.auth.getUser();
-        if (authError || !user) return { message: 'Session expired. Please log in again.' };
+        if (authError || !user) return { message: AUTH_MESSAGES.SESSION_EXPIRED };
 
         const { error: updateError } = await updateAccountPassword(
             supabase,
@@ -56,6 +57,6 @@ export async function ChangePasswordAction(
         return { message: sanitizeSupabaseError(err) };
     }
 
-    revalidatePath('/', 'layout');
-    redirect('/user/auth/signin');
+    revalidatePath(AUTH_ROUTES.ROOT, 'layout');
+    redirect(AUTH_ROUTES.SIGN_IN);
 }

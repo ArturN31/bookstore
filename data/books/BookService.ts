@@ -7,16 +7,17 @@ import {
     BookQueryParams,
 } from './BookRepository';
 import { mapToPaginatedBookResponse } from './BookMapper';
-import { PaginatedBookResult } from './BookConstants';
+import {
+    DEFAULT_PAGE_SIZE,
+    MAX_PAGE_SIZE,
+    MIN_PAGE_SIZE,
+    MIN_PAGE_NUMBER,
+    PaginatedBookResult,
+} from './BookConstants';
 import { unstable_cache } from 'next/cache';
 import { createPublicServerClient } from '@/utils/db/publicServer';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
-
-const DEFAULT_PAGE_SIZE = 10;
-const MAX_PAGE_SIZE = 50;
-const MIN_PAGE_SIZE = 1;
-const MIN_PAGE_NUMBER = 1;
 
 const getCachedBooksData = unstable_cache(
     async (page: number, limit: number, paramsSerialized: string) => {

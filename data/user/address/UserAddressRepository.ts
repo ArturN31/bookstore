@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/database.types';
 import { SafeQueryResult, safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
+import { USER_TABLE } from '../UserConstants';
 
 type UserTable = Database['public']['Tables']['users'];
 type UserInsert = UserTable['Insert'];
@@ -12,7 +13,7 @@ export const insertUserAddress = async (
     payload: UserInsert,
 ): Promise<SafeQueryResult<UserRow[]>> => {
     return safeSupabaseQuery(async () => {
-        return await supabase.from('users').insert(payload).select();
+        return await supabase.from(USER_TABLE).insert(payload).select();
     });
 };
 
@@ -22,6 +23,6 @@ export const updateUserAddress = async (
     payload: UserUpdate,
 ): Promise<SafeQueryResult<UserRow[]>> => {
     return safeSupabaseQuery(async () => {
-        return await supabase.from('users').update(payload).eq('id', userId).select();
+        return await supabase.from(USER_TABLE).update(payload).eq('id', userId).select();
     });
 };

@@ -8,6 +8,7 @@ import { getUserData } from '@/data/user/UserService';
 import { signInSchema } from '@/data/schemas/authSchemas';
 import { authenticateUser } from './AuthRepository';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { AUTH_ROUTES, AUTH_MESSAGES } from './AuthConstants';
 
 export type SignInFormState = {
     validationErrors?: z.core.$ZodIssue[];
@@ -31,14 +32,13 @@ export async function SignInAction(
     if (!validated.success)
         return {
             validationErrors: validated.error.issues,
-            message: 'Please correct the highlighted errors.',
+            message: AUTH_MESSAGES.SIGN_IN_VALIDATION,
         };
 
     const captchaToken = rawData.captchaToken as string | undefined;
-    if (!captchaToken)
-        return { message: 'Authentication rejected due to an invalid or missing security token.' };
+    if (!captchaToken) return { message: AUTH_MESSAGES.SIGN_IN_CAPTCHA_ERROR };
 
-    let destinationUrl = '/';
+    let destinationUrl: string = AUTH_ROUTES.ROOT;
 
     try {
         const supabase = await createBackendClient();
@@ -51,9 +51,9 @@ export async function SignInAction(
 
         const { data: dbUser } = await getUserData();
 
-        revalidatePath('/', 'layout');
+        revalidatePath(AUTH_ROUTES.ROOT, 'layout');
 
-        if (!dbUser) destinationUrl = '/user/profile';
+        if (!dbUser) destinationUrl = AUTH_ROUTES.PROFILE;
         else {
             const returnTo = rawData.returnTo as string | undefined;
             if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//'))

@@ -220,7 +220,7 @@ export const ensureCartExists = async (userId: string): Promise<SafeQueryResult<
         if (!created.data)
             return {
                 data: null,
-                error: APP_ERROR_MESSAGES.CART_CREATION_FAILED,
+                error: APP_ERROR_MESSAGES.FAILED_TO_CREATE_CART,
             };
         return { data: created.data, error: null };
     } catch (err: unknown) {
@@ -231,24 +231,28 @@ export const ensureCartExists = async (userId: string): Promise<SafeQueryResult<
     }
 };
 
+export const buildCartOperationResult = (
+    result: ActionResponse<boolean>,
+): SafeQueryResult<boolean> => {
+    if (result.error) return { data: null, error: sanitizeSupabaseError(result.error) };
+    return { data: result.data ?? true, error: null };
+};
+
 const CART_OPERATIONS: Record<
     string,
     (cartId: string, bookId: string, qty: number) => Promise<SafeQueryResult<boolean>>
 > = {
     [CART_OPERATION_TYPES.INSERT]: async (cartId, bookId, qty) => {
         const result = await addItemToUsersCart(cartId, bookId, qty);
-        if (result.error) return { data: null, error: sanitizeSupabaseError(result.error) };
-        return { data: result.data ?? true, error: null };
+        return buildCartOperationResult(result);
     },
     [CART_OPERATION_TYPES.UPDATE]: async (cartId, bookId, qty) => {
         const result = await updateItemInUsersCart(cartId, bookId, qty);
-        if (result.error) return { data: null, error: sanitizeSupabaseError(result.error) };
-        return { data: result.data ?? true, error: null };
+        return buildCartOperationResult(result);
     },
     [CART_OPERATION_TYPES.REMOVE]: async (cartId, bookId) => {
         const result = await removeItemFromUsersCart(cartId, bookId);
-        if (result.error) return { data: null, error: sanitizeSupabaseError(result.error) };
-        return { data: result.data ?? true, error: null };
+        return buildCartOperationResult(result);
     },
 };
 

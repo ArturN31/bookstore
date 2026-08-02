@@ -39,14 +39,16 @@ export async function CartAction(
         if (authError || !user)
             return {
                 success: false,
-                message: sanitizeSupabaseError(authError) || 'Authorization required.',
+                message: authError ? sanitizeSupabaseError(authError) : 'Authorization required.',
             };
 
         const cartContext = await ensureCartExists(user.id);
         if (cartContext.error || !cartContext.data)
             return {
                 success: false,
-                message: sanitizeSupabaseError(cartContext.error) || 'Cart initialization failed.',
+                message: cartContext.error
+                    ? sanitizeSupabaseError(cartContext.error)
+                    : 'Cart initialization failed.',
             };
 
         const result = await executeCartOperation(

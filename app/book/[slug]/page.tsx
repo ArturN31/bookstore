@@ -34,9 +34,11 @@ export default async function BookById({ params, searchParams }: BookByIdProps) 
         bookID: slug,
     });
 
+    console.log(paginatedResult, error);
+
     if (error) return <ErrorState message="Could not load book details." />;
 
-    const books = paginatedResult?.data;
+    const books = paginatedResult?.data as Book[] | undefined;
     if (!books || books.length === 0) notFound();
 
     const book = books[0];
@@ -44,15 +46,15 @@ export default async function BookById({ params, searchParams }: BookByIdProps) 
 
     const reviewsData = {
         data: allReviews,
-        total: paginatedResult.total || allReviews.length,
-        totalPages: paginatedResult.totalPages || 1,
+        total: paginatedResult?.total ?? allReviews.length,
+        totalPages: paginatedResult?.totalPages ?? 1,
         currentPage: currentPage,
         error: null,
     };
 
     return (
         <article
-            className="m-auto grid max-w-375 gap-5"
+            className="px m-auto grid max-w-375 gap-5 px-4 sm:max-w-3xl md:max-w-5xl lg:max-w-7xl"
             role="main"
         >
             <BookHeader book={book} />

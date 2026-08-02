@@ -5,12 +5,12 @@ import { revalidatePath } from 'next/cache';
 import { getUserData } from '@/data/user/UserService';
 import { wishlistSchema } from '@/data/schemas/wishlistSchema';
 import { executeWishlistOperation } from './WishlistService';
-import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { sanitizeSupabaseError, APP_ERROR_MESSAGES } from '@/utils/errors/SupabaseErrorHandler';
 
 export type WishlistFormState = {
     success: boolean;
     message: string;
-    validationErrors?: z.ZodIssue[];
+    validationErrors?: z.core.$ZodIssue[];
     timestamp?: number;
 };
 
@@ -27,7 +27,7 @@ export async function WishlistAction(
     if (!validated.success)
         return {
             success: false,
-            message: 'Invalid wishlist request.',
+            message: APP_ERROR_MESSAGES.INVALID_WISHLIST_REQUEST,
             validationErrors: validated.error.issues,
         };
 
@@ -38,7 +38,8 @@ export async function WishlistAction(
         if (authError || !user)
             return {
                 success: false,
-                message: sanitizeSupabaseError(authError) || 'Login required to manage wishlist.',
+                message:
+                    sanitizeSupabaseError(authError) || APP_ERROR_MESSAGES.WISHLIST_LOGIN_REQUIRED,
             };
 
         const result = await executeWishlistOperation(actionType, user.id, bookId);

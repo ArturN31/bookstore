@@ -22,6 +22,9 @@ describe('APP - Auth - SignInAction', () => {
     beforeEach(() => {
         jest.clearAllMocks();
 
+        jest.spyOn(console, 'error').mockImplementation(() => {});
+        jest.spyOn(console, 'warn').mockImplementation(() => {});
+
         mockSupabase = {
             auth: {
                 signInWithPassword: jest.fn(),
@@ -30,6 +33,11 @@ describe('APP - Auth - SignInAction', () => {
         jest.mocked(createBackendClient).mockResolvedValue(
             mockSupabase as unknown as Awaited<ReturnType<typeof createBackendClient>>,
         );
+    });
+
+    afterEach(() => {
+        (console.error as jest.Mock<unknown, unknown[]>).mockRestore();
+        (console.warn as jest.Mock<unknown, unknown[]>).mockRestore();
     });
 
     it('should return reset state when rawData.reset is present', async () => {
@@ -186,7 +194,6 @@ describe('APP - Auth - SignInAction', () => {
     });
 
     it('should handle critical server error in catch block', async () => {
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         jest.mocked(createBackendClient).mockRejectedValueOnce(new Error('Critical failure'));
 
         const formData = new FormData();
@@ -197,11 +204,10 @@ describe('APP - Auth - SignInAction', () => {
         const result = await SignInAction(undefined, formData);
 
         expect(result.message).toBe('An unexpected error occurred. We are looking into it.');
-        expect(consoleSpy).toHaveBeenCalledWith(
+        expect(console.error).toHaveBeenCalledWith(
             '[SignInAction] Critical Failure:',
             expect.any(Error),
         );
-        consoleSpy.mockRestore();
     });
 
     it('should re-throw redirect errors', async () => {

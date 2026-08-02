@@ -2,6 +2,7 @@ import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { BOOK_SORT_OPTIONS } from '@/data/books/BookConstants';
 import { createPublicServerClient } from '@/utils/db/publicServer';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 
 jest.mock('next/cache', () => ({
     unstable_cache: jest.fn(
@@ -15,8 +16,17 @@ jest.mock('@/utils/db/publicServer', () => ({
     createPublicServerClient: jest.fn(),
 }));
 
+jest.mock('@/utils/db/safeSupabaseQuery', () => ({
+    safeSupabaseQuery: jest.fn(async (fn: () => unknown) => await fn()),
+}));
+
 describe('fetchBooksWithReviews', () => {
-    const mockedCreatePublicServerClient = createPublicServerClient as jest.Mock;
+    type SupabaseClientType = Awaited<ReturnType<typeof createPublicServerClient>>;
+    const mockedCreatePublicServerClient = createPublicServerClient as unknown as jest.Mock<
+        Promise<SupabaseClientType>,
+        []
+    >;
+    const mockedSafeSupabaseQuery = safeSupabaseQuery as unknown as jest.Mock;
 
     interface MockSupabaseResponse {
         data: Record<string, unknown>[] | null;
@@ -24,17 +34,34 @@ describe('fetchBooksWithReviews', () => {
         count: number;
     }
 
-    const setupSupabaseMock = (response: MockSupabaseResponse) => {
-        const chain: Record<string, jest.Mock> = {};
+    interface MockSupabaseChain {
+        select: jest.Mock<MockSupabaseChain, unknown[]>;
+        eq: jest.Mock<MockSupabaseChain, unknown[]>;
+        in: jest.Mock<MockSupabaseChain, unknown[]>;
+        order: jest.Mock<MockSupabaseChain, unknown[]>;
+        range: jest.Mock<MockSupabaseChain, unknown[]>;
+        then: (
+            onFulfilled?: ((value: MockSupabaseResponse) => unknown) | null,
+            onRejected?: ((reason: unknown) => unknown) | null,
+        ) => Promise<unknown>;
+    }
 
-        chain.select = jest.fn().mockReturnValue(chain);
-        chain.eq = jest.fn().mockReturnValue(chain);
-        chain.in = jest.fn().mockReturnValue(chain);
-        chain.order = jest.fn().mockReturnValue(chain);
-        chain.range = jest.fn().mockReturnValue(chain);
-        chain.then = jest.fn((resolve: (value: MockSupabaseResponse) => void) =>
-            Promise.resolve(response).then(resolve),
-        );
+    const setupSupabaseMock = (response: MockSupabaseResponse) => {
+        const chain: MockSupabaseChain = {
+            select: jest.fn(),
+            eq: jest.fn(),
+            in: jest.fn(),
+            order: jest.fn(),
+            range: jest.fn(),
+            then: (onFulfilled, onRejected) =>
+                Promise.resolve(response).then(onFulfilled, onRejected),
+        };
+
+        chain.select.mockReturnValue(chain);
+        chain.eq.mockReturnValue(chain);
+        chain.in.mockReturnValue(chain);
+        chain.order.mockReturnValue(chain);
+        chain.range.mockReturnValue(chain);
 
         const supabaseClient = {
             from: jest.fn().mockReturnValue(chain),
@@ -51,8 +78,8 @@ describe('fetchBooksWithReviews', () => {
     });
 
     afterEach(() => {
-        (console.error as jest.Mock).mockRestore();
-        (console.warn as jest.Mock).mockRestore();
+        (console.error as jest.Mock<unknown, unknown[]>).mockRestore();
+        (console.warn as jest.Mock<unknown, unknown[]>).mockRestore();
     });
 
     it('should use the wildcard review selector and filter by id when bookID is provided', async () => {
@@ -63,7 +90,9 @@ describe('fetchBooksWithReviews', () => {
             count: 0,
         });
 
-        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(
+            supabaseClient as unknown as SupabaseClientType,
+        );
 
         await fetchBooksWithReviews({ bookID: testID });
 
@@ -81,7 +110,9 @@ describe('fetchBooksWithReviews', () => {
             count: 0,
         });
 
-        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(
+            supabaseClient as unknown as SupabaseClientType,
+        );
 
         await fetchBooksWithReviews({});
 
@@ -102,7 +133,9 @@ describe('fetchBooksWithReviews', () => {
             count: 2,
         });
 
-        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(
+            supabaseClient as unknown as SupabaseClientType,
+        );
 
         const result = await fetchBooksWithReviews();
 
@@ -119,7 +152,9 @@ describe('fetchBooksWithReviews', () => {
             count: 0,
         });
 
-        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(
+            supabaseClient as unknown as SupabaseClientType,
+        );
 
         await fetchBooksWithReviews({ bookIDs: ids });
 
@@ -133,7 +168,9 @@ describe('fetchBooksWithReviews', () => {
             count: 0,
         });
 
-        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(
+            supabaseClient as unknown as SupabaseClientType,
+        );
 
         await fetchBooksWithReviews({ group: 'genre', type: 'Fantasy' });
 
@@ -158,7 +195,9 @@ describe('fetchBooksWithReviews', () => {
             count: 1,
         });
 
-        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(
+            supabaseClient as unknown as SupabaseClientType,
+        );
 
         const result = await fetchBooksWithReviews();
 
@@ -172,7 +211,9 @@ describe('fetchBooksWithReviews', () => {
             count: 0,
         });
 
-        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(
+            supabaseClient as unknown as SupabaseClientType,
+        );
 
         const result = await fetchBooksWithReviews();
 
@@ -187,7 +228,9 @@ describe('fetchBooksWithReviews', () => {
             count: 0,
         });
 
-        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(
+            supabaseClient as unknown as SupabaseClientType,
+        );
 
         const result = await fetchBooksWithReviews();
 
@@ -224,7 +267,21 @@ describe('fetchBooksWithReviews', () => {
             count: 0,
         });
 
-        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(
+            supabaseClient as unknown as SupabaseClientType,
+        );
+
+        const result = await fetchBooksWithReviews();
+
+        expect(result.data?.data).toEqual([]);
+        expect(result.error).toBeNull();
+    });
+
+    it('should return empty paginated response when result.data is falsy', async () => {
+        mockedSafeSupabaseQuery.mockResolvedValueOnce({
+            data: null,
+            error: null,
+        });
 
         const result = await fetchBooksWithReviews();
 
@@ -239,7 +296,9 @@ describe('fetchBooksWithReviews', () => {
             count: 10,
         });
 
-        mockedCreatePublicServerClient.mockResolvedValue(supabaseClient);
+        mockedCreatePublicServerClient.mockResolvedValue(
+            supabaseClient as unknown as SupabaseClientType,
+        );
 
         await fetchBooksWithReviews({
             sortBy: BOOK_SORT_OPTIONS.PRICE_HIGH,

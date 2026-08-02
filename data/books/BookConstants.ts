@@ -1,5 +1,7 @@
 import { Database } from '@/database.types';
 
+export type Book = Database['public']['Tables']['books']['Row'];
+
 export type FilterableBookColumns = Extract<
     keyof Database['public']['Tables']['books']['Row'],
     'genre' | 'format'
@@ -50,3 +52,8 @@ export const BOOK_DEFAULTS = {
     is_active: false,
     sales_count: 0,
 } as const;
+
+export const DEFAULT_PAGE_SIZE = 10;
+export const MAX_PAGE_SIZE = 50;
+export const MIN_PAGE_SIZE = 1;
+export const MIN_PAGE_NUMBER = 1;

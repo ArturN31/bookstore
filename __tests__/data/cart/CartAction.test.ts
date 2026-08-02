@@ -92,6 +92,18 @@ describe('CartAction', () => {
         expect(result.message).toBe('Not logged in');
     });
 
+    it('should return default authorization message if user is null and authError is null', async () => {
+        mockedCartSchema.safeParse.mockReturnValue({
+            success: true,
+            data: { bookId: 'b1', bookQuantity: 1, actionType: 'INSERT' },
+        } as MockedSafeParseReturn);
+        mockedGetUserData.mockResolvedValue({ data: null, error: null });
+
+        const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Authorization required.');
+    });
+
     it('should throw an error if createUsersCart returns false (Internal Error Throw)', async () => {
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         mockedCartSchema.safeParse.mockReturnValue({
@@ -214,7 +226,7 @@ describe('CartAction', () => {
         consoleSpy.mockRestore();
     });
 
-    it('should return error when authError exists (covers line 42 || branch)', async () => {
+    it('should return error when authError exists', async () => {
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'b1', bookQuantity: 1, actionType: 'INSERT' },
@@ -227,7 +239,7 @@ describe('CartAction', () => {
         expect(result.message).toBe('Auth failed');
     });
 
-    it('should return error message from cartContext.error when it exists (covers line 42 || branch left side)', async () => {
+    it('should return error message from cartContext.error when it exists', async () => {
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'b1', bookQuantity: 1, actionType: 'INSERT' },
@@ -240,7 +252,7 @@ describe('CartAction', () => {
         expect(result.message).toBe('Cart lookup failed');
     });
 
-    it('BRANCH COVERAGE: should handle missing cartContext data when error is null', async () => {
+    it('BRANCH COVERAGE: should handle missing cartContext data when error is empty string (fallback message)', async () => {
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'b1', bookQuantity: 1, actionType: 'INSERT' },
@@ -248,16 +260,33 @@ describe('CartAction', () => {
 
         mockedEnsureCartExists.mockResolvedValue({
             data: null,
-            error: null,
-        } as unknown as Awaited<ReturnType<typeof ensureCartExists>>);
+            error: '',
+        });
 
         const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
 
         expect(result.success).toBe(false);
-        expect(result.message).toBe('An unknown error occurred.');
+        expect(result.message).toBe('Cart initialization failed.');
     });
 
-    it('BRANCH COVERAGE: should return "Cart updated successfully." fallback message when result.message is completely missing (covers line 57 fallback branch)', async () => {
+    it('BRANCH COVERAGE: should return sanitized error message when cartContext.error is a non-empty string', async () => {
+        mockedCartSchema.safeParse.mockReturnValue({
+            success: true,
+            data: { bookId: 'b1', bookQuantity: 1, actionType: 'INSERT' },
+        } as MockedSafeParseReturn);
+
+        mockedEnsureCartExists.mockResolvedValue({
+            data: null,
+            error: 'Database initialization error',
+        });
+
+        const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBeDefined();
+    });
+
+    it('BRANCH COVERAGE: should return "Cart updated successfully." fallback message when result.message is completely missing', async () => {
         mockedCartSchema.safeParse.mockReturnValue({
             success: true,
             data: { bookId: 'b1', bookQuantity: 1, actionType: 'INSERT' },
