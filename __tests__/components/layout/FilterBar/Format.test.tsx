@@ -42,8 +42,8 @@ describe('FilterBar - Format', () => {
 
     it('should render the Popover with a message when there is a database error', async () => {
         const mockResponse = {
-            data: [],
-            error: { message: 'DB Error' },
+            data: null,
+            error: 'DB Error',
         };
         mockSelect.mockResolvedValueOnce(mockResponse);
 
@@ -58,7 +58,32 @@ describe('FilterBar - Format', () => {
                 btnIcon: undefined,
                 listToRender: expect.arrayContaining([]),
                 listIcons: undefined,
-                message: 'Failed to retrieve books from database.',
+                message: 'DB Error',
+                listItemOnClick: expect.any(Function),
+            }),
+            undefined,
+        );
+    });
+
+    it('should render the Popover with a message when data is null', async () => {
+        const mockResponse = {
+            data: null,
+            error: null,
+        };
+        mockSelect.mockResolvedValueOnce(mockResponse);
+
+        render(await Format());
+
+        const MockedDropdownList =
+            require('@/components/ui/CustomPopoverWithList').CustomPopoverWithList;
+
+        expect(MockedDropdownList).toHaveBeenCalledWith(
+            expect.objectContaining({
+                btnText: 'Format',
+                btnIcon: undefined,
+                listToRender: expect.arrayContaining([]),
+                listIcons: undefined,
+                message: 'No data returned.',
                 listItemOnClick: expect.any(Function),
             }),
             undefined,
@@ -90,8 +115,37 @@ describe('FilterBar - Format', () => {
         );
     });
 
+    it('should render the Popover with a message when all fetched formats are null or empty strings', async () => {
+        const mockData = [{ format: null }, { format: '' }];
+        const mockResponse = { data: mockData, error: null };
+        mockSelect.mockResolvedValueOnce(mockResponse);
+
+        render(await Format());
+
+        const MockedDropdownList =
+            require('@/components/ui/CustomPopoverWithList').CustomPopoverWithList;
+
+        expect(MockedDropdownList).toHaveBeenCalledWith(
+            expect.objectContaining({
+                btnText: 'Format',
+                btnIcon: undefined,
+                listToRender: expect.arrayContaining([]),
+                listIcons: undefined,
+                message: 'No book formats found.',
+                listItemOnClick: expect.any(Function),
+            }),
+            undefined,
+        );
+    });
+
     it('should render the Popover component with fetched formats on success', async () => {
-        const mockData = [{ format: 'Paperback' }, { format: 'Hardcover' }, { format: 'Ebook' }];
+        const mockData = [
+            { format: 'Paperback' },
+            { format: 'Hardcover' },
+            { format: 'Ebook' },
+            { format: null },
+            { format: '' },
+        ];
         const mockResponse = { data: mockData, error: null };
         mockSelect.mockResolvedValueOnce(mockResponse);
 
@@ -130,7 +184,7 @@ describe('FilterBar - Format', () => {
                 btnIcon: undefined,
                 listToRender: expect.arrayContaining([]),
                 listIcons: undefined,
-                message: 'Failed to retrieve books from database.',
+                message: 'An unexpected error occurred. We are looking into it.',
                 listItemOnClick: expect.any(Function),
             }),
             undefined,

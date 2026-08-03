@@ -1,10 +1,10 @@
 'use server';
 
-import { PostgrestResponse } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
 import { CustomPopoverWithList } from '@/components/ui/CustomPopoverWithList';
 import { unstable_cache } from 'next/cache';
 import { createPublicServerClient } from '@/utils/db/publicServer';
+import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 
 export const handleFormatChoice = async (filter: string) => {
     const option = filter.slice(0, 1) + filter.slice(1, filter.length + 1).toLocaleLowerCase();
@@ -13,22 +13,19 @@ export const handleFormatChoice = async (filter: string) => {
 
 const getCachedFormats = unstable_cache(
     async () => {
-        try {
-            const supabase = await createPublicServerClient();
-            const { data, error }: PostgrestResponse<Book> = await supabase
-                .from('books')
-                .select('format');
+        const supabase = await createPublicServerClient();
+        const result = await safeSupabaseQuery<Pick<Book, 'format'>[]>(async () =>
+            supabase.from('books').select('format'),
+        );
+        if (result.error) return { formats: [], message: result.error };
+        if (!result.data || result.data.length === 0)
+            return { formats: [], message: 'No book formats found.' };
 
-            if (error) return { formats: [], message: 'Failed to retrieve books from database.' };
-            if (!data?.length) return { formats: [], message: 'No book formats found.' };
-
-            let formats: string[] = [...new Set(data.map((entry) => entry.format))].sort((a, b) =>
-                a.localeCompare(b),
-            );
-            return { formats: formats, message: undefined };
-        } catch (error) {
-            return { formats: [], message: 'Failed to retrieve books from database.' };
-        }
+        const formats: string[] = [...new Set(result.data.map((entry) => entry.format))]
+            .filter((format): format is string => typeof format === 'string' && format.length > 0)
+            .sort((a, b) => a.localeCompare(b));
+        if (formats.length === 0) return { formats: [], message: 'No book formats found.' };
+        return { formats, message: undefined };
     },
     ['books-formats-list'],
     {

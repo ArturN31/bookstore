@@ -41,7 +41,7 @@ describe('FilterBar - Genre', () => {
     });
 
     it('should render the Popover with a message when there is a database error', async () => {
-        const mockResponse = { data: null, error: { message: 'DB Error' } };
+        const mockResponse = { data: null, error: 'DB Error' };
         mockSelect.mockResolvedValueOnce(mockResponse);
 
         render(await Genre());
@@ -55,7 +55,29 @@ describe('FilterBar - Genre', () => {
                 btnIcon: undefined,
                 listToRender: expect.arrayContaining([]),
                 listIcons: undefined,
-                message: 'Failed to retrieve books from database.',
+                message: 'DB Error',
+                listItemOnClick: expect.any(Function),
+            }),
+            undefined,
+        );
+    });
+
+    it('should render the Popover with a message when data is null', async () => {
+        const mockResponse = { data: null, error: null };
+        mockSelect.mockResolvedValueOnce(mockResponse);
+
+        render(await Genre());
+
+        const MockedPopover =
+            require('@/components/ui/CustomPopoverWithList').CustomPopoverWithList;
+
+        expect(MockedPopover).toHaveBeenCalledWith(
+            expect.objectContaining({
+                btnText: 'Genre',
+                btnIcon: undefined,
+                listToRender: expect.arrayContaining([]),
+                listIcons: undefined,
+                message: 'No data returned.',
                 listItemOnClick: expect.any(Function),
             }),
             undefined,
@@ -84,8 +106,37 @@ describe('FilterBar - Genre', () => {
         );
     });
 
+    it('should render the Popover with a message when all fetched genres are null or empty strings', async () => {
+        const mockData = [{ genre: null }, { genre: '' }];
+        const mockResponse = { data: mockData, error: null };
+        mockSelect.mockResolvedValueOnce(mockResponse);
+
+        render(await Genre());
+
+        const MockedPopover =
+            require('@/components/ui/CustomPopoverWithList').CustomPopoverWithList;
+
+        expect(MockedPopover).toHaveBeenCalledWith(
+            expect.objectContaining({
+                btnText: 'Genre',
+                btnIcon: undefined,
+                listToRender: expect.arrayContaining([]),
+                listIcons: undefined,
+                message: 'No book genres found.',
+                listItemOnClick: expect.any(Function),
+            }),
+            undefined,
+        );
+    });
+
     it('should render the Popover component with fetched genres on success', async () => {
-        const mockData = [{ genre: 'Comic' }, { genre: 'Drama' }, { genre: 'Fantasy' }];
+        const mockData = [
+            { genre: 'Comic' },
+            { genre: 'Drama' },
+            { genre: 'Fantasy' },
+            { genre: null },
+            { genre: '' },
+        ];
         const mockResponse = { data: mockData, error: null };
         mockSelect.mockResolvedValueOnce(mockResponse);
 
@@ -123,7 +174,7 @@ describe('FilterBar - Genre', () => {
                 btnText: 'Genre',
                 btnIcon: undefined,
                 listToRender: expect.arrayContaining([]),
-                message: 'Failed to retrieve books from database.',
+                message: 'An unexpected error occurred. We are looking into it.',
                 listIcons: undefined,
                 listItemOnClick: expect.any(Function),
             }),

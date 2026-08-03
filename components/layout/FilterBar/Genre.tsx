@@ -1,10 +1,10 @@
 'use server';
 
 import { CustomPopoverWithList } from '@/components/ui/CustomPopoverWithList';
-import { PostgrestResponse } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
 import { unstable_cache } from 'next/cache';
 import { createPublicServerClient } from '@/utils/db/publicServer';
+import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 
 export const handleGenreChoice = async (filter: string) => {
     const option = filter.slice(0, 1) + filter.slice(1, filter.length + 1).toLocaleLowerCase();
@@ -13,22 +13,19 @@ export const handleGenreChoice = async (filter: string) => {
 
 const getCachedGenres = unstable_cache(
     async () => {
-        try {
-            const supabase = await createPublicServerClient();
-            const { data, error }: PostgrestResponse<Book> = await supabase
-                .from('books')
-                .select('genre');
+        const supabase = await createPublicServerClient();
+        const result = await safeSupabaseQuery<Pick<Book, 'genre'>[]>(async () =>
+            supabase.from('books').select('genre'),
+        );
+        if (result.error) return { genres: [], message: result.error };
+        if (!result.data || result.data.length === 0)
+            return { genres: [], message: 'No book genres found.' };
 
-            if (error) return { genres: [], message: 'Failed to retrieve books from database.' };
-            if (!data?.length) return { genres: [], message: 'No book genres found.' };
-
-            let genres: string[] = [...new Set(data.map((entry) => entry.genre))].sort((a, b) =>
-                a.localeCompare(b),
-            );
-            return { genres: genres, message: undefined };
-        } catch (error) {
-            return { genres: [], message: 'Failed to retrieve books from database.' };
-        }
+        const genres: string[] = [...new Set(result.data.map((entry) => entry.genre))]
+            .filter((genre): genre is string => typeof genre === 'string' && genre.length > 0)
+            .sort((a, b) => a.localeCompare(b));
+        if (genres.length === 0) return { genres: [], message: 'No book genres found.' };
+        return { genres, message: undefined };
     },
     ['books-genres-list'],
     {
