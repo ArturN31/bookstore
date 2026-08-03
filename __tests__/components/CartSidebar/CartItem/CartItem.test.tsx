@@ -25,7 +25,7 @@ const createMockBook = (overrides: Partial<Book>): Book => ({
     ...overrides,
 });
 
-jest.mock('@/data/actions/CartForm/CartAction', () => ({
+jest.mock('@/data/cart/CartAction', () => ({
     CartAction: jest.fn(),
 }));
 

@@ -1,5 +1,6 @@
 import { Database } from '@/database.types';
 import { createFrontendClient } from '@/utils/db/client';
+import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 
 type BookRow = Database['public']['Tables']['books']['Row'];
 
@@ -43,13 +44,15 @@ export const NUMERIC_CATEGORIES: (keyof FilteringTypes)[] = ['PAGES', 'PRICES'];
 export const getFilteringConstants = async (): Promise<FilteringTypes> => {
     const supabase = await createFrontendClient();
 
-    const { data, error } = await supabase
-        .from('books')
-        .select('author, format, genre, page_count, price, publication_date, publisher')
-        .eq('is_active', true);
+    const result = await safeSupabaseQuery(async () =>
+        supabase
+            .from('books')
+            .select('author, format, genre, page_count, price, publication_date, publisher')
+            .eq('is_active', true),
+    );
 
-    if (error || !data) {
-        console.error('Failed to load filter constants:', error);
+    if (result.error || !result.data) {
+        console.error('Failed to load filter constants:', result.error);
         return DEFAULT_FILTERING_CONSTANTS;
     }
 
@@ -61,7 +64,7 @@ export const getFilteringConstants = async (): Promise<FilteringTypes> => {
     const publications = new Set<NonNullable<BookRow['publication_date']>>();
     const publishers = new Set<NonNullable<BookRow['publisher']>>();
 
-    (data as BookFilterRow[]).forEach((book) => {
+    (result.data as BookFilterRow[]).forEach((book) => {
         if (book.author) authors.add(book.author);
         if (book.format) formats.add(book.format);
         if (book.genre) genres.add(book.genre);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
+import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { useUserState } from '@/providers/user/utils/useUser';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { BooksManager } from '@/components/books/BooksManager';

@@ -24,7 +24,7 @@ const mockedBook: Book = {
     sales_count: null,
 };
 
-jest.mock('@/data/actions/CartForm/CartAction', () => ({
+jest.mock('@/data/cart/CartAction', () => ({
     CartAction: jest.fn(),
 }));
 

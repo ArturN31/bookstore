@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { PaginatedBookResult } from './BookConstants';
 import { BookQueryParams } from './BookRepository';
-import { fetchBooksWithReviews } from './GetBooksData';
+import { fetchBooksWithReviews } from './BookService';
 
 interface ActionResponse<T> {
     data: T | null;

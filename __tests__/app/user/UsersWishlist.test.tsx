@@ -1,6 +1,6 @@
 import UsersWishlist from '@/app/user/wishlist/page';
-import { FetchBooksFilters } from '@/data/books/BookRepository';
-import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
+import { BookQueryParams } from '@/data/books/BookRepository';
+import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { UserStateContext } from '@/providers/user/UserContext';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { act } from 'react';
@@ -15,18 +15,18 @@ interface MockUserContext {
 
 const mockedFetchBooks = fetchBooksWithReviews as jest.Mock;
 
-jest.mock('@/data/books/GetBooksData', () => ({
+jest.mock('@/data/books/BookService', () => ({
     fetchBooksWithReviews: jest.fn(),
 }));
 
-jest.mock('@/data/actions/WishlistForm/WishlistAction');
+jest.mock('@/data/user/wishlist/WishlistAction');
 
 jest.mock('@/components/books/BooksManager', () => ({
     BooksManager: ({
         initialData,
     }: {
         initialData: { data: { data: Book[] } };
-        filters?: Omit<FetchBooksFilters, 'page' | 'limit'>;
+        filters?: Omit<BookQueryParams, 'page' | 'limit'>;
     }) => (
         <div data-testid="mock-books-list">
             {initialData.data.data.map((b) => (

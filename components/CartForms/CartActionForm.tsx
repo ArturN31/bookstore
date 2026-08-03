@@ -7,7 +7,7 @@ import RemoveShoppingCartOutlinedIcon from '@mui/icons-material/RemoveShoppingCa
 import { useUserState } from '@/providers/user/utils/useUser';
 import { useCartActions, useCartState } from '@/providers/cart/utils/useCart';
 import { enqueueSnackbar } from 'notistack';
-import { CartAction, CartFormState } from '@/data/actions/CartForm/CartAction';
+import { CartAction, CartFormState } from '@/data/cart/CartAction';
 
 export const CartActionForm = ({ bookID, stock }: { bookID: string; stock: number }) => {
     const { user, loggedIn, profileExists, loading: userLoading } = useUserState();

@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { BooksManager } from '@/components/books/BooksManager';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { HomepageHero } from '@/components/HomepageHero';
-import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
+import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {

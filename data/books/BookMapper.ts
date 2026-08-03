@@ -7,7 +7,10 @@ interface BookRowWithReviews extends BookViewRow {
     book_reviews: { rating: number }[] | null;
 }
 
-const getReviews = (reviews: { rating: number }[] | null): { rating: number }[] => reviews ?? [];
+const getReviews = (reviews: { rating: number }[] | null): Review[] => {
+    if (!reviews) return [];
+    return reviews as unknown as Review[];
+};
 
 const calculateRating = (avgRating: number | null | undefined): number => {
     const value = Number(avgRating) || 0;
@@ -58,7 +61,7 @@ export const mapRowToBook = (row: BookRowWithReviews): Book => {
         stock_quantity: stock_quantity ?? BOOK_DEFAULTS.stock_quantity,
         is_active: is_active ?? BOOK_DEFAULTS.is_active,
         sales_count: sales_count ?? BOOK_DEFAULTS.sales_count,
-        reviews: getReviews(book_reviews) as Review[],
+        reviews: getReviews(book_reviews),
         rating: calculateRating(avg_rating),
         avg_rating: getAverageRating(avg_rating),
         review_count: getReviewCount(review_count),

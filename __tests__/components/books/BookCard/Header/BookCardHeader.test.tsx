@@ -20,13 +20,14 @@ const mockedBook: Book = {
     is_active: true,
     reviews: [],
     rating: 5,
+    sales_count: 100,
 };
 
 jest.mock('@/utils/db/server', () => ({
     createBackendClient: jest.fn(),
 }));
 
-jest.mock('@/data/actions/WishlistForm/WishlistAction', () => ({
+jest.mock('@/data/user/wishlist/WishlistAction', () => ({
     WishlistAction: jest.fn(),
 }));
 
@@ -95,20 +96,20 @@ describe('APP - BookCard - Header', () => {
 
         const wishlistWrapper = screen.getByTestId('mock-wishlist').parentElement;
         expect(wishlistWrapper).toBeInTheDocument();
-        
+
         // Create a click event and verify stopPropagation is called
         const clickEvent = new MouseEvent('click', {
             bubbles: true,
             cancelable: true,
         });
-        
+
         let stopPropagationCalled = false;
         const originalStopPropagation = clickEvent.stopPropagation.bind(clickEvent);
         clickEvent.stopPropagation = () => {
             stopPropagationCalled = true;
             originalStopPropagation();
         };
-        
+
         if (wishlistWrapper) {
             wishlistWrapper.dispatchEvent(clickEvent);
             expect(stopPropagationCalled).toBe(true);

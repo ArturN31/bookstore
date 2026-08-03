@@ -4,7 +4,7 @@ import { useActionState, useState, useTransition } from 'react';
 import {
     UserAddressAction,
     type UserAddressFormState,
-} from '@/data/actions/AddressForm/UserAddressAction';
+} from '@/data/user/address/UserAddressAction';
 import { addressSchema, fullUserSchema } from '@/data/schemas/addressSchema';
 import { FormBtns } from '@/components/formItems/FormBtns';
 import { FormErrors } from '@/components/formItems/FormErrors';

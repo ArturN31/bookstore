@@ -1,5 +1,5 @@
 import SignUpPage from '@/app/user/auth/signup/page';
-import { SignUpAction } from '@/data/actions/auth/SignUpAction';
+import { SignUpAction } from '@/data/auth/SignUpAction';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 const MOCK_MESSAGE = 'Please correct the errors below.';
@@ -31,7 +31,7 @@ jest.mock('@hcaptcha/react-hcaptcha', () => {
     });
 });
 
-jest.mock('@/data/actions/auth/SignUpAction', () => ({
+jest.mock('@/data/auth/SignUpAction', () => ({
     SignUpAction: jest.fn(async (prevState, formData) => {
         const reset = formData.get('reset');
         if (reset === 'yes') {

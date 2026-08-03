@@ -2,7 +2,7 @@ import { useCartState } from '@/providers/cart/utils/useCart';
 import { CartBtn } from '@/components/layout/UserNavbar/CartBtn';
 import { fireEvent, render, screen } from '@testing-library/react';
 
-jest.mock('@/data/actions/CartForm/CartAction', () => ({
+jest.mock('@/data/cart/CartAction', () => ({
     CartAction: jest.fn(),
 }));
 

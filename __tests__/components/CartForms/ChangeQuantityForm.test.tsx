@@ -14,7 +14,7 @@ jest.mock('notistack', () => ({
     enqueueSnackbar: jest.fn(),
 }));
 
-jest.mock('@/data/actions/CartForm/CartAction', () => ({
+jest.mock('@/data/cart/CartAction', () => ({
     CartAction: jest.fn(),
 }));
 

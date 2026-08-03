@@ -1,5 +1,5 @@
 import UserProfile from '@/app/user/profile/page';
-import { getUserData } from '@/data/user/GetUserData';
+import { getUserData } from '@/data/user/UserService';
 import { createBackendClient } from '@/utils/db/server';
 import { render, screen } from '@testing-library/react';
 import { redirect } from 'next/navigation';
@@ -34,7 +34,7 @@ jest.mock('@/utils/db/server', () => ({
     })),
 }));
 
-jest.mock('@/data/user/GetUserData', () => ({
+jest.mock('@/data/user/UserService', () => ({
     getUserData: jest.fn(),
 }));
 
@@ -54,7 +54,7 @@ jest.mock('@/components/pages/user/profile/UserProfilePage/UserProfilePage', () 
     )),
 }));
 
-jest.mock('@/data/actions/AddressForm/UserAddressAction', () => ({
+jest.mock('@/data/user/address/UserAddressAction', () => ({
     UserAddressAction: jest.fn(async (prevState, formData) => {
         return {};
     }),
@@ -115,9 +115,9 @@ describe('APP - User - UserProfile', () => {
                 }),
             },
         });
-        mockedGetUserData.mockResolvedValue({ 
-            data: null, 
-            error: 'Custom database error' 
+        mockedGetUserData.mockResolvedValue({
+            data: null,
+            error: 'Custom database error',
         });
 
         render(await UserProfile());

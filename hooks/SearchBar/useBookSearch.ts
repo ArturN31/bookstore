@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, ChangeEvent } from 'react';
-import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
+import { fetchBooksWithReviews } from '@/data/books/BookService';
 
 export const useBookSearch = () => {
     const [input, setInput] = useState('');

@@ -1,5 +1,5 @@
 import { BookCard } from '@/components/books/bookCard/BookCard';
-import { render, screen } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { createBackendClient } from '@/utils/db/server';
 import { useCartActions, useCartState } from '@/providers/cart/utils/useCart';
 
@@ -21,13 +21,14 @@ const mockedBook: Book = {
     is_active: true,
     reviews: [],
     rating: 5,
+    sales_count: 100,
 };
 
 jest.mock('@/utils/db/server', () => ({
     createBackendClient: jest.fn(),
 }));
 
-jest.mock('@/data/actions/WishlistForm/WishlistAction', () => ({
+jest.mock('@/data/user/wishlist/WishlistAction', () => ({
     WishlistAction: jest.fn(),
 }));
 
@@ -56,9 +57,11 @@ jest.mock('next/navigation', () => ({
 }));
 
 describe('APP - BookCard', () => {
-    const mockedCreateClient = createBackendClient as jest.Mock;
-    const mockUseCartState = useCartState as jest.Mock;
-    const mockUseCartActions = useCartActions as jest.Mock;
+    const mockedCreateClient = createBackendClient as jest.MockedFunction<
+        typeof createBackendClient
+    >;
+    const mockUseCartState = useCartState as jest.MockedFunction<typeof useCartState>;
+    const mockUseCartActions = useCartActions as jest.MockedFunction<typeof useCartActions>;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -66,23 +69,27 @@ describe('APP - BookCard', () => {
         mockUseCartState.mockReturnValue({
             cartBooks: [],
             cartItemsAmount: 0,
-            cartTotal: '0.00',
+            cartBooksAmount: 0,
+            cartTotal: 0,
+            cartID: 'mock-cart-id',
             loading: false,
         });
 
         mockUseCartActions.mockReturnValue({
             refreshCart: jest.fn(),
+            resetCart: jest.fn(),
         });
     });
 
     it('Should render component', () => {
-        mockedCreateClient.mockReturnValue({
+        mockedCreateClient.mockResolvedValue({
             auth: {
                 getSession: jest.fn().mockResolvedValue({
                     data: { session: { user: { email: 'test@test.com' } } },
+                    error: null,
                 }),
             },
-        });
+        } as unknown as Awaited<ReturnType<typeof createBackendClient>>);
 
         render(<BookCard book={mockedBook} />);
     });
@@ -92,17 +99,17 @@ describe('APP - BookCard', () => {
 
         const { container } = render(<BookCard book={outOfStockBook} />);
 
-        // Check that the card has the opacity-90 class for out of stock
         const card = container.querySelector('.MuiCard-root');
         expect(card).toHaveClass('opacity-90');
     });
 
     it('Should navigate to book page on click', () => {
-        render(<BookCard book={mockedBook} />);
+        const { container } = render(<BookCard book={mockedBook} />);
 
-        const card = document.querySelector('.MuiCard-root');
+        const card = container.querySelector('.MuiCard-root');
+        expect(card).not.toBeNull();
         if (card) {
-            card.click();
+            fireEvent.click(card);
             expect(mockPush).toHaveBeenCalledWith(`/book/${mockedBook.id}`);
         }
     });

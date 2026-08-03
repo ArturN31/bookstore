@@ -5,7 +5,7 @@ import { FormErrors } from '@/components/formItems/FormErrors';
 import {
     ChangeUsernameAction,
     ChangeUsernameFormState,
-} from '@/data/actions/UsernameForm/ChangeUsernameAction';
+} from '@/data/user/username/ChangeUsernameAction';
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
 

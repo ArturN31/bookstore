@@ -1,0 +1,67 @@
+'use server';
+
+import { z } from 'zod';
+import { revalidatePath } from 'next/cache';
+import { getUserData } from '@/data/user/UserService';
+import { wishlistSchema } from '@/data/schemas/wishlistSchema';
+import { executeWishlistOperation } from './WishlistService';
+import { sanitizeSupabaseError, APP_ERROR_MESSAGES } from '@/utils/errors/SupabaseErrorHandler';
+
+export type WishlistFormState = {
+    success: boolean;
+    message: string;
+    validationErrors?: z.core.$ZodIssue[];
+    timestamp?: number;
+};
+
+export async function WishlistAction(
+    prevState: WishlistFormState | undefined,
+    formData: FormData,
+): Promise<WishlistFormState> {
+    const rawData = {
+        bookId: formData.get('book-id'),
+        actionType: formData.get('action-type'),
+    };
+
+    const validated = wishlistSchema.safeParse(rawData);
+    if (!validated.success)
+        return {
+            success: false,
+            message: APP_ERROR_MESSAGES.INVALID_WISHLIST_REQUEST,
+            validationErrors: validated.error.issues,
+        };
+
+    const { bookId, actionType } = validated.data;
+
+    try {
+        const { data: user, error: authError } = await getUserData();
+        if (authError || !user)
+            return {
+                success: false,
+                message:
+                    sanitizeSupabaseError(authError) || APP_ERROR_MESSAGES.WISHLIST_LOGIN_REQUIRED,
+            };
+
+        const result = await executeWishlistOperation(actionType, user.id, bookId);
+        if (result.error)
+            return {
+                success: false,
+                message: sanitizeSupabaseError(result.error),
+            };
+
+        revalidatePath('/', 'layout');
+
+        const actionVerb = actionType === 'INSERT' ? 'added to' : 'removed from';
+        return {
+            success: true,
+            message: result.message || `Item successfully ${actionVerb} wishlist.`,
+            timestamp: Date.now(),
+        };
+    } catch (err: unknown) {
+        console.error('[WishlistAction] Pipeline Failure:', err);
+        return {
+            success: false,
+            message: sanitizeSupabaseError(err),
+        };
+    }
+}

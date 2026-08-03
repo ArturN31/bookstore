@@ -1,6 +1,6 @@
 'use client';
 
-import { CartAction } from '@/data/actions/CartForm/CartAction';
+import { CartAction } from '@/data/cart/CartAction';
 import { useCartActions } from '@/providers/cart/utils/useCart';
 import { useUserState } from '@/providers/user/utils/useUser';
 import DeleteIcon from '@mui/icons-material/Delete';

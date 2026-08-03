@@ -1,4 +1,4 @@
-import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
+import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { notFound } from 'next/navigation';
 import { AppBreadcrumbs } from '@/components/ui/AppBreadcrumbs';
 import { BooksManager } from '@/components/books/BooksManager';

@@ -1,7 +1,7 @@
 'use server';
 
-import { getCartData } from '@/data/cart/GetCartData';
-import { getUserData, getUserWishlist } from '@/data/user/GetUserData';
+import { getCartData } from '@/data/cart/CartService';
+import { getUserData, getUserWishlist } from '@/data/user/UserService';
 import { mapCartData } from '@/providers/cart/utils/CartMapper';
 import { Providers } from '@/providers/Providers';
 import { DEFAULT_USER } from '@/providers/user/UserContext';

@@ -1,18 +1,15 @@
 import ChangePasswordPage from '@/app/user/auth/change_password/page';
-import { ChangePasswordFormState } from '@/data/actions/auth/ChangePasswordAction';
+import { ChangePasswordFormState } from '@/data/auth/ChangePasswordAction';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 const MOCK_MESSAGE = 'Please correct the errors below.';
 
 let mockReturnState: ChangePasswordFormState = {
-    password: '',
-    cnfPassword: '',
     message: MOCK_MESSAGE,
-    error: undefined,
     validationErrors: undefined,
 };
 
-jest.mock('@/data/actions/auth/ChangePasswordAction', () => ({
+jest.mock('@/data/auth/ChangePasswordAction', () => ({
     ChangePasswordAction: jest.fn(async (prevState, formData) => {
         const reset = formData.get('reset');
         if (reset === 'yes') {
@@ -80,10 +77,7 @@ describe('APP - Auth - ChangePasswordPage', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockReturnState = {
-            password: '',
-            cnfPassword: '',
             message: MOCK_MESSAGE,
-            error: undefined,
             validationErrors: undefined,
         };
     });
@@ -95,7 +89,6 @@ describe('APP - Auth - ChangePasswordPage', () => {
 
         fireEvent.change(passwordField, { target: { name: 'password', value: 'abcdefgh' } });
 
-        // The component shows validation on the field itself, not a global error
         await waitFor(() => {
             expect(passwordField).toBeInTheDocument();
         });
@@ -112,19 +105,15 @@ describe('APP - Auth - ChangePasswordPage', () => {
 
         fireEvent.click(screen.getByText('Save'));
 
-        // The form should not call the action when validation fails
         await waitFor(() => {
-            const { ChangePasswordAction } = require('@/data/actions/auth/ChangePasswordAction');
+            const { ChangePasswordAction } = require('@/data/auth/ChangePasswordAction');
             expect(ChangePasswordAction).not.toHaveBeenCalled();
         });
     });
 
     it('should construct FormData and call formAction when validation passes', async () => {
         mockReturnState = {
-            password: '',
-            cnfPassword: '',
             message: 'Success!',
-            error: undefined,
             validationErrors: undefined,
         };
 
@@ -140,7 +129,7 @@ describe('APP - Auth - ChangePasswordPage', () => {
         fireEvent.click(screen.getByText('Save'));
 
         await waitFor(() => {
-            const { ChangePasswordAction } = require('@/data/actions/auth/ChangePasswordAction');
+            const { ChangePasswordAction } = require('@/data/auth/ChangePasswordAction');
 
             expect(ChangePasswordAction).toHaveBeenCalled();
 
@@ -174,7 +163,6 @@ describe('APP - Auth - ChangePasswordPage', () => {
         const passwordField = screen.getByTestId('password-field');
         const cnfPasswordField = screen.getByTestId('cnfPassword-field');
 
-        // Use a value that passes your passwordSchema (length, complexity, and MATCHING)
         const validPass = 'ValidP@ss123!';
 
         fireEvent.change(passwordField, { target: { name: 'password', value: validPass } });
@@ -182,12 +170,10 @@ describe('APP - Auth - ChangePasswordPage', () => {
 
         fireEvent.click(screen.getByText('Save'));
 
-        // Now validation passes, so we reach the FormData loop and action call
         await waitFor(() => {
-            const { ChangePasswordAction } = require('@/data/actions/auth/ChangePasswordAction');
+            const { ChangePasswordAction } = require('@/data/auth/ChangePasswordAction');
             expect(ChangePasswordAction).toHaveBeenCalled();
 
-            // This specifically covers the .append() logic inside the loop
             const sentFormData = (ChangePasswordAction as jest.Mock).mock.calls[0][1] as FormData;
             expect(sentFormData.get('password')).toBe(validPass);
         });
@@ -195,8 +181,6 @@ describe('APP - Auth - ChangePasswordPage', () => {
 
     it('BRANCH COVERAGE: hits nullish coalescing branches in JSX', async () => {
         mockReturnState = {
-            password: '',
-            cnfPassword: '',
             message: 'Password changed successfully',
             validationErrors: undefined,
         };
@@ -212,44 +196,34 @@ describe('APP - Auth - ChangePasswordPage', () => {
 
         fireEvent.click(screen.getByText('Save'));
 
-        // After successful submit, the action is called
         await waitFor(() => {
-            const { ChangePasswordAction } = require('@/data/actions/auth/ChangePasswordAction');
+            const { ChangePasswordAction } = require('@/data/auth/ChangePasswordAction');
             expect(ChangePasswordAction).toHaveBeenCalled();
         });
-        
-        // Note: Fields don't auto-reset after successful submission in this component
-        // They only reset when the reset button is clicked
+
         expect((p1 as HTMLInputElement).value).toBe(valid);
         expect((p2 as HTMLInputElement).value).toBe(valid);
     });
 
     it('BRANCH COVERAGE: covers empty validationErrors array (line 26 branch)', async () => {
         mockReturnState = {
-            password: '',
-            cnfPassword: '',
-            message: null,
-            validationErrors: [], // Empty array - covers the ternary false branch
-        };
-
-        render(<ChangePasswordPage />);
-
-        // Should not show validation errors when array is empty
-        expect(screen.queryByText(/Validation Issues/i)).not.toBeInTheDocument();
-    });
-
-    it('BRANCH COVERAGE: covers displayErrors.length === 0 (line 74 branch)', async () => {
-        // When formState has validationErrors but they are filtered to empty
-        mockReturnState = {
-            password: '',
-            cnfPassword: '',
             message: null,
             validationErrors: [],
         };
 
         render(<ChangePasswordPage />);
 
-        // FormErrors should not render when displayErrors is empty
+        expect(screen.queryByText(/Validation Issues/i)).not.toBeInTheDocument();
+    });
+
+    it('BRANCH COVERAGE: covers displayErrors.length === 0 (line 74 branch)', async () => {
+        mockReturnState = {
+            message: null,
+            validationErrors: [],
+        };
+
+        render(<ChangePasswordPage />);
+
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 });

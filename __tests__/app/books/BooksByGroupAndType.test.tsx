@@ -1,6 +1,6 @@
 import BooksByGroupAndType, { generateMetadata } from '@/app/books/[...slug]/page';
 import { render, screen } from '@testing-library/react';
-import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
+import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { BreadcrumbItem } from '@/components/ui/AppBreadcrumbs';
@@ -39,10 +39,10 @@ jest.mock('next/navigation', () => ({
     }),
 }));
 
-jest.mock('@/data/books/GetBooksData');
+jest.mock('@/data/books/BookService');
 const mockedFetchBooks = fetchBooksWithReviews as jest.Mock;
 
-jest.mock('@/data/actions/WishlistForm/WishlistAction');
+jest.mock('@/data/user/wishlist/WishlistAction');
 
 jest.mock('@/providers/cart/CartProvider', () => ({
     CartProvider: ({ children }: { children: ReactNode }) => <div>{children}</div>,

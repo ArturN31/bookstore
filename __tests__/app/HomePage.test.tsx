@@ -1,6 +1,6 @@
 import HomePage from '@/app/page';
 import { render, screen, act } from '@testing-library/react';
-import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
+import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { Providers } from '@/providers/Providers';
 
 interface PaginatedBookResult {
@@ -80,7 +80,7 @@ jest.mock('next/navigation', () => ({
     useServerInsertedHTML: jest.fn((callback: () => React.ReactNode) => callback()),
 }));
 
-jest.mock('@/data/books/GetBooksData', () => ({
+jest.mock('@/data/books/BookService', () => ({
     fetchBooksWithReviews: jest.fn(),
 }));
 

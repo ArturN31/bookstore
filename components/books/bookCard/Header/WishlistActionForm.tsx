@@ -6,7 +6,7 @@ import BookmarkIcon from '@mui/icons-material/Bookmark';
 import LockIcon from '@mui/icons-material/Lock';
 import { useUserState, useUserActions } from '@/providers/user/utils/useUser';
 import { enqueueSnackbar } from 'notistack';
-import { WishlistAction, WishlistFormState } from '@/data/actions/WishlistForm/WishlistAction';
+import { WishlistAction, WishlistFormState } from '@/data/user/wishlist/WishlistAction';
 import { AppTooltip } from '@/components/ui/AppTooltip';
 
 const WISHLIST_LIMIT = 10;

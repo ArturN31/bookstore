@@ -11,10 +11,22 @@ jest.mock('@/utils/db/client', () => ({
 }));
 
 describe('FilteringConstants', () => {
-    const mockCreateFrontendClient = createFrontendClient as unknown as jest.Mock;
+    type FrontendClientType = Awaited<ReturnType<typeof createFrontendClient>>;
+    const mockCreateFrontendClient = createFrontendClient as unknown as jest.Mock<
+        Promise<FrontendClientType>,
+        []
+    >;
 
     beforeEach(() => {
         jest.clearAllMocks();
+
+        jest.spyOn(console, 'error').mockImplementation(() => {});
+        jest.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        (console.error as jest.Mock<unknown, unknown[]>).mockRestore();
+        (console.warn as jest.Mock<unknown, unknown[]>).mockRestore();
     });
 
     describe('getFilteringConstants', () => {
@@ -62,7 +74,7 @@ describe('FilteringConstants', () => {
 
             mockCreateFrontendClient.mockResolvedValue({
                 from: mockFrom,
-            });
+            } as unknown as FrontendClientType);
 
             const result = await getFilteringConstants();
 
@@ -91,16 +103,12 @@ describe('FilteringConstants', () => {
 
             mockCreateFrontendClient.mockResolvedValue({
                 from: mockFrom,
-            });
-
-            const spyConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+            } as unknown as FrontendClientType);
 
             const result = await getFilteringConstants();
 
             expect(result).toEqual(DEFAULT_FILTERING_CONSTANTS);
-            expect(spyConsoleError).toHaveBeenCalled();
-
-            spyConsoleError.mockRestore();
+            expect(console.error).toHaveBeenCalled();
         });
 
         it('should return default constants when data is null', async () => {
@@ -119,11 +127,12 @@ describe('FilteringConstants', () => {
 
             mockCreateFrontendClient.mockResolvedValue({
                 from: mockFrom,
-            });
+            } as unknown as FrontendClientType);
 
             const result = await getFilteringConstants();
 
             expect(result).toEqual(DEFAULT_FILTERING_CONSTANTS);
+            expect(console.error).toHaveBeenCalled();
         });
     });
 

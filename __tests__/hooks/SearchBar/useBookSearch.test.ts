@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { useBookSearch } from '@/hooks/SearchBar/useBookSearch';
-import { fetchBooksWithReviews } from '@/data/books/GetBooksData';
+import { fetchBooksWithReviews } from '@/data/books/BookService';
 
 jest.mock('next/cache', () => ({
     unstable_cache: <T extends (...args: unknown[]) => Promise<unknown>>(fn: T) => fn,
@@ -8,7 +8,7 @@ jest.mock('next/cache', () => ({
     revalidateTag: jest.fn(),
 }));
 
-jest.mock('@/data/books/GetBooksData', () => ({
+jest.mock('@/data/books/BookService', () => ({
     fetchBooksWithReviews: jest.fn(),
 }));
 

@@ -6,7 +6,7 @@ import { EmailField } from '@/components/formItems/EmailField';
 import { FormBtns } from '@/components/formItems/FormBtns';
 import { FormErrors } from '@/components/formItems/FormErrors';
 import { PasswordField } from '@/components/formItems/PasswordField';
-import { SignInAction } from '@/data/actions/auth/SignInAction';
+import { SignInAction } from '@/data/auth/SignInAction';
 import { useSearchParams } from 'next/navigation';
 import { signInSchema } from '@/data/schemas/authSchemas';
 import z from 'zod';

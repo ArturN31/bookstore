@@ -1,15 +1,15 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { SessionProviderWrapper } from '@/components/layout/SessionProviderWrapper';
 import { createBackendClient } from '@/utils/db/server';
-import { getUserData, getUserWishlist } from '@/data/user/GetUserData';
-import { getCartData } from '@/data/cart/GetCartData';
+import { getUserData, getUserWishlist } from '@/data/user/UserService';
+import { getCartData } from '@/data/cart/CartService';
 
 jest.mock('@/utils/db/server', () => ({ createBackendClient: jest.fn() }));
-jest.mock('@/data/user/GetUserData', () => ({
+jest.mock('@/data/user/UserService', () => ({
     getUserData: jest.fn(),
     getUserWishlist: jest.fn(),
 }));
-jest.mock('@/data/cart/GetCartData', () => ({ getCartData: jest.fn() }));
+jest.mock('@/data/cart/CartService', () => ({ getCartData: jest.fn() }));
 jest.mock('@/providers/user/utils/UserMapper', () => ({ mapUserData: jest.fn((d) => d) }));
 jest.mock('@/providers/cart/utils/CartMapper', () => ({ mapCartData: jest.fn((d) => d) }));
 
@@ -37,7 +37,9 @@ describe('SessionProviderWrapper Coverage Fix', () => {
     it('covers the "user exists but no cart/wishlist" branches', async () => {
         const mockUser = { id: 'user-123' };
         mockCreateClient.mockResolvedValue({
-            auth: { getUser: jest.fn().mockResolvedValue({ data: { user: mockUser }, error: null }) },
+            auth: {
+                getUser: jest.fn().mockResolvedValue({ data: { user: mockUser }, error: null }),
+            },
         });
 
         (getUserData as jest.Mock).mockResolvedValue({ data: null, error: null });
@@ -58,15 +60,20 @@ describe('SessionProviderWrapper Coverage Fix', () => {
     it('covers the "user exists with full data" branches', async () => {
         const mockUser = { id: 'user-456' };
         mockCreateClient.mockResolvedValue({
-            auth: { getUser: jest.fn().mockResolvedValue({ data: { user: mockUser }, error: null }) },
+            auth: {
+                getUser: jest.fn().mockResolvedValue({ data: { user: mockUser }, error: null }),
+            },
         });
 
-        (getUserData as jest.Mock).mockResolvedValue({ 
-            data: { id: 'user-456', first_name: 'John' }, 
-            error: null 
+        (getUserData as jest.Mock).mockResolvedValue({
+            data: { id: 'user-456', first_name: 'John' },
+            error: null,
         });
         (getUserWishlist as jest.Mock).mockResolvedValue({ data: [{ id: 1 }], error: null });
-        (getCartData as jest.Mock).mockResolvedValue({ data: { books: [{ id: 'b1' }] }, error: null });
+        (getCartData as jest.Mock).mockResolvedValue({
+            data: { books: [{ id: 'b1' }] },
+            error: null,
+        });
 
         const component = await SessionProviderWrapper({ children: <div /> });
         render(component);
