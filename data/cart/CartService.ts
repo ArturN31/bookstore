@@ -231,9 +231,9 @@ export const ensureCartExists = async (userId: string): Promise<SafeQueryResult<
     }
 };
 
-export const buildCartOperationResult = (
+export const buildCartOperationResult = async (
     result: ActionResponse<boolean>,
-): SafeQueryResult<boolean> => {
+): Promise<SafeQueryResult<boolean>> => {
     if (result.error) return { data: null, error: sanitizeSupabaseError(result.error) };
     return { data: result.data ?? true, error: null };
 };
