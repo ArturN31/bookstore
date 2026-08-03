@@ -328,8 +328,8 @@ describe('CartService cart data and helpers', () => {
     });
 
     describe('buildCartOperationResult', () => {
-        it('should default to success when the operation result has no data', () => {
-            const result = buildCartOperationResult({ data: null, error: null });
+        it('should default to success when the operation result has no data', async () => {
+            const result = await buildCartOperationResult({ data: null, error: null });
 
             expect(result).toEqual({ data: true, error: null });
         });
