@@ -1,14 +1,11 @@
-import {
-    getCartData,
-    ensureCartExists,
-    executeCartOperation,
-    buildCartOperationResult,
-} from '@/data/cart/CartService';
+import { getCartData, ensureCartExists, executeCartOperation } from '@/data/cart/CartService';
 import * as Repo from '@/data/cart/CartRepository';
 import { createBackendClient } from '@/utils/db/server';
 import { mapDatabaseCartToDomain, CartItem } from '@/data/cart/CartMapper';
-import { sanitizeSupabaseError, APP_ERROR_MESSAGES } from '@/utils/errors/SupabaseErrorHandler';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { CART_OPERATION_TYPES, CART_SUCCESS_MESSAGES } from '@/data/cart/CartConstants';
+import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
+import { buildCartOperationResult } from '@/data/cart/CartServiceUtils';
 
 jest.mock('next/cache', () => ({
     revalidateTag: jest.fn(),

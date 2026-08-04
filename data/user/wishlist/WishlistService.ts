@@ -1,6 +1,7 @@
 import { addToWishlist, removeFromWishlist } from './WishlistRepository';
 import { SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
-import { sanitizeSupabaseError, APP_ERROR_MESSAGES } from '@/utils/errors/SupabaseErrorHandler';
+import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 
 const WISHLIST_OPERATIONS: Record<
     string,

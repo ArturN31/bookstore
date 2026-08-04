@@ -6,6 +6,7 @@ import { getUserData } from '@/data/user/UserService';
 import { cartSchema } from '@/data/schemas/cartSchema';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { ensureCartExists, executeCartOperation } from '@/data/cart/CartService';
+import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 
 export type CartFormState = {
     success: boolean;
@@ -25,31 +26,56 @@ export async function CartAction(
     };
 
     const validated = cartSchema.safeParse(rawData);
-    if (!validated.success)
+    if (!validated.success) {
         return {
             success: false,
             message: 'Invalid cart request.',
             validationErrors: validated.error.issues,
         };
+    }
 
     const { bookId, bookQuantity, actionType } = validated.data;
+    let userId: string | null = null;
 
     try {
         const { data: user, error: authError } = await getUserData();
-        if (authError || !user)
-            return {
-                success: false,
-                message: authError ? sanitizeSupabaseError(authError) : 'Authorization required.',
-            };
 
-        const cartContext = await ensureCartExists(user.id);
-        if (cartContext.error || !cartContext.data)
+        if (authError || !user) {
+            const sanitizedError = authError
+                ? sanitizeSupabaseError(authError)
+                : 'Authorization required.';
+            void recordSecurityAuditLog('FAILED_AUTHENTICATION_ATTEMPT', null, {
+                operation: 'CartAction_auth_failed',
+                bookId,
+                actionType,
+                error: sanitizedError,
+            });
             return {
                 success: false,
-                message: cartContext.error
-                    ? sanitizeSupabaseError(cartContext.error)
-                    : 'Cart initialization failed.',
+                message: sanitizedError,
             };
+        }
+
+        userId = user.id;
+
+        const cartContext = await ensureCartExists(userId);
+        if (cartContext.error || !cartContext.data) {
+            const sanitizedError = cartContext.error
+                ? sanitizeSupabaseError(cartContext.error)
+                : 'Cart initialization failed.';
+
+            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userId, {
+                operation: 'CartAction_init_failed',
+                bookId,
+                actionType,
+                error: sanitizedError,
+            });
+
+            return {
+                success: false,
+                message: sanitizedError,
+            };
+        }
 
         const result = await executeCartOperation(
             actionType,
@@ -57,11 +83,23 @@ export async function CartAction(
             bookId,
             bookQuantity,
         );
-        if (result.error)
+
+        if (result.error) {
+            const sanitizedError = sanitizeSupabaseError(result.error);
+
+            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userId, {
+                operation: 'CartAction_operation_failed',
+                bookId,
+                bookQuantity,
+                actionType,
+                error: sanitizedError,
+            });
+
             return {
                 success: false,
-                message: sanitizeSupabaseError(result.error),
+                message: sanitizedError,
             };
+        }
 
         revalidatePath('/', 'layout');
 
@@ -72,9 +110,19 @@ export async function CartAction(
         };
     } catch (err: unknown) {
         console.error('[CartAction] Critical Error:', err);
+        const sanitizedError = sanitizeSupabaseError(err);
+
+        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userId, {
+            operation: 'CartAction_critical_failure',
+            bookId,
+            bookQuantity,
+            actionType,
+            error: sanitizedError,
+        });
+
         return {
             success: false,
-            message: sanitizeSupabaseError(err),
+            message: sanitizedError,
         };
     }
 }

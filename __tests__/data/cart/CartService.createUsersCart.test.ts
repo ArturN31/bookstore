@@ -1,7 +1,8 @@
 import { createUsersCart } from '@/data/cart/CartService';
 import * as Repo from '@/data/cart/CartRepository';
 import { createBackendClient } from '@/utils/db/server';
-import { sanitizeSupabaseError, APP_ERROR_MESSAGES } from '@/utils/errors/SupabaseErrorHandler';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 
 jest.mock('next/cache', () => ({
     revalidateTag: jest.fn(),

@@ -9,13 +9,15 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { Database } from '@/database.types';
 import { USER_ROUTES } from '../UserConstants';
-import { APP_ERROR_MESSAGES } from '@/utils/errors/SupabaseErrorHandler';
+import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
+import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 
 type UserInsert = Database['public']['Tables']['users']['Insert'];
 
 export type UserAddressFormState = {
     message?: string | null;
-    validationErrors?: z.core.$ZodIssue[];
+    validationErrors?: z.ZodIssue[];
     error?: string | null;
 };
 
@@ -43,27 +45,51 @@ export async function UserAddressAction(
             message: APP_ERROR_MESSAGES.VALIDATION_ERROR,
         };
 
-    const supabase = await createBackendClient();
+    try {
+        const supabase = await createBackendClient();
 
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser();
+        const {
+            data: { user },
+            error: authError,
+        } = await supabase.auth.getUser();
 
-    if (authError || !user) return { message: APP_ERROR_MESSAGES.SESSION_EXPIRED };
+        if (authError || !user) {
+            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
+                operation: `UserAddressAction_${mode}_auth_failed`,
+                error: authError ? sanitizeSupabaseError(authError) : 'Session expired',
+            });
+            return { message: APP_ERROR_MESSAGES.SESSION_EXPIRED };
+        }
 
-    const payload = mapToUserPayload(validated.data);
+        const payload = mapToUserPayload(validated.data);
 
-    const { error: dbError } =
-        mode === 'add'
-            ? await insertUserAddress(supabase, { id: user.id, ...payload } as UserInsert)
-            : await updateUserAddress(supabase, user.id, payload);
+        const { error: dbError } =
+            mode === 'add'
+                ? await insertUserAddress(supabase, { id: user.id, ...payload } as UserInsert)
+                : await updateUserAddress(supabase, user.id, payload);
 
-    if (dbError)
+        if (dbError) {
+            const sanitizedError = sanitizeSupabaseError(dbError);
+            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', user.id, {
+                operation: `UserAddressAction_${mode}_db_error`,
+                error: sanitizedError,
+            });
+            return {
+                message: APP_ERROR_MESSAGES.SAVE_ADDRESS_ERROR,
+                error: sanitizedError,
+            };
+        }
+    } catch (err: unknown) {
+        const sanitizedError = sanitizeSupabaseError(err);
+        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
+            operation: `UserAddressAction_${mode}_exception`,
+            error: sanitizedError,
+        });
         return {
             message: APP_ERROR_MESSAGES.SAVE_ADDRESS_ERROR,
-            error: dbError,
+            error: sanitizedError,
         };
+    }
 
     revalidatePath(USER_ROUTES.PROFILE);
     redirect(USER_ROUTES.PROFILE);

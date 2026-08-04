@@ -5,12 +5,14 @@ import { revalidatePath } from 'next/cache';
 import { getUserData } from '@/data/user/UserService';
 import { wishlistSchema } from '@/data/schemas/wishlistSchema';
 import { executeWishlistOperation } from './WishlistService';
-import { sanitizeSupabaseError, APP_ERROR_MESSAGES } from '@/utils/errors/SupabaseErrorHandler';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
+import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 
 export type WishlistFormState = {
     success: boolean;
     message: string;
-    validationErrors?: z.core.$ZodIssue[];
+    validationErrors?: z.ZodIssue[];
     timestamp?: number;
 };
 
@@ -35,12 +37,17 @@ export async function WishlistAction(
 
     try {
         const { data: user, error: authError } = await getUserData();
-        if (authError || !user)
+        if (authError || !user) {
+            void recordSecurityAuditLog('FAILED_AUTHENTICATION_ATTEMPT', null, {
+                operation: 'WishlistAction_auth_failed',
+                error: authError ? sanitizeSupabaseError(authError) : 'Session expired',
+            });
             return {
                 success: false,
                 message:
                     sanitizeSupabaseError(authError) || APP_ERROR_MESSAGES.WISHLIST_LOGIN_REQUIRED,
             };
+        }
 
         const result = await executeWishlistOperation(actionType, user.id, bookId);
         if (result.error)

@@ -8,9 +8,10 @@ import { passwordSchema } from '@/data/schemas/authSchemas';
 import { updateAccountPassword, terminateSession } from './AuthRepository';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { AUTH_ROUTES, AUTH_MESSAGES } from './AuthConstants';
+import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 
 export type ChangePasswordFormState = {
-    validationErrors?: z.core.$ZodIssue[];
+    validationErrors?: z.ZodIssue[];
     message?: string | null;
     success?: boolean;
 };
@@ -42,18 +43,49 @@ export async function ChangePasswordAction(
             data: { user },
             error: authError,
         } = await supabase.auth.getUser();
-        if (authError || !user) return { message: AUTH_MESSAGES.SESSION_EXPIRED };
+
+        if (authError || !user) {
+            void recordSecurityAuditLog('FAILED_AUTHENTICATION_ATTEMPT', null, {
+                operation: 'ChangePasswordAction_session_expired',
+                error: authError ? sanitizeSupabaseError(authError) : 'No active user session',
+            });
+            return { message: AUTH_MESSAGES.SESSION_EXPIRED };
+        }
 
         const { error: updateError } = await updateAccountPassword(
             supabase,
             validated.data.password,
         );
-        if (updateError) return { message: updateError };
+        if (updateError) {
+            void recordSecurityAuditLog('PASSWORD_CHANGE', user.id, {
+                operation: 'ChangePasswordAction_update_failed',
+                error: updateError,
+            });
+            return { message: updateError };
+        }
+
+        await recordSecurityAuditLog('PASSWORD_CHANGE', user.id, {
+            operation: 'ChangePasswordAction_success',
+        });
 
         const { error: terminateError } = await terminateSession(supabase);
-        if (terminateError) return { message: terminateError };
+        if (terminateError) {
+            void recordSecurityAuditLog('PASSWORD_CHANGE', user.id, {
+                operation: 'ChangePasswordAction_terminate_failed',
+                error: terminateError,
+            });
+            return { message: terminateError };
+        }
     } catch (err: unknown) {
+        if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
+
         console.error('[ChangePasswordAction] Critical Failure:', err);
+
+        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
+            operation: 'ChangePasswordAction_critical_failure',
+            error: sanitizeSupabaseError(err),
+        });
+
         return { message: sanitizeSupabaseError(err) };
     }
 
