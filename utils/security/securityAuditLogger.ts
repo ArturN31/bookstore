@@ -1,6 +1,5 @@
 import 'server-only';
-import { createBackendClient } from '@/utils/db/server';
-import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
+import { createAdminClient } from '@/utils/db/admin';
 import { headers } from 'next/headers';
 
 export type SecurityAuditEventType =
@@ -81,23 +80,16 @@ export async function recordSecurityAuditLog(
             timestamp: new Date().toISOString(),
         };
 
-        const supabase = await createBackendClient();
+        const supabaseAdmin = await createAdminClient();
 
-        const result = await safeSupabaseQuery<null>(async () => {
-            const { error } = await supabase.from('audit_logs').insert({
-                user_id: userId,
-                event_type: eventType,
-                metadata: enrichedMetadata,
-            });
-            return { data: null, error };
+        const { error } = await supabaseAdmin.from('audit_logs').insert({
+            user_id: userId,
+            event_type: eventType,
+            metadata: enrichedMetadata,
         });
 
-        if (result.error) {
-            console.error(
-                '[SecurityAudit] Failed to write security audit log to database:',
-                result.error,
-            );
-        }
+        if (error)
+            console.error('[SecurityAudit] Failed to write security audit log to database:', error);
     } catch (err: unknown) {
         console.error('[SecurityAudit] Unexpected critical error in security audit logger:', err);
     }
