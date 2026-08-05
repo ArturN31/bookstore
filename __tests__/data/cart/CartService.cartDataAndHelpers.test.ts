@@ -5,7 +5,7 @@ import { mapDatabaseCartToDomain, CartItem } from '@/data/cart/CartMapper';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { CART_OPERATION_TYPES, CART_SUCCESS_MESSAGES } from '@/data/cart/CartConstants';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
-import { buildCartOperationResult } from '@/data/cart/CartServiceUtils';
+import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 
 jest.mock('next/cache', () => ({
     revalidateTag: jest.fn(),
@@ -14,14 +14,30 @@ jest.mock('next/cache', () => ({
 jest.mock('@/utils/db/server');
 jest.mock('@/data/cart/CartRepository');
 jest.mock('@/data/cart/CartMapper');
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn(),
+}));
 jest.mock('@/utils/network/retry', () => ({
     withRetry: jest.fn(<T>(fn: () => Promise<T>) => fn()),
 }));
 jest.mock('@/utils/db/safeSupabaseQuery', () => ({
     safeSupabaseQuery: jest.fn(<T>(fn: () => Promise<T>) => fn()),
 }));
+jest.mock('@/data/cart/CartConstants', () => {
+    const actual = jest.requireActual<typeof import('@/data/cart/CartConstants')>(
+        '@/data/cart/CartConstants',
+    );
+    return {
+        ...actual,
+        CART_SUCCESS_MESSAGES: {
+            ...actual.CART_SUCCESS_MESSAGES,
+        },
+    };
+});
 
-const defaultSanitizeImplementation = (err: unknown): string => {
+type SanitizeFn = (err: unknown) => string;
+
+const defaultSanitizeImplementation: SanitizeFn = (err: unknown): string => {
     if (typeof err === 'string') {
         if (err.startsWith('Sanitized: ')) return err;
         return `Sanitized: ${err}`;
@@ -82,12 +98,11 @@ describe('CartService cart data and helpers', () => {
 
             expect(result).toEqual({
                 data: null,
-                error: APP_ERROR_MESSAGES.SESSION_IDENTIFICATION_FAILED,
+                error: APP_ERROR_MESSAGES.INVALID_USER_SESSION,
             });
         });
 
         it('should throw error when authenticated user does not match target user ID', async () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
             mockSupabase.auth.getUser.mockResolvedValueOnce({
                 data: { user: { id: otherValidUUID } },
                 error: null,
@@ -95,17 +110,12 @@ describe('CartService cart data and helpers', () => {
 
             const result = await getCartData(validUUID);
 
-            expect(consoleSpy).toHaveBeenCalledWith(
-                '[CartService] Pipeline Error:',
-                expect.any(Error),
-            );
+            expect(recordSecurityAuditLog).toHaveBeenCalled();
             expect(sanitizeSupabaseError).toHaveBeenCalledWith(expect.any(Error));
             expect(result).toEqual({
                 data: null,
                 error: `Sanitized: ${APP_ERROR_MESSAGES.UNAUTHORIZED_ACCESS}`,
             });
-
-            consoleSpy.mockRestore();
         });
 
         it('should return default empty cart when repo error is "No data returned."', async () => {
@@ -169,7 +179,6 @@ describe('CartService cart data and helpers', () => {
         });
 
         it('should execute catch block when exception is thrown during getCartData', async () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
             const exceptionError = new Error('Critical failure in getCartData');
             (
                 Repo.fetchFullCartWithBooks as jest.MockedFunction<
@@ -179,17 +188,12 @@ describe('CartService cart data and helpers', () => {
 
             const result = await getCartData(validUUID);
 
-            expect(consoleSpy).toHaveBeenCalledWith(
-                '[CartService] Pipeline Error:',
-                expect.any(Error),
-            );
+            expect(recordSecurityAuditLog).toHaveBeenCalled();
             expect(sanitizeSupabaseError).toHaveBeenCalledWith(exceptionError);
             expect(result).toEqual({
                 data: null,
                 error: 'Sanitized: Critical failure in getCartData',
             });
-
-            consoleSpy.mockRestore();
         });
     });
 
@@ -242,7 +246,7 @@ describe('CartService cart data and helpers', () => {
 
             expect(result).toEqual({
                 data: null,
-                error: APP_ERROR_MESSAGES.FAILED_TO_CREATE_CART,
+                error: `Sanitized: ${APP_ERROR_MESSAGES.FAILED_TO_CREATE_CART}`,
             });
         });
 
@@ -321,14 +325,6 @@ describe('CartService cart data and helpers', () => {
             });
 
             await expect(ensureCartExists(validUUID)).rejects.toThrow('Sanitizer exploded');
-        });
-    });
-
-    describe('buildCartOperationResult', () => {
-        it('should default to success when the operation result has no data', async () => {
-            const result = await buildCartOperationResult({ data: null, error: null });
-
-            expect(result).toEqual({ data: true, error: null });
         });
     });
 
