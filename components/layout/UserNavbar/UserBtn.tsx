@@ -35,12 +35,13 @@ export const UserBtn = () => {
         }
     };
 
-    const handleSignOut = async () => {
+    const handleSignOut = async (): Promise<void> => {
         try {
+            document.cookie = 'is_logging_out=true; path=/; max-age=5; SameSite=Lax';
             await signOut();
             if (pathname.startsWith('/user/')) router.push('/');
             else router.refresh();
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error signing out:', error);
         }
     };
