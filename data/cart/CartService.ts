@@ -2,13 +2,13 @@
 
 import * as Repo from './CartRepository';
 import { mapDatabaseCartToDomain, CartItem } from './CartMapper';
-import { CART_SUCCESS_MESSAGES } from './CartConstants';
+import { CART_OPERATION_TYPES, CART_SUCCESS_MESSAGES } from './CartConstants';
 import { SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { revalidateTag } from 'next/cache';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
-import { CART_OPERATIONS, isValidUUID, executeCartAction } from './CartServiceUtils';
+import { isValidUUID, executeCartAction } from './CartServiceUtils';
 
 export interface ActionResponse<T> {
     data: T | null;
@@ -129,13 +129,30 @@ export const ensureCartExists = async (userId: string): Promise<SafeQueryResult<
     }
 };
 
+const getCartOperation = (
+    type: string,
+):
+    | ((cartId: string, bookId: string, quantity: number) => Promise<ActionResponse<boolean>>)
+    | null => {
+    switch (type) {
+        case CART_OPERATION_TYPES.INSERT:
+            return addItemToUsersCart;
+        case CART_OPERATION_TYPES.UPDATE:
+            return updateItemInUsersCart;
+        case CART_OPERATION_TYPES.REMOVE:
+            return (cartId: string, bookId: string) => removeItemFromUsersCart(cartId, bookId);
+        default:
+            return null;
+    }
+};
+
 export const executeCartOperation = async (
     type: string,
     cartId: string,
     bookId: string,
     quantity: number,
 ): Promise<SafeQueryResult<boolean> & { message?: string }> => {
-    const operation = CART_OPERATIONS[type];
+    const operation = getCartOperation(type);
     if (!operation) {
         void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
             operation: 'executeCartOperation_unsupported_action',
@@ -148,10 +165,18 @@ export const executeCartOperation = async (
 
     try {
         const result = await operation(cartId, bookId, quantity);
-        if (result.error) return { data: null, error: sanitizeSupabaseError(result.error) };
+        if (result.error || result.data === null) {
+            return {
+                data: null,
+                error: sanitizeSupabaseError(
+                    result.error ?? APP_ERROR_MESSAGES.UNSUPPORTED_ACTION_TYPE,
+                ),
+            };
+        }
 
         return {
-            ...result,
+            data: result.data,
+            error: null,
             message:
                 CART_SUCCESS_MESSAGES[type as keyof typeof CART_SUCCESS_MESSAGES] ||
                 CART_SUCCESS_MESSAGES.DEFAULT,
