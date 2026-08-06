@@ -1,5 +1,6 @@
 import { ReviewCard } from '@/components/pages/book/Reviews/ReviewCard/ReviewCard';
 import { ReviewPagination } from '@/components/pages/book/Reviews/ReviewPagination';
+import { ReviewSummary } from './ReviewSummary';
 
 export const BookReviews = ({
     reviewsData,
@@ -12,14 +13,17 @@ export const BookReviews = ({
 }) => {
     if (!reviewsData?.data) return null;
 
-    const reviews = reviewsData.data;
+    const reviews = reviewsData.data ?? [];
+    const reviewsCount = reviews.length ?? 0;
+    const averageRating = reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length;
     const hasReviews = reviews.length > 0;
-
-    //TODO: Implement Reviews Insert & Potentialy a page where users can see their reviews.
 
     return (
         <div id="reviews-section">
-            <p className="text-lg font-semibold">({reviewsData.total}) Reviews</p>
+            <ReviewSummary
+                reviewsCount={reviewsCount}
+                averageRating={averageRating}
+            />
 
             <div className="grid gap-3 pt-3">
                 {!hasReviews && (

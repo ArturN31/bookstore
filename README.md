@@ -324,6 +324,8 @@ The following features are partially or not yet implemented:
 ### 1. Core E-Commerce Completion
 
 - [ ] **User Review Submission**: Add UI and Server Actions to allow authenticated users to submit and rate books (currently read-only).
+  - [ ] **User Review Submission - UI**: Implement a modal or inline form for submitting reviews with star ratings and text.
+  - [ ] **User Review Submission - Server Actions**: Create server-side logic to validate
 - [ ] **Stripe Payment Integration**: Implement a secure checkout flow using Stripe Elements and Server Actions.
 - [ ] **Order Success Workflow**: Automate post-purchase triggers, including the generation of dynamic receipts and email confirmations.
 - [ ] **Inventory Auto-Update**: Logic to decrement `stock_quantity` in the `books` table automatically upon successful purchase.
@@ -335,6 +337,9 @@ The following features are partially or not yet implemented:
 - [X] **Skeleton Loading States**: Implement shimmering MUI Skeleton components to replace basic loading spinners during SSR data fetching, improving perceived performance.
 - [X] **Image Optimisation**: Implement Next.js Image component with WebP conversion and responsive srcset for book cover art.
 - [ ] **Accessibility Enhancements**: Conduct a full WCAG 2.1 audit and implement ARIA roles, keyboard navigation, and screen reader support across the application.
+- [ ] **User Reviews - View own reviews**: Allow users to view and manage their submitted reviews, including editing and deleting options.
+  - [ ] **User Reviews - Edit/Delete**: Implement server actions and UI for users to edit or delete their own reviews, with appropriate validation and confirmation prompts.
+  - [ ] **User Reviews - Moderation**: Implement a moderation system for flagged reviews, allowing admins to approve or remove inappropriate content.
 
 ### 3. Advanced Store Features
 
@@ -349,6 +354,10 @@ The following features are partially or not yet implemented:
 - [ ] **Inventory Management Dashboard**: Protected admin interface using Supabase Custom Claims to manage stock levels, pricing, and book metadata.
 - [ ] **Review Moderation System**: Administrative queue to flag inappropriate reviews and monitor community sentiment with moderation workflows.
 - [ ] **Security Audit Log Dashboard**: Secure administrative interface to monitor, filter, and analyze recorded security events, failed authentication attempts, and database errors.
+- [ ] **Errors & Exception Logging**: Centralized logging system for all server-side errors, including stack traces and user context.
+  - [ ] **Errors & Exception Logging - server errors**: Capture and log all server-side exceptions with stack traces and user context for debugging.
+  - [ ] **Errors & Exception Logging - client errors**: Capture and log all client-side errors with stack traces and user context for debugging.
+  - [ ] **Errors & Exception Logging - database errors**: Capture and log all database errors with query context and user information for debugging.
 - [ ] **Role-Based Access Control (RBAC)**: Expand permission system to include "Moderator," "Editor," and "Finance" roles with granular feature access.
 - [ ] **Sales Analytics Dashboard**: Real-time charts and metrics tracking revenue, top-selling books, user acquisition, and seasonal trends.
 - [ ] **Bulk Operations**: Import/export functionality for managing book catalogs and customer data in CSV format.
