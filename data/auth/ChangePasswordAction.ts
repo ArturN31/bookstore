@@ -64,7 +64,7 @@ export async function ChangePasswordAction(
             return { message: updateError };
         }
 
-        await recordSecurityAuditLog('PASSWORD_CHANGE', user.id, {
+        void recordSecurityAuditLog('PASSWORD_CHANGE', user.id, {
             operation: 'ChangePasswordAction_success',
         });
 
@@ -78,14 +78,7 @@ export async function ChangePasswordAction(
         }
     } catch (err: unknown) {
         if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
-
         console.error('[ChangePasswordAction] Critical Failure:', err);
-
-        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
-            operation: 'ChangePasswordAction_critical_failure',
-            error: sanitizeSupabaseError(err),
-        });
-
         return { message: sanitizeSupabaseError(err) };
     }
 

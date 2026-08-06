@@ -41,7 +41,7 @@ export async function SignInAction(
     const { email } = validated.data;
 
     if (!captchaToken) {
-        void recordSecurityAuditLog('FAILED_AUTHENTICATION_ATTEMPT', null, {
+        void recordSecurityAuditLog('FAILED_LOGIN', null, {
             operation: 'SignInAction_missing_captcha',
             email,
         });
@@ -73,11 +73,10 @@ export async function SignInAction(
         const { data: dbUser, error: dbUserError } = await getUserData();
 
         if (dbUserError)
-            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
-                operation: 'SignInAction_getUserData_failed',
-                email,
-                error: sanitizeSupabaseError(dbUserError),
-            });
+            console.error(
+                '[SignInAction] Failed to retrieve user profile data post-login:',
+                sanitizeSupabaseError(dbUserError),
+            );
 
         void recordSecurityAuditLog('SUCCESSFUL_LOGIN', dbUser?.id ?? null, {
             operation: 'SignInAction_success',
@@ -94,15 +93,7 @@ export async function SignInAction(
         }
     } catch (err: unknown) {
         if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
-
         console.error('[SignInAction] Critical Failure:', err);
-
-        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
-            operation: 'SignInAction_critical_failure',
-            email,
-            error: sanitizeSupabaseError(err),
-        });
-
         return { message: sanitizeSupabaseError(err) };
     }
 

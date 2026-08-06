@@ -6,6 +6,7 @@ import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import * as Repo from './CartRepository';
 import { UUID_REGEX } from './CartConstants';
+import { revalidateTag } from 'next/cache';
 
 type BackendClient = Awaited<ReturnType<typeof createBackendClient>>;
 
@@ -15,6 +16,30 @@ export const verifyUserSession = async (supabase: BackendClient): Promise<string
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) return null;
     return data.user.id;
+};
+
+export const handleItemMutation = async (
+    operation: string,
+    cartID: string,
+    bookID: string,
+    actionFn: (
+        supabase: Awaited<ReturnType<typeof import('@/utils/db/server').createBackendClient>>,
+    ) => Promise<{ data: boolean | null; error: unknown }>,
+): Promise<ActionResponse<boolean>> => {
+    if (!isValidUUID(cartID) || !isValidUUID(bookID)) {
+        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
+            operation: `${operation}_malformed_identifier`,
+            cartID,
+            bookID,
+        });
+        return { data: false, error: APP_ERROR_MESSAGES.MALFORMED_IDENTIFIER };
+    }
+
+    const result = await executeCartAction<boolean>(operation, null, actionFn, false);
+    if (result.error) return { data: false, error: result.error };
+
+    revalidateTag(`cart_${cartID}`, 'max');
+    return { data: result.data, error: null };
 };
 
 export async function executeCartAction<T>(

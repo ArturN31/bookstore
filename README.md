@@ -7,9 +7,9 @@ This project is an online bookstore built with **Next.js 16 (App Router)**, **Re
 ## Project Status
 
 **Current Phase**: Core marketplace MVP - Production-ready with strong automated test coverage
-**Test Coverage**: **96.04% average coverage** (94.06% statements, 99.39% branches, 96.64% functions)
+**Test Coverage**: **96.04% average coverage** (94.3% statements, 99.41% branches, 96.69% functions)
 **Performance**: Lighthouse Desktop 99/100 (0.3s FCP, 0.8s LCP, 0ms TBT, 0 CLS)
-**Last Updated**: August 02, 2026 (latest automated coverage report)
+**Last Updated**: August 06, 2026 (latest automated coverage report)
 
 ## Key Highlights
 
@@ -68,7 +68,7 @@ type FormData = z.infer<typeof schema>; // Auto-generated TypeScript type
 
 | Area | Statements | Branches | Functions | Lines | Avg | Status |
 |------|-----------|----------|-----------|-------|-----|--------|
-| **Overall** | 94.06% | 99.39% | 96.64% | 94.06% | 96.04% | ✅ Excellent |
+| **Overall** | 94.3% | 99.41% | 96.69% | 94.3% | 96.17% | ✅ Excellent |
 | App Routing | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
 | Components | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
 | Server Actions | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
@@ -334,6 +334,7 @@ The following features are partially or not yet implemented:
 - [X] **Advanced Multi-Select Filtering**: Support simultaneous filtering by multiple genres and price ranges with real-time result updates.
 - [X] **Skeleton Loading States**: Implement shimmering MUI Skeleton components to replace basic loading spinners during SSR data fetching, improving perceived performance.
 - [X] **Image Optimisation**: Implement Next.js Image component with WebP conversion and responsive srcset for book cover art.
+- [ ] **Accessibility Enhancements**: Conduct a full WCAG 2.1 audit and implement ARIA roles, keyboard navigation, and screen reader support across the application.
 
 ### 3. Advanced Store Features
 
@@ -347,7 +348,6 @@ The following features are partially or not yet implemented:
 
 - [ ] **Inventory Management Dashboard**: Protected admin interface using Supabase Custom Claims to manage stock levels, pricing, and book metadata.
 - [ ] **Review Moderation System**: Administrative queue to flag inappropriate reviews and monitor community sentiment with moderation workflows.
-- [ ] **Enhanced Audit Logs**: Comprehensive tracking of all administrative changes to book catalog, user profiles, and pricing for compliance and security.
 - [ ] **Security Audit Log Dashboard**: Secure administrative interface to monitor, filter, and analyze recorded security events, failed authentication attempts, and database errors.
 - [ ] **Role-Based Access Control (RBAC)**: Expand permission system to include "Moderator," "Editor," and "Finance" roles with granular feature access.
 - [ ] **Sales Analytics Dashboard**: Real-time charts and metrics tracking revenue, top-selling books, user acquisition, and seasonal trends.
@@ -357,6 +357,9 @@ The following features are partially or not yet implemented:
 
 - [X] **Centralized Error Handler & Query Wrapper**: Implement a type-safe Supabase query wrapper alongside a centralized error handling system that sanitizes all database and authentication errors before client exposure to prevent information leakage.
 - [ ] **Rate Limiting**: Implement distributed rate limiting on authentication endpoints to prevent brute force attacks and credential stuffing.
-- [X] **Security Audit Logging**: Add comprehensive logging for sensitive operations like password changes, failed authentication attempts, and administrative actions.
+- [ ] **Security Audit Logging**: Add comprehensive logging for sensitive operations like password changes, failed authentication attempts, and administrative actions.
+  - [X] **Security Audit Logging - sensitive operations** - Log all sensitive operations (password changes, logins, registrations, etc.) with timestamps and user IDs for accountability.
+  - [ ] **Security Audit Logging - admin actions** - Log all administrative actions (book edits, user management, discount changes) with timestamps and user IDs for accountability.
+  - [X] **Security Audit Logging - failed auth attempts** - Log all failed authentication attempts with timestamps and IP addresses for monitoring and alerting.
 - [X] **Security Headers**: Implement security headers (CSP, HSTS, X-Frame-Options, etc.) via Next.js configuration and middleware for enhanced protection.
 - [ ] **Advanced Input Validation**: Expand Zod schema validation with custom sanitization rules and continue the schema-first validation pattern for all user inputs.

@@ -3,6 +3,7 @@ import { insertUserAddress, updateUserAddress } from '@/data/user/address/UserAd
 import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 
 jest.mock('next/cache', () => ({
     revalidatePath: jest.fn(),
@@ -14,6 +15,11 @@ jest.mock('next/navigation', () => ({
 
 jest.mock('@/utils/db/server');
 jest.mock('@/data/user/address/UserAddressRepository');
+jest.mock('@/utils/errors/SupabaseErrorHandler', () => ({
+    sanitizeSupabaseError: jest.fn((err: unknown) =>
+        err instanceof Error ? err.message : String(err),
+    ),
+}));
 
 type MockSupabaseClient = {
     auth: {
@@ -74,6 +80,22 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
         expect(result.message).toBe('Session expired. Please log in again.');
     });
 
+    it('returns session expired when user is null and authError is null', async () => {
+        const formData = new FormData();
+        formData.append('city', 'Glasgow');
+        formData.append('country', 'UK');
+        formData.append('postcode', 'G1 1AA');
+        formData.append('streetAddress', '123 St');
+
+        mockSupabase.auth.getUser.mockResolvedValue({
+            data: { user: null },
+            error: null,
+        });
+
+        const result = await UserAddressAction('update', {}, formData);
+        expect(result.message).toBe('Session expired. Please log in again.');
+    });
+
     it('handles database error during update', async () => {
         const formData = new FormData();
         formData.append('city', 'Glasgow');
@@ -109,7 +131,7 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
 
     it('handles database error during insert in add mode', async () => {
         const formData = new FormData();
-        const fields = {
+        const fields: Record<string, string> = {
             firstName: 'John',
             lastName: 'Doe',
             dob: '1990-01-01',
@@ -172,7 +194,7 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
 
     it('successfully inserts new user address in add mode', async () => {
         const formData = new FormData();
-        const fields = {
+        const fields: Record<string, string> = {
             firstName: 'John',
             lastName: 'Doe',
             dob: '1990-01-01',
@@ -231,5 +253,21 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
         });
 
         await expect(UserAddressAction('update', {}, formData)).rejects.toThrow('NEXT_REDIRECT');
+    });
+
+    it('handles unexpected exceptions and enters the catch block', async () => {
+        const formData = new FormData();
+        formData.append('city', 'Glasgow');
+        formData.append('country', 'UK');
+        formData.append('postcode', 'G1 1AA');
+        formData.append('streetAddress', '123 St');
+
+        jest.mocked(createBackendClient).mockRejectedValue(new Error('Unexpected system crash'));
+
+        const result = await UserAddressAction('update', {}, formData);
+
+        expect(result.message).toBe('Failed to save address details.');
+        expect(result.error).toBe('Unexpected system crash');
+        expect(sanitizeSupabaseError).toHaveBeenCalledWith(expect.any(Error));
     });
 });

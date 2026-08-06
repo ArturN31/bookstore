@@ -67,7 +67,7 @@ export async function SignUpAction(
             return { message: sanitizedError };
         }
 
-        await recordSecurityAuditLog('SUCCESSFUL_REGISTRATION', null, {
+        void recordSecurityAuditLog('SUCCESSFUL_REGISTRATION', null, {
             operation: 'SignUpAction_success',
             email,
         });
@@ -76,15 +76,7 @@ export async function SignUpAction(
         revalidatePath(AUTH_ROUTES.PROFILE);
     } catch (err: unknown) {
         if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
-
         console.error('[SignUpAction] Critical Failure:', err);
-
-        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
-            operation: 'SignUpAction_critical_failure',
-            email,
-            error: sanitizeSupabaseError(err),
-        });
-
         return { message: sanitizeSupabaseError(err) };
     }
 

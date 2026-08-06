@@ -182,4 +182,15 @@ describe('ChangePasswordAction', () => {
         expect(result.message).toBeDefined();
         consoleSpy.mockRestore();
     });
+
+    it('should rethrow NEXT_REDIRECT error caught in catch block', async () => {
+        mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: '123' } }, error: null });
+        jest.mocked(updateAccountPassword).mockRejectedValue(new Error('NEXT_REDIRECT'));
+
+        const formData = new FormData();
+        formData.append('password', 'ValidPass123!');
+        formData.append('cnfPassword', 'ValidPass123!');
+
+        await expect(ChangePasswordAction(undefined, formData)).rejects.toThrow('NEXT_REDIRECT');
+    });
 });

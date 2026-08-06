@@ -5,10 +5,9 @@ import { mapDatabaseCartToDomain, CartItem } from './CartMapper';
 import { CART_OPERATION_TYPES, CART_SUCCESS_MESSAGES } from './CartConstants';
 import { SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
-import { revalidateTag } from 'next/cache';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
-import { isValidUUID, executeCartAction } from './CartServiceUtils';
+import { executeCartAction, handleItemMutation } from './CartServiceUtils';
 
 export interface ActionResponse<T> {
     data: T | null;
@@ -36,30 +35,6 @@ export const createUsersCart = async (userID: string): Promise<ActionResponse<st
     if (!result.error && !result.data)
         return { data: null, error: APP_ERROR_MESSAGES.FAILED_TO_CREATE_CART };
     return { data: result.data?.id || null, error: result.error };
-};
-
-const handleItemMutation = async (
-    operation: string,
-    cartID: string,
-    bookID: string,
-    actionFn: (
-        supabase: Awaited<ReturnType<typeof import('@/utils/db/server').createBackendClient>>,
-    ) => Promise<{ data: boolean | null; error: unknown }>,
-): Promise<ActionResponse<boolean>> => {
-    if (!isValidUUID(cartID) || !isValidUUID(bookID)) {
-        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
-            operation: `${operation}_malformed_identifier`,
-            cartID,
-            bookID,
-        });
-        return { data: false, error: APP_ERROR_MESSAGES.MALFORMED_IDENTIFIER };
-    }
-
-    const result = await executeCartAction<boolean>(operation, null, actionFn, false);
-    if (result.error) return { data: false, error: result.error };
-
-    revalidateTag(`cart_${cartID}`, 'max');
-    return { data: true, error: null };
 };
 
 export const addItemToUsersCart = async (
@@ -165,14 +140,13 @@ export const executeCartOperation = async (
 
     try {
         const result = await operation(cartId, bookId, quantity);
-        if (result.error || result.data === null) {
+        if (result.error || result.data === null)
             return {
                 data: null,
                 error: sanitizeSupabaseError(
                     result.error ?? APP_ERROR_MESSAGES.UNSUPPORTED_ACTION_TYPE,
                 ),
             };
-        }
 
         return {
             data: result.data,
