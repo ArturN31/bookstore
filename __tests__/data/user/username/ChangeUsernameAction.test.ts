@@ -99,7 +99,7 @@ describe('ChangeUsernameAction', () => {
         expect(result.validationErrors).toBeDefined();
     });
 
-    it('should return error when user is not authenticated', async () => {
+    it('should return error when user is not authenticated with error message', async () => {
         const formData = new FormData();
         formData.append('username', 'newusername');
         (getUserData as jest.Mock).mockResolvedValue({ data: null, error: 'Not authenticated' });
@@ -107,6 +107,16 @@ describe('ChangeUsernameAction', () => {
         const result = await ChangeUsernameAction(undefined, formData);
 
         expect(result.message).toBe('Not authenticated');
+    });
+
+    it('should return session expired message when user is null and authError is null', async () => {
+        const formData = new FormData();
+        formData.append('username', 'newusername');
+        (getUserData as jest.Mock).mockResolvedValue({ data: null, error: null });
+
+        const result = await ChangeUsernameAction(undefined, formData);
+
+        expect(result.message).toBe('Session expired. Please log in again.');
     });
 
     it('should fallback to session expired message when sanitizeSupabaseError returns falsy for authError', async () => {

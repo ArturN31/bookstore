@@ -9,9 +9,10 @@ import { signInSchema } from '@/data/schemas/authSchemas';
 import { authenticateUser } from './AuthRepository';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { AUTH_ROUTES, AUTH_MESSAGES } from './AuthConstants';
+import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 
 export type SignInFormState = {
-    validationErrors?: z.core.$ZodIssue[];
+    validationErrors?: z.ZodIssue[];
     message?: string | null;
 };
 
@@ -29,14 +30,23 @@ export async function SignInAction(
     if (rawData.reset) return INITIAL_STATE;
 
     const validated = signInSchema.safeParse(rawData);
-    if (!validated.success)
+    if (!validated.success) {
         return {
             validationErrors: validated.error.issues,
             message: AUTH_MESSAGES.SIGN_IN_VALIDATION,
         };
+    }
 
     const captchaToken = rawData.captchaToken as string | undefined;
-    if (!captchaToken) return { message: AUTH_MESSAGES.SIGN_IN_CAPTCHA_ERROR };
+    const { email } = validated.data;
+
+    if (!captchaToken) {
+        void recordSecurityAuditLog('FAILED_LOGIN', null, {
+            operation: 'SignInAction_missing_captcha',
+            email,
+        });
+        return { message: AUTH_MESSAGES.SIGN_IN_CAPTCHA_ERROR };
+    }
 
     let destinationUrl: string = AUTH_ROUTES.ROOT;
 
@@ -47,9 +57,31 @@ export async function SignInAction(
             ...validated.data,
             options: { captchaToken },
         });
-        if (authError) return { message: authError };
 
-        const { data: dbUser } = await getUserData();
+        if (authError) {
+            const sanitizedError = sanitizeSupabaseError(authError);
+
+            void recordSecurityAuditLog('FAILED_LOGIN', null, {
+                operation: 'SignInAction_auth_failed',
+                email,
+                error: sanitizedError,
+            });
+
+            return { message: sanitizedError };
+        }
+
+        const { data: dbUser, error: dbUserError } = await getUserData();
+
+        if (dbUserError)
+            console.error(
+                '[SignInAction] Failed to retrieve user profile data post-login:',
+                sanitizeSupabaseError(dbUserError),
+            );
+
+        void recordSecurityAuditLog('SUCCESSFUL_LOGIN', dbUser?.id ?? null, {
+            operation: 'SignInAction_success',
+            email,
+        });
 
         revalidatePath(AUTH_ROUTES.ROOT, 'layout');
 
@@ -60,6 +92,7 @@ export async function SignInAction(
                 destinationUrl = returnTo;
         }
     } catch (err: unknown) {
+        if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
         console.error('[SignInAction] Critical Failure:', err);
         return { message: sanitizeSupabaseError(err) };
     }

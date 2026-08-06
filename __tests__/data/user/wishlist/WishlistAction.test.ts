@@ -3,10 +3,14 @@ import { getUserData } from '@/data/user/UserService';
 import { wishlistSchema } from '@/data/schemas/wishlistSchema';
 import { revalidatePath } from 'next/cache';
 import { executeWishlistOperation } from '@/data/user/wishlist/WishlistService';
+import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 
 jest.mock('@/data/user/UserService');
 jest.mock('@/data/schemas/wishlistSchema');
 jest.mock('@/data/user/wishlist/WishlistService');
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
+}));
 jest.mock('@/utils/errors/SupabaseErrorHandler', () => {
     const actual = jest.requireActual('@/utils/errors/SupabaseErrorHandler');
     return {
@@ -71,11 +75,26 @@ describe('WishlistAction', () => {
         expect(result.message).toBe('Invalid wishlist request.');
     });
 
-    it('should return failure if user is not logged in', async () => {
+    it('should return failure if user is not logged in due to session expiration', async () => {
         mockedGetUserData.mockResolvedValue({ data: null, error: null });
         const result = await WishlistAction(undefined, createFormData('b1', 'INSERT'));
         expect(result.success).toBe(false);
         expect(result.message).toMatch(/login required/i);
+        expect(recordSecurityAuditLog).toHaveBeenCalledWith('FAILED_AUTHENTICATION_ATTEMPT', null, {
+            operation: 'WishlistAction_auth_failed',
+            error: 'Session expired',
+        });
+    });
+
+    it('should return failure if user is not logged in due to authError', async () => {
+        mockedGetUserData.mockResolvedValue({ data: null, error: 'Database Auth Error' });
+        const result = await WishlistAction(undefined, createFormData('b1', 'INSERT'));
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Database Auth Error');
+        expect(recordSecurityAuditLog).toHaveBeenCalledWith('FAILED_AUTHENTICATION_ATTEMPT', null, {
+            operation: 'WishlistAction_auth_failed',
+            error: 'Database Auth Error',
+        });
     });
 
     it('should successfully add item to wishlist and revalidate path', async () => {

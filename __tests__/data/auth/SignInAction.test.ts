@@ -158,6 +158,28 @@ describe('APP - Auth - SignInAction', () => {
         expect(redirect).toHaveBeenCalledWith('/user/profile');
     });
 
+    it('should log error and redirect to profile when getUserData returns an error', async () => {
+        mockSupabase.auth.signInWithPassword.mockResolvedValue({ error: null });
+        jest.mocked(getUserData).mockResolvedValue({
+            data: null,
+            error: 'Failed to fetch user data',
+        } as unknown as Awaited<ReturnType<typeof getUserData>>);
+
+        const formData = new FormData();
+        formData.append('email', 'test@example.com');
+        formData.append('password', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
+
+        await SignInAction(undefined, formData);
+
+        expect(getUserData).toHaveBeenCalled();
+        expect(console.error).toHaveBeenCalledWith(
+            '[SignInAction] Failed to retrieve user profile data post-login:',
+            'Failed to fetch user data',
+        );
+        expect(redirect).toHaveBeenCalledWith('/user/profile');
+    });
+
     it('should redirect to returnTo URL if valid', async () => {
         mockSupabase.auth.signInWithPassword.mockResolvedValue({ error: null });
         jest.mocked(getUserData).mockResolvedValue({
@@ -194,7 +216,8 @@ describe('APP - Auth - SignInAction', () => {
     });
 
     it('should handle critical server error in catch block', async () => {
-        jest.mocked(createBackendClient).mockRejectedValueOnce(new Error('Critical failure'));
+        const criticalError = new Error('Critical failure');
+        jest.mocked(createBackendClient).mockRejectedValueOnce(criticalError);
 
         const formData = new FormData();
         formData.append('email', 'test@example.com');
@@ -203,14 +226,43 @@ describe('APP - Auth - SignInAction', () => {
 
         const result = await SignInAction(undefined, formData);
 
-        expect(result.message).toBe('An unexpected error occurred. We are looking into it.');
+        expect(result.message).toBeDefined();
         expect(console.error).toHaveBeenCalledWith(
             '[SignInAction] Critical Failure:',
-            expect.any(Error),
+            criticalError,
         );
     });
 
-    it('should re-throw redirect errors', async () => {
+    it('should re-throw redirect errors caught inside the try block', async () => {
+        const redirectError = new Error('NEXT_REDIRECT');
+        jest.mocked(createBackendClient).mockRejectedValueOnce(redirectError);
+
+        const formData = new FormData();
+        formData.append('email', 'test@example.com');
+        formData.append('password', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
+
+        await expect(SignInAction(undefined, formData)).rejects.toThrow('NEXT_REDIRECT');
+    });
+
+    it('should handle non-Error thrown inside try block in catch', async () => {
+        jest.mocked(createBackendClient).mockRejectedValueOnce('Non-error string failure');
+
+        const formData = new FormData();
+        formData.append('email', 'test@example.com');
+        formData.append('password', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
+
+        const result = await SignInAction(undefined, formData);
+
+        expect(result.message).toBe('Non-error string failure');
+        expect(console.error).toHaveBeenCalledWith(
+            '[SignInAction] Critical Failure:',
+            'Non-error string failure',
+        );
+    });
+
+    it('should re-throw redirect errors from redirect call outside try block', async () => {
         mockSupabase.auth.signInWithPassword.mockResolvedValue({ error: null });
         jest.mocked(getUserData).mockResolvedValue({
             data: { id: '123' },

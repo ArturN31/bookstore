@@ -8,9 +8,10 @@ import { signUpSchema } from '@/data/schemas/authSchemas';
 import { registerUser } from './AuthRepository';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { AUTH_ROUTES, AUTH_MESSAGES } from './AuthConstants';
+import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 
 export type SignUpFormState = {
-    validationErrors?: z.core.$ZodIssue[];
+    validationErrors?: z.ZodIssue[];
     message?: string | null;
 };
 
@@ -35,7 +36,15 @@ export async function SignUpAction(
         };
 
     const captchaToken = rawData.captchaToken as string | undefined;
-    if (!captchaToken) return { message: AUTH_MESSAGES.SIGN_UP_CAPTCHA_ERROR };
+    const { email } = validated.data;
+
+    if (!captchaToken) {
+        void recordSecurityAuditLog('FAILED_REGISTRATION', null, {
+            operation: 'SignUpAction_missing_captcha',
+            email,
+        });
+        return { message: AUTH_MESSAGES.SIGN_UP_CAPTCHA_ERROR };
+    }
 
     try {
         const supabase = await createBackendClient();
@@ -45,11 +54,28 @@ export async function SignUpAction(
             password: validated.data.password,
             options: { captchaToken },
         });
-        if (authError) return { message: authError };
+
+        if (authError) {
+            const sanitizedError = sanitizeSupabaseError(authError);
+
+            void recordSecurityAuditLog('FAILED_REGISTRATION', null, {
+                operation: 'SignUpAction_auth_failed',
+                email,
+                error: sanitizedError,
+            });
+
+            return { message: sanitizedError };
+        }
+
+        void recordSecurityAuditLog('SUCCESSFUL_REGISTRATION', null, {
+            operation: 'SignUpAction_success',
+            email,
+        });
 
         revalidatePath(AUTH_ROUTES.ROOT, 'layout');
         revalidatePath(AUTH_ROUTES.PROFILE);
     } catch (err: unknown) {
+        if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
         console.error('[SignUpAction] Critical Failure:', err);
         return { message: sanitizeSupabaseError(err) };
     }

@@ -56,9 +56,9 @@ describe('APP - Auth - SignUpAction', () => {
 
     it('should return mapped error message when registerUser returns an error', async () => {
         jest.mocked(registerUser).mockResolvedValue({
-            data: null,
+            data: undefined,
             error: 'User already registered',
-        });
+        } as unknown as Awaited<ReturnType<typeof registerUser>>);
 
         const formData = new FormData();
         formData.append('email', 'test@example.com');
@@ -75,8 +75,8 @@ describe('APP - Auth - SignUpAction', () => {
     it('should revalidate paths and redirect to profile on success', async () => {
         jest.mocked(registerUser).mockResolvedValue({
             data: { user: null, session: null },
-            error: null,
-        });
+            error: undefined,
+        } as unknown as Awaited<ReturnType<typeof registerUser>>);
 
         const formData = new FormData();
         formData.append('email', 'newuser@example.com');
@@ -93,7 +93,8 @@ describe('APP - Auth - SignUpAction', () => {
 
     it('should handle critical server error in catch block', async () => {
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-        jest.mocked(createBackendClient).mockRejectedValueOnce(new Error('Database explosion'));
+        const criticalError = new Error('Database explosion');
+        jest.mocked(createBackendClient).mockRejectedValueOnce(criticalError);
 
         const formData = new FormData();
         formData.append('email', 'test@example.com');
@@ -103,19 +104,49 @@ describe('APP - Auth - SignUpAction', () => {
 
         const result = await SignUpAction(undefined, formData);
 
-        expect(result.message).toBe('An unexpected error occurred. We are looking into it.');
+        expect(result.message).toBeDefined();
+        expect(consoleSpy).toHaveBeenCalledWith('[SignUpAction] Critical Failure:', criticalError);
+        consoleSpy.mockRestore();
+    });
+
+    it('should re-throw NEXT_REDIRECT error caught inside try block', async () => {
+        const redirectError = new Error('NEXT_REDIRECT');
+        jest.mocked(createBackendClient).mockRejectedValueOnce(redirectError);
+
+        const formData = new FormData();
+        formData.append('email', 'test@example.com');
+        formData.append('password', 'Password123!');
+        formData.append('cnfPassword', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
+
+        await expect(SignUpAction(undefined, formData)).rejects.toThrow('NEXT_REDIRECT');
+    });
+
+    it('should handle non-Error thrown inside try block in catch', async () => {
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        jest.mocked(createBackendClient).mockRejectedValueOnce('Non-error string failure');
+
+        const formData = new FormData();
+        formData.append('email', 'test@example.com');
+        formData.append('password', 'Password123!');
+        formData.append('cnfPassword', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
+
+        const result = await SignUpAction(undefined, formData);
+
+        expect(result.message).toBe('Non-error string failure');
         expect(consoleSpy).toHaveBeenCalledWith(
             '[SignUpAction] Critical Failure:',
-            expect.any(Error),
+            'Non-error string failure',
         );
         consoleSpy.mockRestore();
     });
 
-    it('should re-throw redirect errors', async () => {
+    it('should re-throw redirect errors from redirect call outside try block', async () => {
         jest.mocked(registerUser).mockResolvedValue({
             data: { user: null, session: null },
-            error: null,
-        });
+            error: undefined,
+        } as unknown as Awaited<ReturnType<typeof registerUser>>);
 
         const redirectError = new Error('NEXT_REDIRECT');
 

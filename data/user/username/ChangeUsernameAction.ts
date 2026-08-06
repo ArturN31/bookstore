@@ -5,17 +5,15 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createBackendClient } from '@/utils/db/server';
 import { getUserData } from '@/data/user/UserService';
-import {
-    sanitizeSupabaseError,
-    APP_ERROR_MESSAGES,
-    DB_ERROR_MAP,
-} from '@/utils/errors/SupabaseErrorHandler';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { updateUsername } from '../UserRepository';
 import { USER_ROUTES } from '../UserConstants';
+import { APP_ERROR_MESSAGES, DB_ERROR_MAP } from '@/utils/errors/ErrorHandlerConstants';
+import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 
 export type ChangeUsernameFormState = {
     username?: string | null;
-    validationErrors?: z.core.$ZodIssue[];
+    validationErrors?: z.ZodIssue[];
     message?: string | null;
     isUsernameTaken?: boolean;
 };
@@ -45,6 +43,7 @@ export async function ChangeUsernameAction(
     if (isReset) return INITIAL_STATE;
 
     const validated = USERNAME_SCHEMA.safeParse({ username: rawUsername });
+
     if (!validated.success)
         return {
             username: rawUsername,
@@ -58,10 +57,16 @@ export async function ChangeUsernameAction(
         const supabase = await createBackendClient();
 
         const { data: user, error: authError } = await getUserData();
-        if (authError || !user)
+        if (authError || !user) {
+            const sanitizedAuthError = authError ? sanitizeSupabaseError(authError) : null;
+            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
+                operation: 'ChangeUsernameAction_auth_failed',
+                error: sanitizedAuthError || 'Session expired',
+            });
             return {
-                message: sanitizeSupabaseError(authError) || APP_ERROR_MESSAGES.SESSION_EXPIRED,
+                message: sanitizedAuthError || APP_ERROR_MESSAGES.SESSION_EXPIRED,
             };
+        }
 
         if (user.username === username)
             return {
@@ -74,6 +79,11 @@ export async function ChangeUsernameAction(
         if (dbError) {
             const errorMessage = sanitizeSupabaseError(dbError);
             const isTaken = errorMessage === DB_ERROR_MAP['23505'];
+            if (!isTaken)
+                void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', user.id, {
+                    operation: 'ChangeUsernameAction_db_error',
+                    error: errorMessage,
+                });
             return {
                 username,
                 message: isTaken ? APP_ERROR_MESSAGES.USERNAME_TAKEN : errorMessage,
@@ -83,9 +93,15 @@ export async function ChangeUsernameAction(
     } catch (err: unknown) {
         if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
 
+        const sanitizedError = sanitizeSupabaseError(err);
+        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
+            operation: 'ChangeUsernameAction_exception',
+            error: sanitizedError,
+        });
+
         console.error('[ChangeUsernameAction] Pipeline Failure:', err);
         return {
-            message: sanitizeSupabaseError(err),
+            message: sanitizedError,
         };
     }
 

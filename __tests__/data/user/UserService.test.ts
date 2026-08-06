@@ -7,7 +7,7 @@ import {
     updateUsername as repoUpdateUsername,
 } from '@/data/user/UserRepository';
 import { UserServiceLogPrefix } from '@/data/user/UserConstants';
-import { APP_ERROR_MESSAGES } from '@/utils/errors/SupabaseErrorHandler';
+import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 
 jest.mock('@/utils/db/server');
 jest.mock('@/data/user/UserRepository');
@@ -308,6 +308,18 @@ describe('UserService', () => {
             expect(result.error).toBe(APP_ERROR_MESSAGES.ERROR_AUTH_FAILED);
         });
 
+        it('should return auth error when user payload is missing from auth data in getUserWishlist', async () => {
+            (fetchUserAuthData as jest.MockedFunction<typeof fetchUserAuthData>).mockResolvedValue({
+                data: { user: null },
+                error: null,
+            } as unknown as Awaited<ReturnType<typeof fetchUserAuthData>>);
+
+            const result = await getUserWishlist();
+
+            expect(result.data).toBeNull();
+            expect(result.error).toBe(APP_ERROR_MESSAGES.ERROR_AUTH_FAILED);
+        });
+
         it('should return auth error when userID is not a valid UUID', async () => {
             (fetchUserAuthData as jest.MockedFunction<typeof fetchUserAuthData>).mockResolvedValue({
                 data: { user: { id: 'invalid-uuid', email: 'test@test.com' } },
@@ -451,6 +463,18 @@ describe('UserService', () => {
             (fetchUserAuthData as jest.MockedFunction<typeof fetchUserAuthData>).mockResolvedValue({
                 data: null,
                 error: 'fail',
+            } as unknown as Awaited<ReturnType<typeof fetchUserAuthData>>);
+
+            const result = await updateUsername('newname');
+
+            expect(result.data).toBeNull();
+            expect(result.error).toBe(APP_ERROR_MESSAGES.ERROR_AUTH_FAILED);
+        });
+
+        it('should return auth error when user payload is missing from auth data in updateUsername', async () => {
+            (fetchUserAuthData as jest.MockedFunction<typeof fetchUserAuthData>).mockResolvedValue({
+                data: { user: null },
+                error: null,
             } as unknown as Awaited<ReturnType<typeof fetchUserAuthData>>);
 
             const result = await updateUsername('newname');
