@@ -324,7 +324,7 @@ The following features are partially or not yet implemented:
 ### 1. Core E-Commerce Completion
 
 - [ ] **User Review Submission**: Add UI and Server Actions to allow authenticated users to submit and rate books (currently read-only).
-  - [ ] **User Review Submission - UI**: Implement a modal or inline form for submitting reviews with star ratings and text.
+  - [X] **User Review Submission - UI**: Implement a modal or inline form for submitting reviews with star ratings and text.
   - [ ] **User Review Submission - Server Actions**: Create server-side logic to validate
 - [ ] **Stripe Payment Integration**: Implement a secure checkout flow using Stripe Elements and Server Actions.
 - [ ] **Order Success Workflow**: Automate post-purchase triggers, including the generation of dynamic receipts and email confirmations.
