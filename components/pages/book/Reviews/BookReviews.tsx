@@ -4,14 +4,16 @@ import Typography from '@mui/material/Typography';
 import { ReviewCard } from '@/components/pages/book/Reviews/ReviewCard/ReviewCard';
 import { ReviewPagination } from '@/components/pages/book/Reviews/ReviewPagination';
 import { ReviewSummary } from './ReviewSummary';
-import { AddReviewFormModal } from './ReviewForm/AddReviewFormModal';
+import { ReviewFormModal } from './ReviewForm/ReviewFormModal';
 
 export const BookReviews = ({
     reviewsData,
+    bookId,
     slug,
     page,
 }: {
     reviewsData: PaginatedReviewsResult;
+    bookId: string;
     slug: string;
     page: number;
 }) => {
@@ -33,7 +35,7 @@ export const BookReviews = ({
                     averageRating={averageRating}
                 />
 
-                <AddReviewFormModal />
+                <ReviewFormModal bookId={bookId} />
             </Box>
 
             <Stack spacing={2}>

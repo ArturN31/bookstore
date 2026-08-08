@@ -1,6 +1,6 @@
 import { createBackendClient } from '@/utils/db/server';
 import { withRetry } from '@/utils/network/retry';
-import { safeSupabaseQuery, SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
+import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
@@ -9,6 +9,11 @@ import { UUID_REGEX } from './CartConstants';
 import { revalidateTag } from 'next/cache';
 
 type BackendClient = Awaited<ReturnType<typeof createBackendClient>>;
+
+export type ActionResponse<T> = {
+    data: T | null;
+    error: string | null;
+};
 
 export const isValidUUID = (id: string): boolean => UUID_REGEX.test(id);
 
@@ -22,18 +27,10 @@ export const handleItemMutation = async (
     operation: string,
     cartID: string,
     bookID: string,
-    actionFn: (
-        supabase: Awaited<ReturnType<typeof import('@/utils/db/server').createBackendClient>>,
-    ) => Promise<{ data: boolean | null; error: unknown }>,
+    actionFn: (supabase: BackendClient) => Promise<{ data: boolean | null; error: unknown }>,
 ): Promise<ActionResponse<boolean>> => {
-    if (!isValidUUID(cartID) || !isValidUUID(bookID)) {
-        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
-            operation: `${operation}_malformed_identifier`,
-            cartID,
-            bookID,
-        });
+    if (!isValidUUID(cartID) || !isValidUUID(bookID))
         return { data: false, error: APP_ERROR_MESSAGES.MALFORMED_IDENTIFIER };
-    }
 
     const result = await executeCartAction<boolean>(operation, null, actionFn, false);
     if (result.error) return { data: false, error: result.error };
@@ -56,74 +53,56 @@ export async function executeCartAction<T>(
         return { data: null, error: APP_ERROR_MESSAGES.INVALID_USER_SESSION };
     }
 
+    const supabase = await createBackendClient();
+    const authenticatedId = await verifyUserSession(supabase);
+
+    if (requireUserMatch && targetUserId && authenticatedId !== targetUserId) {
+        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', authenticatedId, {
+            targetUserId,
+            operation: `${operation}_unauthorized_mismatch`,
+        });
+        return { data: null, error: APP_ERROR_MESSAGES.UNAUTHORIZED_ACCESS };
+    }
+
+    if (!requireUserMatch && !authenticatedId)
+        return { data: null, error: APP_ERROR_MESSAGES.UNAUTHENTICATED_USER };
+
     try {
         return await withRetry(async () => {
-            const supabase = await createBackendClient();
-            const authenticatedId = await verifyUserSession(supabase);
-
-            if (requireUserMatch && targetUserId && authenticatedId !== targetUserId) {
-                void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', authenticatedId, {
-                    targetUserId,
-                    operation: `${operation}_unauthorized_mismatch`,
-                });
-                throw new Error(APP_ERROR_MESSAGES.UNAUTHORIZED_ACCESS);
-            }
-
-            if (!requireUserMatch && !authenticatedId) {
-                void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
-                    operation: `${operation}_unauthenticated`,
-                });
-                throw new Error(APP_ERROR_MESSAGES.UNAUTHENTICATED_USER);
-            }
-
-            const result = await safeSupabaseQuery(async () => await fn(supabase));
+            const result = (await safeSupabaseQuery(async () => await fn(supabase))) as unknown as {
+                data: T | null;
+                error: unknown;
+            };
             if (result.error) {
-                if (result.error === APP_ERROR_MESSAGES.NO_DATA_RETURNED) {
+                if (result.error === APP_ERROR_MESSAGES.NO_DATA_RETURNED)
                     return { data: null, error: APP_ERROR_MESSAGES.NO_DATA_RETURNED };
-                }
-                const sanitizedError = sanitizeSupabaseError(result.error);
-                void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', targetUserId, {
-                    operation: `${operation}_db_error`,
-                    error: sanitizedError,
-                });
-                return { data: null, error: sanitizedError };
+                throw new Error(
+                    typeof result.error === 'string' ? result.error : JSON.stringify(result.error),
+                );
             }
-
             return { data: result.data ?? null, error: null };
         });
     } catch (err: unknown) {
         const sanitizedError = sanitizeSupabaseError(err);
-        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', targetUserId, {
-            operation: `${operation}_exception`,
-            error: sanitizedError,
-        });
         return { data: null, error: sanitizedError };
     }
 }
 
 export const CART_OPERATIONS: Record<
     string,
-    (cartID: string, bookID: string, bookQuantity: number) => Promise<SafeQueryResult<boolean>>
+    (
+        cartID: string,
+        bookID: string,
+        bookQuantity: number,
+    ) => (supabase: BackendClient) => Promise<{ data: boolean | null; error: unknown }>
 > = {
-    add: async (cartID, bookID, qty): Promise<SafeQueryResult<boolean>> => {
-        const supabase = await createBackendClient();
-        const result = await safeSupabaseQuery(
-            async () => await Repo.upsertItem(supabase, cartID, bookID, qty),
-        );
-        return result as SafeQueryResult<boolean>;
+    add: (cartID, bookID, qty) => async (supabase: BackendClient) => {
+        return await Repo.upsertItem(supabase, cartID, bookID, qty);
     },
-    update: async (cartID, bookID, qty): Promise<SafeQueryResult<boolean>> => {
-        const supabase = await createBackendClient();
-        const result = await safeSupabaseQuery(
-            async () => await Repo.updateItem(supabase, cartID, bookID, qty),
-        );
-        return result as SafeQueryResult<boolean>;
+    update: (cartID, bookID, qty) => async (supabase: BackendClient) => {
+        return await Repo.updateItem(supabase, cartID, bookID, qty);
     },
-    remove: async (cartID, bookID, _qty): Promise<SafeQueryResult<boolean>> => {
-        const supabase = await createBackendClient();
-        const result = await safeSupabaseQuery(
-            async () => await Repo.deleteItem(supabase, cartID, bookID),
-        );
-        return result as SafeQueryResult<boolean>;
+    remove: (cartID, bookID, _qty) => async (supabase: BackendClient) => {
+        return await Repo.deleteItem(supabase, cartID, bookID);
     },
 };

@@ -11,7 +11,7 @@ import { AUTH_ROUTES, AUTH_MESSAGES } from './AuthConstants';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 
 export type SignUpFormState = {
-    validationErrors?: z.ZodIssue[];
+    validationErrors?: z.core.$ZodIssue[];
     message?: string | null;
 };
 

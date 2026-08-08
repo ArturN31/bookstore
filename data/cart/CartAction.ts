@@ -11,7 +11,7 @@ import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 export type CartFormState = {
     success: boolean;
     message: string;
-    validationErrors?: z.ZodIssue[];
+    validationErrors?: z.core.$ZodIssue[];
     timestamp?: number;
 };
 
@@ -26,13 +26,12 @@ export async function CartAction(
     };
 
     const validated = cartSchema.safeParse(rawData);
-    if (!validated.success) {
+    if (!validated.success)
         return {
             success: false,
             message: 'Invalid cart request.',
             validationErrors: validated.error.issues,
         };
-    }
 
     const { bookId, bookQuantity, actionType } = validated.data;
     let userId: string | null = null;
@@ -64,13 +63,6 @@ export async function CartAction(
                 ? sanitizeSupabaseError(cartContext.error)
                 : 'Cart initialization failed.';
 
-            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userId, {
-                operation: 'CartAction_init_failed',
-                bookId,
-                actionType,
-                error: sanitizedError,
-            });
-
             return {
                 success: false,
                 message: sanitizedError,
@@ -86,15 +78,6 @@ export async function CartAction(
 
         if (result.error) {
             const sanitizedError = sanitizeSupabaseError(result.error);
-
-            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userId, {
-                operation: 'CartAction_operation_failed',
-                bookId,
-                bookQuantity,
-                actionType,
-                error: sanitizedError,
-            });
-
             return {
                 success: false,
                 message: sanitizedError,
@@ -111,15 +94,6 @@ export async function CartAction(
     } catch (err: unknown) {
         console.error('[CartAction] Critical Error:', err);
         const sanitizedError = sanitizeSupabaseError(err);
-
-        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userId, {
-            operation: 'CartAction_critical_failure',
-            bookId,
-            bookQuantity,
-            actionType,
-            error: sanitizedError,
-        });
-
         return {
             success: false,
             message: sanitizedError,

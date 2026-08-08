@@ -33,57 +33,54 @@ const verifyUserSession = async (supabase: SupabaseClient<Database>): Promise<st
 };
 
 export const getUserData = async (): Promise<ActionResponse<UserRow & { email: string }>> => {
-    let userID: string | null = null;
     try {
         const supabase = await createBackendClient();
 
         const authResult = await Repo.fetchUserAuthData(supabase);
-        if (authResult.error || !authResult.data?.user) {
-            const sanitizedError = authResult.error
-                ? sanitizeSupabaseError(authResult.error)
-                : 'Auth failed';
-            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
-                operation: 'getUserData_auth_failed',
-                error: sanitizedError,
-            });
+        if (authResult.error || !authResult.data?.user)
             return { data: null, error: APP_ERROR_MESSAGES.ERROR_AUTH_FAILED };
-        }
 
         const authUser = authResult.data.user;
-        userID = authUser.id;
+        const userID = authUser.id;
         const email = authUser.email;
+
         if (!userID || !email || !isValidUUID(userID)) {
-            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userID, {
+            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userID ?? null, {
                 operation: 'getUserData_malformed_id',
-                targetUserId: userID,
+                targetUserId: userID ?? null,
             });
             return { data: null, error: APP_ERROR_MESSAGES.ERROR_AUTH_FAILED };
         }
 
-        const profileResult = await withRetry(async () => {
-            const authenticatedId = await verifyUserSession(supabase);
-            if (authenticatedId !== userID) {
-                void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', authenticatedId, {
-                    targetUserId: userID,
-                    operation: 'getUserData_unauthorized_mismatch',
-                });
-                throw new Error(APP_ERROR_MESSAGES.UNAUTHORIZED_ACCESS);
-            }
+        const authenticatedId = await verifyUserSession(supabase);
+        if (authenticatedId !== userID) {
+            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', authenticatedId, {
+                targetUserId: userID,
+                operation: 'getUserData_unauthorized_mismatch',
+            });
+            return { data: null, error: APP_ERROR_MESSAGES.UNAUTHORIZED_ACCESS };
+        }
 
-            return await safeSupabaseQuery(
-                async () => await Repo.fetchUserProfileById(supabase, userID!),
-            );
-        });
+        const profileResult = await withRetry<{ data: UserRow | null; error: string | null }>(
+            async () => {
+                const res = (await safeSupabaseQuery(
+                    async () => await Repo.fetchUserProfileById(supabase, userID),
+                )) as unknown as { data: UserRow | null; error: unknown };
+                if (res.error) {
+                    if (res.error === APP_ERROR_MESSAGES.NO_DATA_RETURNED)
+                        return { data: null, error: APP_ERROR_MESSAGES.NO_DATA_RETURNED };
+                    throw new Error(
+                        typeof res.error === 'string' ? res.error : JSON.stringify(res.error),
+                    );
+                }
+                return { data: res.data ?? null, error: null };
+            },
+        );
 
         if (profileResult.error) {
             if (profileResult.error === APP_ERROR_MESSAGES.NO_DATA_RETURNED)
                 return { data: null, error: null };
-
             const sanitizedError = sanitizeSupabaseError(profileResult.error);
-            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userID, {
-                operation: 'getUserData_db_error',
-                error: sanitizedError,
-            });
             return { data: null, error: sanitizedError };
         }
 
@@ -100,64 +97,58 @@ export const getUserData = async (): Promise<ActionResponse<UserRow & { email: s
     } catch (err: unknown) {
         console.error(`${UserServiceLogPrefix} Unexpected Error:`, err);
         const sanitizedError = sanitizeSupabaseError(err);
-        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userID, {
-            operation: 'getUserData_exception',
-            error: sanitizedError,
-        });
         return { data: null, error: sanitizedError };
     }
 };
 
 export const getUserWishlist = async (): Promise<ActionResponse<WishlistRow[]>> => {
-    let userID: string | null = null;
     try {
         const supabase = await createBackendClient();
 
         const authResult = await Repo.fetchUserAuthData(supabase);
-        if (authResult.error || !authResult.data?.user) {
-            const sanitizedError = authResult.error
-                ? sanitizeSupabaseError(authResult.error)
-                : 'Auth failed';
-            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
-                operation: 'getUserWishlist_auth_failed',
-                error: sanitizedError,
-            });
+        if (authResult.error || !authResult.data?.user)
             return { data: null, error: APP_ERROR_MESSAGES.ERROR_AUTH_FAILED };
-        }
 
-        userID = authResult.data.user.id;
+        const userID = authResult.data.user.id;
         if (!userID || !isValidUUID(userID)) {
-            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userID, {
+            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userID ?? null, {
                 operation: 'getUserWishlist_malformed_id',
-                targetUserId: userID,
+                targetUserId: userID ?? null,
             });
             return { data: null, error: APP_ERROR_MESSAGES.ERROR_AUTH_FAILED };
         }
 
-        const wishlistResult = await withRetry(async () => {
-            const authenticatedId = await verifyUserSession(supabase);
-            if (authenticatedId !== userID) {
-                void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', authenticatedId, {
-                    targetUserId: userID,
-                    operation: 'getUserWishlist_unauthorized_mismatch',
-                });
-                throw new Error(APP_ERROR_MESSAGES.UNAUTHORIZED_ACCESS);
-            }
+        const authenticatedId = await verifyUserSession(supabase);
+        if (authenticatedId !== userID) {
+            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', authenticatedId, {
+                targetUserId: userID,
+                operation: 'getUserWishlist_unauthorized_mismatch',
+            });
+            return { data: null, error: APP_ERROR_MESSAGES.UNAUTHORIZED_ACCESS };
+        }
 
-            return await safeSupabaseQuery(
-                async () => await Repo.fetchWishlistByUserId(supabase, userID!),
-            );
+        const wishlistResult = await withRetry<{
+            data: WishlistRow[] | null;
+            error: string | null;
+        }>(async () => {
+            const res = (await safeSupabaseQuery(
+                async () => await Repo.fetchWishlistByUserId(supabase, userID),
+            )) as unknown as { data: WishlistRow[] | null; error: unknown };
+
+            if (res.error) {
+                if (res.error === APP_ERROR_MESSAGES.NO_DATA_RETURNED)
+                    return { data: [], error: APP_ERROR_MESSAGES.NO_DATA_RETURNED };
+                throw new Error(
+                    typeof res.error === 'string' ? res.error : JSON.stringify(res.error),
+                );
+            }
+            return { data: res.data ?? [], error: null };
         });
 
         if (wishlistResult.error) {
             if (wishlistResult.error === APP_ERROR_MESSAGES.NO_DATA_RETURNED)
                 return { data: [], error: null };
-
             const sanitizedError = sanitizeSupabaseError(wishlistResult.error);
-            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userID, {
-                operation: 'getUserWishlist_db_error',
-                error: sanitizedError,
-            });
             return { data: null, error: sanitizedError };
         }
 
@@ -168,62 +159,52 @@ export const getUserWishlist = async (): Promise<ActionResponse<WishlistRow[]>> 
     } catch (err: unknown) {
         console.error(`${UserServiceLogPrefix} Wishlist System Error:`, err);
         const sanitizedError = sanitizeSupabaseError(err);
-        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userID, {
-            operation: 'getUserWishlist_exception',
-            error: sanitizedError,
-        });
         return { data: null, error: sanitizedError };
     }
 };
 
 export const updateUsername = async (newUsername: string): Promise<ActionResponse<UserRow[]>> => {
-    let userID: string | null = null;
     try {
         const supabase = await createBackendClient();
 
         const authResult = await Repo.fetchUserAuthData(supabase);
-        if (authResult.error || !authResult.data?.user) {
-            const sanitizedError = authResult.error
-                ? sanitizeSupabaseError(authResult.error)
-                : 'Auth failed';
-            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
-                operation: 'updateUsername_auth_failed',
-                error: sanitizedError,
-            });
+        if (authResult.error || !authResult.data?.user)
             return { data: null, error: APP_ERROR_MESSAGES.ERROR_AUTH_FAILED };
-        }
 
-        userID = authResult.data.user.id;
+        const userID = authResult.data.user.id;
         if (!userID || !isValidUUID(userID)) {
-            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userID, {
+            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userID ?? null, {
                 operation: 'updateUsername_malformed_id',
-                targetUserId: userID,
+                targetUserId: userID ?? null,
             });
             return { data: null, error: APP_ERROR_MESSAGES.ERROR_AUTH_FAILED };
         }
 
-        const updateResult = await withRetry(async () => {
-            const authenticatedId = await verifyUserSession(supabase);
-            if (authenticatedId !== userID) {
-                void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', authenticatedId, {
-                    targetUserId: userID,
-                    operation: 'updateUsername_unauthorized_mismatch',
-                });
-                throw new Error(APP_ERROR_MESSAGES.UNAUTHORIZED_ACCESS);
-            }
+        const authenticatedId = await verifyUserSession(supabase);
+        if (authenticatedId !== userID) {
+            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', authenticatedId, {
+                targetUserId: userID,
+                operation: 'updateUsername_unauthorized_mismatch',
+            });
+            return { data: null, error: APP_ERROR_MESSAGES.UNAUTHORIZED_ACCESS };
+        }
 
-            return await safeSupabaseQuery(
-                async () => await Repo.updateUsername(supabase, userID!, newUsername),
-            );
-        });
+        const updateResult = await withRetry<{ data: UserRow[] | null; error: string | null }>(
+            async () => {
+                const res = (await safeSupabaseQuery(
+                    async () => await Repo.updateUsername(supabase, userID, newUsername),
+                )) as unknown as { data: UserRow[] | null; error: unknown };
+
+                if (res.error)
+                    throw new Error(
+                        typeof res.error === 'string' ? res.error : JSON.stringify(res.error),
+                    );
+                return { data: res.data ?? [], error: null };
+            },
+        );
 
         if (updateResult.error) {
             const sanitizedError = sanitizeSupabaseError(updateResult.error);
-            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userID, {
-                operation: 'updateUsername_db_error',
-                newUsername,
-                error: sanitizedError,
-            });
             return { data: null, error: sanitizedError };
         }
 
@@ -234,11 +215,6 @@ export const updateUsername = async (newUsername: string): Promise<ActionRespons
     } catch (err: unknown) {
         console.error(`${UserServiceLogPrefix} Update Username System Error:`, err);
         const sanitizedError = sanitizeSupabaseError(err);
-        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userID, {
-            operation: 'updateUsername_exception',
-            newUsername,
-            error: sanitizedError,
-        });
         return { data: null, error: sanitizedError };
     }
 };

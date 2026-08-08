@@ -17,7 +17,7 @@ type UserInsert = Database['public']['Tables']['users']['Insert'];
 
 export type UserAddressFormState = {
     message?: string | null;
-    validationErrors?: z.ZodIssue[];
+    validationErrors?: z.core.$ZodIssue[];
     error?: string | null;
 };
 
@@ -70,25 +70,15 @@ export async function UserAddressAction(
 
         if (dbError) {
             const sanitizedError = sanitizeSupabaseError(dbError);
-            void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', user.id, {
-                operation: `UserAddressAction_${mode}_db_error`,
-                error: sanitizedError,
-            });
             return {
                 message: APP_ERROR_MESSAGES.SAVE_ADDRESS_ERROR,
                 error: sanitizedError,
             };
         }
     } catch (err: unknown) {
-        const sanitizedError = sanitizeSupabaseError(err);
-        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
-            operation: `UserAddressAction_${mode}_exception`,
-            error: sanitizedError,
-        });
-        return {
-            message: APP_ERROR_MESSAGES.SAVE_ADDRESS_ERROR,
-            error: sanitizedError,
-        };
+        if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
+        console.error('[UserAddressAction] Critical Failure:', err);
+        return { message: sanitizeSupabaseError(err) };
     }
 
     revalidatePath(USER_ROUTES.PROFILE);

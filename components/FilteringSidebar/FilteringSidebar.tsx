@@ -4,11 +4,11 @@ import { ReactNode, useState } from 'react';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import { useBookFilter } from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
-import { FilteringSidebarSkeleton } from './FilteringSidebarSkeleton';
 import { FilteringSidebarHeader } from './Sections/FilteringSidebarHeader';
 import { FilteringSidebarResetButtonSection } from './Sections/FilteringSidebarResetButtonSection';
 import { FilteringSidebarCategoriesContainer } from './Sections/FilteringSidebarCategoriesContainer';
 import { FilteringSidebarButton } from './Sections/FilteringSidebarButton';
+import { FilteringSidebarSkeleton } from './FilteringSidebarSkeleton';
 
 export const FilteringSidebar = () => {
     const { isLoading } = useBookFilter();
@@ -21,8 +21,6 @@ export const FilteringSidebar = () => {
     const handleOpen = () => {
         setOpen(true);
     };
-
-    if (isLoading) return <FilteringSidebarSkeleton />;
 
     return (
         <>
@@ -38,15 +36,21 @@ export const FilteringSidebar = () => {
                     },
                 }}
             >
-                <FilteringSidebarHeader handleClose={handleClose} />
+                {isLoading ? (
+                    <FilteringSidebarSkeleton />
+                ) : (
+                    <>
+                        <FilteringSidebarHeader handleClose={handleClose} />
 
-                <Divider />
+                        <Divider />
 
-                <FilteringSidebarResetButtonSection />
+                        <FilteringSidebarResetButtonSection />
 
-                <Divider />
+                        <Divider />
 
-                <FilteringSidebarCategoriesContainer />
+                        <FilteringSidebarCategoriesContainer />
+                    </>
+                )}
             </Drawer>
         </>
     );

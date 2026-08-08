@@ -1,12 +1,12 @@
+import React from 'react';
 import { Box, Rating, Typography } from '@mui/material';
 
-export const ModalRatingInput = ({
-    rating,
-    setRating,
-}: {
+interface ReviewFormRatingInputProps {
     rating: number | null;
     setRating: React.Dispatch<React.SetStateAction<number | null>>;
-}) => {
+}
+
+export const ReviewFormRatingInput = ({ rating, setRating }: ReviewFormRatingInputProps) => {
     return (
         <Box className="rounded-xl border border-[#E8E2D5] bg-[#F3EDE2] p-4 py-4 text-center">
             <Typography

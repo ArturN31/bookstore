@@ -12,7 +12,7 @@ import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 export type WishlistFormState = {
     success: boolean;
     message: string;
-    validationErrors?: z.ZodIssue[];
+    validationErrors?: z.core.$ZodIssue[];
     timestamp?: number;
 };
 
