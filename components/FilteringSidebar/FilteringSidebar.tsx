@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
+import { useState } from 'react';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import { useBookFilter } from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
@@ -22,6 +22,8 @@ export const FilteringSidebar = () => {
         setOpen(true);
     };
 
+    if (isLoading) return <FilteringSidebarSkeleton />;
+
     return (
         <>
             <FilteringSidebarButton handleOpen={handleOpen} />
@@ -36,21 +38,15 @@ export const FilteringSidebar = () => {
                     },
                 }}
             >
-                {isLoading ? (
-                    <FilteringSidebarSkeleton />
-                ) : (
-                    <>
-                        <FilteringSidebarHeader handleClose={handleClose} />
+                <FilteringSidebarHeader handleClose={handleClose} />
 
-                        <Divider />
+                <Divider />
 
-                        <FilteringSidebarResetButtonSection />
+                <FilteringSidebarResetButtonSection />
 
-                        <Divider />
+                <Divider />
 
-                        <FilteringSidebarCategoriesContainer />
-                    </>
-                )}
+                <FilteringSidebarCategoriesContainer />
             </Drawer>
         </>
     );

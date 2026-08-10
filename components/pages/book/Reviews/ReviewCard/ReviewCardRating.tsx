@@ -1,6 +1,6 @@
 import { Box, Rating, Typography } from '@mui/material';
 
-export const ReviewCartRating = ({ rating }: { rating: number }) => {
+export const ReviewCardRating = ({ rating }: { rating: number }) => {
     return (
         <Box className="bg-gunmetal flex w-full shrink-0 flex-col items-center justify-center p-5 text-[#FAF7F2] sm:w-28.75">
             <Typography

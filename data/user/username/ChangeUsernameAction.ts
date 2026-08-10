@@ -64,6 +64,7 @@ export async function ChangeUsernameAction(
             };
         }
     } catch (err: unknown) {
+        if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
         console.error('[ChangeUsernameAction] Pipeline Failure:', err);
         const sanitizedError = sanitizeSupabaseError(err);
         return {

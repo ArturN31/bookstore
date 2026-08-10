@@ -1,5 +1,5 @@
 import Card from '@mui/material/Card';
-import { ReviewCartRating } from './ReviewCardRating';
+import { ReviewCardRating } from './ReviewCardRating';
 import { ReviewCardBody } from './ReviewCardBody';
 
 export interface SelectedReview {
@@ -21,7 +21,7 @@ export const ReviewCard = ({ review }: { review: SelectedReview }) => {
             elevation={0}
             className="flex flex-col overflow-hidden rounded-xl! border border-[#E8E2D5]! bg-[#FAF7F2]! shadow-none! sm:flex-row"
         >
-            <ReviewCartRating rating={review.rating} />
+            <ReviewCardRating rating={review.rating} />
 
             <ReviewCardBody
                 username={review.username}

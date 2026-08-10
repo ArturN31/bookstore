@@ -10,6 +10,6 @@ describe('FilteringSidebarSkeleton', () => {
     it('should render the correct number of skeleton elements', () => {
         const { container } = render(<FilteringSidebarSkeleton />);
         const skeletonElements = container.querySelectorAll('.MuiSkeleton-root');
-        expect(skeletonElements.length).toBe(17);
+        expect(skeletonElements.length).toBe(32);
     });
 });

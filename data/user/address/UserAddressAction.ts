@@ -1,5 +1,3 @@
-'use server';
-
 import { addressSchema, fullUserSchema } from '@/data/schemas/addressSchema';
 import { createBackendClient } from '@/utils/db/server';
 import { z } from 'zod';
@@ -78,7 +76,11 @@ export async function UserAddressAction(
     } catch (err: unknown) {
         if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
         console.error('[UserAddressAction] Critical Failure:', err);
-        return { message: sanitizeSupabaseError(err) };
+        const sanitizedError = sanitizeSupabaseError(err);
+        return {
+            message: APP_ERROR_MESSAGES.SAVE_ADDRESS_ERROR,
+            error: sanitizedError,
+        };
     }
 
     revalidatePath(USER_ROUTES.PROFILE);
