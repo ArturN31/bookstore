@@ -36,7 +36,7 @@ describe('CartReducer', () => {
                 type: 'SET_CART_DATA' as const,
                 payload: {
                     cartID: 'cart-123',
-                    books: [{ book_id: 'book-1', quantity: 2 }],
+                    books: [{ book_id: 'book-1', quantity: 2 }] as unknown as CartItem[],
                 },
             };
 
@@ -52,7 +52,10 @@ describe('CartReducer', () => {
             const books = [{ book_id: 'book-1', quantity: 2 }];
             const action = {
                 type: 'SET_CART_DATA' as const,
-                payload: { cartID: 'cart-123', books },
+                payload: { cartID: 'cart-123', books } as unknown as {
+                    cartID: string;
+                    books: CartItem[];
+                },
             };
 
             cartReducer(state, action);
@@ -86,12 +89,12 @@ describe('CartReducer', () => {
             const state = {
                 ...INITIAL_CART_STATE,
                 cartID: 'cart-123',
-                cartBooks: [{ book_id: 'book-1', quantity: 1 }],
+                cartBooks: [{ book_id: 'book-1', quantity: 1 }] as unknown as CartItem[],
                 cartBooksAmount: 1,
                 cartItemsAmount: 1,
                 cartTotal: 19.99,
                 loading: false,
-            };
+            } as Cart;
             const action = { type: 'RESET_CART' as const };
 
             const newState = cartReducer(state, action);

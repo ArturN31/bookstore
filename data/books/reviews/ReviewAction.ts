@@ -27,33 +27,25 @@ const INITIAL_STATE: ReviewFormState = {
 };
 
 function isDuplicateReviewError(dbError: unknown, sanitizedError: string): boolean {
-    if (sanitizedError === DB_ERROR_MAP['23505']) {
-        return true;
-    }
+    if (sanitizedError === DB_ERROR_MAP['23505']) return true;
 
     if (typeof dbError === 'object' && dbError !== null) {
         const errObj = dbError as { code?: unknown; message?: unknown; details?: unknown };
-        if (typeof errObj.code === 'string' && errObj.code === '23505') {
-            return true;
-        }
+        if (typeof errObj.code === 'string' && errObj.code === '23505') return true;
         if (
             typeof errObj.message === 'string' &&
             (errObj.message.includes('23505') || errObj.message.toLowerCase().includes('duplicate'))
-        ) {
+        )
             return true;
-        }
         if (
             typeof errObj.details === 'string' &&
             (errObj.details.includes('23505') || errObj.details.toLowerCase().includes('duplicate'))
-        ) {
+        )
             return true;
-        }
     }
 
-    if (typeof dbError === 'string') {
+    if (typeof dbError === 'string')
         return dbError.includes('23505') || dbError.toLowerCase().includes('duplicate');
-    }
-
     return false;
 }
 
@@ -66,19 +58,17 @@ export async function UserReviewAction(
     if (rawData.reset) return INITIAL_STATE;
 
     const bookId = typeof rawData.bookId === 'string' ? rawData.bookId : '';
-    if (!bookId) {
+    if (!bookId)
         return {
             message: APP_ERROR_MESSAGES.VALIDATION_ERROR,
         };
-    }
 
     const validated = reviewSchema.safeParse(rawData);
-    if (!validated.success) {
+    if (!validated.success)
         return {
             validationErrors: validated.error.issues,
             message: APP_ERROR_MESSAGES.VALIDATION_ERROR,
         };
-    }
 
     try {
         const supabase = await createBackendClient();

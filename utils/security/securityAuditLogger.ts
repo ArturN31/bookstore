@@ -1,8 +1,4 @@
-// securityAuditLogger.ts
-import 'server-only';
-import { after } from 'next/server';
 import { createAdminClient } from '@/utils/db/admin';
-import { headers } from 'next/headers';
 
 export type SecurityAuditEventType =
     | 'PASSWORD_CHANGE'
@@ -48,6 +44,11 @@ export async function recordSecurityAuditLog(
     metadata: SecurityAuditMetadata = {},
     requestHeaders?: Headers,
 ): Promise<void> {
+    if (typeof process === 'undefined') {
+        console.warn('[SecurityAudit] Attempted to run security logger on the client.');
+        return;
+    }
+
     let clientIp = 'unknown';
     let userAgent = 'unknown';
 
@@ -59,6 +60,7 @@ export async function recordSecurityAuditLog(
         userAgent = requestHeaders.get('user-agent') ?? 'unknown';
     } else {
         try {
+            const { headers } = await import('next/headers');
             const headerList = await headers();
             clientIp =
                 headerList.get('x-forwarded-for')?.split(',')[0]?.trim() ??
@@ -80,7 +82,7 @@ export async function recordSecurityAuditLog(
         timestamp: new Date().toISOString(),
     };
 
-    after(async () => {
+    const executeLogging = async (): Promise<void> => {
         try {
             const supabaseAdmin = await createAdminClient();
             const { error } = await supabaseAdmin.from('audit_logs').insert({
@@ -101,5 +103,17 @@ export async function recordSecurityAuditLog(
                 errorMessage,
             );
         }
-    });
+    };
+
+    try {
+        const nextServer = await import('next/server');
+        if (typeof nextServer.after === 'function') {
+            nextServer.after(() => {
+                void executeLogging();
+            });
+            return;
+        }
+    } catch {}
+
+    void executeLogging();
 }

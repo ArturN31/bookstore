@@ -29,6 +29,7 @@ const mockBooks: Book[] = [
         is_active: true,
         reviews: [],
         rating: 5,
+        sales_count: 100,
     },
     {
         id: 'mock-book-id-2',
@@ -48,6 +49,7 @@ const mockBooks: Book[] = [
         is_active: true,
         reviews: [],
         rating: 3,
+        sales_count: 50,
     },
     {
         id: 'mock-book-id-3',
@@ -67,6 +69,7 @@ const mockBooks: Book[] = [
         is_active: true,
         reviews: [],
         rating: 4,
+        sales_count: 75,
     },
 ];
 

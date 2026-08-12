@@ -2,16 +2,13 @@
 
 import { FormBtns } from '@/components/formItems/FormBtns';
 import { FormErrors } from '@/components/formItems/FormErrors';
-import {
-    ChangeUsernameAction,
-    ChangeUsernameFormState,
-} from '@/data/user/username/ChangeUsernameAction';
-import { useActionState, useEffect, useState, useTransition } from 'react';
+import { ChangeUsernameAction } from '@/data/user/username/ChangeUsernameAction';
+import { useActionState, useTransition } from 'react';
 import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
+import { ChangeUsernameFormState } from '@/data/user/username/ChangeUsernameConstants';
 
 export default function ChangeUsernamePage() {
     const INITIAL_STATE: ChangeUsernameFormState = {
-        username: '',
         message: undefined,
         validationErrors: undefined,
         isUsernameTaken: false,
@@ -19,7 +16,7 @@ export default function ChangeUsernamePage() {
     const [formState, formAction] = useActionState(ChangeUsernameAction, INITIAL_STATE);
     const [isTransitioningSubmit, startTransitionSubmit] = useTransition();
     const [isTransitioningReset, startTransitionReset] = useTransition();
-    const { username, message, validationErrors, isUsernameTaken } = formState;
+    const { username, message, validationErrors } = formState;
 
     const handleReset = async () => {
         const inputElement = document.getElementById('username-field') as HTMLInputElement | null;

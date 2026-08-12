@@ -1,3 +1,4 @@
+// __tests__/data/books/BookService.test.ts
 import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { BOOK_SORT_OPTIONS } from '@/data/books/BookConstants';
 import { createPublicServerClient } from '@/utils/db/publicServer';
@@ -139,8 +140,11 @@ describe('fetchBooksWithReviews', () => {
 
         const result = await fetchBooksWithReviews();
 
-        expect(result.data?.data[0].rating).toBe(0);
-        expect(result.data?.data[1].rating).toBe(0);
+        const book1 = result.data?.data[0] as unknown as { rating: number };
+        const book2 = result.data?.data[1] as unknown as { rating: number };
+
+        expect(book1.rating).toBe(0);
+        expect(book2.rating).toBe(0);
         expect(result.error).toBeNull();
     });
 
@@ -201,7 +205,9 @@ describe('fetchBooksWithReviews', () => {
 
         const result = await fetchBooksWithReviews();
 
-        expect(result.data?.data[0].rating).toBeGreaterThanOrEqual(0);
+        const book = result.data?.data[0] as unknown as { rating: number };
+
+        expect(book.rating).toBeGreaterThanOrEqual(0);
     });
 
     it('should return a successful empty state when error code is PGRST116', async () => {

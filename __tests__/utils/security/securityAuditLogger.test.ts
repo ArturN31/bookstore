@@ -1,18 +1,28 @@
+// __tests__/utils/security/securityAuditLogger.test.ts
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 import { createAdminClient } from '@/utils/db/admin';
 import { headers } from 'next/headers';
 
 let activeAfterPromise: Promise<void> | null = null;
-
-jest.mock('next/server', () => ({
-    after: jest.fn((callback: () => void | Promise<void>) => {
+let customAfterImplementation: ((callback: () => void | Promise<void>) => void) | undefined =
+    jest.fn((callback: () => void | Promise<void>) => {
         const res = callback();
         if (res instanceof Promise) {
             activeAfterPromise = res.then(() => {});
         } else {
             activeAfterPromise = Promise.resolve();
         }
-    }),
+    });
+
+let shouldThrowInNextServer = false;
+
+jest.mock('next/server', () => ({
+    get after() {
+        if (shouldThrowInNextServer) {
+            throw new Error('Simulated import failure');
+        }
+        return customAfterImplementation;
+    },
 }));
 
 jest.mock('@/utils/db/admin', () => ({
@@ -28,6 +38,7 @@ const flushMicrotasks = async (): Promise<void> => {
         await activeAfterPromise;
     }
     await Promise.resolve();
+    await Promise.resolve();
 };
 
 describe('securityAuditLogger', () => {
@@ -41,6 +52,16 @@ describe('securityAuditLogger', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         activeAfterPromise = null;
+        shouldThrowInNextServer = false;
+        customAfterImplementation = jest.fn((callback: () => void | Promise<void>) => {
+            const res = callback();
+            if (res instanceof Promise) {
+                activeAfterPromise = res.then(() => {});
+            } else {
+                activeAfterPromise = Promise.resolve();
+            }
+        });
+
         (createAdminClient as jest.MockedFunction<typeof createAdminClient>).mockResolvedValue(
             mockSupabaseAdmin as unknown as Awaited<ReturnType<typeof createAdminClient>>,
         );
@@ -53,6 +74,52 @@ describe('securityAuditLogger', () => {
     afterEach(() => {
         consoleWarnSpy.mockRestore();
         consoleErrorSpy.mockRestore();
+    });
+
+    describe('environment and execution fallbacks', () => {
+        it('should warn and return early if process is undefined (client environment)', async () => {
+            const globalRef = global as unknown as Record<string, unknown>;
+            const originalProcess = globalRef.process;
+            delete globalRef.process;
+
+            try {
+                await recordSecurityAuditLog('SUCCESSFUL_LOGIN', 'user-123', {});
+                expect(consoleWarnSpy).toHaveBeenCalledWith(
+                    '[SecurityAudit] Attempted to run security logger on the client.',
+                );
+            } finally {
+                globalRef.process = originalProcess;
+            }
+        });
+
+        it('should execute logging directly via fallback when after is not available', async () => {
+            customAfterImplementation = undefined;
+            const requestHeaders = new Headers({
+                'x-forwarded-for': '1.1.1.1',
+                'user-agent': 'Agent',
+            });
+
+            await recordSecurityAuditLog('SUCCESSFUL_LOGIN', 'user-123', {}, requestHeaders);
+            await flushMicrotasks();
+
+            expect(mockInsert).toHaveBeenCalled();
+        });
+
+        it('should catch errors during next/server import or check and fallback to direct execution', async () => {
+            shouldThrowInNextServer = true;
+            const requestHeaders = new Headers({
+                'x-forwarded-for': '1.1.1.1',
+                'user-agent': 'Agent',
+            });
+
+            try {
+                await recordSecurityAuditLog('SUCCESSFUL_LOGIN', 'user-123', {}, requestHeaders);
+                await flushMicrotasks();
+                expect(mockInsert).toHaveBeenCalled();
+            } finally {
+                shouldThrowInNextServer = false;
+            }
+        });
     });
 
     describe('metadata sanitization and enrichment', () => {

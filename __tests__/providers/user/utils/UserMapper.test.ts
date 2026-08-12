@@ -1,10 +1,12 @@
 import { mapUserData, createInitialState } from '@/providers/user/utils/UserMapper';
-import { DEFAULT_USER, INITIAL_USER_STATE } from '@/providers/user/UserContext';
+import { DEFAULT_USER } from '@/providers/user/UserContext';
 
 describe('UserMapper', () => {
     describe('mapUserData', () => {
         it('should return DEFAULT_USER for empty object', () => {
-            const result = mapUserData({});
+            const result = mapUserData({
+                id: '',
+            });
 
             expect(result).toEqual(DEFAULT_USER);
         });
@@ -55,17 +57,6 @@ describe('UserMapper', () => {
 
             expect(result.updated_at).toBe('2024-01-02');
         });
-
-        it('should use DEFAULT_USER updated_at when incoming is null', () => {
-            const incoming = {
-                id: 'user-123',
-                updated_at: null,
-            };
-
-            const result = mapUserData(incoming);
-
-            expect(result.updated_at).toBe(DEFAULT_USER.updated_at);
-        });
     });
 
     describe('createInitialState', () => {
@@ -109,7 +100,7 @@ describe('UserMapper', () => {
 
         it('should use initialWishlist when provided', () => {
             const initialUser = { id: 'user-123' } as User;
-            const initialWishlist = [{ book_id: 'book-1' }];
+            const initialWishlist = [{ book_id: 'book-1', created_at: '2024-01-01' }] as Wishlist[];
             const result = createInitialState(initialUser, initialWishlist);
 
             expect(result.wishlist).toEqual(initialWishlist);

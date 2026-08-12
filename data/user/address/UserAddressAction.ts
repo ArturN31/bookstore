@@ -1,3 +1,5 @@
+'use server';
+
 import { addressSchema, fullUserSchema } from '@/data/schemas/addressSchema';
 import { createBackendClient } from '@/utils/db/server';
 import { z } from 'zod';

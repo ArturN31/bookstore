@@ -7,9 +7,9 @@ This project is an online bookstore built with **Next.js 16 (App Router)**, **Re
 ## Project Status
 
 **Current Phase**: Core marketplace MVP - Production-ready with strong automated test coverage
-**Test Coverage**: **96.04% average coverage** (94.3% statements, 99.41% branches, 96.69% functions)
+**Test Coverage**: **96.45% average coverage** (94.69% statements, 99.47% branches, 96.97% functions)
 **Performance**: Lighthouse Desktop 99/100 (0.3s FCP, 0.8s LCP, 0ms TBT, 0 CLS)
-**Last Updated**: August 06, 2026 (latest automated coverage report)
+**Last Updated**: August 11, 2026 (latest automated coverage report)
 
 ## Key Highlights
 
@@ -68,7 +68,7 @@ type FormData = z.infer<typeof schema>; // Auto-generated TypeScript type
 
 | Area | Statements | Branches | Functions | Lines | Avg | Status |
 |------|-----------|----------|-----------|-------|-----|--------|
-| **Overall** | 94.3% | 99.41% | 96.69% | 94.3% | 96.17% | ✅ Excellent |
+| **Overall** | 94.69% | 99.47% | 96.97% | 94.69% | 96.45% | ✅ Excellent |
 | App Routing | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
 | Components | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
 | Server Actions | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
@@ -323,9 +323,9 @@ The following features are partially or not yet implemented:
 
 ### 1. Core E-Commerce Completion
 
-- [ ] **User Review Submission**: Add UI and Server Actions to allow authenticated users to submit and rate books (currently read-only).
+- [X] **User Review Submission**: Add UI and Server Actions to allow authenticated users to submit and rate books (currently read-only).
   - [X] **User Review Submission - UI**: Implement a modal or inline form for submitting reviews with star ratings and text.
-  - [ ] **User Review Submission - Server Actions**: Create server-side logic to validate
+  - [X] **User Review Submission - Server Actions**: Create server-side logic to validate
 - [ ] **Stripe Payment Integration**: Implement a secure checkout flow using Stripe Elements and Server Actions.
 - [ ] **Order Success Workflow**: Automate post-purchase triggers, including the generation of dynamic receipts and email confirmations.
 - [ ] **Inventory Auto-Update**: Logic to decrement `stock_quantity` in the `books` table automatically upon successful purchase.
