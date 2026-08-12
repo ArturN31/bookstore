@@ -1,31 +1,53 @@
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { ReviewCard } from '@/components/pages/book/Reviews/ReviewCard/ReviewCard';
 import { ReviewPagination } from '@/components/pages/book/Reviews/ReviewPagination';
+import { ReviewSummary } from './ReviewSummary';
+import { ReviewFormModal } from './ReviewForm/ReviewFormModal';
 
 export const BookReviews = ({
     reviewsData,
+    bookId,
     slug,
     page,
 }: {
     reviewsData: PaginatedReviewsResult;
+    bookId: string;
     slug: string;
     page: number;
 }) => {
-    if (!reviewsData?.data) return null;
-
-    const reviews = reviewsData.data;
+    const reviews = reviewsData.data ?? [];
     const hasReviews = reviews.length > 0;
-
-    //TODO: Implement Reviews Insert & Potentialy a page where users can see their reviews.
+    const reviewsCount = reviews.length;
+    const averageRating = hasReviews
+        ? reviews.reduce((acc, review) => acc + review.rating, 0) / reviewsCount
+        : 0;
 
     return (
-        <div id="reviews-section">
-            <p className="text-lg font-semibold">({reviewsData.total}) Reviews</p>
+        <Box
+            id="reviews-section"
+            className="mt-4 w-full"
+        >
+            <Box className="mb-3 flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
+                <ReviewSummary
+                    reviewsCount={reviewsCount}
+                    averageRating={averageRating}
+                />
 
-            <div className="grid gap-3 pt-3">
+                <ReviewFormModal bookId={bookId} />
+            </Box>
+
+            <Stack spacing={2}>
                 {!hasReviews && (
-                    <p className="py-10 text-center text-gray-500 italic">
+                    <Typography
+                        variant="body1"
+                        color="text.secondary"
+                        align="center"
+                        className="py-16 italic!"
+                    >
                         No reviews yet. Be the first to review this book!
-                    </p>
+                    </Typography>
                 )}
 
                 {reviews.map((review) => (
@@ -34,15 +56,17 @@ export const BookReviews = ({
                         key={review.id}
                     />
                 ))}
-            </div>
+            </Stack>
 
             {hasReviews && (
-                <ReviewPagination
-                    reviewsData={reviewsData}
-                    slug={slug}
-                    page={page}
-                />
+                <Box className="mt-3">
+                    <ReviewPagination
+                        reviewsData={reviewsData}
+                        slug={slug}
+                        page={page}
+                    />
+                </Box>
             )}
-        </div>
+        </Box>
     );
 };

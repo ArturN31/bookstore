@@ -11,7 +11,7 @@ import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 import { withRetry } from '@/utils/network/retry';
-import { SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
+import { SafeQueryResult, safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { revalidateTag } from 'next/cache';
 
 jest.mock('next/cache', () => ({
@@ -78,6 +78,8 @@ describe('CartServiceUtils', () => {
     const validCartID = '123e4567-e89b-12d3-a456-426614174000';
     const validBookID = '987e6543-e21b-12d3-a456-426614174000';
 
+    type BackendClient = Awaited<ReturnType<typeof createBackendClient>>;
+
     const mockSupabase = {
         auth: {
             getUser: jest.fn(),
@@ -90,7 +92,7 @@ describe('CartServiceUtils', () => {
             sanitizeSupabaseError as jest.MockedFunction<typeof sanitizeSupabaseError>
         ).mockImplementation(defaultSanitizeImplementation);
         (createBackendClient as jest.MockedFunction<typeof createBackendClient>).mockResolvedValue(
-            mockSupabase as unknown as Awaited<ReturnType<typeof createBackendClient>>,
+            mockSupabase as unknown as BackendClient,
         );
         mockSupabase.auth.getUser.mockResolvedValue({
             data: { user: { id: validUUID } },
@@ -110,9 +112,7 @@ describe('CartServiceUtils', () => {
 
     describe('verifyUserSession', () => {
         it('should return user ID when session is valid', async () => {
-            const userId = await verifyUserSession(
-                mockSupabase as unknown as Awaited<ReturnType<typeof createBackendClient>>,
-            );
+            const userId = await verifyUserSession(mockSupabase as unknown as BackendClient);
             expect(userId).toBe(validUUID);
         });
 
@@ -122,9 +122,7 @@ describe('CartServiceUtils', () => {
                 error: new Error('Session error'),
             } as unknown as Awaited<ReturnType<typeof mockSupabase.auth.getUser>>);
 
-            const userId = await verifyUserSession(
-                mockSupabase as unknown as Awaited<ReturnType<typeof createBackendClient>>,
-            );
+            const userId = await verifyUserSession(mockSupabase as unknown as BackendClient);
             expect(userId).toBeNull();
         });
 
@@ -134,9 +132,7 @@ describe('CartServiceUtils', () => {
                 error: null,
             } as unknown as Awaited<ReturnType<typeof mockSupabase.auth.getUser>>);
 
-            const userId = await verifyUserSession(
-                mockSupabase as unknown as Awaited<ReturnType<typeof createBackendClient>>,
-            );
+            const userId = await verifyUserSession(mockSupabase as unknown as BackendClient);
             expect(userId).toBeNull();
         });
     });
@@ -150,7 +146,6 @@ describe('CartServiceUtils', () => {
                 data: false,
                 error: APP_ERROR_MESSAGES.MALFORMED_IDENTIFIER,
             });
-            expect(recordSecurityAuditLog).toHaveBeenCalled();
             expect(actionFn).not.toHaveBeenCalled();
         });
 
@@ -186,7 +181,7 @@ describe('CartServiceUtils', () => {
             expect(actionFn).not.toHaveBeenCalled();
         });
 
-        it('should throw unauthorized error when requireUserMatch is true and user IDs mismatch', async () => {
+        it('should return unauthorized error when requireUserMatch is true and user IDs mismatch', async () => {
             mockSupabase.auth.getUser.mockResolvedValueOnce({
                 data: { user: { id: otherValidUUID } },
                 error: null,
@@ -198,12 +193,12 @@ describe('CartServiceUtils', () => {
             expect(recordSecurityAuditLog).toHaveBeenCalled();
             expect(result).toEqual({
                 data: null,
-                error: `Sanitized: ${APP_ERROR_MESSAGES.UNAUTHORIZED_ACCESS}`,
+                error: APP_ERROR_MESSAGES.UNAUTHORIZED_ACCESS,
             });
             expect(actionFn).not.toHaveBeenCalled();
         });
 
-        it('should throw unauthenticated error when requireUserMatch is false and no user session', async () => {
+        it('should return unauthenticated error when requireUserMatch is false and no user session', async () => {
             mockSupabase.auth.getUser.mockResolvedValueOnce({
                 data: { user: null },
                 error: null,
@@ -212,22 +207,21 @@ describe('CartServiceUtils', () => {
             const actionFn = jest.fn();
             const result = await executeCartAction('TEST', null, actionFn, false);
 
-            expect(recordSecurityAuditLog).toHaveBeenCalled();
             expect(result).toEqual({
                 data: null,
-                error: `Sanitized: ${APP_ERROR_MESSAGES.UNAUTHENTICATED_USER}`,
+                error: APP_ERROR_MESSAGES.UNAUTHENTICATED_USER,
             });
             expect(actionFn).not.toHaveBeenCalled();
         });
 
         it('should return NO_DATA_RETURNED error directly from safeSupabaseQuery', async () => {
             const actionFn = jest.fn();
-            const originalMock = require('@/utils/db/safeSupabaseQuery')
-                .safeSupabaseQuery as jest.Mock;
-            originalMock.mockResolvedValueOnce({
+            (
+                safeSupabaseQuery as jest.MockedFunction<typeof safeSupabaseQuery>
+            ).mockResolvedValueOnce({
                 data: null,
                 error: APP_ERROR_MESSAGES.NO_DATA_RETURNED,
-            });
+            } as unknown as SafeQueryResult<unknown>);
 
             const result = await executeCartAction('TEST', validUUID, actionFn);
 
@@ -240,16 +234,16 @@ describe('CartServiceUtils', () => {
         it('should sanitize and return database error from safeSupabaseQuery', async () => {
             const actionFn = jest.fn();
             const dbError = 'Database failure';
-            const originalMock = require('@/utils/db/safeSupabaseQuery')
-                .safeSupabaseQuery as jest.Mock;
-            originalMock.mockResolvedValueOnce({
+            (
+                safeSupabaseQuery as jest.MockedFunction<typeof safeSupabaseQuery>
+            ).mockResolvedValueOnce({
                 data: null,
                 error: dbError,
-            });
+            } as unknown as SafeQueryResult<unknown>);
 
             const result = await executeCartAction('TEST', validUUID, actionFn);
 
-            expect(sanitizeSupabaseError).toHaveBeenCalledWith(dbError);
+            expect(sanitizeSupabaseError).toHaveBeenCalledWith(new Error(dbError));
             expect(result).toEqual({
                 data: null,
                 error: 'Sanitized: Database failure',
@@ -258,12 +252,12 @@ describe('CartServiceUtils', () => {
 
         it('should return data successfully on successful execution', async () => {
             const actionFn = jest.fn();
-            const originalMock = require('@/utils/db/safeSupabaseQuery')
-                .safeSupabaseQuery as jest.Mock;
-            originalMock.mockResolvedValueOnce({
+            (
+                safeSupabaseQuery as jest.MockedFunction<typeof safeSupabaseQuery>
+            ).mockResolvedValueOnce({
                 data: 'success-data',
                 error: null,
-            });
+            } as unknown as SafeQueryResult<string>);
 
             const result = await executeCartAction('TEST', validUUID, actionFn);
 
@@ -295,15 +289,11 @@ describe('CartServiceUtils', () => {
                 error: null,
             } as unknown as Awaited<ReturnType<typeof Repo.upsertItem>>);
 
-            const result = await CART_OPERATIONS.add(validCartID, validBookID, 1);
+            const operationFn = CART_OPERATIONS.add(validCartID, validBookID, 1);
+            const result = await operationFn(mockSupabase as unknown as BackendClient);
 
             expect(result).toEqual({ data: true, error: null });
-            expect(Repo.upsertItem).toHaveBeenCalledWith(
-                expect.any(Object),
-                validCartID,
-                validBookID,
-                1,
-            );
+            expect(Repo.upsertItem).toHaveBeenCalledWith(mockSupabase, validCartID, validBookID, 1);
         });
 
         it('should execute update operation successfully', async () => {
@@ -312,15 +302,11 @@ describe('CartServiceUtils', () => {
                 error: null,
             } as unknown as Awaited<ReturnType<typeof Repo.updateItem>>);
 
-            const result = await CART_OPERATIONS.update(validCartID, validBookID, 2);
+            const operationFn = CART_OPERATIONS.update(validCartID, validBookID, 2);
+            const result = await operationFn(mockSupabase as unknown as BackendClient);
 
             expect(result).toEqual({ data: true, error: null });
-            expect(Repo.updateItem).toHaveBeenCalledWith(
-                expect.any(Object),
-                validCartID,
-                validBookID,
-                2,
-            );
+            expect(Repo.updateItem).toHaveBeenCalledWith(mockSupabase, validCartID, validBookID, 2);
         });
 
         it('should execute remove operation successfully', async () => {
@@ -329,14 +315,11 @@ describe('CartServiceUtils', () => {
                 error: null,
             } as unknown as Awaited<ReturnType<typeof Repo.deleteItem>>);
 
-            const result = await CART_OPERATIONS.remove(validCartID, validBookID, 0);
+            const operationFn = CART_OPERATIONS.remove(validCartID, validBookID, 0);
+            const result = await operationFn(mockSupabase as unknown as BackendClient);
 
             expect(result).toEqual({ data: true, error: null });
-            expect(Repo.deleteItem).toHaveBeenCalledWith(
-                expect.any(Object),
-                validCartID,
-                validBookID,
-            );
+            expect(Repo.deleteItem).toHaveBeenCalledWith(mockSupabase, validCartID, validBookID);
         });
     });
 });

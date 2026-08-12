@@ -273,7 +273,7 @@ describe('APP - pages/user - AddressForm', () => {
                     path: ['city'],
                     message: 'Server side city error feedback',
                 },
-            ] as z.ZodIssue[],
+            ] as z.core.$ZodIssue[],
         };
 
         mockAction.mockImplementation(async () => {

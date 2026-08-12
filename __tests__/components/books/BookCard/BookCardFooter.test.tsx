@@ -1,5 +1,5 @@
 import { BookCardFooter } from '@/components/books/bookCard/BookCardFooter';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 
 const mockedBook: Book = {
     id: 'mock-book-id-123',
@@ -19,11 +19,16 @@ const mockedBook: Book = {
     is_active: true,
     reviews: [],
     rating: 5,
+    sales_count: 100,
 };
 
 jest.mock('@/components/CartForms/CartActionForm', () => ({
     CartActionForm: ({ bookID, stock }: { bookID: string; stock: number }) => (
-        <div data-testid="mock-cart-action-form" data-book-id={bookID} data-stock={stock} />
+        <div
+            data-testid="mock-cart-action-form"
+            data-book-id={bookID}
+            data-stock={stock}
+        />
     ),
 }));
 
@@ -33,13 +38,16 @@ describe('APP - BookCard - Footer', () => {
 
         expect(screen.getByText('Hardcover')).toBeInTheDocument();
         expect(screen.getByTestId('mock-cart-action-form')).toBeInTheDocument();
-        expect(screen.getByTestId('mock-cart-action-form')).toHaveAttribute('data-book-id', 'mock-book-id-123');
+        expect(screen.getByTestId('mock-cart-action-form')).toHaveAttribute(
+            'data-book-id',
+            'mock-book-id-123',
+        );
         expect(screen.getByTestId('mock-cart-action-form')).toHaveAttribute('data-stock', '10');
     });
 
     it('should render with different format', () => {
         const paperbackBook = { ...mockedBook, format: 'Paperback' };
-        
+
         render(<BookCardFooter book={paperbackBook} />);
 
         expect(screen.getByText('Paperback')).toBeInTheDocument();
@@ -50,13 +58,13 @@ describe('APP - BookCard - Footer', () => {
 
         const wrapper = screen.getByTestId('mock-cart-action-form').parentElement;
         expect(wrapper).toBeInTheDocument();
-        
+
         // Create a click event and verify stopPropagation is available
         const clickEvent = new MouseEvent('click', {
             bubbles: true,
             cancelable: true,
         });
-        
+
         // Track if stopPropagation was called
         let stopPropagationCalled = false;
         const originalStopPropagation = clickEvent.stopPropagation.bind(clickEvent);
@@ -64,7 +72,7 @@ describe('APP - BookCard - Footer', () => {
             stopPropagationCalled = true;
             originalStopPropagation();
         };
-        
+
         if (wrapper) {
             wrapper.dispatchEvent(clickEvent);
             expect(stopPropagationCalled).toBe(true);

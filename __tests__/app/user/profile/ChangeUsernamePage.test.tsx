@@ -1,5 +1,5 @@
 import ChangeUsernamePage from '@/app/user/profile/change_username/page';
-import { ChangeUsernameFormState } from '@/data/user/username/ChangeUsernameAction';
+import { ChangeUsernameFormState } from '@/data/user/username/ChangeUsernameConstants';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 const MOCK_MESSAGE = 'Please correct the errors below.';

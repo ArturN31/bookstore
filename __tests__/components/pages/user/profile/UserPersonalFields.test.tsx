@@ -1,11 +1,12 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { UserAddressFormState } from '@/data/user/address/UserAddressAction';
 import { UserPersonalFields } from '@/components/pages/user/profile/AddressForm/UserPersonalFields';
+import { AddressFormFields } from '@/components/pages/user/profile/AddressForm/AddressForm';
 
 describe('APP - pages/user - AddressForm - UserPersonalFields', () => {
     const mockOnChange = jest.fn();
 
-    const baseData: Partial<UserAddressFormState> = {
+    const baseData: Partial<AddressFormFields> = {
         firstName: 'John',
         lastName: 'Doe',
         dob: '1990-01-01',
@@ -15,7 +16,7 @@ describe('APP - pages/user - AddressForm - UserPersonalFields', () => {
     it('renders with provided data (covers truthy branches)', () => {
         render(
             <UserPersonalFields
-                formData={baseData as UserAddressFormState}
+                formData={baseData as AddressFormFields}
                 onChange={mockOnChange}
             />,
         );
@@ -43,7 +44,7 @@ describe('APP - pages/user - AddressForm - UserPersonalFields', () => {
     it('calls onChange when inputs are modified', () => {
         render(
             <UserPersonalFields
-                formData={baseData as UserAddressFormState}
+                formData={baseData as AddressFormFields}
                 onChange={mockOnChange}
             />,
         );

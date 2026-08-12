@@ -1,5 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
-import { NextResponse, type NextRequest, after } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { recordSecurityAuditLog } from '../security/securityAuditLogger';
 
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
@@ -45,15 +45,14 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
         const isPrefetch = request.headers.get('Next-Router-Prefetch') === '1';
         const isLoggingOut = request.cookies.get('is_logging_out')?.value === 'true';
 
-        if (!isPrefetch && !isLoggingOut)
-            after(() => {
-                void recordSecurityAuditLog(
-                    'UNAUTHORIZED_ACCESS_ATTEMPT',
-                    null,
-                    { path: attemptedPath },
-                    request.headers,
-                );
-            });
+        if (!isPrefetch && !isLoggingOut) {
+            void recordSecurityAuditLog(
+                'UNAUTHORIZED_ACCESS_ATTEMPT',
+                null,
+                { path: attemptedPath },
+                request.headers,
+            );
+        }
 
         const url = request.nextUrl.clone();
         url.pathname = '/user/auth/signin';

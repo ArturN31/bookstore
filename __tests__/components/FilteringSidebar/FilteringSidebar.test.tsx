@@ -43,7 +43,7 @@ jest.mock('@/components/FilteringSidebar/Sections/FilteringSidebarCategoriesCont
 }));
 
 describe('FilteringSidebar', () => {
-    const mockUseBookFilter = useBookFilter as unknown as jest.Mock;
+    const mockUseBookFilter = useBookFilter as jest.Mock;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -52,6 +52,9 @@ describe('FilteringSidebar', () => {
     it('should render skeleton when isLoading is true', () => {
         mockUseBookFilter.mockReturnValue({
             isLoading: true,
+            isOpen: false,
+            handleOpen: jest.fn(),
+            handleClose: jest.fn(),
         });
 
         render(<FilteringSidebar />);
@@ -63,6 +66,9 @@ describe('FilteringSidebar', () => {
     it('should render sidebar button and open/close drawer when isLoading is false', async () => {
         mockUseBookFilter.mockReturnValue({
             isLoading: false,
+            isOpen: false,
+            handleOpen: jest.fn(),
+            handleClose: jest.fn(),
         });
 
         render(<FilteringSidebar />);

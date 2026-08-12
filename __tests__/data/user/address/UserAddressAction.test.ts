@@ -230,7 +230,7 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
         expect(redirect).toHaveBeenCalledWith('/user/profile');
     });
 
-    it('re-throws redirect error when redirect throws', async () => {
+    it('re-throws NEXT_REDIRECT error when thrown inside try block', async () => {
         const formData = new FormData();
         formData.append('city', 'Glasgow');
         formData.append('country', 'UK');
@@ -242,15 +242,7 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
             error: null,
         });
 
-        jest.mocked(updateUserAddress).mockResolvedValue({
-            data: [],
-            error: null,
-        });
-
-        const redirectError = new Error('NEXT_REDIRECT');
-        jest.mocked(redirect).mockImplementation(() => {
-            throw redirectError;
-        });
+        jest.mocked(updateUserAddress).mockRejectedValue(new Error('NEXT_REDIRECT'));
 
         await expect(UserAddressAction('update', {}, formData)).rejects.toThrow('NEXT_REDIRECT');
     });

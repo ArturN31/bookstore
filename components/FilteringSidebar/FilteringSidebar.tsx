@@ -1,14 +1,14 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
+import { useState } from 'react';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import { useBookFilter } from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
-import { FilteringSidebarSkeleton } from './FilteringSidebarSkeleton';
 import { FilteringSidebarHeader } from './Sections/FilteringSidebarHeader';
 import { FilteringSidebarResetButtonSection } from './Sections/FilteringSidebarResetButtonSection';
 import { FilteringSidebarCategoriesContainer } from './Sections/FilteringSidebarCategoriesContainer';
 import { FilteringSidebarButton } from './Sections/FilteringSidebarButton';
+import { FilteringSidebarSkeleton } from './FilteringSidebarSkeleton';
 
 export const FilteringSidebar = () => {
     const { isLoading } = useBookFilter();

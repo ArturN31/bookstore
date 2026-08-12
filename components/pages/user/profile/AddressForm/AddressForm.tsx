@@ -54,7 +54,7 @@ export const AddressForm = ({ mode, initialData }: AddressFormProps) => {
                 setFormData((prev) => ({
                     ...prev,
                     message: result.message ?? null,
-                    validationErrors: (result.validationErrors as z.ZodIssue[]) ?? [],
+                    validationErrors: (result.validationErrors as z.core.$ZodIssue[]) ?? [],
                 }));
             }
             return result;

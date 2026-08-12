@@ -6,7 +6,6 @@ import { CART_OPERATION_TYPES, CART_SUCCESS_MESSAGES } from './CartConstants';
 import { SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
-import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 import { executeCartAction, handleItemMutation } from './CartServiceUtils';
 
 export interface ActionResponse<T> {
@@ -53,6 +52,7 @@ export const updateItemInUsersCart = async (
     bookID: string,
     bookQuantity: number,
 ): Promise<ActionResponse<boolean>> => {
+    if (bookQuantity < 1) return { data: false, error: APP_ERROR_MESSAGES.INVALID_QUANTITY };
     return handleItemMutation('updateItemInUsersCart', cartID, bookID, (supabase) =>
         Repo.updateItem(supabase, cartID, bookID, bookQuantity),
     );
@@ -95,20 +95,17 @@ export const ensureCartExists = async (userId: string): Promise<SafeQueryResult<
             };
         return { data: created.data, error: null };
     } catch (err: unknown) {
-        const sanitizedError = sanitizeSupabaseError(err);
-        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userId, {
-            operation: 'ensureCartExists_exception',
-            error: sanitizedError,
-        });
-        return { data: null, error: sanitizedError };
+        return { data: null, error: sanitizeSupabaseError(err) };
     }
 };
 
-const getCartOperation = (
-    type: string,
-):
-    | ((cartId: string, bookId: string, quantity: number) => Promise<ActionResponse<boolean>>)
-    | null => {
+type CartOperationFunction = (
+    cartId: string,
+    bookId: string,
+    quantity: number,
+) => Promise<ActionResponse<boolean>>;
+
+const getCartOperation = (type: string): CartOperationFunction | null => {
     switch (type) {
         case CART_OPERATION_TYPES.INSERT:
             return addItemToUsersCart;
@@ -128,15 +125,7 @@ export const executeCartOperation = async (
     quantity: number,
 ): Promise<SafeQueryResult<boolean> & { message?: string }> => {
     const operation = getCartOperation(type);
-    if (!operation) {
-        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
-            operation: 'executeCartOperation_unsupported_action',
-            cartId,
-            bookId,
-            type,
-        });
-        return { data: null, error: APP_ERROR_MESSAGES.UNSUPPORTED_ACTION_TYPE };
-    }
+    if (!operation) return { data: null, error: APP_ERROR_MESSAGES.UNSUPPORTED_ACTION_TYPE };
 
     try {
         const result = await operation(cartId, bookId, quantity);
@@ -147,7 +136,6 @@ export const executeCartOperation = async (
                     result.error ?? APP_ERROR_MESSAGES.UNSUPPORTED_ACTION_TYPE,
                 ),
             };
-
         return {
             data: result.data,
             error: null,
@@ -156,15 +144,6 @@ export const executeCartOperation = async (
                 CART_SUCCESS_MESSAGES.DEFAULT,
         };
     } catch (err: unknown) {
-        const sanitizedError = sanitizeSupabaseError(err);
-        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
-            operation: 'executeCartOperation_exception',
-            cartId,
-            bookId,
-            type,
-            quantity,
-            error: sanitizedError,
-        });
-        return { data: null, error: sanitizedError };
+        return { data: null, error: sanitizeSupabaseError(err) };
     }
 };

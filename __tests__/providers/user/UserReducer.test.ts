@@ -41,7 +41,7 @@ describe('UserReducer', () => {
                 payload: {
                     user: { id: 'user-123', username: 'testuser' },
                     profileExists: true,
-                    wishlist: [{ book_id: 'book-1' }],
+                    wishlist: [{ book_id: 'book-1', created_at: '2024-01-01' }] as Wishlist[],
                 },
             };
 
@@ -51,7 +51,7 @@ describe('UserReducer', () => {
             expect(newState.loading).toBe(false);
             expect(newState.error).toBeNull();
             expect(newState.profileExists).toBe(true);
-            expect(newState.wishlist).toEqual([{ book_id: 'book-1' }]);
+            expect(newState.wishlist).toEqual([{ book_id: 'book-1', created_at: '2024-01-01' }]);
             expect(mapUserData).toHaveBeenCalledWith({ id: 'user-123', username: 'testuser' });
         });
     });
@@ -77,7 +77,7 @@ describe('UserReducer', () => {
     describe('UPDATE_WISHLIST', () => {
         it('should update wishlist', () => {
             const state = { ...INITIAL_USER_STATE, wishlist: [] };
-            const newWishlist = [{ book_id: 'book-1' }, { book_id: 'book-2' }];
+            const newWishlist = [{ book_id: 'book-1' }, { book_id: 'book-2' }] as Wishlist[];
             const action = {
                 type: 'UPDATE_WISHLIST' as const,
                 payload: newWishlist,
@@ -111,7 +111,7 @@ describe('UserReducer', () => {
                 loggedIn: true,
                 user: { id: 'user-123' } as any,
                 profileExists: true,
-                wishlist: [{ book_id: 'book-1' }],
+                wishlist: [{ book_id: 'book-1' }] as Wishlist[],
                 error: 'Some error',
                 loading: true,
             };

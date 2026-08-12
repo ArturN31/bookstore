@@ -52,6 +52,8 @@ export default async function BookById({ params, searchParams }: BookByIdProps) 
         error: null,
     };
 
+    const bookId = book.id;
+
     return (
         <article
             className="px m-auto grid max-w-375 gap-5 px-4 sm:max-w-3xl md:max-w-5xl lg:max-w-7xl"
@@ -73,6 +75,7 @@ export default async function BookById({ params, searchParams }: BookByIdProps) 
 
             <BookReviews
                 reviewsData={reviewsData}
+                bookId={bookId}
                 slug={slug}
                 page={currentPage}
             />
