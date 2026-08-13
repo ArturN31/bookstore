@@ -1,4 +1,4 @@
-import { ReviewFormActionBtns } from '@/components/pages/book/Reviews/ReviewForm/FormItems/ReviewFormActionBtns';
+import { ReviewFormActionBtns } from '@/app/book/[slug]/components/Reviews/ReviewForm/FormItems/ReviewFormActionBtns';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 describe('ReviewFormActionBtns', () => {

@@ -1,4 +1,4 @@
-import { ReviewFormRatingInput } from '@/components/pages/book/Reviews/ReviewForm/FormItems/ReviewFormRatingInput';
+import { ReviewFormRatingInput } from '@/app/book/[slug]/components/Reviews/ReviewForm/FormItems/ReviewFormRatingInput';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 describe('ReviewFormRatingInput', () => {

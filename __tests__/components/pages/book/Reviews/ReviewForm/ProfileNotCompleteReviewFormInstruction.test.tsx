@@ -1,4 +1,4 @@
-import { ProfileNotCompletedReviewFormInstruction } from '@/components/pages/book/Reviews/ReviewForm/ProfileNotCompletedReviewFormInstruction';
+import { ProfileNotCompletedReviewFormInstruction } from '@/app/book/[slug]/components/Reviews/ReviewForm/ProfileNotCompletedReviewFormInstruction';
 import { render, screen } from '@testing-library/react';
 
 describe('ProfileNotCompletedReviewFormInstruction', () => {

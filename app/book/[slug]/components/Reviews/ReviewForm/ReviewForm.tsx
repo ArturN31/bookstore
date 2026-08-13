@@ -11,18 +11,28 @@ import z from 'zod';
 import { reviewSchema } from '@/data/schemas/reviewSchema';
 import { useUserState } from '@/providers/user/utils/useUser';
 
+interface ReviewFormProps {
+    bookId: string;
+    reviewId?: string | number;
+    initialRating?: number | null;
+    initialReviewText?: string;
+    handleClose: () => void;
+    isEditing?: boolean;
+}
+
 export const ReviewForm = ({
     bookId,
+    reviewId,
+    initialRating = 0,
+    initialReviewText = '',
     handleClose,
-}: {
-    bookId: string;
-    handleClose: () => void;
-}) => {
+    isEditing = false,
+}: ReviewFormProps) => {
     const { user } = useUserState();
 
     const [formData, setFormData] = useState<ReviewFormFields>({
-        rating: 0,
-        review: '',
+        rating: initialRating,
+        review: initialReviewText,
         message: null,
         validationErrors: [],
     });
@@ -105,6 +115,10 @@ export const ReviewForm = ({
         submitData.append('bookId', bookId);
         submitData.append('username', user.username);
 
+        if (isEditing && reviewId !== undefined) {
+            submitData.append('reviewId', reviewId.toString());
+        }
+
         startTransitionSubmit(async () => {
             await formAction(submitData);
             handleClose();
@@ -113,6 +127,16 @@ export const ReviewForm = ({
 
     const handleReset = () => {
         startTransitionReset(async () => {
+            if (isEditing) {
+                setFormData({
+                    rating: initialRating,
+                    review: initialReviewText,
+                    message: null,
+                    validationErrors: [],
+                });
+                return;
+            }
+
             const resetData = new FormData();
             resetData.append('reset', 'yes');
             await formAction(resetData);
@@ -128,7 +152,7 @@ export const ReviewForm = ({
 
     return (
         <form
-            id="add-review-form"
+            id="review-form"
             onSubmit={handleSubmit}
         >
             <DialogContent className="border-b! border-b-[#E8E2D5]! p-6!">

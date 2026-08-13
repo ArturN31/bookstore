@@ -18,7 +18,6 @@ This project is an online bookstore built with **Next.js 16 (App Router)**, **Re
 - ✅ **Real-time Sync**: Shopping cart and wishlist sync across devices via Supabase listeners
 - ✅ **Schema-First Validation**: All inputs validated with Zod from client to database
 - ✅ **Advanced State Management**: Dual-Context + Reducer pattern preventing re-render loops
-- ⚠️ **1 Known TODO**: User review submission (read-only currently) - marked in BookReviews.tsx:18
 
 ## Architecture & Engineering Decisions
 
@@ -313,7 +312,6 @@ The following features are partially or not yet implemented:
 
 | Feature                | Status             | Notes                                                |
 | ---------------------- | ------------------ | ---------------------------------------------------- |
-| User Review Submission | 🔶 Partial         | Reviews are read-only; submission UI not implemented |
 | Payment Processing     | ❌ Not Implemented | Checkout UI ready, Stripe API integration pending    |
 | Admin Dashboard        | 🔶 Partial         | Dev-tools exist, full admin interface pending        |
 | Order History          | ❌ Not Implemented | Database schema exists, UI pending                   |
@@ -329,6 +327,7 @@ The following features are partially or not yet implemented:
 - [ ] **Stripe Payment Integration**: Implement a secure checkout flow using Stripe Elements and Server Actions.
 - [ ] **Order Success Workflow**: Automate post-purchase triggers, including the generation of dynamic receipts and email confirmations.
 - [ ] **Inventory Auto-Update**: Logic to decrement `stock_quantity` in the `books` table automatically upon successful purchase.
+- [ ] **Order History Page**: Allow users to view their past orders with details, including items purchased, total spent, and order status.
 
 ### 2. Enhanced User Experience
 
@@ -337,9 +336,11 @@ The following features are partially or not yet implemented:
 - [X] **Skeleton Loading States**: Implement shimmering MUI Skeleton components to replace basic loading spinners during SSR data fetching, improving perceived performance.
 - [X] **Image Optimisation**: Implement Next.js Image component with WebP conversion and responsive srcset for book cover art.
 - [ ] **Accessibility Enhancements**: Conduct a full WCAG 2.1 audit and implement ARIA roles, keyboard navigation, and screen reader support across the application.
-- [ ] **User Reviews - View own reviews**: Allow users to view and manage their submitted reviews, including editing and deleting options.
-  - [ ] **User Reviews - Edit/Delete**: Implement server actions and UI for users to edit or delete their own reviews, with appropriate validation and confirmation prompts.
-  - [ ] **User Reviews - Moderation**: Implement a moderation system for flagged reviews, allowing admins to approve or remove inappropriate content.
+- [X] **User Reviews - Advanced Features**: Expand the reviews system to include:
+  - [X] **User Reviews - View own reviews**: Allow users to view and manage their submitted reviews, including editing and deleting options.
+  - [X] **User Reviews - Delete**: Implement server actions and UI for users to delete their own reviews, with appropriate validation and confirmation prompts.
+  - [X] **User Reviews - Edit**: Implement server actions and UI for users to edit their own reviews, ensuring validation and real-time updates.
+- [ ] **Wishlist Sharing**: Enable users to share their wishlist via a unique URL, allowing friends and family to view and purchase items directly from the wishlist.
 
 ### 3. Advanced Store Features
 

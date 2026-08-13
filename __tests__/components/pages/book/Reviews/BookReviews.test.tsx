@@ -1,4 +1,4 @@
-import { BookReviews } from '@/components/pages/book/Reviews/BookReviews';
+import { BookReviews } from '@/app/book/[slug]/components/Reviews/BookReviews';
 import { screen, render } from '@testing-library/react';
 
 interface Review {

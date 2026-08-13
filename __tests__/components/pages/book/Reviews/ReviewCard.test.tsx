@@ -1,4 +1,4 @@
-import { ReviewCard } from '@/components/pages/book/Reviews/ReviewCard/ReviewCard';
+import { ReviewCard } from '@/app/book/[slug]/components/Reviews/ReviewCard/ReviewCard';
 import { screen, render } from '@testing-library/react';
 
 interface Review {

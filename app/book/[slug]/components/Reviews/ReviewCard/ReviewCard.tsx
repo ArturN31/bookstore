@@ -1,3 +1,6 @@
+// ReviewCard.tsx
+'use client';
+
 import Card from '@mui/material/Card';
 import { ReviewCardRating } from './ReviewCardRating';
 import { ReviewCardBody } from './ReviewCardBody';
@@ -11,10 +14,19 @@ export interface SelectedReview {
     updated_at: string;
 }
 
-export const ReviewCard = ({ review }: { review: SelectedReview }) => {
+interface ReviewCardProps {
+    review: SelectedReview;
+    onEdit?: (id: string | number) => void;
+    onDelete?: (id: string | number) => void;
+}
+
+export const ReviewCard = ({ review, onEdit, onDelete }: ReviewCardProps) => {
     const createdAt = new Date(review.created_at);
-    const updatedAt = new Date(review.updated_at);
-    const isUpdated = updatedAt.getTime() !== createdAt.getTime();
+    const updatedAt = review.updated_at ? new Date(review.updated_at) : null;
+
+    const isUpdated = Boolean(
+        updatedAt && !isNaN(updatedAt.getTime()) && updatedAt.getTime() !== createdAt.getTime(),
+    );
 
     return (
         <Card
@@ -24,10 +36,14 @@ export const ReviewCard = ({ review }: { review: SelectedReview }) => {
             <ReviewCardRating rating={review.rating} />
 
             <ReviewCardBody
+                id={review.id}
                 username={review.username}
                 review={review.review}
                 createdAt={createdAt}
+                updatedAt={updatedAt}
                 isUpdated={isUpdated}
+                onEdit={onEdit}
+                onDelete={onDelete}
             />
         </Card>
     );

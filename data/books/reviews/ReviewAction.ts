@@ -8,46 +8,21 @@ import { createBackendClient } from '@/utils/db/server';
 import { mapToReviewPayload } from './ReviewMapper';
 import { insertUserReview } from './ReviewRepository';
 import { REVIEW_ROUTES, ReviewInsert } from './ReviewConstants';
-import { APP_ERROR_MESSAGES, DB_ERROR_MAP } from '@/utils/errors/ErrorHandlerConstants';
+import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
+import { isDuplicateReviewError, resolveUsername } from './ReviewActionUtils';
 
 export type ReviewFormState = {
     validationErrors?: z.core.$ZodIssue[];
     message?: string | null;
 };
 
-interface UserTableRow {
-    username: string | null;
-}
-
 const INITIAL_STATE: ReviewFormState = {
     message: null,
     validationErrors: undefined,
 };
-
-function isDuplicateReviewError(dbError: unknown, sanitizedError: string): boolean {
-    if (sanitizedError === DB_ERROR_MAP['23505']) return true;
-
-    if (typeof dbError === 'object' && dbError !== null) {
-        const errObj = dbError as { code?: unknown; message?: unknown; details?: unknown };
-        if (typeof errObj.code === 'string' && errObj.code === '23505') return true;
-        if (
-            typeof errObj.message === 'string' &&
-            (errObj.message.includes('23505') || errObj.message.toLowerCase().includes('duplicate'))
-        )
-            return true;
-        if (
-            typeof errObj.details === 'string' &&
-            (errObj.details.includes('23505') || errObj.details.toLowerCase().includes('duplicate'))
-        )
-            return true;
-    }
-
-    if (typeof dbError === 'string')
-        return dbError.includes('23505') || dbError.toLowerCase().includes('duplicate');
-    return false;
-}
 
 export async function UserReviewAction(
     prevState: ReviewFormState | undefined,
@@ -58,21 +33,26 @@ export async function UserReviewAction(
     if (rawData.reset) return INITIAL_STATE;
 
     const bookId = typeof rawData.bookId === 'string' ? rawData.bookId : '';
-    if (!bookId)
-        return {
-            message: APP_ERROR_MESSAGES.VALIDATION_ERROR,
-        };
+    if (!bookId) {
+        return { message: APP_ERROR_MESSAGES.VALIDATION_ERROR };
+    }
+
+    const reviewId =
+        typeof rawData.reviewId === 'string' && rawData.reviewId.trim() !== ''
+            ? rawData.reviewId
+            : undefined;
+    const isEditing = Boolean(reviewId);
 
     const validated = reviewSchema.safeParse(rawData);
-    if (!validated.success)
+    if (!validated.success) {
         return {
             validationErrors: validated.error.issues,
             message: APP_ERROR_MESSAGES.VALIDATION_ERROR,
         };
+    }
 
     try {
         const supabase = await createBackendClient();
-
         const {
             data: { user },
             error: authError,
@@ -86,48 +66,57 @@ export async function UserReviewAction(
             return { message: APP_ERROR_MESSAGES.SESSION_EXPIRED };
         }
 
-        let username = typeof rawData.username === 'string' ? rawData.username.trim() : '';
-
-        if (!username) {
-            const { data: userRecord } = await supabase
-                .from('users')
-                .select('username')
-                .eq('id', user.id)
-                .maybeSingle<UserTableRow>();
-
-            username =
-                userRecord?.username?.trim() ||
-                (typeof user.user_metadata?.username === 'string'
-                    ? user.user_metadata.username.trim()
-                    : '') ||
-                user.email?.split('@')[0] ||
-                'Anonymous';
-        }
-
+        const rawUsername = typeof rawData.username === 'string' ? rawData.username : undefined;
+        const username = await resolveUsername(supabase, user, rawUsername);
         const mappedPayload = mapToReviewPayload(validated.data, bookId);
-        const payload: ReviewInsert = {
-            user_id: user.id,
-            username,
-            ...mappedPayload,
-        };
 
-        const { error: dbError } = await insertUserReview(supabase, payload);
+        if (isEditing && reviewId) {
+            const updateResult = await safeSupabaseQuery<{ id: string | number }[]>(async () =>
+                supabase
+                    .from('book_reviews')
+                    .update({
+                        ...mappedPayload,
+                        updated_at: new Date().toISOString(),
+                    })
+                    .eq('id', reviewId)
+                    .eq('user_id', user.id)
+                    .select('id'),
+            );
 
-        if (dbError) {
-            const sanitizedError = sanitizeSupabaseError(dbError, user.id);
-            const isDuplicate = isDuplicateReviewError(dbError, sanitizedError);
-
-            console.error('[UserReviewAction] Failed to insert user review data:', {
-                rawError: dbError,
-                sanitizedError,
-                isDuplicate,
-            });
-
-            return {
-                message: isDuplicate
-                    ? APP_ERROR_MESSAGES.ERROR_DUPLICATE_REVIEW
-                    : APP_ERROR_MESSAGES.ERROR_REVIEW_SUBMIT_FAILED,
+            if (updateResult.error || !updateResult.data || updateResult.data.length === 0) {
+                console.error('[UserReviewAction] Failed to update user review data:', {
+                    sanitizedError:
+                        updateResult.error ?? 'No matching review record found to update.',
+                    reviewId,
+                    userId: user.id,
+                });
+                return { message: APP_ERROR_MESSAGES.ERROR_REVIEW_SUBMIT_FAILED };
+            }
+        } else {
+            const payload: ReviewInsert = {
+                user_id: user.id,
+                username,
+                ...mappedPayload,
             };
+
+            const insertResult = await safeSupabaseQuery(async () =>
+                insertUserReview(supabase, payload),
+            );
+
+            if (insertResult.error) {
+                const isDuplicate = isDuplicateReviewError(null, insertResult.error);
+
+                console.error('[UserReviewAction] Failed to insert user review data:', {
+                    sanitizedError: insertResult.error,
+                    isDuplicate,
+                });
+
+                return {
+                    message: isDuplicate
+                        ? APP_ERROR_MESSAGES.ERROR_DUPLICATE_REVIEW
+                        : APP_ERROR_MESSAGES.ERROR_REVIEW_SUBMIT_FAILED,
+                };
+            }
         }
     } catch (err: unknown) {
         if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
@@ -139,5 +128,11 @@ export async function UserReviewAction(
 
     revalidatePath(bookPageRoute);
     revalidatePath(REVIEW_ROUTES.HOMEPAGE);
+    revalidatePath('/user/content/reviews');
+
+    if (isEditing) {
+        return INITIAL_STATE;
+    }
+
     redirect(bookPageRoute);
 }

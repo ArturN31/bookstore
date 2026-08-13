@@ -1,4 +1,4 @@
-import { BookCart } from '@/components/pages/book/Header/BookCart';
+import { BookCart } from '@/app/book/[slug]/components/Header/BookCart';
 import { useCartState } from '@/providers/cart/utils/useCart';
 import { useUserState } from '@/providers/user/utils/useUser';
 import { screen, render } from '@testing-library/react';

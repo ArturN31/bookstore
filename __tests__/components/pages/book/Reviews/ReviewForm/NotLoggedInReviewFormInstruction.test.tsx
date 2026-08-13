@@ -1,4 +1,4 @@
-import { NotLoggedInReviewFormInstruction } from '@/components/pages/book/Reviews/ReviewForm/NotLoggedInReviewFormInstruction';
+import { NotLoggedInReviewFormInstruction } from '@/app/book/[slug]/components/Reviews/ReviewForm/NotLoggedInReviewFormInstruction';
 import { render, screen } from '@testing-library/react';
 
 describe('NotLoggedInReviewFormInstruction', () => {

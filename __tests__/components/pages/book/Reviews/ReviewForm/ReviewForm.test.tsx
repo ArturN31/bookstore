@@ -1,4 +1,4 @@
-import { ReviewForm } from '@/components/pages/book/Reviews/ReviewForm/ReviewForm';
+import { ReviewForm } from '@/app/book/[slug]/components/Reviews/ReviewForm/ReviewForm';
 import { useUserState } from '@/providers/user/utils/useUser';
 import { UserReviewAction } from '@/data/books/reviews/ReviewAction';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';

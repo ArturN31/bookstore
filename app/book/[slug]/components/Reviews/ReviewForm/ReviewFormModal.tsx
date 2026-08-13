@@ -20,37 +20,64 @@ export interface ReviewFormFields {
 
 interface ReviewFormModalProps {
     bookId: string;
+    reviewId?: string | number;
+    initialRating?: number | null;
+    initialReviewText?: string;
+    isOpen?: boolean;
+    onClose?: () => void;
 }
 
-export function ReviewFormModal({ bookId }: ReviewFormModalProps) {
+export function ReviewFormModal({
+    bookId,
+    reviewId,
+    initialRating = 0,
+    initialReviewText = '',
+    isOpen: controlledOpen,
+    onClose: controlledOnClose,
+}: ReviewFormModalProps) {
     const { loggedIn, profileExists } = useUserState();
 
-    const [open, setOpen] = useState<boolean>(false);
+    const isEditing = Boolean(reviewId);
+    const [internalOpen, setInternalOpen] = useState<boolean>(isEditing);
 
-    const handleOpen = () => setOpen(true);
-    const handleClose = () => setOpen(false);
+    const isControlled = controlledOpen !== undefined && controlledOnClose !== undefined;
+    const open = isControlled ? controlledOpen : internalOpen;
+
+    const handleOpen = () => {
+        if (!isControlled) setInternalOpen(true);
+    };
+
+    const handleClose = () => {
+        if (isControlled && controlledOnClose) {
+            controlledOnClose();
+        } else {
+            setInternalOpen(false);
+        }
+    };
 
     if (!loggedIn) return <NotLoggedInReviewFormInstruction />;
     if (!profileExists) return <ProfileNotCompletedReviewFormInstruction />;
 
     return (
         <>
-            <Button
-                variant="contained"
-                size="medium"
-                startIcon={<RateReviewIcon className="text-[#F59E0B]!" />}
-                onClick={handleOpen}
-                className="bg-gunmetal! rounded-[20px]! px-6! py-[9.6px]! font-semibold! tracking-[0.3px]! text-[#FAF7F2]! normal-case! shadow-[0_4px_12px_rgba(41,37,36,0.15)]! transition-all duration-200 ease-in-out hover:-translate-y-px hover:bg-[#44403C]! hover:shadow-[0_6px_16px_rgba(41,37,36,0.25)]!"
-            >
-                Write a Review
-            </Button>
+            {!isControlled && !isEditing && (
+                <Button
+                    variant="contained"
+                    size="medium"
+                    startIcon={<RateReviewIcon className="text-[#F59E0B]!" />}
+                    onClick={handleOpen}
+                    className="bg-gunmetal! rounded-[20px]! px-6! py-[9.6px]! font-semibold! tracking-[0.3px]! text-[#FAF7F2]! normal-case! shadow-[0_4px_12px_rgba(41,37,36,0.15)]! transition-all duration-200 ease-in-out hover:-translate-y-px hover:bg-[#44403C]! hover:shadow-[0_6px_16px_rgba(41,37,36,0.25)]!"
+                >
+                    Write a Review
+                </Button>
+            )}
 
             <Dialog
                 open={open}
                 onClose={handleClose}
                 fullWidth
                 maxWidth="sm"
-                aria-labelledby="add-review-dialog-title"
+                aria-labelledby="review-form-dialog-title"
                 slotProps={{
                     paper: {
                         className:
@@ -59,11 +86,13 @@ export function ReviewFormModal({ bookId }: ReviewFormModalProps) {
                 }}
             >
                 <DialogTitle
-                    id="add-review-dialog-title"
+                    id="review-form-dialog-title"
                     className="bg-gunmetal! m-0! flex items-center gap-2.5 p-4! pr-12! font-semibold! text-[#FAF7F2]!"
                 >
                     <RateReviewIcon className="text-[#F59E0B]!" />
-                    <span className="text-lg tracking-wide">Create Review</span>
+                    <span className="text-lg tracking-wide">
+                        {isEditing ? 'Edit Review' : 'Create Review'}
+                    </span>
                 </DialogTitle>
 
                 <div className="absolute top-2.5 right-2.5 z-10">
@@ -78,7 +107,11 @@ export function ReviewFormModal({ bookId }: ReviewFormModalProps) {
 
                 <ReviewForm
                     bookId={bookId}
+                    reviewId={reviewId}
+                    initialRating={initialRating}
+                    initialReviewText={initialReviewText}
                     handleClose={handleClose}
+                    isEditing={isEditing}
                 />
             </Dialog>
         </>

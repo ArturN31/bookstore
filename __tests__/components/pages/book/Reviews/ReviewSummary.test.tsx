@@ -1,4 +1,4 @@
-import { ReviewSummary } from '@/components/pages/book/Reviews/ReviewSummary';
+import { ReviewSummary } from '@/app/book/[slug]/components/Reviews/ReviewSummary';
 import { render, screen } from '@testing-library/react';
 
 describe('ReviewSummary', () => {

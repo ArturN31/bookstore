@@ -5,10 +5,10 @@ import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { useUserState } from '@/providers/user/utils/useUser';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { BooksManager } from '@/components/books/BooksManager';
-import { WishlistLoading } from '@/components/pages/user/wishlist/WishlistLoading';
-import { WishlistProfileRequired } from '@/components/pages/user/wishlist/WishlistProfileRequired';
-import { WishlistHeader } from '@/components/pages/user/wishlist/WishlistHeader';
-import { WishlistEmptyState } from '@/components/pages/user/wishlist/WishlistEmptyState';
+import { WishlistLoading } from '@/app/user/wishlist/components/WishlistLoading';
+import { WishlistProfileRequired } from '@/app/user/wishlist/components/WishlistProfileRequired';
+import { WishlistHeader } from '@/app/user/wishlist/components/WishlistHeader';
+import { WishlistEmptyState } from '@/app/user/wishlist/components/WishlistEmptyState';
 
 export default function UsersWishlist() {
     const { wishlist, profileExists, loading: userLoading } = useUserState();

@@ -22,8 +22,6 @@ export const FilteringSidebar = () => {
         setOpen(true);
     };
 
-    if (isLoading) return <FilteringSidebarSkeleton />;
-
     return (
         <>
             <FilteringSidebarButton handleOpen={handleOpen} />
@@ -38,15 +36,21 @@ export const FilteringSidebar = () => {
                     },
                 }}
             >
-                <FilteringSidebarHeader handleClose={handleClose} />
+                {isLoading && <FilteringSidebarSkeleton />}
 
-                <Divider />
+                {!isLoading && (
+                    <>
+                        <FilteringSidebarHeader handleClose={handleClose} />
 
-                <FilteringSidebarResetButtonSection />
+                        <Divider />
 
-                <Divider />
+                        <FilteringSidebarResetButtonSection />
 
-                <FilteringSidebarCategoriesContainer />
+                        <Divider />
+
+                        <FilteringSidebarCategoriesContainer />
+                    </>
+                )}
             </Drawer>
         </>
     );

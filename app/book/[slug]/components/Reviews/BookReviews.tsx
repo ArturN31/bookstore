@@ -1,8 +1,8 @@
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { ReviewCard } from '@/components/pages/book/Reviews/ReviewCard/ReviewCard';
-import { ReviewPagination } from '@/components/pages/book/Reviews/ReviewPagination';
+import { ReviewCard } from '@/app/book/[slug]/components/Reviews/ReviewCard/ReviewCard';
+import { ReviewPagination } from '@/app/book/[slug]/components/Reviews/ReviewPagination';
 import { ReviewSummary } from './ReviewSummary';
 import { ReviewFormModal } from './ReviewForm/ReviewFormModal';
 

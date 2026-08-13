@@ -1,9 +1,9 @@
 import { fetchBooksWithReviews } from '@/data/books/BookService';
-import { BookReviews } from '@/components/pages/book/Reviews/BookReviews';
+import { BookReviews } from '@/app/book/[slug]/components/Reviews/BookReviews';
 import { notFound } from 'next/navigation';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { BookHeader } from '@/components/pages/book/Header/BookHeader';
-import { BookDetails } from '@/components/pages/book/BookDetails';
+import { BookHeader } from '@/app/book/[slug]/components/Header/BookHeader';
+import { BookDetails } from '@/app/book/[slug]/components/BookDetails';
 
 type BookByIdProps = {
     params: Promise<{ slug: string }>;

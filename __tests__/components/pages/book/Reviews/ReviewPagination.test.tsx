@@ -1,4 +1,4 @@
-import { ReviewPagination } from '@/components/pages/book/Reviews/ReviewPagination';
+import { ReviewPagination } from '@/app/book/[slug]/components/Reviews/ReviewPagination';
 import { screen, render } from '@testing-library/react';
 
 const reviewsData: Review[] = [

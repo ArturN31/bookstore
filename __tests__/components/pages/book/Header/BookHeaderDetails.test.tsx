@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { BookHeaderDetails } from '@/components/pages/book/Header/BookHeaderDetails';
+import { BookHeaderDetails } from '@/app/book/[slug]/components/Header/BookHeaderDetails';
 
 describe('BookHeaderDetails Component', () => {
     const mockBook: Book = {

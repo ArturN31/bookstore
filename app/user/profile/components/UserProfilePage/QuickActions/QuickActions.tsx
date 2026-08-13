@@ -1,7 +1,6 @@
-import { Edit } from '@mui/icons-material';
+import { Edit, RateReview } from '@mui/icons-material';
 import EditLocationOutlinedIcon from '@mui/icons-material/EditLocationOutlined';
 import LockPersonOutlinedIcon from '@mui/icons-material/LockPersonOutlined';
-import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import { ActionSection } from './ActionSection';
@@ -25,6 +24,18 @@ export const QuickActions = () => {
                     icon={EditLocationOutlinedIcon}
                     label="Change Address"
                     color="green"
+                />
+            </ActionSection>
+
+            <ActionSection
+                title="My Content & History"
+                description="View your orders, reviews, and personal activity"
+            >
+                <ActionLink
+                    href="/user/content/reviews"
+                    icon={RateReview}
+                    label="My Book Reviews"
+                    color="blue"
                 />
             </ActionSection>
 

@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { BookHeader } from '@/components/pages/book/Header/BookHeader';
+import { BookHeader } from '@/app/book/[slug]/components/Header/BookHeader';
 
 jest.mock('@/components/pages/book/Header/BookHeaderDetails', () => ({
     BookHeaderDetails: ({ book }: { book: Book }) => (

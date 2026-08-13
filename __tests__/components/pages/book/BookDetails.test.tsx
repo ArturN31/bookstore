@@ -1,4 +1,4 @@
-import { BookDetails } from '@/components/pages/book/BookDetails';
+import { BookDetails } from '@/app/book/[slug]/components/BookDetails';
 import { render, screen } from '@testing-library/react';
 
 const mockBook: Book = {
