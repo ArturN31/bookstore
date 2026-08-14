@@ -1,18 +1,22 @@
+'use client';
+
 import { DialogContent, Stack } from '@mui/material';
 import { FormErrors } from '@/components/formItems/FormErrors';
 import { ReviewFormRatingInput } from './FormItems/ReviewFormRatingInput';
 import { ReviewFormCommentInput } from './FormItems/ReviewFormCommentInput';
 import { ReviewFormActionBtns } from './FormItems/ReviewFormActionBtns';
-import { useActionState, useState, useTransition } from 'react';
+import { useActionState, useState, startTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { ReviewFormFields } from './ReviewFormModal';
 import { ReviewFormState } from '@/data/books/reviews/ReviewConstants';
-import { UserReviewAction } from '@/data/books/reviews/ReviewAction';
-import z from 'zod';
+import { z } from 'zod';
 import { reviewSchema } from '@/data/schemas/reviewSchema';
 import { useUserState } from '@/providers/user/utils/useUser';
+import { UserReviewAction } from '@/data/books/reviews/ReviewAction';
 
 interface ReviewFormProps {
     bookId: string;
+    slug?: string;
     reviewId?: string | number;
     initialRating?: number | null;
     initialReviewText?: string;
@@ -20,8 +24,14 @@ interface ReviewFormProps {
     isEditing?: boolean;
 }
 
+const INITIAL_FORM_STATE: ReviewFormState = {
+    message: null,
+    validationErrors: [],
+};
+
 export const ReviewForm = ({
     bookId,
+    slug,
     reviewId,
     initialRating = 0,
     initialReviewText = '',
@@ -29,6 +39,7 @@ export const ReviewForm = ({
     isEditing = false,
 }: ReviewFormProps) => {
     const { user } = useUserState();
+    const router = useRouter();
 
     const [formData, setFormData] = useState<ReviewFormFields>({
         rating: initialRating,
@@ -37,23 +48,23 @@ export const ReviewForm = ({
         validationErrors: [],
     });
 
-    const [formState, formAction] = useActionState(
+    const [formState, formAction, isPendingAction] = useActionState(
         async (state: ReviewFormState, payload: FormData) => {
             const result = await UserReviewAction(state, payload);
-            if (result) {
-                setFormData((prev) => ({
-                    ...prev,
-                    message: result.message ?? null,
-                    validationErrors: (result.validationErrors as z.core.$ZodIssue[]) ?? [],
-                }));
+
+            const hasNoErrors =
+                !result.message &&
+                (!result.validationErrors || result.validationErrors.length === 0);
+
+            if (hasNoErrors) {
+                handleClose();
+                router.refresh();
             }
+
             return result;
         },
-        { message: null, validationErrors: [] },
+        INITIAL_FORM_STATE,
     );
-
-    const [isTransitioningSubmit, startTransitionSubmit] = useTransition();
-    const [isTransitioningReset, startTransitionReset] = useTransition();
 
     const handleFieldChangeByName = (name: 'rating' | 'review', value: number | null | string) => {
         setFormData((prev) => {
@@ -109,46 +120,61 @@ export const ReviewForm = ({
         }
 
         const submitData = new FormData();
-        if (formData.rating !== null && formData.rating !== undefined)
+        if (formData.rating !== null && formData.rating !== undefined) {
             submitData.append('rating', formData.rating.toString());
+        }
+
         submitData.append('review', formData.review);
         submitData.append('bookId', bookId);
-        submitData.append('username', user.username);
+
+        if (slug) {
+            submitData.append('slug', slug);
+        }
+
+        if (user?.username) {
+            submitData.append('username', user.username);
+        }
 
         if (isEditing && reviewId !== undefined) {
             submitData.append('reviewId', reviewId.toString());
         }
 
-        startTransitionSubmit(async () => {
-            await formAction(submitData);
-            handleClose();
+        startTransition(() => {
+            formAction(submitData);
         });
     };
 
     const handleReset = () => {
-        startTransitionReset(async () => {
-            if (isEditing) {
-                setFormData({
-                    rating: initialRating,
-                    review: initialReviewText,
-                    message: null,
-                    validationErrors: [],
-                });
-                return;
-            }
-
-            const resetData = new FormData();
-            resetData.append('reset', 'yes');
-            await formAction(resetData);
-
+        if (isEditing) {
             setFormData({
-                rating: 0,
-                review: '',
+                rating: initialRating,
+                review: initialReviewText,
                 message: null,
                 validationErrors: [],
             });
+            return;
+        }
+
+        const resetData = new FormData();
+        resetData.append('reset', 'yes');
+
+        startTransition(() => {
+            formAction(resetData);
+        });
+
+        setFormData({
+            rating: 0,
+            review: '',
+            message: null,
+            validationErrors: [],
         });
     };
+
+    const displayMessage = formData.message ?? formState.message;
+    const displayValidationErrors =
+        formData.validationErrors?.length > 0
+            ? formData.validationErrors
+            : (formState.validationErrors as z.ZodIssue[]);
 
     return (
         <form
@@ -158,10 +184,10 @@ export const ReviewForm = ({
             <DialogContent className="border-b! border-b-[#E8E2D5]! p-6!">
                 <Stack spacing={3}>
                     <FormErrors
-                        formError={formData.message ?? undefined}
+                        formError={displayMessage ?? undefined}
                         validationErrors={
-                            formData.validationErrors?.length
-                                ? formData.validationErrors
+                            displayValidationErrors?.length > 0
+                                ? displayValidationErrors
                                 : undefined
                         }
                     />
@@ -181,8 +207,8 @@ export const ReviewForm = ({
             <ReviewFormActionBtns
                 handleClose={handleClose}
                 handleReset={handleReset}
-                isSubmitting={isTransitioningSubmit}
-                isResetting={isTransitioningReset}
+                isSubmitting={isPendingAction}
+                isResetting={false}
             />
         </form>
     );

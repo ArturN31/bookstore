@@ -1,7 +1,6 @@
+import { AddressFormFields } from '@/app/user/profile/components/AddressForm/AddressForm';
+import { UserPersonalFields } from '@/app/user/profile/components/AddressForm/UserPersonalFields';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { UserAddressFormState } from '@/data/user/address/UserAddressAction';
-import { UserPersonalFields } from '@/components/pages/user/profile/AddressForm/UserPersonalFields';
-import { AddressFormFields } from '@/components/pages/user/profile/AddressForm/AddressForm';
 
 describe('APP - pages/user - AddressForm - UserPersonalFields', () => {
     const mockOnChange = jest.fn();

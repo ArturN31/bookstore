@@ -6,20 +6,22 @@ import { DeleteReviewModal } from './DeleteReviewModal';
 import { ReviewFormModal } from '@/app/book/[slug]/components/Reviews/ReviewForm/ReviewFormModal';
 import { UserReviewHeader } from './UserReviewHeader';
 import { InfiniteScrollSentinel } from './InfiniteScrollSentinel';
-import { ReviewDB } from './page';
-import { useUserReviews } from './useUserReviews';
+import { useUserReviews } from '../useUserReviews';
 
 interface UserReviewsInteractiveProps {
-    initialReviews: ReviewDB[];
+    initialReviews: Review[];
+    initialBooksMap: Record<string | number, Partial<BookDB> | null>;
     initialHasMore: boolean;
 }
 
 export const UserReviewsInteractive = ({
     initialReviews,
+    initialBooksMap,
     initialHasMore,
 }: UserReviewsInteractiveProps) => {
     const {
         reviews,
+        booksMap,
         hasMore,
         isLoadingMore,
         observerTarget,
@@ -31,17 +33,17 @@ export const UserReviewsInteractive = ({
         handleConfirmDelete,
         handleOpenEditModal,
         handleCloseEditModal,
-    } = useUserReviews({ initialReviews, initialHasMore });
+    } = useUserReviews({ initialReviews, initialBooksMap, initialHasMore });
 
     return (
         <>
             <div className="space-y-8">
-                {reviews.map((review, index) => (
+                {reviews.map((review) => (
                     <Fragment key={review.id}>
                         <div className="space-y-3">
                             <UserReviewHeader
                                 bookId={review.book_id}
-                                bookData={review.books}
+                                bookData={booksMap[review.id]}
                             />
                             <ReviewCard
                                 review={review}
@@ -66,16 +68,14 @@ export const UserReviewsInteractive = ({
                 onConfirm={handleConfirmDelete}
             />
 
-            {selectedEditReview && (
-                <ReviewFormModal
-                    bookId={selectedEditReview.book_id}
-                    reviewId={selectedEditReview.id}
-                    initialRating={selectedEditReview.rating}
-                    initialReviewText={selectedEditReview.review}
-                    isOpen={isEditModalOpen}
-                    onClose={handleCloseEditModal}
-                />
-            )}
+            <ReviewFormModal
+                bookId={selectedEditReview?.book_id || ''}
+                reviewId={selectedEditReview?.id}
+                initialRating={selectedEditReview?.rating || 0}
+                initialReviewText={selectedEditReview?.review || ''}
+                isOpen={isEditModalOpen}
+                onClose={handleCloseEditModal}
+            />
         </>
     );
 };

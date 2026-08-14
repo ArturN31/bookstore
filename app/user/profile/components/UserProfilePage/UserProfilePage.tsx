@@ -1,5 +1,5 @@
-import { QuickActions } from '@/components/pages/user/profile/UserProfilePage/QuickActions/QuickActions';
-import { UserDetails } from '@/components/pages/user/profile/UserProfilePage/UserDetails';
+import { QuickActions } from './QuickActions/QuickActions';
+import { UserDetails } from './UserDetails';
 
 export const UserProfilePage = ({ userData }: { userData: User }) => {
     return (

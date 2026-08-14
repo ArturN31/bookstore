@@ -1,28 +1,16 @@
 'use server';
 
-import { z } from 'zod';
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
+import { INITIAL_STATE } from '@/data/user/username/ChangeUsernameConstants';
+import { ReviewFormState, ReviewInsert } from './ReviewConstants';
+import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { reviewSchema } from '@/data/schemas/reviewSchema';
 import { createBackendClient } from '@/utils/db/server';
-import { mapToReviewPayload } from './ReviewMapper';
-import { insertUserReview } from './ReviewRepository';
-import { REVIEW_ROUTES, ReviewInsert } from './ReviewConstants';
-import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
-import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { isDuplicateReviewError, resolveUsername } from './ReviewActionUtils';
-
-export type ReviewFormState = {
-    validationErrors?: z.core.$ZodIssue[];
-    message?: string | null;
-};
-
-const INITIAL_STATE: ReviewFormState = {
-    message: null,
-    validationErrors: undefined,
-};
+import { mapToReviewPayload } from './ReviewMapper';
+import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 export async function UserReviewAction(
     prevState: ReviewFormState | undefined,
@@ -32,7 +20,10 @@ export async function UserReviewAction(
 
     if (rawData.reset) return INITIAL_STATE;
 
-    const bookId = typeof rawData.bookId === 'string' ? rawData.bookId : '';
+    const bookId: string = typeof rawData.bookId === 'string' ? rawData.bookId : '';
+    const slug: string =
+        typeof rawData.slug === 'string' && rawData.slug.trim() !== '' ? rawData.slug : bookId;
+
     if (!bookId) {
         return { message: APP_ERROR_MESSAGES.VALIDATION_ERROR };
     }
@@ -41,9 +32,11 @@ export async function UserReviewAction(
         typeof rawData.reviewId === 'string' && rawData.reviewId.trim() !== ''
             ? rawData.reviewId
             : undefined;
+
     const isEditing = Boolean(reviewId);
 
     const validated = reviewSchema.safeParse(rawData);
+
     if (!validated.success) {
         return {
             validationErrors: validated.error.issues,
@@ -99,15 +92,16 @@ export async function UserReviewAction(
                 ...mappedPayload,
             };
 
-            const insertResult = await safeSupabaseQuery(async () =>
-                insertUserReview(supabase, payload),
+            const insertResult = await safeSupabaseQuery<{ id: string | number }[]>(async () =>
+                supabase.from('book_reviews').insert(payload).select('id'),
             );
 
-            if (insertResult.error) {
-                const isDuplicate = isDuplicateReviewError(null, insertResult.error);
+            if (insertResult.error || !insertResult.data || insertResult.data.length === 0) {
+                const errorMsg = insertResult.error ?? '';
+                const isDuplicate = isDuplicateReviewError(errorMsg, errorMsg);
 
                 console.error('[UserReviewAction] Failed to insert user review data:', {
-                    sanitizedError: insertResult.error,
+                    sanitizedError: insertResult.error ?? 'No data returned from insert.',
                     isDuplicate,
                 });
 
@@ -124,15 +118,14 @@ export async function UserReviewAction(
         return { message: sanitizeSupabaseError(err) };
     }
 
-    const bookPageRoute = REVIEW_ROUTES.BOOK_PAGE.replace('[id]', bookId);
+    revalidateTag('books', 'max');
+    revalidateTag('reviews', 'max');
+    revalidateTag(`reviews-${bookId}`, 'max');
 
-    revalidatePath(bookPageRoute);
-    revalidatePath(REVIEW_ROUTES.HOMEPAGE);
-    revalidatePath('/user/content/reviews');
+    revalidatePath(`/book/${slug}`, 'page');
+    revalidatePath('/book/[slug]', 'page');
+    revalidatePath('/user/content/reviews', 'page');
+    revalidatePath('/', 'page');
 
-    if (isEditing) {
-        return INITIAL_STATE;
-    }
-
-    redirect(bookPageRoute);
+    return INITIAL_STATE;
 }

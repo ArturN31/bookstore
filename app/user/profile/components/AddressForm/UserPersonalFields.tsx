@@ -1,6 +1,6 @@
 import { DateOfBirthInput } from '@/components/formItems/DateOfBirthInput';
 import { TextInput } from '@/components/formItems/TextInput';
-import { AddressFormFields } from '@/components/pages/user/profile/AddressForm/AddressForm';
+import { AddressFormFields } from './AddressForm';
 
 export const UserPersonalFields = ({
     formData,

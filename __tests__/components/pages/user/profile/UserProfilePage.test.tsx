@@ -1,4 +1,4 @@
-import { UserProfilePage } from '@/components/pages/user/profile/UserProfilePage/UserProfilePage';
+import { UserProfilePage } from '@/app/user/profile/components/UserProfilePage/UserProfilePage';
 import { screen, render } from '@testing-library/react';
 
 const mockedUserData: User = {

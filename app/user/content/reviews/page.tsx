@@ -3,25 +3,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined';
 import { createBackendClient } from '@/utils/db/server';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
-import { UserReviewsInteractive } from './UserReviewsInteractive';
-
-export interface BookInfo {
-    id?: string;
-    title?: string;
-    author?: string;
-}
-
-export interface ReviewDB {
-    id: string | number;
-    book_id: string;
-    user_id: string;
-    username: string;
-    rating: number;
-    review: string;
-    created_at: string;
-    updated_at: string;
-    books?: BookInfo | BookInfo[] | null;
-}
+import { UserReviewsInteractive } from './components/UserReviewsInteractive';
 
 const PAGE_SIZE = 5;
 
@@ -41,7 +23,7 @@ export default async function UserReviewsPage() {
         );
     }
 
-    const reviewsQueryResult = await safeSupabaseQuery<ReviewDB[]>(async () =>
+    const reviewsQueryResult = await safeSupabaseQuery(async () =>
         supabase
             .from('book_reviews')
             .select(
@@ -66,9 +48,17 @@ export default async function UserReviewsPage() {
             .range(0, PAGE_SIZE),
     );
 
-    const rawReviews: ReviewDB[] = reviewsQueryResult.data ?? [];
+    const rawReviews = reviewsQueryResult.data ?? [];
     const initialHasMore = rawReviews.length > PAGE_SIZE;
-    const initialReviews = initialHasMore ? rawReviews.slice(0, PAGE_SIZE) : rawReviews;
+    const slicedRaw = initialHasMore ? rawReviews.slice(0, PAGE_SIZE) : rawReviews;
+
+    const initialReviews: Review[] = slicedRaw.map(({ books: _books, ...review }) => review);
+    const initialBooksMap: Record<string | number, Partial<BookDB> | null> = {};
+
+    slicedRaw.forEach((item) => {
+        const book = Array.isArray(item.books) ? item.books[0] : item.books;
+        initialBooksMap[item.id] = book ?? null;
+    });
 
     return (
         <div className="mx-auto w-full max-w-4xl space-y-6 p-6">
@@ -106,6 +96,7 @@ export default async function UserReviewsPage() {
             {!reviewsQueryResult.error && initialReviews.length > 0 && (
                 <UserReviewsInteractive
                     initialReviews={initialReviews}
+                    initialBooksMap={initialBooksMap}
                     initialHasMore={initialHasMore}
                 />
             )}

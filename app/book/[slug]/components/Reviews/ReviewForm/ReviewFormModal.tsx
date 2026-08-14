@@ -20,6 +20,7 @@ export interface ReviewFormFields {
 
 interface ReviewFormModalProps {
     bookId: string;
+    slug?: string;
     reviewId?: string | number;
     initialRating?: number | null;
     initialReviewText?: string;
@@ -29,6 +30,7 @@ interface ReviewFormModalProps {
 
 export function ReviewFormModal({
     bookId,
+    slug,
     reviewId,
     initialRating = 0,
     initialReviewText = '',
@@ -38,13 +40,17 @@ export function ReviewFormModal({
     const { loggedIn, profileExists } = useUserState();
 
     const isEditing = Boolean(reviewId);
-    const [internalOpen, setInternalOpen] = useState<boolean>(isEditing);
+    const [internalOpen, setInternalOpen] = useState<boolean>(false);
+    const [formKey, setFormKey] = useState<number>(0);
 
     const isControlled = controlledOpen !== undefined && controlledOnClose !== undefined;
     const open = isControlled ? controlledOpen : internalOpen;
 
     const handleOpen = () => {
-        if (!isControlled) setInternalOpen(true);
+        setFormKey((prev) => prev + 1);
+        if (!isControlled) {
+            setInternalOpen(true);
+        }
     };
 
     const handleClose = () => {
@@ -54,6 +60,15 @@ export function ReviewFormModal({
             setInternalOpen(false);
         }
     };
+
+    const effectiveOpen = open;
+    const [prevOpen, setPrevOpen] = useState<boolean>(effectiveOpen);
+    if (effectiveOpen !== prevOpen) {
+        setPrevOpen(effectiveOpen);
+        if (effectiveOpen) {
+            setFormKey((prev) => prev + 1);
+        }
+    }
 
     if (!loggedIn) return <NotLoggedInReviewFormInstruction />;
     if (!profileExists) return <ProfileNotCompletedReviewFormInstruction />;
@@ -106,7 +121,9 @@ export function ReviewFormModal({
                 </div>
 
                 <ReviewForm
+                    key={`review-form-${formKey}`}
                     bookId={bookId}
+                    slug={slug}
                     reviewId={reviewId}
                     initialRating={initialRating}
                     initialReviewText={initialReviewText}

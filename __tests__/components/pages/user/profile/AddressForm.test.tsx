@@ -1,4 +1,4 @@
-import { AddressForm } from '@/components/pages/user/profile/AddressForm/AddressForm';
+import { AddressForm } from '@/app/user/profile/components/AddressForm/AddressForm';
 import { UserAddressAction } from '@/data/user/address/UserAddressAction';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { z } from 'zod';

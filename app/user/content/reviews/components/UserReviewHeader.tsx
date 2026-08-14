@@ -1,17 +1,16 @@
 import Link from 'next/link';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import { BookInfo } from './page';
 
 interface UserReviewHeaderProps {
     bookId: string;
-    bookData: BookInfo | BookInfo[] | null | undefined;
+    bookData: BookDB | Partial<BookDB> | null | undefined;
 }
 
 export const UserReviewHeader = ({ bookId, bookData }: UserReviewHeaderProps) => {
-    const book = Array.isArray(bookData) ? bookData[0] : bookData;
-
-    if (!book?.title) return null;
+    if (!bookData?.title) {
+        return null;
+    }
 
     return (
         <div className="flex items-center justify-between px-1">
@@ -24,11 +23,11 @@ export const UserReviewHeader = ({ bookId, bookData }: UserReviewHeaderProps) =>
                         href={`/book/${bookId}`}
                         className="truncate text-base font-bold text-[#1C1917] transition-colors hover:text-blue-600"
                     >
-                        {book.title}
+                        {bookData.title}
                     </Link>
-                    {book.author && (
+                    {bookData.author && (
                         <span className="truncate text-xs text-[#78716C]">
-                            by <span className="font-medium text-[#44403C]">{book.author}</span>
+                            by <span className="font-medium text-[#44403C]">{bookData.author}</span>
                         </span>
                     )}
                 </div>

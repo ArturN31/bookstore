@@ -1,7 +1,8 @@
+'use client';
+
 import { useState, useEffect, useRef, useCallback, RefObject } from 'react';
 import { useRouter } from 'next/navigation';
-import { ReviewDB } from './page';
-import { fetchUserReviewsAction, deleteReviewAction } from './ReviewActions';
+import { deleteReviewAction, fetchUserReviewsAction } from './ReviewService';
 
 export interface SelectedEditReview {
     id: string | number;
@@ -11,12 +12,14 @@ export interface SelectedEditReview {
 }
 
 export interface UseUserReviewsProps {
-    initialReviews: ReviewDB[];
+    initialReviews: Review[];
+    initialBooksMap: Record<string | number, Partial<BookDB> | null>;
     initialHasMore: boolean;
 }
 
 export interface UseUserReviewsReturn {
-    reviews: ReviewDB[];
+    reviews: Review[];
+    booksMap: Record<string | number, Partial<BookDB> | null>;
     hasMore: boolean;
     isLoadingMore: boolean;
     observerTarget: RefObject<HTMLDivElement | null>;
@@ -32,19 +35,22 @@ export interface UseUserReviewsReturn {
 
 export const useUserReviews = ({
     initialReviews,
+    initialBooksMap,
     initialHasMore,
 }: UseUserReviewsProps): UseUserReviewsReturn => {
     const router = useRouter();
-
-    const [reviews, setReviews] = useState<ReviewDB[]>(initialReviews);
+    const [reviews, setReviews] = useState<Review[]>(initialReviews);
+    const [booksMap, setBooksMap] =
+        useState<Record<string | number, Partial<BookDB> | null>>(initialBooksMap);
     const [hasMore, setHasMore] = useState<boolean>(initialHasMore);
     const [page, setPage] = useState<number>(1);
     const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
 
-    const [prevInitialReviews, setPrevInitialReviews] = useState<ReviewDB[]>(initialReviews);
+    const [prevInitialReviews, setPrevInitialReviews] = useState<Review[]>(initialReviews);
     if (prevInitialReviews !== initialReviews) {
         setPrevInitialReviews(initialReviews);
         setReviews(initialReviews);
+        setBooksMap(initialBooksMap);
         setHasMore(initialHasMore);
         setPage(1);
     }
@@ -65,7 +71,12 @@ export const useUserReviews = ({
         const response = await fetchUserReviewsAction(nextPage);
 
         if (!response.error) {
-            setReviews((prev) => [...prev, ...response.reviews]);
+            setReviews((prev) => {
+                const existingIds = new Set(prev.map((r) => r.id));
+                const newReviews = response.reviews.filter((r) => !existingIds.has(r.id));
+                return [...prev, ...newReviews];
+            });
+            setBooksMap((prev) => ({ ...prev, ...response.booksMap }));
             setHasMore(response.hasMore);
             setPage(nextPage);
         }
@@ -105,9 +116,17 @@ export const useUserReviews = ({
     const handleConfirmDelete = async () => {
         if (selectedDeleteId === null) return;
 
-        await deleteReviewAction(selectedDeleteId);
-        setReviews((prev) => prev.filter((item) => item.id !== selectedDeleteId));
-        handleCloseDeleteModal();
+        try {
+            const result = await deleteReviewAction(selectedDeleteId);
+            if (result.success) {
+                setReviews((prev) => prev.filter((item) => item.id !== selectedDeleteId));
+                router.refresh();
+            }
+        } catch (error: unknown) {
+            console.error('[useUserReviews] Failed to delete review:', error);
+        } finally {
+            handleCloseDeleteModal();
+        }
     };
 
     const handleOpenEditModal = (id: string | number) => {
@@ -125,12 +144,14 @@ export const useUserReviews = ({
 
     const handleCloseEditModal = () => {
         setIsEditModalOpen(false);
-        setSelectedEditReview(null);
-        router.refresh();
+        setTimeout(() => {
+            setSelectedEditReview(null);
+        }, 300);
     };
 
     return {
         reviews,
+        booksMap,
         hasMore,
         isLoadingMore,
         observerTarget,

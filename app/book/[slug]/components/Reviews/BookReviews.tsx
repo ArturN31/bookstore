@@ -35,7 +35,10 @@ export const BookReviews = ({
                     averageRating={averageRating}
                 />
 
-                <ReviewFormModal bookId={bookId} />
+                <ReviewFormModal
+                    bookId={bookId}
+                    slug={slug}
+                />
             </Box>
 
             <Stack spacing={2}>
