@@ -6,7 +6,7 @@ import { DeleteReviewModal } from './DeleteReviewModal';
 import { ReviewFormModal } from '@/app/book/[slug]/components/Reviews/ReviewForm/ReviewFormModal';
 import { UserReviewHeader } from './UserReviewHeader';
 import { InfiniteScrollSentinel } from './InfiniteScrollSentinel';
-import { useUserReviews } from '../useUserReviews';
+import { useUserReviews } from '../../../../../data/books/reviews/useUserReviews';
 
 interface UserReviewsInteractiveProps {
     initialReviews: Review[];

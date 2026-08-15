@@ -46,7 +46,7 @@ describe('APP - pages/book - BookCart - ReviewCard', () => {
 
         await renderAsyncCard(updatedReview);
 
-        expect(screen.getByText(/\(Edited\)/i)).toBeInTheDocument();
+        expect(screen.getByText(/edited/i)).toBeInTheDocument();
     });
 
     it('should render the correct rating value and star icons', async () => {

@@ -54,8 +54,7 @@ jest.mock('next/navigation', () => ({
     useSearchParams: jest.fn(() => new URLSearchParams()),
 }));
 
-// Mock child components to isolate BookById server page rendering from deep client hooks/contexts
-jest.mock('@/components/pages/book/Header/BookHeader', () => ({
+jest.mock('@/app/book/[slug]/components/Header/BookHeader', () => ({
     BookHeader: ({ book }: { book: { title: string; author: string } }) => (
         <div>
             <h1>{book.title}</h1>
@@ -64,11 +63,11 @@ jest.mock('@/components/pages/book/Header/BookHeader', () => ({
     ),
 }));
 
-jest.mock('@/components/pages/book/BookDetails', () => ({
+jest.mock('@/app/book/[slug]/components/BookDetails', () => ({
     BookDetails: () => <div data-testid="book-details" />,
 }));
 
-jest.mock('@/components/pages/book/Reviews/BookReviews', () => ({
+jest.mock('@/app/book/[slug]/components/Reviews/BookReviews', () => ({
     BookReviews: () => <div data-testid="book-reviews" />,
 }));
 

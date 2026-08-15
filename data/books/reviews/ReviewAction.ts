@@ -23,10 +23,7 @@ export async function UserReviewAction(
     const bookId: string = typeof rawData.bookId === 'string' ? rawData.bookId : '';
     const slug: string =
         typeof rawData.slug === 'string' && rawData.slug.trim() !== '' ? rawData.slug : bookId;
-
-    if (!bookId) {
-        return { message: APP_ERROR_MESSAGES.VALIDATION_ERROR };
-    }
+    if (!bookId) return { message: APP_ERROR_MESSAGES.VALIDATION_ERROR };
 
     const reviewId =
         typeof rawData.reviewId === 'string' && rawData.reviewId.trim() !== ''
@@ -36,7 +33,6 @@ export async function UserReviewAction(
     const isEditing = Boolean(reviewId);
 
     const validated = reviewSchema.safeParse(rawData);
-
     if (!validated.success) {
         return {
             validationErrors: validated.error.issues,

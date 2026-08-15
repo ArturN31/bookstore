@@ -23,6 +23,10 @@ export async function fetchUserReviewsAction(page: number): Promise<FetchUserRev
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
+        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
+            operation: 'fetchUserReviewsAction_auth_failed',
+            error: authError ? sanitizeSupabaseError(authError) : 'Session expired',
+        });
         return {
             reviews: [],
             booksMap: {},
@@ -60,6 +64,10 @@ export async function fetchUserReviewsAction(page: number): Promise<FetchUserRev
     );
 
     if (reviewsQueryResult.error || !reviewsQueryResult.data) {
+        console.error(
+            '[fetchUserReviewsAction] Failed to fetch users reviews:',
+            reviewsQueryResult.error,
+        );
         return {
             reviews: [],
             booksMap: {},
@@ -132,15 +140,11 @@ export async function deleteReviewAction(
 
     revalidateTag('reviews', 'max');
     revalidateTag('books', 'max');
-    if (bookId) {
-        revalidateTag(`reviews-${bookId}`, 'max');
-    }
+    if (bookId) revalidateTag(`reviews-${bookId}`, 'max');
 
     revalidatePath('/user/content/reviews', 'page');
     revalidatePath('/book/[slug]', 'page');
-    if (bookId) {
-        revalidatePath(`/book/${bookId}`, 'page');
-    }
+    if (bookId) revalidatePath(`/book/${bookId}`, 'page');
     revalidatePath('/', 'page');
 
     return { success: true };

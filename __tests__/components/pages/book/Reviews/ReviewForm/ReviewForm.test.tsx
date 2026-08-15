@@ -5,6 +5,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 
 let capturedSetRating: React.Dispatch<React.SetStateAction<number | null>> = () => {};
 let capturedSetComment: React.Dispatch<React.SetStateAction<string>> = () => {};
+const mockRouterRefresh = jest.fn();
 
 jest.mock('@/providers/user/utils/useUser', () => ({
     useUserState: jest.fn(),
@@ -14,27 +15,39 @@ jest.mock('@/data/books/reviews/ReviewAction', () => ({
     UserReviewAction: jest.fn(),
 }));
 
-jest.mock('@/components/pages/book/Reviews/ReviewForm/FormItems/ReviewFormRatingInput', () => ({
-    ReviewFormRatingInput: ({
-        setRating,
-    }: {
-        setRating: React.Dispatch<React.SetStateAction<number | null>>;
-    }) => {
-        capturedSetRating = setRating;
-        return <div data-testid="rating-input-mock" />;
-    },
+jest.mock('next/navigation', () => ({
+    useRouter: () => ({
+        refresh: mockRouterRefresh,
+    }),
 }));
 
-jest.mock('@/components/pages/book/Reviews/ReviewForm/FormItems/ReviewFormCommentInput', () => ({
-    ReviewFormCommentInput: ({
-        setComment,
-    }: {
-        setComment: React.Dispatch<React.SetStateAction<string>>;
-    }) => {
-        capturedSetComment = setComment;
-        return <div data-testid="comment-input-mock" />;
-    },
-}));
+jest.mock(
+    '@/app/book/[slug]/components/Reviews/ReviewForm/FormItems/ReviewFormRatingInput',
+    () => ({
+        ReviewFormRatingInput: ({
+            setRating,
+        }: {
+            setRating: React.Dispatch<React.SetStateAction<number | null>>;
+        }) => {
+            capturedSetRating = setRating;
+            return <div data-testid="rating-input-mock" />;
+        },
+    }),
+);
+
+jest.mock(
+    '@/app/book/[slug]/components/Reviews/ReviewForm/FormItems/ReviewFormCommentInput',
+    () => ({
+        ReviewFormCommentInput: ({
+            setComment,
+        }: {
+            setComment: React.Dispatch<React.SetStateAction<string>>;
+        }) => {
+            capturedSetComment = setComment;
+            return <div data-testid="comment-input-mock" />;
+        },
+    }),
+);
 
 describe('ReviewForm', () => {
     const mockUseUserState = useUserState as jest.Mock;
@@ -42,6 +55,7 @@ describe('ReviewForm', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        mockRouterRefresh.mockClear();
         mockUseUserState.mockReturnValue({
             user: { username: 'testuser' },
         });

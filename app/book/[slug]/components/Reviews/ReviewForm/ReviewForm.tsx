@@ -127,17 +127,9 @@ export const ReviewForm = ({
         submitData.append('review', formData.review);
         submitData.append('bookId', bookId);
 
-        if (slug) {
-            submitData.append('slug', slug);
-        }
-
-        if (user?.username) {
-            submitData.append('username', user.username);
-        }
-
-        if (isEditing && reviewId !== undefined) {
-            submitData.append('reviewId', reviewId.toString());
-        }
+        if (slug) submitData.append('slug', slug);
+        if (user?.username) submitData.append('username', user.username);
+        if (isEditing && reviewId !== undefined) submitData.append('reviewId', reviewId.toString());
 
         startTransition(() => {
             formAction(submitData);

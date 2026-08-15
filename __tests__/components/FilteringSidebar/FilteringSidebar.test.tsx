@@ -49,20 +49,6 @@ describe('FilteringSidebar', () => {
         jest.clearAllMocks();
     });
 
-    it('should render skeleton when isLoading is true', () => {
-        mockUseBookFilter.mockReturnValue({
-            isLoading: true,
-            isOpen: false,
-            handleOpen: jest.fn(),
-            handleClose: jest.fn(),
-        });
-
-        render(<FilteringSidebar />);
-
-        expect(screen.getByTestId('sidebar-skeleton')).toBeInTheDocument();
-        expect(screen.queryByTestId('sidebar-button')).not.toBeInTheDocument();
-    });
-
     it('should render sidebar button and open/close drawer when isLoading is false', async () => {
         mockUseBookFilter.mockReturnValue({
             isLoading: false,

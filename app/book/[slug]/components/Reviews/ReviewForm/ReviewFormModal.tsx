@@ -48,17 +48,12 @@ export function ReviewFormModal({
 
     const handleOpen = () => {
         setFormKey((prev) => prev + 1);
-        if (!isControlled) {
-            setInternalOpen(true);
-        }
+        if (!isControlled) setInternalOpen(true);
     };
 
     const handleClose = () => {
-        if (isControlled && controlledOnClose) {
-            controlledOnClose();
-        } else {
-            setInternalOpen(false);
-        }
+        if (isControlled && controlledOnClose) controlledOnClose();
+        else setInternalOpen(false);
     };
 
     const effectiveOpen = open;

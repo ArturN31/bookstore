@@ -1,13 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import { BookHeader } from '@/app/book/[slug]/components/Header/BookHeader';
 
-jest.mock('@/components/pages/book/Header/BookHeaderDetails', () => ({
+jest.mock('@/app/book/[slug]/components/Header/BookHeaderDetails', () => ({
     BookHeaderDetails: ({ book }: { book: Book }) => (
         <div data-testid="book-header-details">{book.title}</div>
     ),
 }));
 
-jest.mock('@/components/pages/book/Header/BookCart', () => ({
+jest.mock('@/app/book/[slug]/components/Header/BookCart', () => ({
     BookCart: () => <div data-testid="book-cart" />,
 }));
 

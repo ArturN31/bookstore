@@ -59,17 +59,17 @@ const emptyReviewsData = {
     currentPage: 1,
 };
 
-jest.mock('@/components/pages/book/Reviews/ReviewCard/ReviewCard', () => ({
+jest.mock('@/app/book/[slug]/components/Reviews/ReviewCard/ReviewCard', () => ({
     ReviewCard: ({ review }: { review: Review }) => (
         <div data-testid="review-card">{review.review}</div>
     ),
 }));
 
-jest.mock('@/components/pages/book/Reviews/ReviewPagination', () => ({
+jest.mock('@/app/book/[slug]/components/Reviews/ReviewPagination', () => ({
     ReviewPagination: () => <div data-testid="pagination" />,
 }));
 
-jest.mock('@/components/pages/book/Reviews/ReviewForm/ReviewFormModal', () => ({
+jest.mock('@/app/book/[slug]/components/Reviews/ReviewForm/ReviewFormModal', () => ({
     ReviewFormModal: () => <div data-testid="review-form-modal" />,
 }));
 

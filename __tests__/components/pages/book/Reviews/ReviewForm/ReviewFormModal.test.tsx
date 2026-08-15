@@ -6,14 +6,17 @@ jest.mock('@/providers/user/utils/useUser', () => ({
     useUserState: jest.fn(),
 }));
 
-jest.mock('@/components/pages/book/Reviews/ReviewForm/NotLoggedInReviewFormInstruction', () => ({
-    NotLoggedInReviewFormInstruction: () => (
-        <div data-testid="not-logged-in-instruction">Not Logged In</div>
-    ),
-}));
+jest.mock(
+    '@/app/book/[slug]/components/Reviews/ReviewForm/NotLoggedInReviewFormInstruction',
+    () => ({
+        NotLoggedInReviewFormInstruction: () => (
+            <div data-testid="not-logged-in-instruction">Not Logged In</div>
+        ),
+    }),
+);
 
 jest.mock(
-    '@/components/pages/book/Reviews/ReviewForm/ProfileNotCompletedReviewFormInstruction',
+    '@/app/book/[slug]/components/Reviews/ReviewForm/ProfileNotCompletedReviewFormInstruction',
     () => ({
         ProfileNotCompletedReviewFormInstruction: () => (
             <div data-testid="profile-not-completed-instruction">Profile Not Completed</div>
@@ -21,7 +24,7 @@ jest.mock(
     }),
 );
 
-jest.mock('@/components/pages/book/Reviews/ReviewForm/ReviewForm', () => ({
+jest.mock('@/app/book/[slug]/components/Reviews/ReviewForm/ReviewForm', () => ({
     ReviewForm: () => <div data-testid="review-form">Review Form Content</div>,
 }));
 
