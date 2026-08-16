@@ -1,8 +1,8 @@
-import { RefObject } from 'react';
+import { Ref } from 'react';
 import CircularProgress from '@mui/material/CircularProgress';
 
 interface InfiniteScrollSentinelProps {
-    targetRef: RefObject<HTMLDivElement | null>;
+    targetRef: Ref<HTMLDivElement | null>;
     isLoadingMore: boolean;
     hasMore: boolean;
     totalReviewsCount: number;
