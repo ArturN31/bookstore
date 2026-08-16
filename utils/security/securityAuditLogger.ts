@@ -68,9 +68,11 @@ export async function recordSecurityAuditLog(
                 'unknown';
             userAgent = headerList.get('user-agent') ?? 'unknown';
         } catch {
-            console.warn(
-                '[SecurityAudit] Warning: recordSecurityAuditLog was called outside request context without explicit headers.',
-            );
+            if (process.env.NODE_ENV !== 'test') {
+                console.warn(
+                    '[SecurityAudit] Warning: recordSecurityAuditLog was called outside request context without explicit headers.',
+                );
+            }
         }
     }
 

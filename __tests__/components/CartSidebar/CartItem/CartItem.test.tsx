@@ -50,6 +50,14 @@ describe('APP - CartSidebar - CartItem', () => {
     const mockUseCartState = useCartState as jest.Mock;
     const mockUseCartActions = useCartActions as jest.Mock;
 
+    beforeAll(() => {
+        jest.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+
+    afterAll(() => {
+        jest.restoreAllMocks();
+    });
+
     beforeEach(() => {
         jest.clearAllMocks();
 

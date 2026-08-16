@@ -2,8 +2,20 @@ import { render, screen } from '@testing-library/react';
 import { DatabaseActions } from '@/app/dev-tools/components/DatabaseActions/DatabaseActions';
 
 jest.mock('@/app/dev-tools/components/ConsoleSection', () => ({
-    ConsoleSection: ({ children, title, variant }: { children: React.ReactNode; title: string; variant?: string }) => (
-        <section data-testid="console-section" data-title={title} data-variant={variant}>
+    ConsoleSection: ({
+        children,
+        title,
+        variant,
+    }: {
+        children: React.ReactNode;
+        title: string;
+        variant?: string;
+    }) => (
+        <section
+            data-testid="console-section"
+            data-title={title}
+            data-variant={variant}
+        >
             {children}
         </section>
     ),
@@ -11,7 +23,12 @@ jest.mock('@/app/dev-tools/components/ConsoleSection', () => ({
 
 jest.mock('@/app/dev-tools/components/DatabaseActions/ControlModule', () => ({
     ControlModule: ({ id, title, type }: { id: string; title: string; type: string }) => (
-        <div data-testid="control-module" data-id={id} data-title={title} data-type={type}>
+        <div
+            data-testid="control-module"
+            data-id={id}
+            data-title={title}
+            data-type={type}
+        >
             {title}
         </div>
     ),
@@ -22,8 +39,10 @@ describe('DatabaseActions', () => {
         render(<DatabaseActions />);
 
         const sections = screen.getAllByTestId('console-section');
-        const additiveSection = sections.find(s => s.getAttribute('data-title') === 'Additive Injections');
-        
+        const additiveSection = sections.find(
+            (s: HTMLElement) => s.getAttribute('data-title') === 'Additive Injections',
+        );
+
         expect(additiveSection).toBeInTheDocument();
     });
 
@@ -31,8 +50,10 @@ describe('DatabaseActions', () => {
         render(<DatabaseActions />);
 
         const sections = screen.getAllByTestId('console-section');
-        const dangerSection = sections.find(s => s.getAttribute('data-title') === 'Danger Zone');
-        
+        const dangerSection = sections.find(
+            (s: HTMLElement) => s.getAttribute('data-title') === 'Danger Zone',
+        );
+
         expect(dangerSection).toHaveAttribute('data-variant', 'danger');
     });
 
@@ -40,10 +61,10 @@ describe('DatabaseActions', () => {
         render(<DatabaseActions />);
 
         const modules = screen.getAllByTestId('control-module');
-        
+
         const additiveIds = ['ADD_01', 'ADD_02', 'ADD_03', 'ADD_04', 'ADD_05', 'ADD_06'];
-        additiveIds.forEach(id => {
-            const foundModule = modules.find(m => m.getAttribute('data-id') === id);
+        additiveIds.forEach((id: string) => {
+            const foundModule = modules.find((m: HTMLElement) => m.getAttribute('data-id') === id);
             expect(foundModule).toBeInTheDocument();
         });
     });
@@ -52,10 +73,10 @@ describe('DatabaseActions', () => {
         render(<DatabaseActions />);
 
         const modules = screen.getAllByTestId('control-module');
-        
+
         const dangerIds = ['DANGER_01', 'DANGER_02'];
-        dangerIds.forEach(id => {
-            const foundModule = modules.find(m => m.getAttribute('data-id') === id);
+        dangerIds.forEach((id: string) => {
+            const foundModule = modules.find((m: HTMLElement) => m.getAttribute('data-id') === id);
             expect(foundModule).toBeInTheDocument();
         });
     });

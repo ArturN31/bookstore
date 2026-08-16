@@ -1,9 +1,18 @@
 import { render, screen } from '@testing-library/react';
 import { ControlModule } from '@/app/dev-tools/components/DatabaseActions/ControlModule';
 
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock('@/app/dev-tools/components/DatabaseActions/SeedControl', () => ({
     SeedControl: ({ type }: { type: string }) => (
-        <div data-testid="seed-control" data-type={type}>SeedControl</div>
+        <div
+            data-testid="seed-control"
+            data-type={type}
+        >
+            SeedControl
+        </div>
     ),
 }));
 
@@ -56,7 +65,10 @@ describe('ControlModule', () => {
 
         types.forEach((type) => {
             const { container } = render(
-                <ControlModule {...defaultProps} type={type} />
+                <ControlModule
+                    {...defaultProps}
+                    type={type}
+                />,
             );
             const seedControl = container.querySelector('[data-type]');
             expect(seedControl).toHaveAttribute('data-type', type);

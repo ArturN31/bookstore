@@ -24,6 +24,10 @@ jest.mock('@/app/layout', () => ({
     ),
 }));
 
+jest.mock('@/utils/db/safeSupabaseQuery', () => ({
+    safeSupabaseQuery: jest.fn().mockResolvedValue({ data: [], error: null }),
+}));
+
 describe('APP - Infos - TOS', () => {
     it('Should render the page', async () => {
         const element = TOS();

@@ -1,18 +1,24 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { SupabaseClient, User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { useUserListeners } from '@/providers/user/utils/useUserListeners';
 
-// Define a type-safe mock interface to avoid using 'any'
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn(),
+}));
+
 interface MockSupabaseClient {
     auth: {
-        getUser: jest.Mock<Promise<{ data: { user: User | null }; error: Error | null }>>;
-        onAuthStateChange: jest.Mock<{ data: { subscription: { unsubscribe: jest.Mock } } }>;
+        getUser: jest.Mock<Promise<{ data: { user: User | null }; error: Error | null }>, []>;
+        onAuthStateChange: jest.Mock<
+            { data: { subscription: { unsubscribe: jest.Mock<void, []> } } },
+            [(event: AuthChangeEvent, session: Session | null) => Promise<void>]
+        >;
     };
-    channel: jest.Mock<MockSupabaseClient>;
-    on: jest.Mock<MockSupabaseClient>;
-    subscribe: jest.Mock<string>;
-    removeChannel: jest.Mock<void>;
+    channel: jest.Mock<MockSupabaseClient, [string]>;
+    on: jest.Mock<MockSupabaseClient, [string, Record<string, unknown>, () => void]>;
+    subscribe: jest.Mock<string, []>;
+    removeChannel: jest.Mock<void, [MockSupabaseClient]>;
 }
 
 describe('useUserListeners', () => {
@@ -35,7 +41,7 @@ describe('useUserListeners', () => {
     const mockSyncAllData = jest.fn();
     const mockRefreshProfile = jest.fn();
     const mockReset = jest.fn();
-    const mockUnsubscribe = jest.fn();
+    const mockUnsubscribe = jest.fn<void, []>();
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -86,8 +92,7 @@ describe('useUserListeners', () => {
 
     it('should call syncAllData with session user on SIGNED_IN event', async () => {
         let authCallback:
-            | ((event: AuthChangeEvent, session: Session | null) => Promise<void>)
-            | undefined;
+            ((event: AuthChangeEvent, session: Session | null) => Promise<void>) | undefined;
 
         mockSupabase.auth.onAuthStateChange.mockImplementation((cb) => {
             authCallback = cb;
@@ -106,8 +111,11 @@ describe('useUserListeners', () => {
         );
 
         if (authCallback) {
+            const callback = authCallback;
             const mockUser = { id: 'user-123' } as User;
-            await authCallback('SIGNED_IN', { user: mockUser } as Session);
+            await act(async () => {
+                await callback('SIGNED_IN', { user: mockUser } as Session);
+            });
         }
 
         expect(mockSyncAllData).toHaveBeenCalledWith(expect.objectContaining({ id: 'user-123' }));
@@ -115,8 +123,7 @@ describe('useUserListeners', () => {
 
     it('should call syncAllData(null) when session is missing on SIGNED_IN event', async () => {
         let authCallback:
-            | ((event: AuthChangeEvent, session: Session | null) => Promise<void>)
-            | undefined;
+            ((event: AuthChangeEvent, session: Session | null) => Promise<void>) | undefined;
 
         mockSupabase.auth.onAuthStateChange.mockImplementation((cb) => {
             authCallback = cb;
@@ -135,7 +142,10 @@ describe('useUserListeners', () => {
         );
 
         if (authCallback) {
-            await authCallback('SIGNED_IN', null);
+            const callback = authCallback;
+            await act(async () => {
+                await callback('SIGNED_IN', null);
+            });
         }
 
         expect(mockSyncAllData).toHaveBeenCalledWith(null);
@@ -143,8 +153,7 @@ describe('useUserListeners', () => {
 
     it('should call reset and router methods on SIGNED_OUT event', async () => {
         let authCallback:
-            | ((event: AuthChangeEvent, session: Session | null) => Promise<void>)
-            | undefined;
+            ((event: AuthChangeEvent, session: Session | null) => Promise<void>) | undefined;
 
         mockSupabase.auth.onAuthStateChange.mockImplementation((cb) => {
             authCallback = cb;
@@ -163,7 +172,10 @@ describe('useUserListeners', () => {
         );
 
         if (authCallback) {
-            await authCallback('SIGNED_OUT', null);
+            const callback = authCallback;
+            await act(async () => {
+                await callback('SIGNED_OUT', null);
+            });
         }
 
         expect(mockReset).toHaveBeenCalled();
@@ -190,9 +202,11 @@ describe('useUserListeners', () => {
             }),
         );
 
-        if (callback) {
-            callback();
-        }
+        act(() => {
+            if (callback) {
+                callback();
+            }
+        });
 
         expect(mockRefreshProfile).toHaveBeenCalled();
     });

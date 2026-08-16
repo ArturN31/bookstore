@@ -4,16 +4,21 @@ import { getUserData } from '@/data/user/UserService';
 import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 
 jest.mock('@/utils/db/server');
 jest.mock('@/data/user/UserService');
 jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }));
 jest.mock('next/navigation', () => ({ redirect: jest.fn() }));
+jest.mock('next/headers', () => ({
+    headers: jest.fn().mockReturnValue(new Headers({ 'user-agent': 'jest-test-agent' })),
+}));
 
 type MockSupabaseClient = {
     auth: {
         signInWithPassword: jest.Mock;
     };
+    from: jest.Mock;
 };
 
 describe('APP - Auth - SignInAction', () => {
@@ -29,6 +34,11 @@ describe('APP - Auth - SignInAction', () => {
             auth: {
                 signInWithPassword: jest.fn(),
             },
+            from: jest.fn().mockReturnValue({
+                select: jest.fn().mockReturnValue({
+                    eq: jest.fn().mockResolvedValue({ data: [], error: null }),
+                }),
+            }),
         };
         jest.mocked(createBackendClient).mockResolvedValue(
             mockSupabase as unknown as Awaited<ReturnType<typeof createBackendClient>>,

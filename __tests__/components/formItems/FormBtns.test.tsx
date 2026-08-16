@@ -1,5 +1,43 @@
 import { FormBtns } from '@/components/formItems/FormBtns';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('../../../utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
+}));
+
+const originalWarn = console.warn;
+const originalError = console.error;
+
+beforeAll(() => {
+    jest.spyOn(console, 'warn').mockImplementation(
+        (message: unknown, ...optionalParams: unknown[]) => {
+            if (
+                typeof message === 'string' &&
+                (message.includes('[SecurityAudit]') || message.includes('recordSecurityAuditLog'))
+            ) {
+                return;
+            }
+            originalWarn(message, ...optionalParams);
+        },
+    );
+
+    jest.spyOn(console, 'error').mockImplementation(
+        (message: unknown, ...optionalParams: unknown[]) => {
+            if (typeof message === 'string' && message.includes('[UserAddressAction]')) {
+                return;
+            }
+            originalError(message, ...optionalParams);
+        },
+    );
+});
+
+afterAll(() => {
+    jest.restoreAllMocks();
+});
 
 describe('APP - FormItems - FormBtns', () => {
     const mockHandleReset = jest.fn();

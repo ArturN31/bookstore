@@ -1,14 +1,5 @@
 import React, { ReactNode } from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import {
-    DEFAULT_FILTERING_CONSTANTS,
-    FilteringTypes,
-    getFilteringConstants,
-} from '@/data/advancedFiltering/FilteringConstants';
-import {
-    BookAdvancedFilteringProvider,
-    useBookFilter,
-} from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
 
 const mockFetchedFilters: FilteringTypes = {
     AUTHORS: ['Author B'],
@@ -36,6 +27,17 @@ jest.mock('@/data/advancedFiltering/FilteringConstants', () => {
         getFilteringConstants: jest.fn(),
     };
 });
+
+import {
+    DEFAULT_FILTERING_CONSTANTS,
+    FilteringTypes,
+    getFilteringConstants,
+} from '@/data/advancedFiltering/FilteringConstants';
+
+import {
+    BookAdvancedFilteringProvider,
+    useBookFilter,
+} from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
 
 describe('BookAdvancedFilteringProvider', () => {
     beforeEach(() => {

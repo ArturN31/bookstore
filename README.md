@@ -7,7 +7,7 @@ This project is an online bookstore built with **Next.js 16 (App Router)**, **Re
 ## Project Status
 
 **Current Phase**: Core marketplace MVP - Production-ready with strong automated test coverage
-**Test Coverage**: **96.45% average coverage** (94.69% statements, 99.47% branches, 96.97% functions)
+**Test Coverage**: **96.45% average coverage** (95.16% statements, 99.52% branches, 97.18% functions)
 **Performance**: Lighthouse Desktop 99/100 (0.3s FCP, 0.8s LCP, 0ms TBT, 0 CLS)
 **Last Updated**: August 11, 2026 (latest automated coverage report)
 
@@ -18,7 +18,6 @@ This project is an online bookstore built with **Next.js 16 (App Router)**, **Re
 - ✅ **Real-time Sync**: Shopping cart and wishlist sync across devices via Supabase listeners
 - ✅ **Schema-First Validation**: All inputs validated with Zod from client to database
 - ✅ **Advanced State Management**: Dual-Context + Reducer pattern preventing re-render loops
-- ⚠️ **1 Known TODO**: User review submission (read-only currently) - marked in BookReviews.tsx:18
 
 ## Architecture & Engineering Decisions
 
@@ -68,7 +67,7 @@ type FormData = z.infer<typeof schema>; // Auto-generated TypeScript type
 
 | Area | Statements | Branches | Functions | Lines | Avg | Status |
 |------|-----------|----------|-----------|-------|-----|--------|
-| **Overall** | 94.69% | 99.47% | 96.97% | 94.69% | 96.45% | ✅ Excellent |
+| **Overall** | 95.16% | 99.52% | 97.18% | 95.16% | 96.75% | ✅ Excellent |
 | App Routing | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
 | Components | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
 | Server Actions | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
@@ -120,7 +119,9 @@ Audited with professional-grade tooling to ensure speed and accessibility.
   - **Best Sellers** (by sales_count) ✅ Fully Implemented
 - **Multi-Dimensional Filtering**: Filter by genre and book format with instant feedback
 - **Book Details Pages**: Comprehensive metadata display with dynamic SEO metadata
-- **Reviews System**: Paginated user reviews with 5-star ratings (read-only - submission planned for Phase 1)
+- **Reviews System**: 
+  - Paginated user reviews with 5-star ratings
+  - View Own reviews page with infinite scroll, delete and edit functionalities
 - **Wishlist Management**: 
   - Add/remove books with 10-item limit
   - Persistent storage with cross-device sync
@@ -313,7 +314,6 @@ The following features are partially or not yet implemented:
 
 | Feature                | Status             | Notes                                                |
 | ---------------------- | ------------------ | ---------------------------------------------------- |
-| User Review Submission | 🔶 Partial         | Reviews are read-only; submission UI not implemented |
 | Payment Processing     | ❌ Not Implemented | Checkout UI ready, Stripe API integration pending    |
 | Admin Dashboard        | 🔶 Partial         | Dev-tools exist, full admin interface pending        |
 | Order History          | ❌ Not Implemented | Database schema exists, UI pending                   |
@@ -329,6 +329,7 @@ The following features are partially or not yet implemented:
 - [ ] **Stripe Payment Integration**: Implement a secure checkout flow using Stripe Elements and Server Actions.
 - [ ] **Order Success Workflow**: Automate post-purchase triggers, including the generation of dynamic receipts and email confirmations.
 - [ ] **Inventory Auto-Update**: Logic to decrement `stock_quantity` in the `books` table automatically upon successful purchase.
+- [ ] **Order History Page**: Allow users to view their past orders with details, including items purchased, total spent, and order status.
 
 ### 2. Enhanced User Experience
 
@@ -337,9 +338,11 @@ The following features are partially or not yet implemented:
 - [X] **Skeleton Loading States**: Implement shimmering MUI Skeleton components to replace basic loading spinners during SSR data fetching, improving perceived performance.
 - [X] **Image Optimisation**: Implement Next.js Image component with WebP conversion and responsive srcset for book cover art.
 - [ ] **Accessibility Enhancements**: Conduct a full WCAG 2.1 audit and implement ARIA roles, keyboard navigation, and screen reader support across the application.
-- [ ] **User Reviews - View own reviews**: Allow users to view and manage their submitted reviews, including editing and deleting options.
-  - [ ] **User Reviews - Edit/Delete**: Implement server actions and UI for users to edit or delete their own reviews, with appropriate validation and confirmation prompts.
-  - [ ] **User Reviews - Moderation**: Implement a moderation system for flagged reviews, allowing admins to approve or remove inappropriate content.
+- [X] **User Reviews - Advanced Features**: Expand the reviews system to include:
+  - [X] **User Reviews - View own reviews**: Allow users to view and manage their submitted reviews, including editing and deleting options.
+  - [X] **User Reviews - Delete**: Implement server actions and UI for users to delete their own reviews, with appropriate validation and confirmation prompts.
+  - [X] **User Reviews - Edit**: Implement server actions and UI for users to edit their own reviews, ensuring validation and real-time updates.
+- [ ] **Wishlist Sharing**: Enable users to share their wishlist via a unique URL, allowing friends and family to view and purchase items directly from the wishlist.
 
 ### 3. Advanced Store Features
 

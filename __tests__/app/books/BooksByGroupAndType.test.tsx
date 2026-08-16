@@ -9,7 +9,6 @@ interface PageParams {
     params: Promise<{ slug: string[] }>;
 }
 
-// Hoisted mock polyfills global.Request before Next.js server modules evaluate in Node/Jest
 jest.mock('next/cache', () => {
     if (typeof global.Request === 'undefined') {
         class MockRequest {
@@ -30,6 +29,10 @@ jest.mock('next/cache', () => {
         revalidatePath: jest.fn(),
     };
 });
+
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
+}));
 
 jest.mock('next/navigation', () => ({
     notFound: jest.fn(() => {

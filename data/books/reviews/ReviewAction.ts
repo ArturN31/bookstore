@@ -1,53 +1,16 @@
 'use server';
 
-import { z } from 'zod';
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
+import { INITIAL_STATE } from '@/data/user/username/ChangeUsernameConstants';
+import { ReviewFormState, ReviewInsert } from './ReviewConstants';
+import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { reviewSchema } from '@/data/schemas/reviewSchema';
 import { createBackendClient } from '@/utils/db/server';
-import { mapToReviewPayload } from './ReviewMapper';
-import { insertUserReview } from './ReviewRepository';
-import { REVIEW_ROUTES, ReviewInsert } from './ReviewConstants';
-import { APP_ERROR_MESSAGES, DB_ERROR_MAP } from '@/utils/errors/ErrorHandlerConstants';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
-
-export type ReviewFormState = {
-    validationErrors?: z.core.$ZodIssue[];
-    message?: string | null;
-};
-
-interface UserTableRow {
-    username: string | null;
-}
-
-const INITIAL_STATE: ReviewFormState = {
-    message: null,
-    validationErrors: undefined,
-};
-
-function isDuplicateReviewError(dbError: unknown, sanitizedError: string): boolean {
-    if (sanitizedError === DB_ERROR_MAP['23505']) return true;
-
-    if (typeof dbError === 'object' && dbError !== null) {
-        const errObj = dbError as { code?: unknown; message?: unknown; details?: unknown };
-        if (typeof errObj.code === 'string' && errObj.code === '23505') return true;
-        if (
-            typeof errObj.message === 'string' &&
-            (errObj.message.includes('23505') || errObj.message.toLowerCase().includes('duplicate'))
-        )
-            return true;
-        if (
-            typeof errObj.details === 'string' &&
-            (errObj.details.includes('23505') || errObj.details.toLowerCase().includes('duplicate'))
-        )
-            return true;
-    }
-
-    if (typeof dbError === 'string')
-        return dbError.includes('23505') || dbError.toLowerCase().includes('duplicate');
-    return false;
-}
+import { isDuplicateReviewError, resolveUsername } from './ReviewActionUtils';
+import { mapToReviewPayload } from './ReviewMapper';
+import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 export async function UserReviewAction(
     prevState: ReviewFormState | undefined,
@@ -57,22 +20,28 @@ export async function UserReviewAction(
 
     if (rawData.reset) return INITIAL_STATE;
 
-    const bookId = typeof rawData.bookId === 'string' ? rawData.bookId : '';
-    if (!bookId)
-        return {
-            message: APP_ERROR_MESSAGES.VALIDATION_ERROR,
-        };
+    const bookId: string = typeof rawData.bookId === 'string' ? rawData.bookId : '';
+    const slug: string =
+        typeof rawData.slug === 'string' && rawData.slug.trim() !== '' ? rawData.slug : bookId;
+    if (!bookId) return { message: APP_ERROR_MESSAGES.VALIDATION_ERROR };
+
+    const reviewId =
+        typeof rawData.reviewId === 'string' && rawData.reviewId.trim() !== ''
+            ? rawData.reviewId
+            : undefined;
+
+    const isEditing = Boolean(reviewId);
 
     const validated = reviewSchema.safeParse(rawData);
-    if (!validated.success)
+    if (!validated.success) {
         return {
             validationErrors: validated.error.issues,
             message: APP_ERROR_MESSAGES.VALIDATION_ERROR,
         };
+    }
 
     try {
         const supabase = await createBackendClient();
-
         const {
             data: { user },
             error: authError,
@@ -86,48 +55,58 @@ export async function UserReviewAction(
             return { message: APP_ERROR_MESSAGES.SESSION_EXPIRED };
         }
 
-        let username = typeof rawData.username === 'string' ? rawData.username.trim() : '';
-
-        if (!username) {
-            const { data: userRecord } = await supabase
-                .from('users')
-                .select('username')
-                .eq('id', user.id)
-                .maybeSingle<UserTableRow>();
-
-            username =
-                userRecord?.username?.trim() ||
-                (typeof user.user_metadata?.username === 'string'
-                    ? user.user_metadata.username.trim()
-                    : '') ||
-                user.email?.split('@')[0] ||
-                'Anonymous';
-        }
-
+        const rawUsername = typeof rawData.username === 'string' ? rawData.username : undefined;
+        const username = await resolveUsername(supabase, user, rawUsername);
         const mappedPayload = mapToReviewPayload(validated.data, bookId);
-        const payload: ReviewInsert = {
-            user_id: user.id,
-            username,
-            ...mappedPayload,
-        };
 
-        const { error: dbError } = await insertUserReview(supabase, payload);
+        if (isEditing && reviewId) {
+            const updateResult = await safeSupabaseQuery<{ id: string | number }[]>(async () =>
+                supabase
+                    .from('book_reviews')
+                    .update({
+                        ...mappedPayload,
+                        updated_at: new Date().toISOString(),
+                    })
+                    .eq('id', reviewId)
+                    .eq('user_id', user.id)
+                    .select('id'),
+            );
 
-        if (dbError) {
-            const sanitizedError = sanitizeSupabaseError(dbError, user.id);
-            const isDuplicate = isDuplicateReviewError(dbError, sanitizedError);
-
-            console.error('[UserReviewAction] Failed to insert user review data:', {
-                rawError: dbError,
-                sanitizedError,
-                isDuplicate,
-            });
-
-            return {
-                message: isDuplicate
-                    ? APP_ERROR_MESSAGES.ERROR_DUPLICATE_REVIEW
-                    : APP_ERROR_MESSAGES.ERROR_REVIEW_SUBMIT_FAILED,
+            if (updateResult.error || !updateResult.data || updateResult.data.length === 0) {
+                console.error('[UserReviewAction] Failed to update user review data:', {
+                    sanitizedError:
+                        updateResult.error ?? 'No matching review record found to update.',
+                    reviewId,
+                    userId: user.id,
+                });
+                return { message: APP_ERROR_MESSAGES.ERROR_REVIEW_SUBMIT_FAILED };
+            }
+        } else {
+            const payload: ReviewInsert = {
+                user_id: user.id,
+                username,
+                ...mappedPayload,
             };
+
+            const insertResult = await safeSupabaseQuery<{ id: string | number }[]>(async () =>
+                supabase.from('book_reviews').insert(payload).select('id'),
+            );
+
+            if (insertResult.error || !insertResult.data || insertResult.data.length === 0) {
+                const errorMsg = insertResult.error ?? '';
+                const isDuplicate = isDuplicateReviewError(errorMsg, errorMsg);
+
+                console.error('[UserReviewAction] Failed to insert user review data:', {
+                    sanitizedError: insertResult.error ?? 'No data returned from insert.',
+                    isDuplicate,
+                });
+
+                return {
+                    message: isDuplicate
+                        ? APP_ERROR_MESSAGES.ERROR_DUPLICATE_REVIEW
+                        : APP_ERROR_MESSAGES.ERROR_REVIEW_SUBMIT_FAILED,
+                };
+            }
         }
     } catch (err: unknown) {
         if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
@@ -135,9 +114,14 @@ export async function UserReviewAction(
         return { message: sanitizeSupabaseError(err) };
     }
 
-    const bookPageRoute = REVIEW_ROUTES.BOOK_PAGE.replace('[id]', bookId);
+    revalidateTag('books', 'max');
+    revalidateTag('reviews', 'max');
+    revalidateTag(`reviews-${bookId}`, 'max');
 
-    revalidatePath(bookPageRoute);
-    revalidatePath(REVIEW_ROUTES.HOMEPAGE);
-    redirect(bookPageRoute);
+    revalidatePath(`/book/${slug}`, 'page');
+    revalidatePath('/book/[slug]', 'page');
+    revalidatePath('/user/content/reviews', 'page');
+    revalidatePath('/', 'page');
+
+    return INITIAL_STATE;
 }

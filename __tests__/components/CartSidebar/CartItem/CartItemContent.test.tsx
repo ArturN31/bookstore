@@ -6,6 +6,10 @@ jest.mock('@/components/CartForms/ChangeQuantityForm', () => ({
     ChangeQuantityForm: () => <div data-testid="quantity-controls" />,
 }));
 
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
+}));
+
 const mockedBook: Book = {
     id: '1',
     created_at: '',
@@ -37,8 +41,8 @@ jest.mock('@/providers/cart/utils/useCart', () => ({
 }));
 
 describe('APP - CartSidebar - CartItemContent', () => {
-    const mockUseCartState = useCartState as jest.Mock;
-    const mockUseCartActions = useCartActions as jest.Mock;
+    const mockUseCartState = useCartState as unknown as jest.Mock;
+    const mockUseCartActions = useCartActions as unknown as jest.Mock;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -79,7 +83,7 @@ describe('APP - CartSidebar - CartItemContent', () => {
     });
 
     it('should process parsePrice edge cases', () => {
-        const nonStringPrice = { ...mockedBook, price: 19.59 as any };
+        const nonStringPrice = { ...mockedBook, price: 19.59 as unknown as string };
         mockUseCartState.mockReturnValue({
             cartBooks: [{ ...nonStringPrice, quantity: 1 }],
             loading: false,

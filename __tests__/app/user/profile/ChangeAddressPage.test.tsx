@@ -28,7 +28,7 @@ jest.mock('@/utils/db/server', () => ({
     createBackendClient: jest.fn(() => ({})),
 }));
 
-jest.mock('@/components/pages/user/profile/AddressForm/AddressForm', () => ({
+jest.mock('@/app/user/profile/components/AddressForm/AddressForm', () => ({
     AddressForm: jest.fn(({ initialData }) => (
         <div data-testid="update-address-form">{initialData?.streetAddress}</div>
     )),

@@ -7,6 +7,12 @@ import {
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/database.types';
 
+jest.mock('next/headers', () => ({
+    headers: jest.fn(() => ({
+        get: jest.fn(() => null),
+    })),
+}));
+
 describe('UserRepository', () => {
     beforeEach(() => {
         jest.clearAllMocks();

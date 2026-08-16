@@ -60,14 +60,32 @@ jest.mock('@/utils/errors/SupabaseErrorHandler', () => ({
     },
 }));
 
+const originalWarn = console.warn;
+
 describe('UserService - getUserData', () => {
+    beforeAll(() => {
+        jest.spyOn(console, 'error').mockImplementation(() => {});
+        jest.spyOn(console, 'warn').mockImplementation(
+            (message: unknown, ...optionalParams: unknown[]) => {
+                if (typeof message === 'string' && message.includes('[SecurityAudit]')) {
+                    return;
+                }
+                originalWarn(message, ...optionalParams);
+            },
+        );
+    });
+
+    afterAll(() => {
+        jest.restoreAllMocks();
+    });
+
     beforeEach(() => {
         setupUserServiceTestDefaults();
         (withRetry as jest.Mock).mockImplementation(<T>(fn: () => Promise<T>) => fn());
     });
 
     afterEach(() => {
-        (console.error as jest.MockedFunction<typeof console.error>).mockRestore();
+        (console.error as jest.MockedFunction<typeof console.error>).mockClear();
     });
 
     it('should return user data on success', async () => {

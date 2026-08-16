@@ -1,9 +1,12 @@
-// __tests__/data/books/BookService.test.ts
 import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { BOOK_SORT_OPTIONS } from '@/data/books/BookConstants';
 import { createPublicServerClient } from '@/utils/db/publicServer';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
+
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
+}));
 
 jest.mock('next/cache', () => ({
     unstable_cache: jest.fn(
@@ -27,7 +30,10 @@ describe('fetchBooksWithReviews', () => {
         Promise<SupabaseClientType>,
         []
     >;
-    const mockedSafeSupabaseQuery = safeSupabaseQuery as unknown as jest.Mock;
+    const mockedSafeSupabaseQuery = safeSupabaseQuery as unknown as jest.Mock<
+        Promise<unknown>,
+        [() => unknown]
+    >;
 
     interface MockSupabaseResponse {
         data: Record<string, unknown>[] | null;

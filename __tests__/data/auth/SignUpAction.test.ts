@@ -10,6 +10,15 @@ jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }));
 jest.mock('next/navigation', () => ({ redirect: jest.fn() }));
 
 describe('APP - Auth - SignUpAction', () => {
+    beforeAll(() => {
+        jest.spyOn(console, 'warn').mockImplementation(() => {});
+        jest.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterAll(() => {
+        jest.restoreAllMocks();
+    });
+
     beforeEach(() => {
         jest.clearAllMocks();
         jest.mocked(createBackendClient).mockResolvedValue(
@@ -92,7 +101,7 @@ describe('APP - Auth - SignUpAction', () => {
     });
 
     it('should handle critical server error in catch block', async () => {
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const consoleSpy = jest.spyOn(console, 'error');
         const criticalError = new Error('Database explosion');
         jest.mocked(createBackendClient).mockRejectedValueOnce(criticalError);
 
@@ -106,7 +115,6 @@ describe('APP - Auth - SignUpAction', () => {
 
         expect(result.message).toBeDefined();
         expect(consoleSpy).toHaveBeenCalledWith('[SignUpAction] Critical Failure:', criticalError);
-        consoleSpy.mockRestore();
     });
 
     it('should re-throw NEXT_REDIRECT error caught inside try block', async () => {
@@ -123,7 +131,7 @@ describe('APP - Auth - SignUpAction', () => {
     });
 
     it('should handle non-Error thrown inside try block in catch', async () => {
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const consoleSpy = jest.spyOn(console, 'error');
         jest.mocked(createBackendClient).mockRejectedValueOnce('Non-error string failure');
 
         const formData = new FormData();
@@ -139,7 +147,6 @@ describe('APP - Auth - SignUpAction', () => {
             '[SignUpAction] Critical Failure:',
             'Non-error string failure',
         );
-        consoleSpy.mockRestore();
     });
 
     it('should re-throw redirect errors from redirect call outside try block', async () => {

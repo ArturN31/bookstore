@@ -1,7 +1,9 @@
 import { getUserData } from '@/data/user/UserService';
-import { AddressForm } from '@/components/pages/user/profile/AddressForm/AddressForm';
-import { UserProfilePage } from '@/components/pages/user/profile/UserProfilePage/UserProfilePage';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { AddressForm } from './components/AddressForm/AddressForm';
+import { UserProfilePage } from './components/UserProfilePage/UserProfilePage';
+
+export const dynamic = 'force-dynamic';
 
 export default async function ProfilePage() {
     const { data: userData, error: serverError } = await getUserData();

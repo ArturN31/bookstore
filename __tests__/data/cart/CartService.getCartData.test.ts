@@ -1,11 +1,3 @@
-import { getCartData } from '@/data/cart/CartService';
-import * as Repo from '@/data/cart/CartRepository';
-import { createBackendClient } from '@/utils/db/server';
-import { mapDatabaseCartToDomain, CartItem } from '@/data/cart/CartMapper';
-import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
-import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
-import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
-
 jest.mock('next/cache', () => ({
     revalidateTag: jest.fn(),
 }));
@@ -14,7 +6,7 @@ jest.mock('@/utils/db/server');
 jest.mock('@/data/cart/CartRepository');
 jest.mock('@/data/cart/CartMapper');
 jest.mock('@/utils/security/securityAuditLogger', () => ({
-    recordSecurityAuditLog: jest.fn(),
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('@/utils/network/retry', () => ({
     withRetry: jest.fn(<T>(fn: () => Promise<T>) => fn()),
@@ -53,6 +45,14 @@ jest.mock('@/utils/errors/SupabaseErrorHandler', () => {
         sanitizeSupabaseError: jest.fn((err: unknown) => defaultSanitizeImplementation(err)),
     };
 });
+
+import { getCartData } from '@/data/cart/CartService';
+import * as Repo from '@/data/cart/CartRepository';
+import { createBackendClient } from '@/utils/db/server';
+import { mapDatabaseCartToDomain, CartItem } from '@/data/cart/CartMapper';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
+import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 
 describe('CartService Data Retrieval (getCartData)', () => {
     const validUUID = '550e8400-e29b-41d4-a716-446655440000';

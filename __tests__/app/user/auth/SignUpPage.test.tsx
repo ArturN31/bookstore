@@ -1,10 +1,20 @@
 import SignUpPage from '@/app/user/auth/signup/page';
 import { SignUpAction } from '@/data/auth/SignUpAction';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, act } from '@testing-library/react';
+import React from 'react';
 
 const MOCK_MESSAGE = 'Please correct the errors below.';
 
-let mockReturnState = {
+type MockReturnState = {
+    email: string | null;
+    password: string | null;
+    cnfPassword: string | null;
+    message: string | undefined;
+    error: undefined;
+    validationErrors: undefined;
+};
+
+let mockReturnState: MockReturnState = {
     email: 'test@gmail.com',
     password: 'test1',
     cnfPassword: 'test1',
@@ -16,23 +26,45 @@ let mockReturnState = {
 let triggerMockVerify: (token: string) => void;
 let triggerMockExpire: () => void;
 
+type HCaptchaProps = {
+    onVerify?: (token: string) => void;
+    onExpire?: () => void;
+};
+
 jest.mock('@hcaptcha/react-hcaptcha', () => {
     const ReactActual = jest.requireActual('react');
 
-    return ReactActual.forwardRef(({ onVerify, onExpire }: any, ref: any) => {
-        triggerMockVerify = onVerify;
-        triggerMockExpire = onExpire;
+    return {
+        __esModule: true,
+        default: ReactActual.forwardRef(
+            (props: HCaptchaProps, ref: React.Ref<{ resetCaptcha: () => void }>) => {
+                triggerMockVerify = (token: string) => {
+                    if (props.onVerify) {
+                        act(() => {
+                            props.onVerify!(token);
+                        });
+                    }
+                };
+                triggerMockExpire = () => {
+                    if (props.onExpire) {
+                        act(() => {
+                            props.onExpire!();
+                        });
+                    }
+                };
 
-        ReactActual.useImperativeHandle(ref, () => ({
-            resetCaptcha: jest.fn(),
-        }));
+                ReactActual.useImperativeHandle(ref, () => ({
+                    resetCaptcha: jest.fn(),
+                }));
 
-        return <div data-testid="mock-hcaptcha" />;
-    });
+                return <div data-testid="mock-hcaptcha" />;
+            },
+        ),
+    };
 });
 
 jest.mock('@/data/auth/SignUpAction', () => ({
-    SignUpAction: jest.fn(async (prevState, formData) => {
+    SignUpAction: jest.fn(async (_prevState: unknown, formData: FormData) => {
         const reset = formData.get('reset');
         if (reset === 'yes') {
             return {
@@ -53,7 +85,10 @@ jest.mock('react', () => {
 
     return {
         ...originalReact,
-        useActionState: (actionFn: any, initialState: any) => {
+        useActionState: (
+            actionFn: (state: MockReturnState, formData: FormData) => Promise<MockReturnState>,
+            initialState: MockReturnState,
+        ) => {
             const [state, setState] = originalReact.useState(initialState);
 
             const formAction = async (formData: FormData) => {
@@ -61,9 +96,9 @@ jest.mock('react', () => {
                 setState(newState);
             };
 
-            return [state, formAction];
+            return [state, formAction] as const;
         },
-        useTransition: () => [false, (callback: any) => callback()],
+        useTransition: () => [false, (callback: () => void) => callback()] as const,
     };
 });
 
@@ -144,6 +179,27 @@ describe('APP - Auth - SignUp', () => {
         });
     });
 
+    it('should submit with empty captchaToken if captchaToken is null when fields are valid', async () => {
+        render(<SignUpPage />);
+
+        const emailField = screen.getByTestId('email-field');
+        const passwordField = screen.getByTestId('password-field');
+        const cnfPasswordField = screen.getByTestId('cnfPassword-field');
+
+        fireEvent.change(emailField, { target: { name: 'email', value: 'valid@gmail.com' } });
+        fireEvent.change(passwordField, { target: { name: 'password', value: 'ValidP@ss1!' } });
+        fireEvent.change(cnfPasswordField, {
+            target: { name: 'cnfPassword', value: 'ValidP@ss1!' },
+        });
+
+        const signupForm = screen.getByTestId('signup-form');
+        fireEvent.submit(signupForm);
+
+        await waitFor(() => {
+            expect(SignUpAction).toHaveBeenCalled();
+        });
+    });
+
     it('should reset the formState and clear values on resetBtn click', async () => {
         render(<SignUpPage />);
 
@@ -187,7 +243,7 @@ describe('APP - Auth - SignUp', () => {
             message: 'Server Null Error',
             error: undefined,
             validationErrors: undefined,
-        } as any;
+        };
 
         render(<SignUpPage />);
 

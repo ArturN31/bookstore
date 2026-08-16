@@ -1,13 +1,21 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+    startTransition,
+} from 'react';
 import {
     DEFAULT_FILTERING_CONSTANTS,
     FilteringTypes,
     getFilteringConstants,
 } from '@/data/advancedFiltering/FilteringConstants';
 
-type BookAdvancedFilteringContextType = {
+export type BookAdvancedFilteringContextType = {
     advancedFilters: FilteringTypes;
     setAdvancedFilters: React.Dispatch<React.SetStateAction<FilteringTypes>>;
     isLoading: boolean;
@@ -38,7 +46,7 @@ export const BookAdvancedFilteringProvider = ({
     const [advancedFilters, setAdvancedFilters] = useState<FilteringTypes>(
         () => initialFilters || { ...DEFAULT_FILTERING_CONSTANTS },
     );
-    const [isLoading, setIsLoading] = useState<boolean>(!initialFilters);
+    const [isLoading, setIsLoading] = useState<boolean>(() => !initialFilters);
     const [chosenFilters, setChosenFilters] = useState<FilteringTypes>(() => ({
         ...DEFAULT_FILTERING_CONSTANTS,
     }));
@@ -49,17 +57,20 @@ export const BookAdvancedFilteringProvider = ({
         let isMounted = true;
 
         const fetchFilters = async () => {
-            setIsLoading(true);
             try {
                 const data = await getFilteringConstants();
                 if (isMounted) {
-                    setAdvancedFilters(data);
+                    startTransition(() => {
+                        setAdvancedFilters(data);
+                        setIsLoading(false);
+                    });
                 }
             } catch (error) {
                 console.error('Failed to fetch filtering constants:', error);
-            } finally {
                 if (isMounted) {
-                    setIsLoading(false);
+                    startTransition(() => {
+                        setIsLoading(false);
+                    });
                 }
             }
         };

@@ -38,17 +38,17 @@ jest.mock('@/data/user/UserService', () => ({
     getUserData: jest.fn(),
 }));
 
-jest.mock('@/components/pages/user/profile/UserProfilePage/UserProfilePage', () => ({
+jest.mock('@/app/user/profile/components/UserProfilePage/UserProfilePage', () => ({
     UserProfilePage: jest.fn(),
 }));
 
-jest.mock('@/components/pages/user/profile/AddressForm/AddressForm', () => ({
+jest.mock('@/app/user/profile/components/AddressForm/AddressForm', () => ({
     AddressForm: jest.fn(({ mode }) => (
         <div data-testid="add-address-form">Mock Address Form - {mode}</div>
     )),
 }));
 
-jest.mock('@/components/pages/user/profile/UserProfilePage/UserProfilePage', () => ({
+jest.mock('@/app/user/profile/components/UserProfilePage/UserProfilePage', () => ({
     UserProfilePage: jest.fn(({ userData }) => (
         <div data-testid="user-profile-info">Profile for {userData.first_name}</div>
     )),

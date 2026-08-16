@@ -4,6 +4,10 @@ import { Format, handleFormatChoice } from '@/components/layout/FilterBar/Format
 const mockFrom = jest.fn();
 const mockSelect = jest.fn();
 
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock('next/cache', () => ({
     unstable_cache: <T extends (...args: unknown[]) => Promise<unknown>>(fn: T) => fn,
     revalidatePath: jest.fn(),
@@ -171,6 +175,7 @@ describe('FilterBar - Format', () => {
     });
 
     it('should handle thrown errors and pass a message to the Popover', async () => {
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         mockSelect.mockRejectedValueOnce(new Error('Network error'));
 
         render(await Format());
@@ -189,6 +194,8 @@ describe('FilterBar - Format', () => {
             }),
             undefined,
         );
+
+        consoleSpy.mockRestore();
     });
 
     it('should redirect to the correct URL when handleFormatChoice is called', async () => {

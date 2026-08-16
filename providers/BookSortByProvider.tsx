@@ -5,7 +5,7 @@ import { BOOK_SORT_OPTIONS, BookSortType } from '@/data/books/BookConstants';
 
 const FilterTypes = Object.values(BOOK_SORT_OPTIONS);
 
-type BookSortByContextType = {
+export type BookSortByContextType = {
     sortByType: BookSortType;
     toggleSortByType: (choice: BookSortType) => void;
 };

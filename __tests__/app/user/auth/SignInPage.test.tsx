@@ -1,6 +1,6 @@
 import SignInPage from '@/app/user/auth/signin/page';
 import { SignInFormState } from '@/data/auth/SignInAction';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 const MOCK_ACTION_MESSAGE = 'Please correct the errors below.';
 
@@ -352,7 +352,9 @@ describe('APP - Auth - SignIn', () => {
     it('FUNCTION COVERAGE: should explicitly execute the onVerify and onExpire captcha handler functions', () => {
         render(<SignInPage />);
 
-        triggerMockVerify('direct-test-token-string');
-        triggerMockExpire();
+        act(() => {
+            triggerMockVerify('direct-test-token-string');
+            triggerMockExpire();
+        });
     });
 });

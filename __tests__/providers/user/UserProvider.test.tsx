@@ -1,5 +1,5 @@
 import { render, screen, act } from '@testing-library/react';
-import { useContext } from 'react';
+import { useContext, ComponentProps } from 'react';
 import { UserProvider } from '@/providers/user/UserProvider';
 import { UserStateContext, UserActionsContext } from '@/providers/user/UserContext';
 import { getUserData, getUserWishlist } from '@/data/user/UserService';
@@ -9,6 +9,7 @@ import { useUserListeners } from '@/providers/user/utils/useUserListeners';
 
 type SyncAllDataFn = (supabaseUser: SupabaseUser | null) => Promise<void>;
 type ResetFn = () => void;
+type UserProfileType = ComponentProps<typeof UserProvider>['initialUser'];
 
 const mockedRouter = { push: jest.fn(), refresh: jest.fn() };
 jest.mock('next/navigation', () => ({ useRouter: jest.fn(() => mockedRouter) }));
@@ -70,10 +71,12 @@ describe('UserProvider Coverage', () => {
             },
         );
         jest.spyOn(console, 'error').mockImplementation(() => {});
+        jest.spyOn(console, 'warn').mockImplementation(() => {});
     });
 
     afterEach(() => {
         (console.error as jest.Mock).mockRestore();
+        (console.warn as jest.Mock).mockRestore();
     });
 
     it('should catch error when refreshWishlist returns an error', async () => {
@@ -81,7 +84,7 @@ describe('UserProvider Coverage', () => {
 
         render(
             <UserProvider
-                initialUser={{ id: 'u1' } as User}
+                initialUser={{ id: 'u1' } as unknown as UserProfileType}
                 initialWishlist={[]}
             >
                 <TestConsumer />
@@ -117,7 +120,7 @@ describe('UserProvider Coverage', () => {
         mockedGetUserData.mockResolvedValue({ data: null, error: 'DB Error' });
         render(
             <UserProvider
-                initialUser={{ id: 'u1' } as User}
+                initialUser={{ id: 'u1' } as unknown as UserProfileType}
                 initialWishlist={[]}
             >
                 <TestConsumer />
@@ -147,7 +150,7 @@ describe('UserProvider Coverage', () => {
     it('should perform full signOut flow', async () => {
         render(
             <UserProvider
-                initialUser={{ id: 'u1' } as User}
+                initialUser={{ id: 'u1' } as unknown as UserProfileType}
                 initialWishlist={[]}
             >
                 <TestConsumer />
@@ -224,7 +227,7 @@ describe('UserProvider Coverage', () => {
 
         render(
             <UserProvider
-                initialUser={{ id: 'u1' } as User}
+                initialUser={{ id: 'u1' } as unknown as UserProfileType}
                 initialWishlist={[]}
             >
                 <TestConsumer />
@@ -262,7 +265,7 @@ describe('UserProvider Coverage', () => {
 
         render(
             <UserProvider
-                initialUser={{ id: 'u1' } as User}
+                initialUser={{ id: 'u1' } as unknown as UserProfileType}
                 initialWishlist={[]}
             >
                 <TestConsumer />
@@ -314,15 +317,20 @@ describe('UserProvider Coverage', () => {
     });
 
     it('should NOT update state if activeUserId changes during an async refreshProfile call', async () => {
-        let resolvePromise: (value: { data: any; error: string | null }) => void;
-        const pendingPromise = new Promise<{ data: any; error: string | null }>((resolve) => {
-            resolvePromise = resolve;
-        });
+        let resolvePromise: (value: {
+            data: UserProfileType;
+            error: string | null;
+        }) => void = () => {};
+        const pendingPromise = new Promise<{ data: UserProfileType; error: string | null }>(
+            (resolve) => {
+                resolvePromise = resolve;
+            },
+        );
         mockedGetUserData.mockReturnValue(pendingPromise);
 
         render(
             <UserProvider
-                initialUser={{ id: 'u1', name: 'Original' } as any}
+                initialUser={{ id: 'u1', name: 'Original' } as unknown as UserProfileType}
                 initialWishlist={[]}
             >
                 <TestConsumer />
@@ -338,7 +346,10 @@ describe('UserProvider Coverage', () => {
         });
 
         await act(async () => {
-            resolvePromise({ data: { id: 'u1', name: 'Stale Data' }, error: null });
+            resolvePromise({
+                data: { id: 'u1', name: 'Stale Data' } as unknown as UserProfileType,
+                error: null,
+            });
         });
 
         expect(screen.getByTestId('user-id')).toHaveTextContent('none');
@@ -347,7 +358,7 @@ describe('UserProvider Coverage', () => {
     it('should trigger RESET immediately when syncAllData is called with null', async () => {
         render(
             <UserProvider
-                initialUser={{ id: 'u1' } as any}
+                initialUser={{ id: 'u1' } as unknown as UserProfileType}
                 initialWishlist={[]}
             >
                 <TestConsumer />
@@ -365,9 +376,9 @@ describe('UserProvider Coverage', () => {
     it('should clear error state upon a successful subsequent refresh', async () => {
         mockedGetUserData.mockResolvedValue({ data: null, error: 'Initial DB Error' });
 
-        const { rerender } = render(
+        render(
             <UserProvider
-                initialUser={{ id: 'u1' } as any}
+                initialUser={{ id: 'u1' } as unknown as UserProfileType}
                 initialWishlist={[]}
             >
                 <TestConsumer />

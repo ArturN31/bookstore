@@ -16,6 +16,10 @@ jest.mock('@/utils/db/client', () => ({
         on: jest.fn().mockReturnThis(),
         subscribe: jest.fn().mockReturnValue('channel'),
         removeChannel: jest.fn(),
+        from: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: null, error: null }),
     })),
 }));
 jest.mock('@/data/cart/CartService', () => ({
@@ -25,6 +29,9 @@ jest.mock('@/providers/cart/utils/useCartListeners', () => ({
     useCartListeners: jest.fn(({ onCartChange }) => {
         capturedOnCartChange = onCartChange;
     }),
+}));
+jest.mock('@/data/advancedFiltering/FilteringConstants', () => ({
+    getFilteringConstants: jest.fn().mockResolvedValue({ data: [], error: null }),
 }));
 
 const TestConsumer = () => {
@@ -57,10 +64,17 @@ const TestConsumer = () => {
 };
 
 describe('CartProvider', () => {
+    let consoleErrorSpy: jest.SpyInstance;
+
     beforeEach(() => {
         jest.clearAllMocks();
         capturedOnCartChange = null;
         (useUserState as jest.Mock).mockReturnValue({ user: { id: 'user-123' }, loggedIn: true });
+        consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        consoleErrorSpy.mockRestore();
     });
 
     it('should ignore data refresh if the user changed during the request (Race Condition Guard)', async () => {
@@ -96,7 +110,6 @@ describe('CartProvider', () => {
     });
 
     it('should catch and log errors when response.error is present', async () => {
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         (getCartData as jest.Mock).mockResolvedValue({ data: null, error: 'Database Error' });
 
         render(
@@ -110,11 +123,10 @@ describe('CartProvider', () => {
         });
 
         await waitFor(() => {
-            expect(consoleSpy).toHaveBeenCalledWith('Cart Refresh Failed:', expect.any(Error));
+            expect(consoleErrorSpy).toHaveBeenCalledWith('Cart Refresh Failed:', expect.any(Error));
         });
 
         expect(screen.getByTestId('loading')).toHaveTextContent('no');
-        consoleSpy.mockRestore();
     });
 
     it('should handle successful data refresh', async () => {
@@ -177,7 +189,6 @@ describe('CartProvider', () => {
     });
 
     it('should catch synchronous runtime or network rejections thrown inside the fetch block', async () => {
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         (getCartData as jest.Mock).mockRejectedValue(new Error('Fatal Network Error'));
 
         render(
@@ -191,15 +202,13 @@ describe('CartProvider', () => {
         });
 
         await waitFor(() => {
-            expect(consoleSpy).toHaveBeenCalledWith('Cart Refresh Failed:', expect.any(Error));
+            expect(consoleErrorSpy).toHaveBeenCalledWith('Cart Refresh Failed:', expect.any(Error));
         });
 
         expect(screen.getByTestId('loading')).toHaveTextContent('no');
-        consoleSpy.mockRestore();
     });
 
     it('should ignore dispatching structural error configurations if user parameters shifted during a rejected promise fallback', async () => {
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         let rejectRequest: (reason: unknown) => void = () => {};
         const brokenPromise = new Promise((_, reject) => {
             rejectRequest = reject;
@@ -232,10 +241,8 @@ describe('CartProvider', () => {
         });
 
         await waitFor(() => {
-            expect(consoleSpy).toHaveBeenCalledWith('Cart Refresh Failed:', expect.any(Error));
+            expect(consoleErrorSpy).toHaveBeenCalledWith('Cart Refresh Failed:', expect.any(Error));
         });
-
-        consoleSpy.mockRestore();
     });
 
     it('should clear active user reference and dispatch reset type when resetCart is called', async () => {

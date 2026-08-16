@@ -1,10 +1,10 @@
 {
   "total": {
-    "statements": 94.69,
-    "branches": 99.47,
-    "functions": 96.97,
-    "lines": 94.69,
-    "average": 96.45
+    "statements": 95.16,
+    "branches": 99.52,
+    "functions": 97.18,
+    "lines": 95.16,
+    "average": 96.75
   },
   "paths": {
     "app/page.tsx": {
@@ -92,13 +92,6 @@
       "average": "100.00%"
     },
     "components/layout": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
-    "components/pages": {
       "statements": "100.00%",
       "branches": "100.00%",
       "functions": "100.00%",

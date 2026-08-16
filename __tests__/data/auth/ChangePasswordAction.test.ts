@@ -20,7 +20,40 @@ type MockSupabaseClient = {
         updateUser: jest.Mock;
         signOut: jest.Mock;
     };
+    from: jest.Mock;
 };
+
+const originalWarn = console.warn;
+const originalError = console.error;
+
+beforeAll(() => {
+    jest.spyOn(console, 'warn').mockImplementation(
+        (message: unknown, ...optionalParams: unknown[]) => {
+            if (typeof message === 'string' && message.includes('[SecurityAudit]')) {
+                return;
+            }
+            originalWarn(message, ...optionalParams);
+        },
+    );
+
+    jest.spyOn(console, 'error').mockImplementation(
+        (message: unknown, ...optionalParams: unknown[]) => {
+            if (
+                typeof message === 'string' &&
+                (message.includes('[Standard Error]:') ||
+                    message.includes('Failed to load filter constants') ||
+                    message.includes('An update to BookAdvancedFilteringProvider'))
+            ) {
+                return;
+            }
+            originalError(message, ...optionalParams);
+        },
+    );
+});
+
+afterAll(() => {
+    jest.restoreAllMocks();
+});
 
 describe('ChangePasswordAction', () => {
     let mockSupabase: MockSupabaseClient;
@@ -34,6 +67,11 @@ describe('ChangePasswordAction', () => {
                 updateUser: jest.fn().mockRejectedValue(new Error('Simulated Update Error')),
                 signOut: jest.fn(),
             },
+            from: jest.fn(() => ({
+                select: jest.fn().mockReturnThis(),
+                eq: jest.fn().mockReturnThis(),
+                single: jest.fn().mockResolvedValue({ data: null, error: null }),
+            })),
         };
 
         jest.mocked(createBackendClient).mockResolvedValue(

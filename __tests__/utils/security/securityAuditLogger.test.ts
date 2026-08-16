@@ -1,4 +1,3 @@
-// __tests__/utils/security/securityAuditLogger.test.ts
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 import { createAdminClient } from '@/utils/db/admin';
 import { headers } from 'next/headers';
@@ -257,19 +256,39 @@ describe('securityAuditLogger', () => {
         });
 
         it('should handle errors when calling headers() outside request context', async () => {
-            (headers as jest.Mock).mockRejectedValue(new Error('Outside request context'));
+            (headers as jest.Mock).mockImplementation(() => {
+                throw new Error('Outside request context');
+            });
 
             await recordSecurityAuditLog('FAILED_REGISTRATION', null, {});
             await flushMicrotasks();
 
-            expect(consoleWarnSpy).toHaveBeenCalledWith(
-                '[SecurityAudit] Warning: recordSecurityAuditLog was called outside request context without explicit headers.',
-            );
             const insertedPayload = mockInsert.mock.calls[0][0] as {
                 metadata: { ip: string; userAgent: string };
             };
             expect(insertedPayload.metadata.ip).toBe('unknown');
             expect(insertedPayload.metadata.userAgent).toBe('unknown');
+        });
+
+        it('should log a warning if called outside request context without explicit headers when NODE_ENV is not test', async () => {
+            const originalNodeEnv = process.env.NODE_ENV;
+            const envRef = process.env as Record<string, string | undefined>;
+            envRef.NODE_ENV = 'development';
+
+            (headers as jest.Mock).mockImplementation(() => {
+                throw new Error('Outside request context');
+            });
+
+            try {
+                await recordSecurityAuditLog('FAILED_REGISTRATION', null, {});
+                await flushMicrotasks();
+
+                expect(consoleWarnSpy).toHaveBeenCalledWith(
+                    '[SecurityAudit] Warning: recordSecurityAuditLog was called outside request context without explicit headers.',
+                );
+            } finally {
+                envRef.NODE_ENV = originalNodeEnv;
+            }
         });
     });
 

@@ -61,13 +61,22 @@ jest.mock('@/utils/errors/SupabaseErrorHandler', () => ({
 }));
 
 describe('UserService - getUserWishlist', () => {
+    beforeAll(() => {
+        jest.spyOn(console, 'warn').mockImplementation(() => {});
+        jest.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterAll(() => {
+        jest.restoreAllMocks();
+    });
+
     beforeEach(() => {
         setupUserServiceTestDefaults();
         (withRetry as jest.Mock).mockImplementation(<T>(fn: () => Promise<T>) => fn());
     });
 
     afterEach(() => {
-        (console.error as jest.MockedFunction<typeof console.error>).mockRestore();
+        (console.error as jest.MockedFunction<typeof console.error>).mockClear();
     });
 
     it('should return auth error when user auth fails', async () => {

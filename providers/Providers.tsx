@@ -7,7 +7,7 @@ import { BookSortByProvider } from './BookSortByProvider';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v16-appRouter';
 import { BookAdvancedFilteringProvider } from './advancedFiltering/BookAdvancedFilteringProvider';
 
-interface SessionData {
+export interface SessionData {
     initialUser: User | null;
     initialWishlist: Wishlist[] | null;
     initialCart: Cart | null;

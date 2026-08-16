@@ -1,6 +1,9 @@
 import { BookRating } from '@/components/books/bookCard/Header/BookRating';
 import { render, screen } from '@testing-library/react';
 
+jest.spyOn(console, 'warn').mockImplementation(() => {});
+jest.spyOn(console, 'error').mockImplementation(() => {});
+
 const mockedReviews: Review[] = [
     {
         id: '1',
@@ -34,6 +37,16 @@ const mockedReviews: Review[] = [
     },
 ];
 
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
+    BookAdvancedFilteringProvider: ({ children }: { children: React.ReactNode }) => children,
+    useBookFilter: jest.fn(),
+    useBookAdvancedFiltering: jest.fn(),
+}));
+
 describe('APP - BookCard - Rating', () => {
     it('should render component with badge variant', () => {
         render(<BookRating reviews={mockedReviews} />);
@@ -48,14 +61,17 @@ describe('APP - BookCard - Rating', () => {
     });
 
     it('should render default variant with progress bar', () => {
-        const { container } = render(<BookRating reviews={mockedReviews} variant="default" />);
+        const { container } = render(
+            <BookRating
+                reviews={mockedReviews}
+                variant="default"
+            />,
+        );
 
         expect(screen.getByText('3.7')).toBeInTheDocument();
         expect(screen.getByText('Rating')).toBeInTheDocument();
-        // Check for the progress bar element (yellow bar)
         const progressBar = container.querySelector('.bg-\\[\\#facc15\\]');
         expect(progressBar).toBeInTheDocument();
-        // Check for the background bar (slate-100)
         const backgroundBar = container.querySelector('.bg-slate-100');
         expect(backgroundBar).toBeInTheDocument();
     });
