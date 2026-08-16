@@ -14,6 +14,14 @@ jest.mock('@/app/dev-tools/components/SystemLog/useSystemLogic', () => ({
     clearSysLog: jest.fn(),
 }));
 
+beforeAll(() => {
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+});
+
+afterAll(() => {
+    (console.warn as jest.Mock).mockRestore();
+});
+
 describe('SystemLog', () => {
     const mockScrollIntoView = jest.fn();
 

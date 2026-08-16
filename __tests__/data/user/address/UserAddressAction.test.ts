@@ -5,6 +5,17 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 
+jest.mock('@/data/advancedFiltering/FilteringConstants', () => ({
+    DEFAULT_FILTERING_CONSTANTS: {
+        categories: [],
+        tags: [],
+    },
+    getFilteringConstants: jest.fn().mockResolvedValue({
+        categories: [],
+        tags: [],
+    }),
+}));
+
 jest.mock('next/cache', () => ({
     revalidatePath: jest.fn(),
 }));
@@ -29,9 +40,14 @@ type MockSupabaseClient = {
 
 describe('APP - data - actions - AddressForm - UserAddressAction', () => {
     let mockSupabase: MockSupabaseClient;
+    let consoleErrorSpy: jest.SpyInstance;
+    let consoleWarnSpy: jest.SpyInstance;
 
     beforeEach(() => {
         jest.clearAllMocks();
+
+        consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
         mockSupabase = {
             auth: {
@@ -42,6 +58,11 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
         jest.mocked(createBackendClient).mockResolvedValue(
             mockSupabase as unknown as Awaited<ReturnType<typeof createBackendClient>>,
         );
+    });
+
+    afterEach(() => {
+        consoleErrorSpy.mockRestore();
+        consoleWarnSpy.mockRestore();
     });
 
     it('returns empty state when reset is present', async () => {

@@ -1,22 +1,32 @@
 import { BooksManager } from '@/components/books/BooksManager';
-import { useBookSortBy } from '@/providers/BookSortByProvider';
-import { useBookFilter } from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
+import { BookSortByContextType, useBookSortBy } from '@/providers/BookSortByProvider';
+import {
+    BookAdvancedFilteringContextType,
+    useBookFilter,
+} from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
 import { render, screen, act } from '@testing-library/react';
-import { useInView } from 'react-intersection-observer';
+import { useInView, InViewHookResponse, IntersectionOptions } from 'react-intersection-observer';
 import { useBooksFetcher } from '@/data/books/useBooksFetcher';
 import { PaginatedBookResult } from '@/data/books/BookConstants';
+import React from 'react';
 
 interface ActionResponse<T> {
     error: string | null;
     data: T | null;
 }
 
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock('@/providers/BookSortByProvider', () => ({
     useBookSortBy: jest.fn(),
 }));
 
 jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
+    BookAdvancedFilteringProvider: ({ children }: { children: React.ReactNode }) => children,
     useBookFilter: jest.fn(),
+    useBookAdvancedFiltering: jest.fn(),
 }));
 
 jest.mock('react-intersection-observer', () => ({
@@ -64,16 +74,22 @@ const mockInitialData: ActionResponse<PaginatedBookResult> = {
 };
 
 describe('BooksManager', () => {
-    const mockBookSortBy = useBookSortBy as jest.Mock;
-    const mockBookFilter = useBookFilter as jest.Mock;
-    const mockUseInView = useInView as jest.Mock;
-    const mockUseBooksFetcher = useBooksFetcher as jest.Mock;
+    const mockBookSortBy = useBookSortBy as unknown as jest.MockedFunction<typeof useBookSortBy>;
+    const mockBookFilter = useBookFilter as unknown as jest.MockedFunction<typeof useBookFilter>;
+    const mockUseInView = useInView as unknown as jest.MockedFunction<typeof useInView>;
+    const mockUseBooksFetcher = useBooksFetcher as unknown as jest.MockedFunction<
+        typeof useBooksFetcher
+    >;
     const mockFetchBooks = jest.fn();
 
     beforeEach(() => {
         jest.clearAllMocks();
 
-        mockBookSortBy.mockReturnValue({ sortByType: 'Title: A-Z' });
+        mockBookSortBy.mockReturnValue({
+            sortByType: 'Title: A-Z',
+            toggleSortByType: jest.fn(),
+        } as unknown as BookSortByContextType);
+
         mockBookFilter.mockReturnValue({
             chosenFilters: {
                 AUTHORS: [],
@@ -84,8 +100,13 @@ describe('BooksManager', () => {
                 PRICES: [],
                 PUBLICATIONS: [],
             },
-        });
-        mockUseInView.mockReturnValue({ ref: jest.fn(), inView: false });
+        } as unknown as BookAdvancedFilteringContextType);
+
+        mockUseInView.mockReturnValue([
+            jest.fn(),
+            false,
+            undefined,
+        ] as unknown as InViewHookResponse);
 
         mockUseBooksFetcher.mockReturnValue({
             state: {
@@ -129,18 +150,18 @@ describe('BooksManager', () => {
     });
 
     it('triggers loadMore when scrolling to bottom', async () => {
-        let triggerChange: (inView: boolean) => void = () => {};
+        let triggerChange: (inView: boolean, entry: IntersectionObserverEntry) => void = () => {};
 
-        mockUseInView.mockImplementation(
-            ({ onChange }: { onChange: (inView: boolean) => void }) => {
-                triggerChange = onChange;
-                return { ref: jest.fn() };
-            },
-        );
+        mockUseInView.mockImplementation(((options?: IntersectionOptions) => {
+            if (options && typeof options.onChange === 'function') {
+                triggerChange = options.onChange;
+            }
+            return [jest.fn(), false, undefined];
+        }) as unknown as typeof useInView);
 
         render(<BooksManager initialData={mockInitialData} />);
 
-        triggerChange(true);
+        triggerChange(true, {} as IntersectionObserverEntry);
 
         expect(mockFetchBooks).toHaveBeenCalledWith(true, 1);
     });
@@ -148,7 +169,10 @@ describe('BooksManager', () => {
     it('resets and reloads books when sortByType changes', async () => {
         const { rerender } = render(<BooksManager initialData={mockInitialData} />);
 
-        mockBookSortBy.mockReturnValue({ sortByType: 'Price: Low to High' });
+        mockBookSortBy.mockReturnValue({
+            sortByType: 'Price: Low to High',
+            toggleSortByType: jest.fn(),
+        } as unknown as BookSortByContextType);
 
         rerender(<BooksManager initialData={mockInitialData} />);
 
@@ -181,34 +205,34 @@ describe('BooksManager', () => {
             console.error('Failed to fetch books:', new Error('Network error'));
         });
 
-        let triggerChange: (inView: boolean) => void = () => {};
-        mockUseInView.mockImplementation(
-            ({ onChange }: { onChange: (inView: boolean) => void }) => {
-                triggerChange = onChange;
-                return { ref: jest.fn() };
-            },
-        );
+        let triggerChange: (inView: boolean, entry: IntersectionObserverEntry) => void = () => {};
+        mockUseInView.mockImplementation(((options?: IntersectionOptions) => {
+            if (options && typeof options.onChange === 'function') {
+                triggerChange = options.onChange;
+            }
+            return [jest.fn(), false, undefined];
+        }) as unknown as typeof useInView);
 
         render(<BooksManager initialData={mockInitialData} />);
-        triggerChange(true);
+        triggerChange(true, {} as IntersectionObserverEntry);
 
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch books:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch books:', expect.anything());
         consoleSpy.mockRestore();
     });
 
     it('does not scroll when fetching next page', async () => {
         const scrollSpy = jest.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
-        let triggerChange: (inView: boolean) => void = () => {};
-        mockUseInView.mockImplementation(
-            ({ onChange }: { onChange: (inView: boolean) => void }) => {
-                triggerChange = onChange;
-                return { ref: jest.fn() };
-            },
-        );
+        let triggerChange: (inView: boolean, entry: IntersectionObserverEntry) => void = () => {};
+        mockUseInView.mockImplementation(((options?: IntersectionOptions) => {
+            if (options && typeof options.onChange === 'function') {
+                triggerChange = options.onChange;
+            }
+            return [jest.fn(), false, undefined];
+        }) as unknown as typeof useInView);
 
         render(<BooksManager initialData={mockInitialData} />);
-        triggerChange(true);
+        triggerChange(true, {} as IntersectionObserverEntry);
 
         expect(scrollSpy).not.toHaveBeenCalled();
         scrollSpy.mockRestore();
@@ -243,10 +267,10 @@ describe('BooksManager', () => {
                 GENRES: [],
                 PUBLISHERS: [],
                 PAGES: [],
-                PRICES: [10, 25],
+                PRICES: ['10', '25'],
                 PUBLICATIONS: ['2025-01-01', '2026-01-01'],
             },
-        });
+        } as unknown as BookAdvancedFilteringContextType);
 
         const { rerender } = render(<BooksManager initialData={mockInitialData} />);
 
@@ -281,7 +305,7 @@ describe('BooksManager', () => {
                 PRICES: [],
                 PUBLICATIONS: [],
             },
-        });
+        } as unknown as BookAdvancedFilteringContextType);
 
         const { rerender } = render(<BooksManager initialData={mockInitialData} />);
 

@@ -18,15 +18,17 @@ const formatDate = (dateVal: Date | string): string => {
 };
 
 export const ReviewCardHeader = ({ review, onEdit, onDelete }: ReviewCardHeaderProps) => {
-    const createdAt = new Date(review.created_at);
-    const updatedAt = review.updated_at ? new Date(review.updated_at) : null;
+    const createdAtDate = new Date(review.created_at);
+    const updatedAtDate = review.updated_at ? new Date(review.updated_at) : null;
 
     const isUpdated = Boolean(
-        updatedAt && !isNaN(updatedAt.getTime()) && updatedAt.getTime() !== createdAt.getTime(),
+        updatedAtDate &&
+        !isNaN(updatedAtDate.getTime()) &&
+        updatedAtDate.getTime() !== createdAtDate.getTime(),
     );
 
-    const formattedCreatedDate = formatDate(createdAt);
-    const formattedUpdatedDate = updatedAt ? formatDate(updatedAt) : '';
+    const formattedCreatedDate = formatDate(review.created_at);
+    const formattedUpdatedDate = updatedAtDate ? formatDate(updatedAtDate) : '';
 
     const showEditedLabel = Boolean(
         isUpdated || (formattedUpdatedDate && formattedUpdatedDate !== formattedCreatedDate),

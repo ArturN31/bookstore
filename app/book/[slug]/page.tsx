@@ -34,8 +34,6 @@ export default async function BookById({ params, searchParams }: BookByIdProps) 
         bookID: slug,
     });
 
-    console.log(paginatedResult, error);
-
     if (error) return <ErrorState message="Could not load book details." />;
 
     const books = paginatedResult?.data as Book[] | undefined;

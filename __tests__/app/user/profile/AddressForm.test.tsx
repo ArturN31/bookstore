@@ -18,6 +18,17 @@ jest.mock('@/data/user/address/UserAddressAction', () => ({
     UserAddressAction: jest.fn(),
 }));
 
+jest.mock('@/data/advancedFiltering/FilteringConstants', () => ({
+    DEFAULT_FILTERING_CONSTANTS: {
+        categories: [],
+        tags: [],
+    },
+    getFilteringConstants: jest.fn().mockResolvedValue({
+        categories: [],
+        tags: [],
+    }),
+}));
+
 const mockAction = UserAddressAction as jest.Mock;
 
 describe('APP - pages/user - AddressForm', () => {

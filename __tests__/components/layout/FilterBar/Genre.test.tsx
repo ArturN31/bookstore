@@ -162,6 +162,7 @@ describe('FilterBar - Genre', () => {
     });
 
     it('should handle thrown errors and pass a message to the DropdownList', async () => {
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         mockSelect.mockRejectedValueOnce(new Error('Network error'));
 
         render(await Genre());
@@ -180,6 +181,7 @@ describe('FilterBar - Genre', () => {
             }),
             undefined,
         );
+        consoleErrorSpy.mockRestore();
     });
 
     it('should redirect to the correct URL when handleGenreChoice is called', async () => {

@@ -1,12 +1,24 @@
 import { render, screen } from '@testing-library/react';
-import { Providers } from '@/providers/Providers';
+import { Providers, SessionData } from '@/providers/Providers';
+import React from 'react';
+
+interface UserMockProps {
+    children: React.ReactNode;
+    initialUser?: { id: string; username: string } | null;
+    initialWishlist?: Array<{ book_id: string }> | null;
+}
+
+interface CartMockProps {
+    children: React.ReactNode;
+    initialCart?: { cartID: string } | null;
+}
 
 jest.mock('notistack', () => ({
     SnackbarProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 jest.mock('@/providers/user/UserProvider', () => ({
-    UserProvider: ({ children, initialUser, initialWishlist }: any) => (
+    UserProvider: ({ children, initialUser, initialWishlist }: UserMockProps) => (
         <div
             data-testid="user-provider"
             data-user={initialUser?.id || 'none'}
@@ -18,7 +30,7 @@ jest.mock('@/providers/user/UserProvider', () => ({
 }));
 
 jest.mock('@/providers/cart/CartProvider', () => ({
-    CartProvider: ({ children, initialCart }: any) => (
+    CartProvider: ({ children, initialCart }: CartMockProps) => (
         <div
             data-testid="cart-provider"
             data-cart={initialCart?.cartID || 'none'}
@@ -26,6 +38,12 @@ jest.mock('@/providers/cart/CartProvider', () => ({
             {children}
         </div>
     ),
+}));
+
+jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
+    BookAdvancedFilteringProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    useBookFilter: jest.fn(),
+    useBookAdvancedFiltering: jest.fn(),
 }));
 
 describe('Providers', () => {
@@ -43,7 +61,7 @@ describe('Providers', () => {
 
     it('should render with null initialSessionData', () => {
         render(
-            <Providers initialSessionData={null as any}>
+            <Providers initialSessionData={null as unknown as SessionData}>
                 <span>Test Content</span>
             </Providers>,
         );
@@ -52,8 +70,11 @@ describe('Providers', () => {
     });
 
     it('should pass initialUser to UserProvider', () => {
-        const initialSessionData = {
-            initialUser: { id: 'user-123', username: 'testuser' } as User,
+        const initialSessionData: SessionData = {
+            initialUser: {
+                id: 'user-123',
+                username: 'testuser',
+            } as unknown as SessionData['initialUser'],
             initialWishlist: null,
             initialCart: null,
         };
@@ -68,9 +89,12 @@ describe('Providers', () => {
     });
 
     it('should pass initialWishlist to UserProvider', () => {
-        const initialSessionData = {
+        const initialSessionData: SessionData = {
             initialUser: null,
-            initialWishlist: [{ book_id: 'book-1' }, { book_id: 'book-2' }] as Wishlist[],
+            initialWishlist: [
+                { book_id: 'book-1' },
+                { book_id: 'book-2' },
+            ] as unknown as SessionData['initialWishlist'],
             initialCart: null,
         };
 
@@ -84,10 +108,10 @@ describe('Providers', () => {
     });
 
     it('should pass initialCart to CartProvider', () => {
-        const initialSessionData = {
+        const initialSessionData: SessionData = {
             initialUser: null,
             initialWishlist: null,
-            initialCart: { cartID: 'cart-123' } as Cart,
+            initialCart: { cartID: 'cart-123' } as unknown as SessionData['initialCart'],
         };
 
         render(

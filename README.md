@@ -7,7 +7,7 @@ This project is an online bookstore built with **Next.js 16 (App Router)**, **Re
 ## Project Status
 
 **Current Phase**: Core marketplace MVP - Production-ready with strong automated test coverage
-**Test Coverage**: **96.45% average coverage** (94.69% statements, 99.47% branches, 96.97% functions)
+**Test Coverage**: **96.45% average coverage** (95.16% statements, 99.52% branches, 97.18% functions)
 **Performance**: Lighthouse Desktop 99/100 (0.3s FCP, 0.8s LCP, 0ms TBT, 0 CLS)
 **Last Updated**: August 11, 2026 (latest automated coverage report)
 
@@ -67,7 +67,7 @@ type FormData = z.infer<typeof schema>; // Auto-generated TypeScript type
 
 | Area | Statements | Branches | Functions | Lines | Avg | Status |
 |------|-----------|----------|-----------|-------|-----|--------|
-| **Overall** | 94.69% | 99.47% | 96.97% | 94.69% | 96.45% | ✅ Excellent |
+| **Overall** | 95.16% | 99.52% | 97.18% | 95.16% | 96.75% | ✅ Excellent |
 | App Routing | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
 | Components | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
 | Server Actions | 100.00 | 100.00 | 100.00 | 100.00 | 100.00 | ✅ Complete |
@@ -119,7 +119,9 @@ Audited with professional-grade tooling to ensure speed and accessibility.
   - **Best Sellers** (by sales_count) ✅ Fully Implemented
 - **Multi-Dimensional Filtering**: Filter by genre and book format with instant feedback
 - **Book Details Pages**: Comprehensive metadata display with dynamic SEO metadata
-- **Reviews System**: Paginated user reviews with 5-star ratings (read-only - submission planned for Phase 1)
+- **Reviews System**: 
+  - Paginated user reviews with 5-star ratings
+  - View Own reviews page with infinite scroll, delete and edit functionalities
 - **Wishlist Management**: 
   - Add/remove books with 10-item limit
   - Persistent storage with cross-device sync

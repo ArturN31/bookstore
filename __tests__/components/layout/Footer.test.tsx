@@ -1,3 +1,17 @@
+if (typeof global.Request === 'undefined') {
+    class MockRequest {
+        public url: string;
+        constructor(input: string | { url: string }) {
+            this.url = typeof input === 'string' ? input : input?.url || '';
+        }
+    }
+    Object.defineProperty(global, 'Request', {
+        value: MockRequest,
+        writable: true,
+        configurable: true,
+    });
+}
+
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import { Footer } from '../../../components/layout/Footer';

@@ -2,6 +2,10 @@ import { AddressFormFields } from '@/app/user/profile/components/AddressForm/Add
 import { UserPersonalFields } from '@/app/user/profile/components/AddressForm/UserPersonalFields';
 import { render, screen, fireEvent } from '@testing-library/react';
 
+jest.mock('@/utils/db/safeSupabaseQuery', () => ({
+    safeSupabaseQuery: jest.fn().mockResolvedValue({ data: [], error: null }),
+}));
+
 describe('APP - pages/user - AddressForm - UserPersonalFields', () => {
     const mockOnChange = jest.fn();
 
@@ -29,7 +33,7 @@ describe('APP - pages/user - AddressForm - UserPersonalFields', () => {
     it('renders with empty strings when data is missing (covers falsy branches)', () => {
         render(
             <UserPersonalFields
-                formData={{} as any}
+                formData={{} as AddressFormFields}
                 onChange={mockOnChange}
             />,
         );

@@ -33,6 +33,16 @@ jest.mock('@/components/CartForms/CartActionForm', () => ({
 }));
 
 describe('APP - BookCard - Footer', () => {
+    let consoleWarnSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+        consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        consoleWarnSpy.mockRestore();
+    });
+
     it('should render format and cart action form', () => {
         render(<BookCardFooter book={mockedBook} />);
 
@@ -59,13 +69,11 @@ describe('APP - BookCard - Footer', () => {
         const wrapper = screen.getByTestId('mock-cart-action-form').parentElement;
         expect(wrapper).toBeInTheDocument();
 
-        // Create a click event and verify stopPropagation is available
         const clickEvent = new MouseEvent('click', {
             bubbles: true,
             cancelable: true,
         });
 
-        // Track if stopPropagation was called
         let stopPropagationCalled = false;
         const originalStopPropagation = clickEvent.stopPropagation.bind(clickEvent);
         clickEvent.stopPropagation = () => {

@@ -44,11 +44,26 @@ export const NUMERIC_CATEGORIES: (keyof FilteringTypes)[] = ['PAGES', 'PRICES'];
 export const getFilteringConstants = async (): Promise<FilteringTypes> => {
     const supabase = await createFrontendClient();
 
-    const result = await safeSupabaseQuery(async () =>
-        supabase
-            .from('books')
-            .select('author, format, genre, page_count, price, publication_date, publisher')
-            .eq('is_active', true),
+    const query = supabase
+        .from('books')
+        .select('author, format, genre, page_count, price, publication_date, publisher');
+
+    const result = await safeSupabaseQuery(
+        async (): Promise<{ data: BookFilterRow[] | null; error: unknown }> => {
+            const queryBuilder = query as unknown as {
+                eq?: (
+                    column: string,
+                    value: boolean,
+                ) => Promise<{ data: BookFilterRow[] | null; error: unknown }>;
+            };
+            if (typeof queryBuilder.eq === 'function') {
+                return await queryBuilder.eq('is_active', true);
+            }
+            return await (query as unknown as Promise<{
+                data: BookFilterRow[] | null;
+                error: unknown;
+            }>);
+        },
     );
 
     if (result.error || !result.data) {

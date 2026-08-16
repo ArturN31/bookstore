@@ -15,7 +15,7 @@ jest.mock('next/cache', () => ({
 jest.mock('@/utils/db/server');
 jest.mock('@/data/cart/CartRepository');
 jest.mock('@/utils/security/securityAuditLogger', () => ({
-    recordSecurityAuditLog: jest.fn(),
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('@/utils/network/retry', () => ({
     withRetry: jest.fn(<T>(fn: () => Promise<T>) => fn()),

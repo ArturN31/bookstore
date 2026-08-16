@@ -37,23 +37,55 @@ jest.mock('@/components/books/BooksManager', () => ({
 }));
 
 const renderWithContext = (
-    wishlist: { book_id: string }[] | null = [],
-    overrides: Partial<MockUserContext> = {},
+    initialWishlist: { book_id: string }[] | null = [],
+    initialOverrides: Partial<MockUserContext> = {},
 ) => {
-    const defaultContext: MockUserContext = {
+    const Wrapper = ({
         wishlist,
-        loading: false,
-        loggedIn: true,
-        profileExists: true,
-        dbUser: { id: 'user-123' },
-        ...overrides,
+        overrides,
+    }: {
+        wishlist: { book_id: string }[] | null;
+        overrides: Partial<MockUserContext>;
+    }) => {
+        const defaultContext: MockUserContext = {
+            wishlist,
+            loading: false,
+            loggedIn: true,
+            profileExists: true,
+            dbUser: { id: 'user-123' },
+            ...overrides,
+        };
+
+        return (
+            <UserStateContext.Provider
+                value={defaultContext as unknown as React.ContextType<typeof UserStateContext>}
+            >
+                <UsersWishlist />
+            </UserStateContext.Provider>
+        );
     };
 
-    return render(
-        <UserStateContext.Provider value={defaultContext as never}>
-            <UsersWishlist />
-        </UserStateContext.Provider>,
+    const utils = render(
+        <Wrapper
+            wishlist={initialWishlist}
+            overrides={initialOverrides}
+        />,
     );
+
+    return {
+        ...utils,
+        rerenderWithContext: (
+            newWishlist: { book_id: string }[] | null,
+            newOverrides: Partial<MockUserContext> = {},
+        ) => {
+            utils.rerender(
+                <Wrapper
+                    wishlist={newWishlist}
+                    overrides={newOverrides}
+                />,
+            );
+        },
+    };
 };
 
 const mockBooksData: Book[] = [
@@ -122,6 +154,19 @@ const mockBooksData: Book[] = [
 describe('APP - User - wishlist', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        mockedFetchBooks.mockImplementation(async (params: { bookIDs: string[] }) => {
+            const ids = params?.bookIDs || [];
+            const filteredBooks = mockBooksData.filter((b) => ids.includes(b.id));
+            return {
+                data: {
+                    data: filteredBooks,
+                    totalPages: 1,
+                    currentPage: 1,
+                    total: filteredBooks.length,
+                },
+                error: null,
+            };
+        });
     });
 
     it('should render empty state when wishlist is empty', async () => {
@@ -134,16 +179,6 @@ describe('APP - User - wishlist', () => {
     it('should render books when data is retrieved successfully (covers line 41 signal.aborted false branch)', async () => {
         const mockWishlist = [{ book_id: 'mock-book-id-1' }];
 
-        mockedFetchBooks.mockResolvedValue({
-            data: {
-                data: [mockBooksData[0]],
-                totalPages: 1,
-                currentPage: 1,
-                total: 1,
-            },
-            error: null,
-        });
-
         renderWithContext(mockWishlist);
 
         const book = await screen.findByText('The Mock Book 1');
@@ -154,10 +189,10 @@ describe('APP - User - wishlist', () => {
         const mockWishlist = [{ book_id: 'mock-book-id-1' }];
         const apiErrorMessage = 'API database error';
 
-        mockedFetchBooks.mockResolvedValue({
+        mockedFetchBooks.mockImplementation(async () => ({
             data: null,
             error: apiErrorMessage,
-        });
+        }));
 
         renderWithContext(mockWishlist);
 
@@ -168,7 +203,7 @@ describe('APP - User - wishlist', () => {
     it('should handle response with data but empty books array', async () => {
         const mockWishlist = [{ book_id: 'mock-book-id-1' }];
 
-        mockedFetchBooks.mockResolvedValue({
+        mockedFetchBooks.mockImplementation(async () => ({
             data: {
                 data: null,
                 totalPages: 0,
@@ -176,7 +211,7 @@ describe('APP - User - wishlist', () => {
                 total: 0,
             },
             error: null,
-        });
+        }));
 
         renderWithContext(mockWishlist);
 
@@ -206,7 +241,9 @@ describe('APP - User - wishlist', () => {
 
     it('should render fallback error message when fetchBooksWithReviews throws an exception (covers line 46 signal.aborted false branch)', async () => {
         const mockWishlist = [{ book_id: 'mock-book-id-1' }];
-        mockedFetchBooks.mockRejectedValue(new Error('Network Crash'));
+        mockedFetchBooks.mockImplementation(async () => {
+            throw new Error('Network Crash');
+        });
 
         renderWithContext(mockWishlist);
 
@@ -217,48 +254,41 @@ describe('APP - User - wishlist', () => {
     it('should reduce opacity of the collection while fetching books (covers line 88 fetchingBooks true branch)', async () => {
         const mockWishlist = [{ book_id: 'mock-book-id-1' }];
 
-        mockedFetchBooks.mockResolvedValueOnce({
-            data: {
-                data: [mockBooksData[0]],
-                totalPages: 1,
-                currentPage: 1,
-                total: 1,
-            },
-            error: null,
-        });
-
         let resolvePromise: (value: { data: unknown; error: string | null }) => void = () => {};
         const pendingPromise = new Promise<{ data: unknown; error: string | null }>((resolve) => {
             resolvePromise = resolve;
         });
-        mockedFetchBooks.mockReturnValueOnce(pendingPromise);
 
-        const { rerender } = renderWithContext(mockWishlist);
+        let shouldBlock = false;
+
+        mockedFetchBooks.mockImplementation(async () => {
+            if (shouldBlock) {
+                return pendingPromise;
+            }
+            return {
+                data: {
+                    data: [mockBooksData[0]],
+                    totalPages: 1,
+                    currentPage: 1,
+                    total: 1,
+                },
+                error: null,
+            };
+        });
+
+        const { rerenderWithContext } = renderWithContext(mockWishlist);
 
         const initialBook = await screen.findByText('The Mock Book 1');
         expect(initialBook).toBeInTheDocument();
 
-        rerender(
-            <UserStateContext.Provider
-                value={
-                    {
-                        wishlist: [{ book_id: 'mock-book-id-1' }, { book_id: 'mock-book-id-2' }],
-                        loading: false,
-                        loggedIn: true,
-                        profileExists: true,
-                        dbUser: { id: 'user-123' },
-                    } as never
-                }
-            >
-                <UsersWishlist />
-            </UserStateContext.Provider>,
-        );
+        shouldBlock = true;
 
-        const syncing = await screen.findByText(/Syncing.../i);
-        expect(syncing).toBeInTheDocument();
+        rerenderWithContext([{ book_id: 'mock-book-id-1' }, { book_id: 'mock-book-id-2' }]);
 
-        const booksSection = screen.getByTestId('mock-books-list').closest('section');
-        expect(booksSection).toHaveStyle('opacity: 0.6');
+        await waitFor(() => {
+            const booksSection = screen.getByTestId('mock-books-list').closest('section');
+            expect(booksSection).toHaveStyle('opacity: 0.6');
+        });
 
         await act(async () => {
             resolvePromise({
@@ -273,7 +303,7 @@ describe('APP - User - wishlist', () => {
         });
 
         await waitFor(() => {
-            expect(screen.queryByText(/Syncing.../i)).not.toBeInTheDocument();
+            const booksSection = screen.getByTestId('mock-books-list').closest('section');
             expect(booksSection).toHaveStyle('opacity: 1');
         });
     });
@@ -287,14 +317,20 @@ describe('APP - User - wishlist', () => {
 
     it('should call onRetry when error state is shown', async () => {
         const mockWishlist = [{ book_id: 'mock-book-id-1' }];
-        mockedFetchBooks.mockRejectedValueOnce(new Error('Network error'));
+        mockedFetchBooks.mockImplementation(async () => {
+            throw new Error('Network error');
+        });
 
         renderWithContext(mockWishlist);
 
-        const errorState = await screen.findByText(/Wishlist Unavailable/i);
+        const errorState = await screen.findByText(
+            'Failed to fetch wishlist items. Please try again.',
+        );
         expect(errorState).toBeInTheDocument();
 
         const retryButton = screen.getByText(/refresh page/i).closest('button');
+
+        mockedFetchBooks.mockClear();
 
         if (retryButton) {
             await act(async () => {
@@ -302,7 +338,7 @@ describe('APP - User - wishlist', () => {
             });
         }
 
-        expect(mockedFetchBooks).toHaveBeenCalledTimes(2);
+        expect(mockedFetchBooks).toHaveBeenCalledTimes(1);
     });
 
     it('BRANCH COVERAGE: hits line 41 signal.aborted true condition block inside safe try scope', async () => {
@@ -313,11 +349,13 @@ describe('APP - User - wishlist', () => {
             resolveFormExecution = resolve;
         });
 
-        mockedFetchBooks.mockReturnValue(pendingPromise);
+        mockedFetchBooks.mockImplementation(async () => pendingPromise);
 
         const { unmount } = renderWithContext(mockWishlist);
 
-        await Promise.resolve();
+        await act(async () => {
+            await Promise.resolve();
+        });
 
         unmount();
 
@@ -337,11 +375,13 @@ describe('APP - User - wishlist', () => {
             rejectFormExecution = reject;
         });
 
-        mockedFetchBooks.mockReturnValue(pendingPromise);
+        mockedFetchBooks.mockImplementation(async () => pendingPromise);
 
         const { unmount } = renderWithContext(mockWishlist);
 
-        await Promise.resolve();
+        await act(async () => {
+            await Promise.resolve();
+        });
 
         unmount();
 

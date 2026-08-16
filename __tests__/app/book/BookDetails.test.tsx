@@ -1,5 +1,28 @@
-import { BookDetails } from '@/app/book/[slug]/components/BookDetails';
 import { render, screen } from '@testing-library/react';
+import { BookDetails } from '@/app/book/[slug]/components/BookDetails';
+
+jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
+    BookAdvancedFilteringProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+jest.mock('@/data/advancedFiltering/FilteringConstants', () => ({
+    DEFAULT_FILTERING_CONSTANTS: {
+        categories: [],
+        tags: [],
+    },
+    getFilteringConstants: jest.fn().mockResolvedValue({
+        categories: [],
+        tags: [],
+    }),
+}));
+
+jest.mock('@/utils/db/safeSupabaseQuery', () => ({
+    safeSupabaseQuery: jest.fn().mockResolvedValue({ data: [], error: null }),
+}));
+
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
+}));
 
 const mockBook: Book = {
     id: 'book-1',
@@ -19,6 +42,8 @@ const mockBook: Book = {
     price: '29.99',
     sales_count: 1500,
     stock_quantity: 100,
+    reviews: [],
+    rating: 5,
 };
 
 describe('BookDetails', () => {

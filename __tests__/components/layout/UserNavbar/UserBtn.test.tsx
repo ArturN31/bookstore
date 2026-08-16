@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { usePathname } from 'next/navigation';
 
 const mockRouterPush = jest.fn();
-const mockRouterRefresh = jest.fn(); // Add this
+const mockRouterRefresh = jest.fn();
 const mockUsePathname = usePathname as jest.Mock;
 
 jest.mock('next/navigation', () => ({
@@ -20,8 +20,22 @@ jest.mock('@/providers/user/utils/useUser', () => ({
     useUserActions: jest.fn(),
 }));
 
+jest.mock('@/data/advancedFiltering/FilteringConstants', () => ({
+    getFilteringConstants: jest.fn().mockResolvedValue({
+        genres: [],
+        authors: [],
+        categories: [],
+    }),
+}));
+
 jest.mock('@/components/ui/CustomPopoverWithList', () => ({
-    CustomPopoverWithList: ({ listToRender, listItemOnClick }: any) => (
+    CustomPopoverWithList: ({
+        listToRender,
+        listItemOnClick,
+    }: {
+        listToRender?: string[];
+        listItemOnClick: (choice: string) => void;
+    }) => (
         <div>
             <button data-testid="popover-icon-btn">Open</button>
             {listToRender?.map((choice: string) => (

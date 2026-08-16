@@ -65,6 +65,17 @@ describe('CartService Initialization (getUsersCartID, createUsersCart, ensureCar
 
     beforeEach(() => {
         jest.clearAllMocks();
+
+        // Suppress expected security audit warnings outside request context during tests
+        jest.spyOn(console, 'warn').mockImplementation(
+            (message: unknown, ...optionalParams: unknown[]) => {
+                if (typeof message === 'string' && message.includes('[SecurityAudit]')) {
+                    return;
+                }
+                console.warn(message, ...optionalParams);
+            },
+        );
+
         (
             sanitizeSupabaseError as jest.MockedFunction<typeof sanitizeSupabaseError>
         ).mockImplementation(defaultSanitizeImplementation);
@@ -75,6 +86,10 @@ describe('CartService Initialization (getUsersCartID, createUsersCart, ensureCar
             data: { user: { id: validUUID } },
             error: null,
         } as unknown as Awaited<ReturnType<typeof mockSupabase.auth.getUser>>);
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
     });
 
     describe('getUsersCartID', () => {

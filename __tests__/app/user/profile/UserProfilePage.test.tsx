@@ -1,6 +1,10 @@
 import { UserProfilePage } from '@/app/user/profile/components/UserProfilePage/UserProfilePage';
 import { screen, render } from '@testing-library/react';
 
+jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
+    BookAdvancedFilteringProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 const mockedUserData: User = {
     id: 'user_id_123',
     created_at: new Date().toUTCString(),
@@ -21,7 +25,7 @@ describe('APP - pages/user - UserDetails', () => {
     it('should render component', () => {
         render(<UserProfilePage userData={mockedUserData} />);
 
-        expect(screen.getByText('Welcome back!'));
-        expect(screen.getByRole('heading', { name: 'johndoe' }));
+        expect(screen.getByText('Welcome back!')).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'johndoe' })).toBeInTheDocument();
     });
 });

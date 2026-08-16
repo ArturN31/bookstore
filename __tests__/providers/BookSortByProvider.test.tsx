@@ -2,6 +2,16 @@ import { render, screen, act } from '@testing-library/react';
 import { renderHook } from '@testing-library/react';
 import { BookSortByProvider, useBookSortBy } from '@/providers/BookSortByProvider';
 
+jest.mock('@/utils/db/client', () => ({
+    createClient: jest.fn().mockReturnValue({
+        from: jest.fn().mockReturnValue({
+            select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+        }),
+    }),
+}));
+
 const TestConsumer = () => {
     const { sortByType, toggleSortByType } = useBookSortBy();
     return (
@@ -63,7 +73,9 @@ const TestConsumer = () => {
             </button>
             <button
                 data-testid="toggle-invalid"
-                onClick={() => toggleSortByType('Invalid Filter' as any)}
+                onClick={() =>
+                    toggleSortByType('Invalid Filter' as Parameters<typeof toggleSortByType>[0])
+                }
             >
                 Invalid
             </button>
@@ -72,6 +84,15 @@ const TestConsumer = () => {
 };
 
 describe('BookSortByProvider', () => {
+    beforeAll(() => {
+        jest.spyOn(console, 'warn').mockImplementation(() => {});
+        jest.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterAll(() => {
+        jest.restoreAllMocks();
+    });
+
     it('should provide default filter type', () => {
         render(
             <BookSortByProvider>

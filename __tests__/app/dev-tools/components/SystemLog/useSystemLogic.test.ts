@@ -1,5 +1,9 @@
 import { renderHook, act } from '@testing-library/react';
-import { sysLog, clearSysLog, useSystemLog, LogEntry } from '@/app/dev-tools/components/SystemLog/useSystemLogic';
+import {
+    sysLog,
+    clearSysLog,
+    useSystemLog,
+} from '@/app/dev-tools/components/SystemLog/useSystemLogic';
 
 describe('useSystemLogic', () => {
     beforeEach(() => {
@@ -8,7 +12,9 @@ describe('useSystemLogic', () => {
 
     describe('sysLog', () => {
         it('should dispatch sys-log event with message and type', () => {
-            const dispatchEventSpy = jest.spyOn(window, 'dispatchEvent').mockImplementation(() => true);
+            const dispatchEventSpy = jest
+                .spyOn(window, 'dispatchEvent')
+                .mockImplementation(() => true);
 
             sysLog('Test message', 'success');
 
@@ -21,7 +27,9 @@ describe('useSystemLogic', () => {
         });
 
         it('should use info as default type', () => {
-            const dispatchEventSpy = jest.spyOn(window, 'dispatchEvent').mockImplementation(() => true);
+            const dispatchEventSpy = jest
+                .spyOn(window, 'dispatchEvent')
+                .mockImplementation(() => true);
 
             sysLog('Test message');
 
@@ -33,7 +41,7 @@ describe('useSystemLogic', () => {
 
         it('should not dispatch event when window is undefined', () => {
             const originalWindow = global.window;
-            delete (global as any).window;
+            delete (global as unknown as Record<string, unknown>).window;
 
             expect(() => sysLog('Test message')).not.toThrow();
 
@@ -43,7 +51,9 @@ describe('useSystemLogic', () => {
 
     describe('clearSysLog', () => {
         it('should dispatch sys-clear event', () => {
-            const dispatchEventSpy = jest.spyOn(window, 'dispatchEvent').mockImplementation(() => true);
+            const dispatchEventSpy = jest
+                .spyOn(window, 'dispatchEvent')
+                .mockImplementation(() => true);
 
             clearSysLog();
 
@@ -56,7 +66,7 @@ describe('useSystemLogic', () => {
 
         it('should not dispatch event when window is undefined', () => {
             const originalWindow = global.window;
-            delete (global as any).window;
+            delete (global as unknown as Record<string, unknown>).window;
 
             expect(() => clearSysLog()).not.toThrow();
 
@@ -92,9 +102,11 @@ describe('useSystemLogic', () => {
             const { result } = renderHook(() => useSystemLog());
 
             act(() => {
-                window.dispatchEvent(new CustomEvent('sys-log', {
-                    detail: { message: 'Test', type: 'info' },
-                }));
+                window.dispatchEvent(
+                    new CustomEvent('sys-log', {
+                        detail: { message: 'Test', type: 'info' },
+                    }),
+                );
             });
 
             expect(result.current).toHaveLength(1);
@@ -111,9 +123,11 @@ describe('useSystemLogic', () => {
 
             act(() => {
                 for (let i = 0; i < 60; i++) {
-                    window.dispatchEvent(new CustomEvent('sys-log', {
-                        detail: { message: `Message ${i}`, type: 'info' },
-                    }));
+                    window.dispatchEvent(
+                        new CustomEvent('sys-log', {
+                            detail: { message: `Message ${i}`, type: 'info' },
+                        }),
+                    );
                 }
             });
 

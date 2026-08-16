@@ -1,5 +1,9 @@
 import { useCartState, useCartActions } from '@/providers/cart/utils/useCart';
 
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
+}));
+
 describe('useCart', () => {
     describe('useCartState', () => {
         it('should throw error when used outside CartProvider', () => {

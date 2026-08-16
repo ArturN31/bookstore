@@ -8,8 +8,18 @@ jest.mock('next/cache', () => ({
     revalidateTag: jest.fn(),
 }));
 
+jest.mock('next/headers', () => ({
+    headers: jest.fn().mockReturnValue({
+        get: jest.fn().mockReturnValue('test-user-agent'),
+    }),
+}));
+
 jest.mock('@/data/books/BookService', () => ({
     fetchBooksWithReviews: jest.fn(),
+}));
+
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
 }));
 
 describe('useBookSearch', () => {
@@ -20,6 +30,7 @@ describe('useBookSearch', () => {
 
     afterEach(() => {
         jest.useRealTimers();
+        jest.restoreAllMocks();
     });
 
     it('should update input and debounce API call', async () => {

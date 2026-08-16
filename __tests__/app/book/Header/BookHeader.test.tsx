@@ -1,6 +1,21 @@
 import { render, screen } from '@testing-library/react';
 import { BookHeader } from '@/app/book/[slug]/components/Header/BookHeader';
 
+jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
+    BookAdvancedFilteringProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+jest.mock('@/data/advancedFiltering/FilteringConstants', () => ({
+    DEFAULT_FILTERING_CONSTANTS: {
+        categories: [],
+        tags: [],
+    },
+    getFilteringConstants: jest.fn().mockResolvedValue({
+        categories: [],
+        tags: [],
+    }),
+}));
+
 jest.mock('@/app/book/[slug]/components/Header/BookHeaderDetails', () => ({
     BookHeaderDetails: ({ book }: { book: Book }) => (
         <div data-testid="book-header-details">{book.title}</div>

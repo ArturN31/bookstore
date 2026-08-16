@@ -112,6 +112,20 @@ describe('App - Book[slug]', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+
+        // Suppress expected security audit warnings outside request context during tests
+        jest.spyOn(console, 'warn').mockImplementation(
+            (message: unknown, ...optionalParams: unknown[]) => {
+                if (typeof message === 'string' && message.includes('[SecurityAudit]')) {
+                    return;
+                }
+                console.error(message, ...optionalParams);
+            },
+        );
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
     });
 
     it('Should render the book details when data is successfully fetched', async () => {

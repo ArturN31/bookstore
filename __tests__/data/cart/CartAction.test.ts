@@ -14,6 +14,9 @@ jest.mock('@/data/schemas/cartSchema');
 jest.mock('next/cache', () => ({
     revalidatePath: jest.fn(),
 }));
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn(),
+}));
 
 const mockUser: MockUser = {
     id: 'user-123',

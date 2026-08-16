@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { FilteringSidebar } from '@/components/FilteringSidebar/FilteringSidebar';
 import { useBookFilter } from '@/providers/advancedFiltering/BookAdvancedFilteringProvider';
 
@@ -64,16 +64,39 @@ describe('FilteringSidebar', () => {
 
         expect(screen.queryByTestId('sidebar-header')).not.toBeInTheDocument();
 
-        fireEvent.click(openButton);
+        act(() => {
+            fireEvent.click(openButton);
+        });
         expect(screen.getByTestId('sidebar-header')).toBeInTheDocument();
         expect(screen.getByTestId('reset-button-section')).toBeInTheDocument();
         expect(screen.getByTestId('categories-container')).toBeInTheDocument();
 
         const closeButton = screen.getByTestId('header-close-button');
-        fireEvent.click(closeButton);
+        act(() => {
+            fireEvent.click(closeButton);
+        });
 
         await waitFor(() => {
             expect(screen.queryByTestId('sidebar-header')).not.toBeInTheDocument();
         });
+    });
+
+    it('should render skeleton when isLoading is true and drawer is open', () => {
+        mockUseBookFilter.mockReturnValue({
+            isLoading: true,
+            isOpen: false,
+            handleOpen: jest.fn(),
+            handleClose: jest.fn(),
+        });
+
+        render(<FilteringSidebar />);
+
+        const openButton = screen.getByTestId('sidebar-button');
+        act(() => {
+            fireEvent.click(openButton);
+        });
+
+        expect(screen.getByTestId('sidebar-skeleton')).toBeInTheDocument();
+        expect(screen.queryByTestId('sidebar-header')).not.toBeInTheDocument();
     });
 });

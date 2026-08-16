@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, RefObject } from 'react';
+import { useState, useEffect, useCallback, RefCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { deleteReviewAction, fetchUserReviewsAction } from './ReviewService';
 
@@ -22,7 +22,7 @@ export interface UseUserReviewsReturn {
     booksMap: Record<string | number, Partial<BookDB> | null>;
     hasMore: boolean;
     isLoadingMore: boolean;
-    observerTarget: RefObject<HTMLDivElement | null>;
+    observerTarget: RefCallback<HTMLDivElement | null>;
     isDeleteModalOpen: boolean;
     selectedEditReview: SelectedEditReview | null;
     isEditModalOpen: boolean;
@@ -31,6 +31,7 @@ export interface UseUserReviewsReturn {
     handleConfirmDelete: () => Promise<void>;
     handleOpenEditModal: (id: string | number) => void;
     handleCloseEditModal: () => void;
+    loadMoreReviews: () => Promise<void>;
 }
 
 export const useUserReviews = ({
@@ -61,7 +62,10 @@ export const useUserReviews = ({
     const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
     const [selectedEditReview, setSelectedEditReview] = useState<SelectedEditReview | null>(null);
 
-    const observerTarget = useRef<HTMLDivElement | null>(null);
+    const [observerNode, setObserverNode] = useState<HTMLDivElement | null>(null);
+    const observerTarget = useCallback((node: HTMLDivElement | null) => {
+        setObserverNode(node);
+    }, []);
 
     const loadMoreReviews = useCallback(async () => {
         if (isLoadingMore || !hasMore) return;
@@ -84,11 +88,10 @@ export const useUserReviews = ({
     }, [isLoadingMore, hasMore, page]);
 
     useEffect(() => {
-        const target = observerTarget.current;
-        if (!target) return;
+        if (!observerNode) return;
 
         const observer = new IntersectionObserver(
-            (entries) => {
+            (entries: IntersectionObserverEntry[]) => {
                 if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
                     void loadMoreReviews();
                 }
@@ -96,12 +99,14 @@ export const useUserReviews = ({
             { threshold: 0.5 },
         );
 
-        observer.observe(target);
+        observer.observe(observerNode);
 
         return () => {
-            if (target) observer.unobserve(target);
+            if (observerNode) {
+                observer.unobserve(observerNode);
+            }
         };
-    }, [hasMore, isLoadingMore, loadMoreReviews]);
+    }, [observerNode, hasMore, isLoadingMore, loadMoreReviews]);
 
     const handleOpenDeleteModal = (id: string | number) => {
         setSelectedDeleteId(id);
@@ -163,5 +168,6 @@ export const useUserReviews = ({
         handleConfirmDelete,
         handleOpenEditModal,
         handleCloseEditModal,
+        loadMoreReviews,
     };
 };

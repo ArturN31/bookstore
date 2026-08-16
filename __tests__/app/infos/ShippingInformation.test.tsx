@@ -25,6 +25,14 @@ jest.mock('@/app/layout', () => ({
 }));
 
 describe('APP - Infos - ShipppingInformation', () => {
+    beforeAll(() => {
+        jest.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+
+    afterAll(() => {
+        jest.restoreAllMocks();
+    });
+
     it('Should render the page', async () => {
         const element = ShipppingInformation();
         render(element);

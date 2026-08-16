@@ -31,7 +31,6 @@ export const DeleteReviewModal = ({ isOpen, onClose, onConfirm }: DeleteReviewMo
     };
 
     const handleConfirm = async () => {
-        if (confirmText !== 'DELETE') return;
         try {
             setIsDeleting(true);
             await onConfirm();

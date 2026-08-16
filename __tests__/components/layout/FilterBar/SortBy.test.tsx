@@ -7,7 +7,15 @@ jest.mock('@/providers/BookSortByProvider', () => ({
 }));
 
 jest.mock('@/components/ui/CustomPopoverWithList', () => ({
-    CustomPopoverWithList: ({ btnText, listToRender, listItemOnClick }: any) => (
+    CustomPopoverWithList: ({
+        btnText,
+        listToRender,
+        listItemOnClick,
+    }: {
+        btnText: string;
+        listToRender: string[];
+        listItemOnClick: (choice: string) => void;
+    }) => (
         <div>
             <button data-testid="popover-btn">{btnText}</button>
             <ul>
@@ -26,13 +34,20 @@ jest.mock('@/components/ui/CustomPopoverWithList', () => ({
 
 describe('SortBy Component', () => {
     const mockToggleSortByType = jest.fn();
+    const mockedUseBookSortBy = useBookSortBy as unknown as jest.Mock<
+        {
+            sortByType: string;
+            toggleSortByType: (type: string) => void;
+        },
+        []
+    >;
 
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
     it('should display "Sort By" when no filterType is selected', () => {
-        (useBookSortBy as jest.Mock).mockReturnValue({
+        mockedUseBookSortBy.mockReturnValue({
             sortByType: '',
             toggleSortByType: mockToggleSortByType,
         });
@@ -44,7 +59,7 @@ describe('SortBy Component', () => {
     });
 
     it('should display the active filterType text when selected', () => {
-        (useBookSortBy as jest.Mock).mockReturnValue({
+        mockedUseBookSortBy.mockReturnValue({
             sortByType: 'Price: Low to High',
             toggleSortByType: mockToggleSortByType,
         });
@@ -56,7 +71,7 @@ describe('SortBy Component', () => {
     });
 
     it('should call toggleSortByType with the correct choice when an item is clicked', () => {
-        (useBookSortBy as jest.Mock).mockReturnValue({
+        mockedUseBookSortBy.mockReturnValue({
             sortByType: 'Title: A-Z',
             toggleSortByType: mockToggleSortByType,
         });

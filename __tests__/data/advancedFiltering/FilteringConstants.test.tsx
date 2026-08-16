@@ -5,10 +5,41 @@ import {
     NUMERIC_CATEGORIES,
 } from '@/data/advancedFiltering/FilteringConstants';
 import { createFrontendClient } from '@/utils/db/client';
+import { act } from '@testing-library/react';
 
 jest.mock('@/utils/db/client', () => ({
     createFrontendClient: jest.fn(),
 }));
+
+const originalWarn = console.warn;
+const originalError = console.error;
+
+beforeAll(() => {
+    jest.spyOn(console, 'warn').mockImplementation(
+        (message: unknown, ...optionalParams: unknown[]) => {
+            if (typeof message === 'string' && message.includes('[SecurityAudit]')) {
+                return;
+            }
+            originalWarn(message, ...optionalParams);
+        },
+    );
+
+    jest.spyOn(console, 'error').mockImplementation(
+        (message: unknown, ...optionalParams: unknown[]) => {
+            if (
+                typeof message === 'string' &&
+                message.includes('Failed to load filter constants')
+            ) {
+                return;
+            }
+            originalError(message, ...optionalParams);
+        },
+    );
+});
+
+afterAll(() => {
+    jest.restoreAllMocks();
+});
 
 describe('FilteringConstants', () => {
     type FrontendClientType = Awaited<ReturnType<typeof createFrontendClient>>;
@@ -19,64 +50,61 @@ describe('FilteringConstants', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-
-        jest.spyOn(console, 'error').mockImplementation(() => {});
-        jest.spyOn(console, 'warn').mockImplementation(() => {});
-    });
-
-    afterEach(() => {
-        (console.error as jest.Mock<unknown, unknown[]>).mockRestore();
-        (console.warn as jest.Mock<unknown, unknown[]>).mockRestore();
     });
 
     describe('getFilteringConstants', () => {
         it('should fetch and process unique filter values correctly from Supabase', async () => {
-            const mockEq = jest.fn().mockResolvedValue({
-                data: [
-                    {
-                        author: 'Author A',
-                        format: 'Paperback',
-                        genre: 'Fiction',
-                        page_count: 100,
-                        price: 10.99,
-                        publication_date: '2023-01-01',
-                        publisher: 'Publisher X',
-                    },
-                    {
-                        author: 'Author A',
-                        format: 'Hardcover',
-                        genre: 'Fiction',
-                        page_count: 150,
-                        price: 15.99,
-                        publication_date: '2023-01-01',
-                        publisher: 'Publisher Y',
-                    },
-                    {
-                        author: null,
-                        format: null,
-                        genre: null,
-                        page_count: null,
-                        price: null,
-                        publication_date: null,
-                        publisher: null,
-                    },
-                ],
-                error: null,
-            });
+            const mockData = [
+                {
+                    author: 'Author A',
+                    format: 'Paperback',
+                    genre: 'Fiction',
+                    page_count: 100,
+                    price: 10.99,
+                    publication_date: '2023-01-01',
+                    publisher: 'Publisher X',
+                },
+                {
+                    author: 'Author A',
+                    format: 'Hardcover',
+                    genre: 'Fiction',
+                    page_count: 150,
+                    price: 15.99,
+                    publication_date: '2023-01-01',
+                    publisher: 'Publisher Y',
+                },
+                {
+                    author: null,
+                    format: null,
+                    genre: null,
+                    page_count: null,
+                    price: null,
+                    publication_date: null,
+                    publisher: null,
+                },
+            ];
 
-            const mockSelect = jest.fn().mockReturnValue({
-                eq: mockEq,
-            });
+            const mockQueryBuilder = {
+                select: jest.fn().mockReturnThis(),
+                eq: jest.fn().mockReturnThis(),
+                then: (
+                    resolve: (value: { data: typeof mockData; error: null }) => void,
+                    reject?: (reason: unknown) => void,
+                ) => {
+                    Promise.resolve({ data: mockData, error: null }).then(resolve, reject);
+                },
+            };
 
-            const mockFrom = jest.fn().mockReturnValue({
-                select: mockSelect,
-            });
+            const mockFrom = jest.fn().mockReturnValue(mockQueryBuilder);
 
             mockCreateFrontendClient.mockResolvedValue({
                 from: mockFrom,
             } as unknown as FrontendClientType);
 
-            const result = await getFilteringConstants();
+            let result!: Awaited<ReturnType<typeof getFilteringConstants>>;
+            await act(async () => {
+                result = await getFilteringConstants();
+            });
 
             expect(result.AUTHORS).toEqual(['Author A']);
             expect(result.FORMATS).toEqual(['Paperback', 'Hardcover']);
@@ -88,48 +116,57 @@ describe('FilteringConstants', () => {
         });
 
         it('should return default constants when supabase returns an error', async () => {
-            const mockEq = jest.fn().mockResolvedValue({
-                data: null,
-                error: { message: 'Database error' },
-            });
+            const mockQueryBuilder = {
+                select: jest.fn().mockReturnThis(),
+                eq: jest.fn().mockReturnThis(),
+                then: (
+                    resolve: (value: { data: null; error: { message: string } }) => void,
+                    reject?: (reason: unknown) => void,
+                ) => {
+                    Promise.resolve({ data: null, error: { message: 'Database error' } }).then(
+                        resolve,
+                        reject,
+                    );
+                },
+            };
 
-            const mockSelect = jest.fn().mockReturnValue({
-                eq: mockEq,
-            });
-
-            const mockFrom = jest.fn().mockReturnValue({
-                select: mockSelect,
-            });
+            const mockFrom = jest.fn().mockReturnValue(mockQueryBuilder);
 
             mockCreateFrontendClient.mockResolvedValue({
                 from: mockFrom,
             } as unknown as FrontendClientType);
 
-            const result = await getFilteringConstants();
+            let result!: Awaited<ReturnType<typeof getFilteringConstants>>;
+            await act(async () => {
+                result = await getFilteringConstants();
+            });
 
             expect(result).toEqual(DEFAULT_FILTERING_CONSTANTS);
             expect(console.error).toHaveBeenCalled();
         });
 
         it('should return default constants when data is null', async () => {
-            const mockEq = jest.fn().mockResolvedValue({
-                data: null,
-                error: null,
-            });
+            const mockQueryBuilder = {
+                select: jest.fn().mockReturnThis(),
+                eq: jest.fn().mockReturnThis(),
+                then: (
+                    resolve: (value: { data: null; error: null }) => void,
+                    reject?: (reason: unknown) => void,
+                ) => {
+                    Promise.resolve({ data: null, error: null }).then(resolve, reject);
+                },
+            };
 
-            const mockSelect = jest.fn().mockReturnValue({
-                eq: mockEq,
-            });
-
-            const mockFrom = jest.fn().mockReturnValue({
-                select: mockSelect,
-            });
+            const mockFrom = jest.fn().mockReturnValue(mockQueryBuilder);
 
             mockCreateFrontendClient.mockResolvedValue({
                 from: mockFrom,
             } as unknown as FrontendClientType);
 
-            const result = await getFilteringConstants();
+            let result!: Awaited<ReturnType<typeof getFilteringConstants>>;
+            await act(async () => {
+                result = await getFilteringConstants();
+            });
 
             expect(result).toEqual(DEFAULT_FILTERING_CONSTANTS);
             expect(console.error).toHaveBeenCalled();

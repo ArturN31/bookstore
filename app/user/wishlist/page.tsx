@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, startTransition } from 'react';
 import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { useUserState } from '@/providers/user/utils/useUser';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -24,14 +24,18 @@ export default function UsersWishlist() {
     const loadWishlistBooks = useCallback(
         async (signal?: AbortSignal) => {
             if (!profileExists || bookIDs.length === 0) {
-                setBooks([]);
-                setFetchingBooks(false);
+                startTransition(() => {
+                    setBooks([]);
+                    setFetchingBooks(false);
+                });
                 return;
             }
 
             try {
-                setFetchingBooks(true);
-                setError(null);
+                startTransition(() => {
+                    setFetchingBooks(true);
+                    setError(null);
+                });
 
                 const response = await fetchBooksWithReviews({
                     bookIDs,
@@ -40,13 +44,21 @@ export default function UsersWishlist() {
 
                 if (signal?.aborted) return;
 
-                if (response.error) setError(response.error);
-                else setBooks(response.data?.data ?? []);
+                startTransition(() => {
+                    if (response.error) setError(response.error);
+                    else setBooks(response.data?.data ?? []);
+                });
             } catch (err) {
                 if (signal?.aborted) return;
-                setError('Failed to fetch wishlist items. Please try again.');
+                startTransition(() => {
+                    setError('Failed to fetch wishlist items. Please try again.');
+                });
             } finally {
-                if (!signal?.aborted) setFetchingBooks(false);
+                if (!signal?.aborted) {
+                    startTransition(() => {
+                        setFetchingBooks(false);
+                    });
+                }
             }
         },
         [bookIDs, profileExists],
@@ -55,9 +67,7 @@ export default function UsersWishlist() {
     useEffect(() => {
         const controller = new AbortController();
 
-        Promise.resolve().then(() => {
-            loadWishlistBooks(controller.signal);
-        });
+        loadWishlistBooks(controller.signal);
 
         return () => controller.abort();
     }, [loadWishlistBooks]);

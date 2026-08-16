@@ -1,6 +1,44 @@
 import { UserDetails } from '@/app/user/profile/components/UserProfilePage/UserDetails';
 import { screen, render } from '@testing-library/react';
 
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
+}));
+
+const originalWarn = console.warn;
+const originalError = console.error;
+
+beforeAll(() => {
+    jest.spyOn(console, 'warn').mockImplementation(
+        (message: unknown, ...optionalParams: unknown[]) => {
+            if (
+                typeof message === 'string' &&
+                (message.includes('[SecurityAudit]') || message.includes('recordSecurityAuditLog'))
+            ) {
+                return;
+            }
+            originalWarn(message, ...optionalParams);
+        },
+    );
+
+    jest.spyOn(console, 'error').mockImplementation(
+        (message: unknown, ...optionalParams: unknown[]) => {
+            if (typeof message === 'string' && message.includes('[UserAddressAction]')) {
+                return;
+            }
+            originalError(message, ...optionalParams);
+        },
+    );
+});
+
+afterAll(() => {
+    jest.restoreAllMocks();
+});
+
 const mockedUserData: User = {
     id: 'user_id_123',
     created_at: new Date().toUTCString(),

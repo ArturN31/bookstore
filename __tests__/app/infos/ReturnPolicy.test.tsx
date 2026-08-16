@@ -18,6 +18,10 @@ jest.mock('@/providers/cart/CartProvider', () => ({
     })),
 }));
 
+jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
+    BookAdvancedFilteringProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 jest.mock('@/app/layout', () => ({
     Layout: ({ children }: { children: React.ReactNode }) => (
         <div data-testid="mock-layout">{children}</div>
@@ -26,8 +30,7 @@ jest.mock('@/app/layout', () => ({
 
 describe('APP - Infos - ReturnPolicy', () => {
     it('Should render the page', async () => {
-        const element = ReturnPolicy();
-        render(element);
+        render(<ReturnPolicy />);
         const header = await screen.findByTestId('return-policy-header');
         expect(header).toBeInTheDocument();
     });

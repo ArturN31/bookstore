@@ -1,9 +1,20 @@
 import { ChangeQuantityForm } from '@/components/CartForms/ChangeQuantityForm';
 import { useCartActions, useCartState } from '@/providers/cart/utils/useCart';
 import { useUserState } from '@/providers/user/utils/useUser';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { enqueueSnackbar } from 'notistack';
 import { useActionState, useOptimistic, useTransition } from 'react';
+
+jest.mock('@/data/advancedFiltering/FilteringConstants', () => ({
+    DEFAULT_FILTERING_CONSTANTS: {
+        categories: [],
+        tags: [],
+    },
+    getFilteringConstants: jest.fn().mockResolvedValue({
+        categories: [],
+        tags: [],
+    }),
+}));
 
 jest.mock('@/providers/cart/utils/useCart', () => ({
     useCartState: jest.fn(),
@@ -29,7 +40,7 @@ jest.mock('@/providers/user/utils/useUser', () => ({
 }));
 
 jest.mock('react', () => {
-    const actualReact = jest.requireActual('react');
+    const actualReact = jest.requireActual<typeof import('react')>('react');
     return {
         ...actualReact,
         useActionState: jest.fn(),
@@ -59,11 +70,13 @@ describe('APP - CartForms - ChangeQuantityForm', () => {
             profileExists: true,
             loading: false,
         });
-        (useActionState as jest.Mock).mockImplementation((action, initialState) => [
-            initialState,
-            action,
-            false,
-        ]);
+        (useActionState as jest.Mock).mockImplementation(
+            (action: (state: unknown, formData: FormData) => unknown, initialState: unknown) => [
+                initialState,
+                action,
+                false,
+            ],
+        );
         (useTransition as jest.Mock).mockImplementation(() => [false, (cb: () => void) => cb()]);
         (useOptimistic as jest.Mock).mockImplementation((initial: number) => [initial, jest.fn()]);
     });
@@ -134,7 +147,9 @@ describe('APP - CartForms - ChangeQuantityForm', () => {
         render(<ChangeQuantityForm bookID="1" />);
         const select = screen.getByRole('combobox');
 
-        fireEvent.change(select, { target: { value: '4' } });
+        act(() => {
+            fireEvent.change(select, { target: { value: '4' } });
+        });
 
         expect(mockSetOptimistic).toHaveBeenCalledWith(4);
     });
@@ -150,7 +165,9 @@ describe('APP - CartForms - ChangeQuantityForm', () => {
         render(<ChangeQuantityForm bookID="1" />);
         const select = screen.getByRole('combobox');
 
-        fireEvent.change(select, { target: { value: '7' } });
+        act(() => {
+            fireEvent.change(select, { target: { value: '7' } });
+        });
 
         expect(mockFormAction).toHaveBeenCalledTimes(1);
 
@@ -180,7 +197,9 @@ describe('APP - CartForms - ChangeQuantityForm', () => {
 
         expect(select.disabled).toBe(true);
 
-        fireEvent.change(select, { target: { value: '5' } });
+        act(() => {
+            fireEvent.change(select, { target: { value: '5' } });
+        });
 
         expect(mockSetOptimistic).not.toHaveBeenCalled();
         expect(mockFormAction).not.toHaveBeenCalled();

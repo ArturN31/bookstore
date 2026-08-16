@@ -122,6 +122,73 @@ describe('ReviewForm', () => {
         });
     });
 
+    it('should submit form with slug and username when provided', async () => {
+        const handleClose = jest.fn();
+        render(
+            <ReviewForm
+                bookId="123"
+                slug="my-book-slug"
+                handleClose={handleClose}
+            />,
+        );
+
+        await act(async () => {
+            capturedSetRating(5);
+            capturedSetComment('Great book description here!');
+        });
+
+        const submitButton = screen.getByRole('button', { name: /submit review/i });
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+            expect(mockUserReviewAction).toHaveBeenCalled();
+        });
+    });
+
+    it('should submit form without username when user is not present', async () => {
+        mockUseUserState.mockReturnValue({ user: null });
+        const handleClose = jest.fn();
+        render(
+            <ReviewForm
+                bookId="123"
+                handleClose={handleClose}
+            />,
+        );
+
+        await act(async () => {
+            capturedSetRating(5);
+            capturedSetComment('Great book description here!');
+        });
+
+        const submitButton = screen.getByRole('button', { name: /submit review/i });
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+            expect(mockUserReviewAction).toHaveBeenCalled();
+        });
+    });
+
+    it('should submit form with reviewId and isEditing when provided', async () => {
+        const handleClose = jest.fn();
+        render(
+            <ReviewForm
+                bookId="123"
+                reviewId={789}
+                isEditing={true}
+                initialRating={4}
+                initialReviewText="Editing review content here."
+                handleClose={handleClose}
+            />,
+        );
+
+        const submitButton = screen.getByRole('button', { name: /submit review/i });
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+            expect(mockUserReviewAction).toHaveBeenCalled();
+        });
+    });
+
     it('should handle functional state updaters for rating and review', async () => {
         const handleClose = jest.fn();
         render(
@@ -190,5 +257,27 @@ describe('ReviewForm', () => {
         await waitFor(() => {
             expect(mockUserReviewAction).toHaveBeenCalled();
         });
+    });
+
+    it('should reset form fields to initial values when reset button is clicked in editing mode', async () => {
+        const handleClose = jest.fn();
+        render(
+            <ReviewForm
+                bookId="123"
+                isEditing={true}
+                initialRating={4}
+                initialReviewText="Initial text"
+                handleClose={handleClose}
+            />,
+        );
+
+        await act(async () => {
+            capturedSetComment('Modified review text');
+        });
+
+        const resetButton = screen.getByRole('button', { name: /reset/i });
+        fireEvent.click(resetButton);
+
+        expect(mockUserReviewAction).not.toHaveBeenCalled();
     });
 });

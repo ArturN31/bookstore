@@ -4,6 +4,16 @@ import { mapToReviewPayload } from '@/data/books/reviews/ReviewMapper';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 import { DB_ERROR_MAP } from '@/utils/errors/ErrorHandlerConstants';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
+import { resolveUsername, isDuplicateReviewError } from '@/data/books/reviews/ReviewActionUtils';
+
+jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
+    BookAdvancedFilteringProvider: ({ children }: { children: React.ReactNode }) => children,
+    useBookAdvancedFiltering: jest.fn().mockReturnValue({
+        advancedFilters: [],
+        isLoading: false,
+    }),
+}));
 
 jest.mock('@/utils/db/server', () => ({
     createBackendClient: jest.fn(),
@@ -15,6 +25,17 @@ jest.mock('@/data/books/reviews/ReviewMapper', () => ({
 
 jest.mock('@/utils/security/securityAuditLogger', () => ({
     recordSecurityAuditLog: jest.fn(),
+}));
+
+jest.mock('@/utils/db/safeSupabaseQuery', () => ({
+    safeSupabaseQuery: jest.fn(async (queryFn: () => Promise<unknown>) => {
+        return queryFn();
+    }),
+}));
+
+jest.mock('@/data/books/reviews/ReviewActionUtils', () => ({
+    resolveUsername: jest.fn(),
+    isDuplicateReviewError: jest.fn(),
 }));
 
 jest.mock('@/utils/errors/SupabaseErrorHandler', () => ({
@@ -44,6 +65,8 @@ describe('UserReviewAction', () => {
     const mockCreateBackendClient = createBackendClient as jest.Mock;
     const mockMapToReviewPayload = mapToReviewPayload as jest.Mock;
     const mockRecordSecurityAuditLog = recordSecurityAuditLog as jest.Mock;
+    const mockResolveUsername = resolveUsername as jest.Mock;
+    const mockIsDuplicateReviewError = isDuplicateReviewError as jest.Mock;
     const mockRevalidatePath = revalidatePath as jest.Mock;
     const mockRevalidateTag = revalidateTag as jest.Mock;
 
@@ -51,9 +74,39 @@ describe('UserReviewAction', () => {
         auth: { getUser: jest.Mock };
         from: jest.Mock;
     };
+    let mockSelect: jest.Mock;
+    let mockEq2: jest.Mock;
+    let mockEq1: jest.Mock;
+    let mockUpdate: jest.Mock;
+    let mockInsert: jest.Mock;
+    let mockFrom: jest.Mock;
+    let consoleErrorSpy: jest.SpyInstance;
+    let consoleWarnSpy: jest.SpyInstance;
+
+    beforeAll(() => {
+        jest.spyOn(console, 'warn').mockImplementation(() => {});
+        jest.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterAll(() => {
+        jest.restoreAllMocks();
+    });
 
     beforeEach(() => {
         jest.clearAllMocks();
+        consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+        mockSelect = jest.fn().mockResolvedValue({ data: [{ id: 1 }], error: null });
+        mockEq2 = jest.fn().mockReturnValue({ select: mockSelect });
+        mockEq1 = jest.fn().mockReturnValue({ eq: mockEq2, select: mockSelect });
+        mockUpdate = jest.fn().mockReturnValue({ eq: mockEq1 });
+        mockInsert = jest.fn().mockReturnValue({ select: mockSelect });
+        mockFrom = jest.fn().mockReturnValue({
+            update: mockUpdate,
+            insert: mockInsert,
+        });
+
         mockSupabase = {
             auth: {
                 getUser: jest.fn().mockResolvedValue({
@@ -67,32 +120,23 @@ describe('UserReviewAction', () => {
                     error: null,
                 }),
             },
-            from: jest.fn().mockImplementation(() => ({
-                select: jest.fn().mockReturnValue({
-                    eq: jest.fn().mockReturnValue({
-                        maybeSingle: jest
-                            .fn()
-                            .mockResolvedValue({ data: { username: 'dbuser' }, error: null }),
-                        single: jest
-                            .fn()
-                            .mockResolvedValue({ data: { username: 'dbuser' }, error: null }),
-                    }),
-                    maybeSingle: jest
-                        .fn()
-                        .mockResolvedValue({ data: { username: 'dbuser' }, error: null }),
-                }),
-                insert: jest.fn().mockReturnValue({
-                    select: jest.fn().mockResolvedValue({ data: [{ id: 1 }], error: null }),
-                }),
-            })),
+            from: mockFrom,
         };
+
         mockCreateBackendClient.mockResolvedValue(mockSupabase);
         mockMapToReviewPayload.mockReturnValue({ rating: 5, review: 'Great book!' });
+        mockResolveUsername.mockResolvedValue('dbuser');
+        mockIsDuplicateReviewError.mockReturnValue(false);
     });
 
-    it('should return initial state when reset is present in formData', async () => {
+    afterEach(() => {
+        consoleErrorSpy.mockRestore();
+        consoleWarnSpy.mockRestore();
+    });
+
+    it('should return initial state when reset is present', async () => {
         const formData = new FormData();
-        formData.append('reset', 'yes');
+        formData.append('reset', 'true');
 
         const result = await UserReviewAction(undefined, formData);
         expect(result).toEqual({ message: null, username: '', isUsernameTaken: false });
@@ -107,7 +151,7 @@ describe('UserReviewAction', () => {
         expect(result.message).toBeDefined();
     });
 
-    it('should return validation errors when review schema validation fails', async () => {
+    it('should return validation errors when schema validation fails', async () => {
         const formData = new FormData();
         formData.append('bookId', 'book-123');
         formData.append('rating', 'invalid');
@@ -117,10 +161,10 @@ describe('UserReviewAction', () => {
         expect(result.validationErrors).toBeDefined();
     });
 
-    it('should return session expired and record security audit log when auth fails', async () => {
+    it('should return session expired when user is not authenticated with auth error', async () => {
         mockSupabase.auth.getUser.mockResolvedValueOnce({
             data: { user: null },
-            error: { message: 'Auth session missing' },
+            error: { message: 'Unauthorized' },
         });
 
         const formData = new FormData();
@@ -129,16 +173,46 @@ describe('UserReviewAction', () => {
         formData.append('review', 'Great book!');
 
         const result = await UserReviewAction(undefined, formData);
-        expect(mockRecordSecurityAuditLog).toHaveBeenCalled();
+        expect(mockRecordSecurityAuditLog).toHaveBeenCalledWith(
+            'UNAUTHORIZED_ACCESS_ATTEMPT',
+            null,
+            expect.objectContaining({
+                error: 'Sanitized Error',
+            }),
+        );
         expect(result.message).toBeDefined();
     });
 
-    it('should successfully insert review with username from formData and return initial state', async () => {
+    it('should return session expired with default message when user is not authenticated and auth error is null', async () => {
+        mockSupabase.auth.getUser.mockResolvedValueOnce({
+            data: { user: null },
+            error: null,
+        });
+
         const formData = new FormData();
         formData.append('bookId', 'book-123');
         formData.append('rating', '5');
         formData.append('review', 'Great book!');
-        formData.append('username', 'formuser');
+
+        const result = await UserReviewAction(undefined, formData);
+        expect(mockRecordSecurityAuditLog).toHaveBeenCalledWith(
+            'UNAUTHORIZED_ACCESS_ATTEMPT',
+            null,
+            expect.objectContaining({
+                error: 'Session expired',
+            }),
+        );
+        expect(result.message).toBeDefined();
+    });
+
+    it('should successfully insert a new review', async () => {
+        mockSelect.mockResolvedValueOnce({ data: [{ id: 1 }], error: null });
+
+        const formData = new FormData();
+        formData.append('bookId', 'book-123');
+        formData.append('rating', '5');
+        formData.append('review', 'Great book!');
+        formData.append('username', 'testuser');
 
         const result = await UserReviewAction(undefined, formData);
         expect(result).toEqual({ message: null, username: '', isUsernameTaken: false });
@@ -146,28 +220,61 @@ describe('UserReviewAction', () => {
         expect(mockRevalidateTag).toHaveBeenCalled();
     });
 
-    it('should successfully insert review using database or fallback username and return initial state', async () => {
+    it('should successfully update an existing review', async () => {
+        mockSelect.mockResolvedValueOnce({ data: [{ id: 1 }], error: null });
+
         const formData = new FormData();
         formData.append('bookId', 'book-123');
+        formData.append('reviewId', 'rev-1');
+        formData.append('slug', 'test-slug');
         formData.append('rating', '5');
-        formData.append('review', 'Great book!');
+        formData.append('review', 'Updated review');
 
         const result = await UserReviewAction(undefined, formData);
         expect(result).toEqual({ message: null, username: '', isUsernameTaken: false });
+        expect(mockRevalidatePath).toHaveBeenCalledWith('/book/test-slug', 'page');
     });
 
-    it('should handle duplicate review database error correctly', async () => {
-        mockSupabase.from.mockImplementationOnce(() => ({
-            insert: jest.fn().mockReturnValue({
-                select: jest.fn().mockResolvedValue({
-                    data: null,
-                    error: {
-                        code: '23505',
-                        message: 'duplicate key value violates unique constraint',
-                    },
-                }),
-            }),
-        }));
+    it('should handle update failure when update result has explicit error', async () => {
+        mockSelect.mockResolvedValueOnce({
+            data: [],
+            error: 'Database update error',
+        });
+
+        const formData = new FormData();
+        formData.append('bookId', 'book-123');
+        formData.append('reviewId', 'rev-1');
+        formData.append('rating', '5');
+        formData.append('review', 'Updated review');
+
+        const result = await UserReviewAction(undefined, formData);
+        expect(result.message).toBeDefined();
+        expect(consoleErrorSpy).toHaveBeenCalled();
+    });
+
+    it('should handle update failure with default fallback message when error is null and data is empty', async () => {
+        mockSelect.mockResolvedValueOnce({
+            data: [],
+            error: null,
+        });
+
+        const formData = new FormData();
+        formData.append('bookId', 'book-123');
+        formData.append('reviewId', 'rev-1');
+        formData.append('rating', '5');
+        formData.append('review', 'Updated review');
+
+        const result = await UserReviewAction(undefined, formData);
+        expect(result.message).toBeDefined();
+        expect(consoleErrorSpy).toHaveBeenCalled();
+    });
+
+    it('should handle insert failure when insert result has explicit error', async () => {
+        mockSelect.mockResolvedValueOnce({
+            data: [],
+            error: 'Database insert error',
+        });
+        mockIsDuplicateReviewError.mockReturnValue(false);
 
         const formData = new FormData();
         formData.append('bookId', 'book-123');
@@ -176,17 +283,15 @@ describe('UserReviewAction', () => {
 
         const result = await UserReviewAction(undefined, formData);
         expect(result.message).toBeDefined();
+        expect(consoleErrorSpy).toHaveBeenCalled();
     });
 
-    it('should handle general database insertion failure', async () => {
-        mockSupabase.from.mockImplementationOnce(() => ({
-            insert: jest.fn().mockReturnValue({
-                select: jest.fn().mockResolvedValue({
-                    data: null,
-                    error: { code: '500', message: 'Internal server error' },
-                }),
-            }),
-        }));
+    it('should handle insert failure with default fallback message when error is null and data is empty', async () => {
+        mockSelect.mockResolvedValueOnce({
+            data: [],
+            error: null,
+        });
+        mockIsDuplicateReviewError.mockReturnValue(false);
 
         const formData = new FormData();
         formData.append('bookId', 'book-123');
@@ -195,9 +300,27 @@ describe('UserReviewAction', () => {
 
         const result = await UserReviewAction(undefined, formData);
         expect(result.message).toBeDefined();
+        expect(consoleErrorSpy).toHaveBeenCalled();
     });
 
-    it('should rethrow NEXT_REDIRECT error if thrown inside the try block', async () => {
+    it('should handle duplicate review error during insert', async () => {
+        mockSelect.mockResolvedValueOnce({
+            data: null,
+            error: { code: '23505', message: 'MAP_23505' },
+        });
+        mockIsDuplicateReviewError.mockReturnValue(true);
+
+        const formData = new FormData();
+        formData.append('bookId', 'book-123');
+        formData.append('rating', '5');
+        formData.append('review', 'Great book!');
+
+        const result = await UserReviewAction(undefined, formData);
+        expect(result.message).toBeDefined();
+        expect(consoleErrorSpy).toHaveBeenCalled();
+    });
+
+    it('should rethrow NEXT_REDIRECT error', async () => {
         mockMapToReviewPayload.mockImplementationOnce(() => {
             throw new Error('NEXT_REDIRECT');
         });
@@ -210,7 +333,7 @@ describe('UserReviewAction', () => {
         await expect(UserReviewAction(undefined, formData)).rejects.toThrow('NEXT_REDIRECT');
     });
 
-    it('should handle unexpected exceptions gracefully', async () => {
+    it('should handle unexpected exceptions', async () => {
         mockMapToReviewPayload.mockImplementationOnce(() => {
             throw new Error('Unexpected failure');
         });

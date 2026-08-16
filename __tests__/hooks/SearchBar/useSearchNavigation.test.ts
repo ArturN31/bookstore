@@ -7,6 +7,10 @@ jest.mock('next/navigation', () => ({
     useRouter: jest.fn(),
 }));
 
+jest.mock('@/utils/db/safeSupabaseQuery', () => ({
+    safeSupabaseQuery: jest.fn().mockResolvedValue({ data: [], error: null }),
+}));
+
 describe('useSearchNavigation', () => {
     const mockPush = jest.fn();
     const mockClearSearch = jest.fn();

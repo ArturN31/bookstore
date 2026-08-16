@@ -1,5 +1,11 @@
 import { renderHook } from '@testing-library/react';
 import { useCartListeners } from '@/providers/cart/utils/useCartListeners';
+import React from 'react';
+
+jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
+    BookAdvancedFilteringProvider: ({ children }: { children: React.ReactNode }) =>
+        React.createElement(React.Fragment, null, children),
+}));
 
 describe('useCartListeners', () => {
     const mockSupabase = {
@@ -18,7 +24,9 @@ describe('useCartListeners', () => {
     it('should set up channel when cartID is provided', () => {
         renderHook(() =>
             useCartListeners({
-                supabase: mockSupabase as any,
+                supabase: mockSupabase as unknown as Parameters<
+                    typeof useCartListeners
+                >[0]['supabase'],
                 cartID: 'cart-123',
                 onCartChange: mockOnCartChange,
             }),
@@ -41,7 +49,9 @@ describe('useCartListeners', () => {
     it('should not set up channel when cartID is null', () => {
         renderHook(() =>
             useCartListeners({
-                supabase: mockSupabase as any,
+                supabase: mockSupabase as unknown as Parameters<
+                    typeof useCartListeners
+                >[0]['supabase'],
                 cartID: null,
                 onCartChange: mockOnCartChange,
             }),
@@ -53,14 +63,16 @@ describe('useCartListeners', () => {
     it('should call onCartChange when the postgres event callback is executed', () => {
         let callback: (() => void) | null = null;
 
-        mockSupabase.on.mockImplementation((_event: string, _config: any, cb: () => void) => {
+        mockSupabase.on.mockImplementation((_event: string, _config: unknown, cb: () => void) => {
             callback = cb;
             return mockSupabase;
         });
 
         renderHook(() =>
             useCartListeners({
-                supabase: mockSupabase as any,
+                supabase: mockSupabase as unknown as Parameters<
+                    typeof useCartListeners
+                >[0]['supabase'],
                 cartID: 'cart-123',
                 onCartChange: mockOnCartChange,
             }),
@@ -76,7 +88,9 @@ describe('useCartListeners', () => {
     it('should remove the specific channel on unmount', () => {
         const { unmount } = renderHook(() =>
             useCartListeners({
-                supabase: mockSupabase as any,
+                supabase: mockSupabase as unknown as Parameters<
+                    typeof useCartListeners
+                >[0]['supabase'],
                 cartID: 'cart-123',
                 onCartChange: mockOnCartChange,
             }),
@@ -89,9 +103,11 @@ describe('useCartListeners', () => {
 
     it('should re-subscribe when cartID changes', () => {
         const { rerender } = renderHook(
-            ({ cartID }) =>
+            ({ cartID }: { cartID: string | null }) =>
                 useCartListeners({
-                    supabase: mockSupabase as any,
+                    supabase: mockSupabase as unknown as Parameters<
+                        typeof useCartListeners
+                    >[0]['supabase'],
                     cartID,
                     onCartChange: mockOnCartChange,
                 }),

@@ -28,6 +28,10 @@ jest.mock('@/providers/cart/utils/useCart', () => ({
     useCartActions: jest.fn(),
 }));
 
+jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
+    BookAdvancedFilteringProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 jest.mock('notistack', () => ({ enqueueSnackbar: jest.fn() }));
 
 const createMockBook = (overrides: Partial<Book>): Book => ({

@@ -83,4 +83,46 @@ describe('ReviewFormModal', () => {
             expect(screen.queryByTestId('review-form')).not.toBeInTheDocument();
         });
     });
+
+    it('should support controlled mode and call controlledOnClose when closing', () => {
+        mockUseUserState.mockReturnValue({
+            loggedIn: true,
+            profileExists: true,
+        });
+
+        const handleControlledClose = jest.fn();
+
+        render(
+            <ReviewFormModal
+                bookId="123"
+                isOpen={true}
+                onClose={handleControlledClose}
+            />,
+        );
+
+        expect(screen.getByTestId('review-form')).toBeInTheDocument();
+
+        const closeButton = screen.getByRole('button', { name: /close/i });
+        fireEvent.click(closeButton);
+
+        expect(handleControlledClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('should render Edit Review title when editing mode is enabled via reviewId', () => {
+        mockUseUserState.mockReturnValue({
+            loggedIn: true,
+            profileExists: true,
+        });
+
+        render(
+            <ReviewFormModal
+                bookId="123"
+                reviewId="rev-456"
+                isOpen={true}
+                onClose={jest.fn()}
+            />,
+        );
+
+        expect(screen.getByText('Edit Review')).toBeInTheDocument();
+    });
 });
