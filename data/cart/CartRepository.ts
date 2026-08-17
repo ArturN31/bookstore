@@ -21,7 +21,8 @@ export const upsertItem = async (
 ) => {
     return supabase
         .from('shopping_cart_items')
-        .upsert({ cart_id: cartId, book_id: bookId, quantity }, { onConflict: 'cart_id, book_id' });
+        .upsert({ cart_id: cartId, book_id: bookId, quantity }, { onConflict: 'cart_id, book_id' })
+        .select();
 };
 
 export const updateItem = async (
@@ -33,7 +34,8 @@ export const updateItem = async (
     return supabase
         .from('shopping_cart_items')
         .update({ quantity })
-        .match({ cart_id: cartId, book_id: bookId });
+        .match({ cart_id: cartId, book_id: bookId })
+        .select();
 };
 
 export const deleteItem = async (
@@ -44,7 +46,8 @@ export const deleteItem = async (
     return supabase
         .from('shopping_cart_items')
         .delete()
-        .match({ cart_id: cartId, book_id: bookId });
+        .match({ cart_id: cartId, book_id: bookId })
+        .select();
 };
 
 export const fetchFullCartWithBooks = async (

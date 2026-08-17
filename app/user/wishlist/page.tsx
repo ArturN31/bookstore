@@ -9,12 +9,16 @@ import { WishlistLoading } from '@/app/user/wishlist/components/WishlistLoading'
 import { WishlistProfileRequired } from '@/app/user/wishlist/components/WishlistProfileRequired';
 import { WishlistHeader } from '@/app/user/wishlist/components/WishlistHeader';
 import { WishlistEmptyState } from '@/app/user/wishlist/components/WishlistEmptyState';
+import { WishlistShareButton } from './components/WishlistShareButton';
 
 export default function UsersWishlist() {
-    const { wishlist, profileExists, loading: userLoading } = useUserState();
+    const { user, wishlist, profileExists, loading: userLoading } = useUserState();
     const [books, setBooks] = useState<Book[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [fetchingBooks, setFetchingBooks] = useState(false);
+    const [fetchingBooks, setFetchingBooks] = useState<boolean>(false);
+
+    const typedUser = user;
+    const username = typedUser?.username || '';
 
     const bookIDs = useMemo(() => {
         if (!wishlist) return [];
@@ -22,7 +26,7 @@ export default function UsersWishlist() {
     }, [wishlist]);
 
     const loadWishlistBooks = useCallback(
-        async (signal?: AbortSignal) => {
+        async (signal?: AbortSignal): Promise<void> => {
             if (!profileExists || bookIDs.length === 0) {
                 startTransition(() => {
                     setBooks([]);
@@ -46,9 +50,9 @@ export default function UsersWishlist() {
 
                 startTransition(() => {
                     if (response.error) setError(response.error);
-                    else setBooks(response.data?.data ?? []);
+                    else setBooks((response.data?.data as Book[]) ?? []);
                 });
-            } catch (err) {
+            } catch (err: unknown) {
                 if (signal?.aborted) return;
                 startTransition(() => {
                     setError('Failed to fetch wishlist items. Please try again.');
@@ -86,17 +90,15 @@ export default function UsersWishlist() {
     if (!profileExists) return <WishlistProfileRequired />;
 
     return (
-        <main className="container mx-auto max-w-7xl space-y-10 px-4 py-12">
+        <main className="mx-auto max-w-7xl space-y-12 pb-20">
             <WishlistHeader
                 count={books.length}
                 isSyncing={fetchingBooks}
+                username={username}
             />
 
             {books.length > 0 ? (
-                <section
-                    className="transition-opacity duration-500"
-                    style={{ opacity: fetchingBooks ? 0.6 : 1 }}
-                >
+                <div className="relative px-6">
                     <BooksManager
                         initialData={{
                             error: null,
@@ -108,7 +110,7 @@ export default function UsersWishlist() {
                             },
                         }}
                     />
-                </section>
+                </div>
             ) : (
                 <WishlistEmptyState />
             )}

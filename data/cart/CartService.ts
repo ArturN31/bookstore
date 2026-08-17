@@ -42,9 +42,10 @@ export const addItemToUsersCart = async (
     bookQuantity: number,
 ): Promise<ActionResponse<boolean>> => {
     if (bookQuantity < 1) return { data: false, error: APP_ERROR_MESSAGES.INVALID_QUANTITY };
-    return handleItemMutation('addItemToUsersCart', cartID, bookID, (supabase) =>
-        Repo.upsertItem(supabase, cartID, bookID, bookQuantity),
-    );
+    return handleItemMutation('addItemToUsersCart', cartID, bookID, async (supabase) => {
+        const { error } = await Repo.upsertItem(supabase, cartID, bookID, bookQuantity);
+        return { data: error ? null : true, error };
+    });
 };
 
 export const updateItemInUsersCart = async (
@@ -53,18 +54,20 @@ export const updateItemInUsersCart = async (
     bookQuantity: number,
 ): Promise<ActionResponse<boolean>> => {
     if (bookQuantity < 1) return { data: false, error: APP_ERROR_MESSAGES.INVALID_QUANTITY };
-    return handleItemMutation('updateItemInUsersCart', cartID, bookID, (supabase) =>
-        Repo.updateItem(supabase, cartID, bookID, bookQuantity),
-    );
+    return handleItemMutation('updateItemInUsersCart', cartID, bookID, async (supabase) => {
+        const { error } = await Repo.updateItem(supabase, cartID, bookID, bookQuantity);
+        return { data: error ? null : true, error };
+    });
 };
 
 export const removeItemFromUsersCart = async (
     cartID: string,
     bookID: string,
 ): Promise<ActionResponse<boolean>> => {
-    return handleItemMutation('removeItemFromUsersCart', cartID, bookID, (supabase) =>
-        Repo.deleteItem(supabase, cartID, bookID),
-    );
+    return handleItemMutation('removeItemFromUsersCart', cartID, bookID, async (supabase) => {
+        const { error } = await Repo.deleteItem(supabase, cartID, bookID);
+        return { data: error ? null : true, error };
+    });
 };
 
 export const getCartData = async (

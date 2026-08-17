@@ -337,12 +337,12 @@ The following features are partially or not yet implemented:
 - [X] **Advanced Multi-Select Filtering**: Support simultaneous filtering by multiple genres and price ranges with real-time result updates.
 - [X] **Skeleton Loading States**: Implement shimmering MUI Skeleton components to replace basic loading spinners during SSR data fetching, improving perceived performance.
 - [X] **Image Optimisation**: Implement Next.js Image component with WebP conversion and responsive srcset for book cover art.
-- [ ] **Accessibility Enhancements**: Conduct a full WCAG 2.1 audit and implement ARIA roles, keyboard navigation, and screen reader support across the application.
 - [X] **User Reviews - Advanced Features**: Expand the reviews system to include:
   - [X] **User Reviews - View own reviews**: Allow users to view and manage their submitted reviews, including editing and deleting options.
   - [X] **User Reviews - Delete**: Implement server actions and UI for users to delete their own reviews, with appropriate validation and confirmation prompts.
   - [X] **User Reviews - Edit**: Implement server actions and UI for users to edit their own reviews, ensuring validation and real-time updates.
-- [ ] **Wishlist Sharing**: Enable users to share their wishlist via a unique URL, allowing friends and family to view and purchase items directly from the wishlist.
+- [X] **Wishlist Sharing**: Enable users to share their wishlist via a unique URL, allowing friends and family to view and purchase items directly from the wishlist.
+- [ ] **Accessibility Enhancements**: Conduct a full WCAG 2.1 audit and implement ARIA roles, keyboard navigation, and screen reader support across the application.
 
 ### 3. Advanced Store Features
 
