@@ -20,6 +20,12 @@ export const addressSchema = z.object(addressFields);
 export const fullUserSchema = z.object(addressFields).extend({
     firstName: z.string().trim().min(2, 'First name must be at least 2 characters'),
     lastName: z.string().trim().min(2, 'Last name must be at least 2 characters'),
+    username: z
+        .string()
+        .min(3, 'Username must be at least 3 characters long')
+        .max(50, 'Username cannot be longer than 50 characters')
+        .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores')
+        .trim(),
     dob: z
         .string()
         .min(1, 'Date of birth is required')

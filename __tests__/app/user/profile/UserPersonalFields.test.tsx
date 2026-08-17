@@ -1,5 +1,5 @@
-import { AddressFormFields } from '@/app/user/profile/components/AddressForm/AddressForm';
-import { UserPersonalFields } from '@/app/user/profile/components/AddressForm/UserPersonalFields';
+import { OnboardingFormFields } from '@/app/user/profile/components/OnboardingForm/OnboardingForm';
+import { UserPersonalFields } from '@/app/user/profile/components/OnboardingForm/UserPersonalFields';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 jest.mock('@/utils/db/safeSupabaseQuery', () => ({
@@ -9,7 +9,7 @@ jest.mock('@/utils/db/safeSupabaseQuery', () => ({
 describe('APP - pages/user - AddressForm - UserPersonalFields', () => {
     const mockOnChange = jest.fn();
 
-    const baseData: Partial<AddressFormFields> = {
+    const baseData: Partial<OnboardingFormFields> = {
         firstName: 'John',
         lastName: 'Doe',
         dob: '1990-01-01',
@@ -19,7 +19,7 @@ describe('APP - pages/user - AddressForm - UserPersonalFields', () => {
     it('renders with provided data (covers truthy branches)', () => {
         render(
             <UserPersonalFields
-                formData={baseData as AddressFormFields}
+                formData={baseData as OnboardingFormFields}
                 onChange={mockOnChange}
             />,
         );
@@ -33,7 +33,7 @@ describe('APP - pages/user - AddressForm - UserPersonalFields', () => {
     it('renders with empty strings when data is missing (covers falsy branches)', () => {
         render(
             <UserPersonalFields
-                formData={{} as AddressFormFields}
+                formData={{} as OnboardingFormFields}
                 onChange={mockOnChange}
             />,
         );
@@ -47,7 +47,7 @@ describe('APP - pages/user - AddressForm - UserPersonalFields', () => {
     it('calls onChange when inputs are modified', () => {
         render(
             <UserPersonalFields
-                formData={baseData as AddressFormFields}
+                formData={baseData as OnboardingFormFields}
                 onChange={mockOnChange}
             />,
         );

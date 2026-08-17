@@ -1,6 +1,9 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/database.types';
-import { insertUserAddress, updateUserAddress } from '@/data/user/address/UserAddressRepository';
+import {
+    insertOnboardingRecord,
+    updateOnboardingRecord,
+} from '@/data/user/onboarding/OnboardingRepository';
 
 jest.mock('@/utils/db/safeSupabaseQuery', () => ({
     safeSupabaseQuery: jest.fn(async (callback) => await callback()),
@@ -23,7 +26,7 @@ describe('UserRepository - Address Operations', () => {
         };
     });
 
-    describe('insertUserAddress', () => {
+    describe('insertOnboardingRecord', () => {
         it('should successfully insert a user address and return the created rows', async () => {
             const mockPayload: UserInsert = {
                 id: 'user-123',
@@ -58,7 +61,7 @@ describe('UserRepository - Address Operations', () => {
             const insertMock = jest.fn().mockReturnValue({ select: selectMock });
             mockSupabase.from.mockReturnValue({ insert: insertMock });
 
-            const result = await insertUserAddress(
+            const result = await insertOnboardingRecord(
                 mockSupabase as unknown as SupabaseClient<Database>,
                 mockPayload,
             );
@@ -88,7 +91,7 @@ describe('UserRepository - Address Operations', () => {
             const insertMock = jest.fn().mockReturnValue({ select: selectMock });
             mockSupabase.from.mockReturnValue({ insert: insertMock });
 
-            const result = await insertUserAddress(
+            const result = await insertOnboardingRecord(
                 mockSupabase as unknown as SupabaseClient<Database>,
                 mockPayload,
             );
@@ -100,7 +103,7 @@ describe('UserRepository - Address Operations', () => {
         });
     });
 
-    describe('updateUserAddress', () => {
+    describe('updateOnboardingRecord', () => {
         it('should successfully update a user address and return the updated rows', async () => {
             const userId = 'user-123';
             const mockPayload: UserUpdate = {
@@ -129,7 +132,7 @@ describe('UserRepository - Address Operations', () => {
             const updateMock = jest.fn().mockReturnValue({ eq: eqMock });
             mockSupabase.from.mockReturnValue({ update: updateMock });
 
-            const result = await updateUserAddress(
+            const result = await updateOnboardingRecord(
                 mockSupabase as unknown as SupabaseClient<Database>,
                 userId,
                 mockPayload,
@@ -155,7 +158,7 @@ describe('UserRepository - Address Operations', () => {
             const updateMock = jest.fn().mockReturnValue({ eq: eqMock });
             mockSupabase.from.mockReturnValue({ update: updateMock });
 
-            const result = await updateUserAddress(
+            const result = await updateOnboardingRecord(
                 mockSupabase as unknown as SupabaseClient<Database>,
                 userId,
                 mockPayload,

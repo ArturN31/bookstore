@@ -8,7 +8,7 @@ type UserInsert = UserTable['Insert'];
 type UserUpdate = UserTable['Update'];
 type UserRow = UserTable['Row'];
 
-export const insertUserAddress = async (
+export const insertOnboardingRecord = async (
     supabase: SupabaseClient<Database>,
     payload: UserInsert,
 ): Promise<SafeQueryResult<UserRow[]>> => {
@@ -17,7 +17,7 @@ export const insertUserAddress = async (
     });
 };
 
-export const updateUserAddress = async (
+export const updateOnboardingRecord = async (
     supabase: SupabaseClient<Database>,
     userId: string,
     payload: UserUpdate,

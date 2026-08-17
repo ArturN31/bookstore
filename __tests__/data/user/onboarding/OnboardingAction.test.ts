@@ -1,5 +1,8 @@
-import { UserAddressAction } from '@/data/user/address/UserAddressAction';
-import { insertUserAddress, updateUserAddress } from '@/data/user/address/UserAddressRepository';
+import { OnboardingAction } from '@/data/user/onboarding/OnboardingAction';
+import {
+    insertOnboardingRecord,
+    updateOnboardingRecord,
+} from '@/data/user/onboarding/OnboardingRepository';
 import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -38,7 +41,7 @@ type MockSupabaseClient = {
     };
 };
 
-describe('APP - data - actions - AddressForm - UserAddressAction', () => {
+describe('APP - data - actions - AddressForm - OnboardingAction', () => {
     let mockSupabase: MockSupabaseClient;
     let consoleErrorSpy: jest.SpyInstance;
     let consoleWarnSpy: jest.SpyInstance;
@@ -69,7 +72,7 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
         const formData = new FormData();
         formData.append('reset', 'yes');
 
-        const result = await UserAddressAction('add', {}, formData);
+        const result = await OnboardingAction('add', {}, formData);
         expect(result.message).toBeNull();
     });
 
@@ -78,7 +81,7 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
         formData.append('city', 'Glasgow');
         formData.append('postcode', 'INVALID_POSTCODE');
 
-        const result = await UserAddressAction('update', {}, formData);
+        const result = await OnboardingAction('update', {}, formData);
 
         expect(result.validationErrors).toBeDefined();
         expect(result.message).toBe('Please correct the highlighted errors.');
@@ -97,7 +100,7 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
             error: { message: 'Auth failed' },
         });
 
-        const result = await UserAddressAction('update', {}, formData);
+        const result = await OnboardingAction('update', {}, formData);
         expect(result.message).toBe('Session expired. Please log in again.');
     });
 
@@ -113,7 +116,7 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
             error: null,
         });
 
-        const result = await UserAddressAction('update', {}, formData);
+        const result = await OnboardingAction('update', {}, formData);
         expect(result.message).toBe('Session expired. Please log in again.');
     });
 
@@ -129,16 +132,16 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
             error: null,
         });
 
-        jest.mocked(updateUserAddress).mockResolvedValue({
+        jest.mocked(updateOnboardingRecord).mockResolvedValue({
             data: null,
             error: 'DB fail',
         });
 
-        const result = await UserAddressAction('update', {}, formData);
+        const result = await OnboardingAction('update', {}, formData);
 
         expect(result.message).toBe('Failed to save address details.');
         expect(result.error).toBe('DB fail');
-        expect(updateUserAddress).toHaveBeenCalledWith(
+        expect(updateOnboardingRecord).toHaveBeenCalledWith(
             mockSupabase,
             '123',
             expect.objectContaining({
@@ -169,12 +172,12 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
             error: null,
         });
 
-        jest.mocked(insertUserAddress).mockResolvedValue({
+        jest.mocked(insertOnboardingRecord).mockResolvedValue({
             data: null,
             error: 'Insert DB failure',
         });
 
-        const result = await UserAddressAction('add', {}, formData);
+        const result = await OnboardingAction('add', {}, formData);
 
         expect(result.message).toBe('Failed to save address details.');
         expect(result.error).toBe('Insert DB failure');
@@ -192,14 +195,14 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
             error: null,
         });
 
-        jest.mocked(updateUserAddress).mockResolvedValue({
+        jest.mocked(updateOnboardingRecord).mockResolvedValue({
             data: [],
             error: null,
         });
 
-        await UserAddressAction('update', {}, formData);
+        await OnboardingAction('update', {}, formData);
 
-        expect(updateUserAddress).toHaveBeenCalledWith(
+        expect(updateOnboardingRecord).toHaveBeenCalledWith(
             mockSupabase,
             '123',
             expect.objectContaining({
@@ -232,14 +235,14 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
             error: null,
         });
 
-        jest.mocked(insertUserAddress).mockResolvedValue({
+        jest.mocked(insertOnboardingRecord).mockResolvedValue({
             data: [],
             error: null,
         });
 
-        await UserAddressAction('add', {}, formData);
+        await OnboardingAction('add', {}, formData);
 
-        expect(insertUserAddress).toHaveBeenCalledWith(
+        expect(insertOnboardingRecord).toHaveBeenCalledWith(
             mockSupabase,
             expect.objectContaining({
                 id: '123',
@@ -263,9 +266,9 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
             error: null,
         });
 
-        jest.mocked(updateUserAddress).mockRejectedValue(new Error('NEXT_REDIRECT'));
+        jest.mocked(updateOnboardingRecord).mockRejectedValue(new Error('NEXT_REDIRECT'));
 
-        await expect(UserAddressAction('update', {}, formData)).rejects.toThrow('NEXT_REDIRECT');
+        await expect(OnboardingAction('update', {}, formData)).rejects.toThrow('NEXT_REDIRECT');
     });
 
     it('handles unexpected exceptions and enters the catch block', async () => {
@@ -277,7 +280,7 @@ describe('APP - data - actions - AddressForm - UserAddressAction', () => {
 
         jest.mocked(createBackendClient).mockRejectedValue(new Error('Unexpected system crash'));
 
-        const result = await UserAddressAction('update', {}, formData);
+        const result = await OnboardingAction('update', {}, formData);
 
         expect(result.message).toBe('Failed to save address details.');
         expect(result.error).toBe('Unexpected system crash');

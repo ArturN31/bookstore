@@ -1,10 +1,10 @@
 'use server';
 
-import { addressSchema, fullUserSchema } from '@/data/schemas/addressSchema';
+import { addressSchema, fullUserSchema } from '@/data/schemas/onboardingSchema';
 import { createBackendClient } from '@/utils/db/server';
 import { z } from 'zod';
-import { mapToUserPayload } from './UserAddressMapper';
-import { insertUserAddress, updateUserAddress } from './UserAddressRepository';
+import { mapToUserPayload } from './OnboardingMapper';
+import { insertOnboardingRecord, updateOnboardingRecord } from './OnboardingRepository';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { Database } from '@/database.types';
@@ -15,23 +15,23 @@ import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 
 type UserInsert = Database['public']['Tables']['users']['Insert'];
 
-export type UserAddressFormState = {
+export type OnboardingFormState = {
     message?: string | null;
     validationErrors?: z.core.$ZodIssue[];
     error?: string | null;
 };
 
-const INITIAL_EMPTY_STATE: UserAddressFormState = {
+const INITIAL_EMPTY_STATE: OnboardingFormState = {
     message: null,
     validationErrors: undefined,
     error: null,
 };
 
-export async function UserAddressAction(
+export async function OnboardingAction(
     mode: 'add' | 'update',
-    prevState: UserAddressFormState,
+    prevState: OnboardingFormState,
     formData: FormData,
-): Promise<UserAddressFormState> {
+): Promise<OnboardingFormState> {
     const rawData = Object.fromEntries(formData.entries());
 
     if (rawData.reset) return INITIAL_EMPTY_STATE;
@@ -55,7 +55,7 @@ export async function UserAddressAction(
 
         if (authError || !user) {
             void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', null, {
-                operation: `UserAddressAction_${mode}_auth_failed`,
+                operation: `OnboardingAction_${mode}_auth_failed`,
                 error: authError ? sanitizeSupabaseError(authError) : 'Session expired',
             });
             return { message: APP_ERROR_MESSAGES.SESSION_EXPIRED };
@@ -65,22 +65,22 @@ export async function UserAddressAction(
 
         const { error: dbError } =
             mode === 'add'
-                ? await insertUserAddress(supabase, { id: user.id, ...payload } as UserInsert)
-                : await updateUserAddress(supabase, user.id, payload);
+                ? await insertOnboardingRecord(supabase, { id: user.id, ...payload } as UserInsert)
+                : await updateOnboardingRecord(supabase, user.id, payload);
 
         if (dbError) {
             const sanitizedError = sanitizeSupabaseError(dbError);
             return {
-                message: APP_ERROR_MESSAGES.SAVE_ADDRESS_ERROR,
+                message: sanitizedError,
                 error: sanitizedError,
             };
         }
     } catch (err: unknown) {
         if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
-        console.error('[UserAddressAction] Critical Failure:', err);
+        console.error('[OnboardingAction] Critical Failure:', err);
         const sanitizedError = sanitizeSupabaseError(err);
         return {
-            message: APP_ERROR_MESSAGES.SAVE_ADDRESS_ERROR,
+            message: sanitizedError,
             error: sanitizedError,
         };
     }

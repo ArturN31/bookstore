@@ -1,12 +1,12 @@
 import ChangeAddressPage from '@/app/user/profile/change_address/page';
-import { UserAddressFormState } from '@/data/user/address/UserAddressAction';
+import { OnboardingFormState } from '@/data/user/onboarding/OnboardingAction';
 import { getUserData } from '@/data/user/UserService';
 import { render, screen } from '@testing-library/react';
 import { redirect } from 'next/navigation';
 
 const MOCK_MESSAGE = 'Please correct the errors below.';
 
-let mockReturnState: UserAddressFormState = {
+let mockReturnState: OnboardingFormState = {
     validationErrors: undefined,
     message: MOCK_MESSAGE,
     error: undefined,

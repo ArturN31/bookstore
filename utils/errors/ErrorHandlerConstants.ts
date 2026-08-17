@@ -27,9 +27,8 @@ export const APP_ERROR_MESSAGES = {
     // ==========================================
     ERROR_PROFILE_NOT_FOUND: 'User profile not found.',
     ERROR_PROFILE_FETCH_FAILED: 'Failed to retrieve profile data.',
-    SAVE_ADDRESS_ERROR: 'Failed to save address details.',
+    SAVE_PROFILE_ERROR: 'Failed to save profile details.',
     USERNAME_VALIDATION_ERROR: 'Please resolve the validation errors.',
-    CURRENT_USERNAME: 'This is already your current username.',
     USERNAME_TAKEN: 'This username is already taken.',
     USERNAME_EXISTS_DB_ERROR: 'This record already exists. Please use a different value.',
 

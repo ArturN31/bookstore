@@ -1,5 +1,5 @@
-import { AddressForm } from '@/app/user/profile/components/AddressForm/AddressForm';
-import { UserAddressAction } from '@/data/user/address/UserAddressAction';
+import { OnboardingForm } from '@/app/user/profile/components/OnboardingForm/OnboardingForm';
+import { OnboardingAction } from '@/data/user/onboarding/OnboardingAction';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { z } from 'zod';
 
@@ -29,7 +29,7 @@ jest.mock('@/data/advancedFiltering/FilteringConstants', () => ({
     }),
 }));
 
-const mockAction = UserAddressAction as jest.Mock;
+const mockAction = OnboardingAction as jest.Mock;
 
 describe('APP - pages/user - AddressForm', () => {
     beforeEach(() => {
@@ -38,7 +38,7 @@ describe('APP - pages/user - AddressForm', () => {
 
     it('"add" mode branches and nullish coalescing fallbacks', () => {
         render(
-            <AddressForm
+            <OnboardingForm
                 mode="add"
                 initialData={{}}
             />,
@@ -51,7 +51,7 @@ describe('APP - pages/user - AddressForm', () => {
 
     it('"update" mode branches and hides user-specific fields', () => {
         render(
-            <AddressForm
+            <OnboardingForm
                 mode="update"
                 initialData={{ city: 'London' }}
             />,
@@ -65,7 +65,7 @@ describe('APP - pages/user - AddressForm', () => {
     });
 
     it('handleFieldChange validation branches', async () => {
-        render(<AddressForm mode="update" />);
+        render(<OnboardingForm mode="update" />);
         const cityInput = screen.getByLabelText(/City/i);
 
         await act(async () => {
@@ -91,7 +91,7 @@ describe('APP - pages/user - AddressForm', () => {
         });
 
         render(
-            <AddressForm
+            <OnboardingForm
                 mode="update"
                 initialData={{
                     streetAddress: '123 Test St',
@@ -132,7 +132,7 @@ describe('APP - pages/user - AddressForm', () => {
 
     it('failing Zod validation', async () => {
         render(
-            <AddressForm
+            <OnboardingForm
                 mode="update"
                 initialData={{
                     streetAddress: '123 Valid St',
@@ -156,7 +156,7 @@ describe('APP - pages/user - AddressForm', () => {
     });
 
     it('handleReset and transition block', async () => {
-        render(<AddressForm mode="add" />);
+        render(<OnboardingForm mode="add" />);
         const clearBtn = screen.getByRole('button', { name: /clear/i });
 
         await act(async () => {
@@ -172,7 +172,7 @@ describe('APP - pages/user - AddressForm', () => {
     });
 
     it('exhaustively covers lines 138-156 by exercising every "add" mode field', async () => {
-        render(<AddressForm mode="add" />);
+        render(<OnboardingForm mode="add" />);
 
         const addModeFields = [
             { label: /First Name/i, name: 'firstName', value: 'John' },
@@ -209,7 +209,7 @@ describe('APP - pages/user - AddressForm', () => {
         };
 
         render(
-            <AddressForm
+            <OnboardingForm
                 mode="update"
                 initialData={dataWithMissingKey}
             />,
@@ -227,7 +227,7 @@ describe('APP - pages/user - AddressForm', () => {
         };
 
         render(
-            <AddressForm
+            <OnboardingForm
                 mode="add"
                 initialData={fullInitialData}
             />,
@@ -240,7 +240,7 @@ describe('APP - pages/user - AddressForm', () => {
 
     it('covers nullish coalescing branches in JSX (?? "")', async () => {
         render(
-            <AddressForm
+            <OnboardingForm
                 mode="update"
                 initialData={{
                     streetAddress: undefined,
@@ -257,7 +257,7 @@ describe('APP - pages/user - AddressForm', () => {
 
     it('covers nullish coalescing branches in JSX when values are defined (?? "" false branch)', async () => {
         render(
-            <AddressForm
+            <OnboardingForm
                 mode="update"
                 initialData={{
                     streetAddress: '123 Main St',
@@ -292,7 +292,7 @@ describe('APP - pages/user - AddressForm', () => {
         });
 
         render(
-            <AddressForm
+            <OnboardingForm
                 mode="update"
                 initialData={{
                     streetAddress: '456 Alternate St',
@@ -325,7 +325,7 @@ describe('APP - pages/user - AddressForm', () => {
         });
 
         render(
-            <AddressForm
+            <OnboardingForm
                 mode="update"
                 initialData={{
                     streetAddress: '789 Empty Route St',

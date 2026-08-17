@@ -24,7 +24,7 @@ interface ReviewFormProps {
     isEditing?: boolean;
 }
 
-const INITIAL_FORM_STATE: ReviewFormState = {
+export const INITIAL_REVIEW_FORM_STATE: ReviewFormState = {
     message: null,
     validationErrors: [],
 };
@@ -63,7 +63,7 @@ export const ReviewForm = ({
 
             return result;
         },
-        INITIAL_FORM_STATE,
+        INITIAL_REVIEW_FORM_STATE,
     );
 
     const handleFieldChangeByName = (name: 'rating' | 'review', value: number | null | string) => {

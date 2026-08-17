@@ -2,19 +2,20 @@
 
 import { useActionState, useState, useTransition } from 'react';
 import {
-    UserAddressAction,
-    type UserAddressFormState,
-} from '@/data/user/address/UserAddressAction';
-import { addressSchema, fullUserSchema } from '@/data/schemas/addressSchema';
+    OnboardingAction,
+    type OnboardingFormState,
+} from '@/data/user/onboarding/OnboardingAction';
+import { addressSchema, fullUserSchema } from '@/data/schemas/onboardingSchema';
 import { FormBtns } from '@/components/formItems/FormBtns';
 import { FormErrors } from '@/components/formItems/FormErrors';
 import { TextInput } from '@/components/formItems/TextInput';
 import { z } from 'zod';
 import { UserPersonalFields } from './UserPersonalFields';
 
-export interface AddressFormFields {
+export interface OnboardingFormFields {
     firstName: string;
     lastName: string;
+    username: string;
     dob: string;
     streetAddress: string;
     postcode: string;
@@ -25,18 +26,19 @@ export interface AddressFormFields {
     validationErrors: z.core.$ZodIssue[];
 }
 
-interface AddressFormProps {
+interface OnboardingFormProps {
     mode: 'add' | 'update';
-    initialData?: Partial<Omit<AddressFormFields, 'message' | 'validationErrors'>>;
+    initialData?: Partial<Omit<OnboardingFormFields, 'message' | 'validationErrors'>>;
 }
 
-export const AddressForm = ({ mode, initialData }: AddressFormProps) => {
+export const OnboardingForm = ({ mode, initialData }: OnboardingFormProps) => {
     const isAddMode = mode === 'add';
     const activeSchema = isAddMode ? fullUserSchema : addressSchema;
 
-    const [formData, setFormData] = useState<AddressFormFields>({
+    const [formData, setFormData] = useState<OnboardingFormFields>({
         firstName: initialData?.firstName ?? '',
         lastName: initialData?.lastName ?? '',
+        username: initialData?.username ?? '',
         dob: initialData?.dob ?? '',
         streetAddress: initialData?.streetAddress ?? '',
         postcode: initialData?.postcode ?? '',
@@ -48,8 +50,8 @@ export const AddressForm = ({ mode, initialData }: AddressFormProps) => {
     });
 
     const [formState, formAction] = useActionState(
-        async (state: UserAddressFormState, payload: FormData) => {
-            const result = await UserAddressAction(mode, state, payload);
+        async (state: OnboardingFormState, payload: FormData) => {
+            const result = await OnboardingAction(mode, state, payload);
             if (result) {
                 setFormData((prev) => ({
                     ...prev,
@@ -106,9 +108,10 @@ export const AddressForm = ({ mode, initialData }: AddressFormProps) => {
 
         const submitData = new FormData();
 
-        const dataKeys: (keyof AddressFormFields)[] = [
+        const dataKeys: (keyof OnboardingFormFields)[] = [
             'firstName',
             'lastName',
+            'username',
             'dob',
             'streetAddress',
             'postcode',
@@ -136,6 +139,7 @@ export const AddressForm = ({ mode, initialData }: AddressFormProps) => {
             setFormData({
                 firstName: '',
                 lastName: '',
+                username: '',
                 dob: '',
                 streetAddress: '',
                 postcode: '',
@@ -151,13 +155,13 @@ export const AddressForm = ({ mode, initialData }: AddressFormProps) => {
     return (
         <div className="relative grid w-full max-w-md place-self-center">
             <form
-                id={`${mode}-address-form`}
+                id={`${mode}-onboarding-form`}
                 onSubmit={handleSubmit}
                 className="grid gap-5 rounded-lg border-t-8 border-gray-800 bg-white p-8 shadow-md"
             >
                 <div>
                     <h1 className="text-xl font-semibold">
-                        {isAddMode ? 'Shipping Address' : 'Update Address'}
+                        {isAddMode ? 'Welcome - Complete Your Profile' : 'Update Address'}
                     </h1>
                 </div>
 

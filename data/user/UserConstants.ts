@@ -18,6 +18,7 @@ export const USER_ROUTES = {
 export const USER_DB_COLUMN_MAP = {
     firstName: 'first_name',
     lastName: 'last_name',
+    username: 'username',
     dob: 'date_of_birth',
     phoneNumber: 'phone_number',
     streetAddress: 'street_address',

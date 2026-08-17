@@ -1,5 +1,10 @@
 import { AuthError } from '@supabase/supabase-js';
-import { AUTH_CODE_MAP, AUTH_STATUS_MAP, DB_ERROR_MAP } from './ErrorHandlerConstants';
+import {
+    AUTH_CODE_MAP,
+    AUTH_STATUS_MAP,
+    DB_ERROR_MAP,
+    APP_ERROR_MESSAGES,
+} from './ErrorHandlerConstants';
 
 interface PostgrestErrorPayload {
     code?: string;
@@ -44,11 +49,25 @@ export const sanitizeSupabaseError = (error: unknown, userId?: string | null): s
             error !== null &&
             'code' in error &&
             (('details' in error && typeof (error as PostgrestErrorPayload).details === 'string') ||
-                ('hint' in error && typeof (error as PostgrestErrorPayload).hint === 'string'));
+                ('hint' in error && typeof (error as PostgrestErrorPayload).hint === 'string') ||
+                ('message' in error &&
+                    typeof (error as PostgrestErrorPayload).message === 'string'));
 
         if (isPostgrestError) {
             const dbErr = error as PostgrestErrorPayload;
             console.error('[Supabase DB Error]:', dbErr.message, dbErr.code, dbErr.details);
+
+            if (dbErr.code === '23505') {
+                const errorDetails = (dbErr.details ?? '').toLowerCase();
+                const errorMessage = (dbErr.message ?? '').toLowerCase();
+                if (
+                    errorDetails.includes('username') ||
+                    errorMessage.includes('users_username_key') ||
+                    errorMessage.includes('username')
+                ) {
+                    return APP_ERROR_MESSAGES.USERNAME_TAKEN;
+                }
+            }
 
             if (dbErr.code && DB_ERROR_MAP[dbErr.code]) return DB_ERROR_MAP[dbErr.code];
             return 'An unexpected database error occurred. Please try again later.';
