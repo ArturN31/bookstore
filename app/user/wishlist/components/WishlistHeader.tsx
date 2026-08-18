@@ -1,15 +1,14 @@
 'use client';
 
 import { CircularProgress } from '@mui/material';
-import { WishlistShareButton } from './WishlistShareButton';
+import { WishlistShareButton } from './WishlistSharing/WishlistShareButton';
 
 interface WishlistHeaderProps {
     count: number;
     isSyncing: boolean;
-    username?: string;
 }
 
-export const WishlistHeader = ({ count, isSyncing, username }: WishlistHeaderProps) => {
+export const WishlistHeader = ({ count, isSyncing }: WishlistHeaderProps) => {
     return (
         <header className="border-b border-slate-200 pb-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -37,11 +36,9 @@ export const WishlistHeader = ({ count, isSyncing, username }: WishlistHeaderPro
                     </div>
                 </div>
 
-                {username && (
-                    <div className="shrink-0">
-                        <WishlistShareButton username={username} />
-                    </div>
-                )}
+                <div className="shrink-0">
+                    <WishlistShareButton />
+                </div>
             </div>
         </header>
     );

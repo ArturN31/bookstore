@@ -72,13 +72,13 @@ export const BooksManager = ({ initialData, queryParams }: BooksManagerProps) =>
         <div className="mx-auto w-full max-w-screen-2xl">
             <div className="flex flex-col gap-8">
                 <section
-                    className="grid grid-cols-1 gap-x-4 gap-y-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+                    className="flex flex-wrap justify-center gap-6"
                     aria-label="Books gallery"
                 >
                     {state.books.map((book) => (
                         <div
                             key={`${book.id}-${sortByType}`}
-                            className="flex justify-center transition-opacity duration-300"
+                            className="flex w-full justify-center transition-opacity duration-300 sm:w-72"
                             style={{ opacity: isLoading && state.page === 1 ? 0.5 : 1 }}
                         >
                             <BookCard book={book} />

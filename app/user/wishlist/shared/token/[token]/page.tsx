@@ -1,47 +1,47 @@
-import { getPublicWishlistByUsername } from '@/data/user/wishlist/sharing/WishlistShareService';
+import { getWishlistByShareToken } from '@/data/user/wishlist/sharing/WishlistShareService';
 import {
-    PublicWishlistProfile,
+    TokenWishlistProfile,
     WishlistBookDto,
 } from '@/data/user/wishlist/sharing/WishlistShareRepository';
 import { BooksManager } from '@/components/books/BooksManager';
-import { RestrictedAccessView } from './components/RestrictedAccessView';
-import { SharedWishlistHeader } from './components/SharedWishlistHeader';
-import { SharedWishlistHero } from './components/SharedWishlistHero';
-import { EmptyWishlistView } from './components/EmptyWishlistView';
+import { RestrictedAccessView } from '../../[username]/components/RestrictedAccessView';
+import { SharedWishlistHeader } from '../../[username]/components/SharedWishlistHeader';
+import { SharedWishlistHero } from '../../[username]/components/SharedWishlistHero';
+import { EmptyWishlistView } from '../../[username]/components/EmptyWishlistView';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-interface SharedWishlistPageProps {
+interface SharedTokenWishlistPageProps {
     params: Promise<{
-        username: string;
+        token: string;
     }>;
 }
 
-export default async function SharedWishlistPage({ params }: SharedWishlistPageProps) {
-    const { username } = await params;
+export default async function SharedTokenWishlistPage({ params }: SharedTokenWishlistPageProps) {
+    const { token } = await params;
 
-    let publicWishlistData: PublicWishlistProfile | null = null;
+    let tokenWishlistData: TokenWishlistProfile | null = null;
     let fetchError: unknown = null;
 
     try {
-        const result = await getPublicWishlistByUsername(username);
-        publicWishlistData = result.data ?? null;
+        const result = await getWishlistByShareToken(token);
+        tokenWishlistData = result.data ?? null;
     } catch (err: unknown) {
         fetchError = err;
     }
 
-    if (fetchError) console.error('[SharedWishlistPage] Data retrieval error:', fetchError);
+    if (fetchError) console.error('[SharedTokenWishlistPage] Data retrieval error:', fetchError);
 
-    if (!publicWishlistData)
+    if (!tokenWishlistData)
         return (
             <RestrictedAccessView
-                username={username}
-                isPublicMode={true}
+                username={token}
+                isPublicMode={false}
             />
         );
 
-    const rawWishlistItems = publicWishlistData.wishlist ?? [];
+    const rawWishlistItems = tokenWishlistData.wishlist ?? [];
     const books: WishlistBookDto[] = rawWishlistItems
         .map((item) => item.books)
         .filter((book): book is WishlistBookDto => book !== null);
@@ -49,19 +49,19 @@ export default async function SharedWishlistPage({ params }: SharedWishlistPageP
     return (
         <main className="min-h-screen bg-slate-50/60 px-4 py-8 pb-24 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-7xl space-y-6">
-                <SharedWishlistHeader isPublicMode={true} />
+                <SharedWishlistHeader isPublicMode={false} />
 
                 <SharedWishlistHero
-                    username={publicWishlistData.username}
+                    username={tokenWishlistData.username}
                     totalBooks={books.length}
-                    isPublicMode={true}
+                    isPublicMode={false}
                 />
 
                 <section className="space-y-4 pt-4">
                     {books.length === 0 ? (
                         <EmptyWishlistView
-                            username={publicWishlistData.username}
-                            isPublicMode={true}
+                            username={tokenWishlistData.username}
+                            isPublicMode={false}
                         />
                     ) : (
                         <BooksManager

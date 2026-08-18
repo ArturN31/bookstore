@@ -111,13 +111,9 @@ Audited with professional-grade tooling to ensure speed and accessibility.
 
 - **Book Browsing & Pagination**: 12 books per page with comprehensive metadata (authors, genres, formats, publication dates)
 - **Advanced Search**: Real-time search bar with 1000ms debounce, case-insensitive partial matching, 10-book limit dropdown
-- **9 Sort Options**: 
-  - Title (A-Z, Z-A)
-  - Price (Low-High, High-Low)
-  - Release Date (Newest, Oldest)
-  - Customer Rating (Highest, Lowest)
-  - **Best Sellers** (by sales_count) ✅ Fully Implemented
-- **Multi-Dimensional Filtering**: Filter by genre and book format with instant feedback
+- **Sorting and Filtering**: 
+  - Traditional sorting options (by name, price, best sellers, etc.)
+  - Advanced filtering allowing to filter the content by book data (authors, genres, formats, price range, etc.)
 - **Book Details Pages**: Comprehensive metadata display with dynamic SEO metadata
 - **Reviews System**: 
   - Paginated user reviews with 5-star ratings
@@ -126,11 +122,17 @@ Audited with professional-grade tooling to ensure speed and accessibility.
   - Add/remove books with 10-item limit
   - Persistent storage with cross-device sync
   - Real-time hover effects indicating status
+  - Togglable wishlist mode Public/Private
+  - Public wishlist accessible via username
+  - Private wishlist accessible via token that can be refreshed to revoke access to the view
+  - Restricted access to the mode that is not chosen
 - **Shopping Cart**: 
   - Animated sidebar drawer with smooth transitions
   - Real-time quantity controls (1-99 items)
   - "Reactive Flip" synchronization: 100% reliable cart status via useActionState + isPending + server timestamps
   - Total calculation with tax support
+- **User Profile**: Page with access to account settings and users content
+- **Security Audit Logs**: Logging of aspects such as authentication, password changes, unauthorized data access, etc.
 - **Real-time Feedback**: Notistack toast notifications for all interactions
 
 ### Authentication & User Management
@@ -296,16 +298,66 @@ This ensures type safety from form submission to database insert.
 ### Directory Structure
 
 ```filesystem
-app/              → Server routes and layouts (strong automated coverage)
-components/       → Reusable UI atoms (strong automated coverage)
-data/
-  ├─ actions/     → Server Actions with Zod validation (well covered by tests)
-  ├─ books/       → Data fetching queries (well covered by tests)
-  └─ schemas/     → Zod schemas (well covered by tests)
-providers/        → Global state (User, Cart contexts) (well covered by tests)
-utils/
-  └─ db/          → Database helpers (admin, client, seed)
-__tests__/        → Test suite mirroring src/ structure
+app/                        → Next.js App Router server routes and layouts
+  ├─ book/[slug]/           → Book details page (single book view)
+  ├─ books/[...slug]/       → Books listing page (grouped by genre and format)
+  ├─ dev-tools/             → Developer tools console (telemetry, logs, seeding, user registry)
+  ├─ infos/                 → Legal and informational pages (TOS, Privacy, Shipping)
+  ├─ user/                  → User-facing pages
+    ├─ auth/                → Authentication routes
+    │   ├─ change_password → Change account password page
+    │   ├─ signin/         → User login page
+    │   └─ signup/         → User registration page
+    ├─ content/reviews/     → User reviews management (view, edit, delete own reviews)
+    ├─ profile/             → User profile management (details, address, password)
+    ├─ wishlist/            → User wishlist
+      └─ shared/         → Shared wishlist pages
+      ├─ [username]/ → Public wishlist accessible via username
+      └─ token/[token]/ → Private wishlist accessible via shared token
+components/                 → Reusable UI components
+  ├─ books/                → Book-related components
+  │   ├─ BooksManager/     → Book listing manager
+  │   └─ bookCard/        → Book card components
+  ├─ CartForms/            → Cart-related forms
+  ├─ CartSidebar/         → Cart sidebar drawer
+  ├─ FilteringSidebar/    → Advanced filtering sidebar
+  ├─ formItems/           → Reusable form input components
+  ├─ layout/              → Layout components (Header, Footer, RootLayout)
+  └─ ui/                  → UI primitives (Breadcrumbs, Tooltip, Popover, ErrorState)
+data/                      → Data layer (actions, services, repositories, constants, hooks)
+  ├─ advancedFiltering/   → Advanced filtering logic
+  ├─ auth/                → Authentication actions
+  ├─ books/               → Book data layer
+  │   └─ reviews/        → Book reviews logic
+  ├─ cart/                → Shopping cart logic
+  ├─ schemas/             → Zod validation schemas
+  └─ user/                → User data layer
+      ├─ onboarding/     → User onboarding logic
+      └─ wishlist/       → Wishlist logic
+        └─ sharing/     → Wishlist sharing logic
+hooks/                     → Custom React hooks
+  └─ SearchBar/          → Search-related hooks
+providers/                 → React Context providers (global state)
+  ├─ BookSortByProvider/ → Book sorting provider
+  ├─ Providers/          → Root providers wrapper
+  ├─ advancedFiltering/ → Advanced filtering provider
+  ├─ cart/               → Cart state providers (Context, Provider, Reducer)
+  └─ user/               → User state providers (Context, Provider, Reducer)
+public/                    → Static assets (images, SVGs)
+supabase/                  → Supabase configuration
+utils/                    → Utility functions
+  └─ db/                  → Database helpers
+      ├─ admin/          → Admin database functions
+      ├─ client/         → Client-side database functions
+      └─ dbSeed/         → Database seeding utilities
+__mocks__/                → Jest mocks (Next.js server mock)
+__tests__/                → Jest test suite
+  ├─ app/                → App pages tests mirroring app/ structure
+  ├─ components/         → Component tests mirroring components/ structure
+  ├─ data/               → Data tests
+  ├─ hooks/              → Hook tests
+  ├─ providers/          → Provider tests
+  └─ utils/              → Utility tests
 ```
 
 ## Known Limitations
@@ -342,6 +394,11 @@ The following features are partially or not yet implemented:
   - [X] **User Reviews - Delete**: Implement server actions and UI for users to delete their own reviews, with appropriate validation and confirmation prompts.
   - [X] **User Reviews - Edit**: Implement server actions and UI for users to edit their own reviews, ensuring validation and real-time updates.
 - [X] **Wishlist Sharing**: Enable users to share their wishlist via a unique URL, allowing friends and family to view and purchase items directly from the wishlist.
+  - [X] **Wishlist Sharing - Public**: Share wishlists globally via a recognizable, username-based URL (e.g., `user/wishlist/shared/[username]`).
+  - [x] **Wishlist Sharing - Private**: Share exclusively using auto-generated, token-based URLs (e.g., `user/wishlist/shared/token/[token]`). Add backend repository and service functions to generate, retrieve, and manage tokens.
+  - [X] **Wishlist Sharing - Visibility Controls**: Implement functionality that enables users to switch between the two modes.
+  - [X] **Wishlist Sharing - Restricted View**: Implement a "Restricted Access" UI to gracefully handle invalid/revoked private links, or attempts to view a public wishlist that is turned off or doesn't exist.
+- [ ] **User Profile - Public**: Add public profile page to allow users to view other users content.
 - [ ] **Accessibility Enhancements**: Conduct a full WCAG 2.1 audit and implement ARIA roles, keyboard navigation, and screen reader support across the application.
 
 ### 3. Advanced Store Features
