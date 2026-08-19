@@ -132,15 +132,15 @@ export const executeCartOperation = async (
 
     try {
         const result = await operation(cartId, bookId, quantity);
-        if (result.error || result.data === null)
+
+        if (result.error)
             return {
                 data: null,
-                error: sanitizeSupabaseError(
-                    result.error ?? APP_ERROR_MESSAGES.UNSUPPORTED_ACTION_TYPE,
-                ),
+                error: sanitizeSupabaseError(result.error),
             };
+
         return {
-            data: result.data,
+            data: result.data as boolean,
             error: null,
             message:
                 CART_SUCCESS_MESSAGES[type as keyof typeof CART_SUCCESS_MESSAGES] ||

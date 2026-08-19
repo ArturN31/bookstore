@@ -49,9 +49,7 @@ export const sanitizeSupabaseError = (error: unknown, userId?: string | null): s
             error !== null &&
             'code' in error &&
             (('details' in error && typeof (error as PostgrestErrorPayload).details === 'string') ||
-                ('hint' in error && typeof (error as PostgrestErrorPayload).hint === 'string') ||
-                ('message' in error &&
-                    typeof (error as PostgrestErrorPayload).message === 'string'));
+                ('hint' in error && typeof (error as PostgrestErrorPayload).hint === 'string'));
 
         if (isPostgrestError) {
             const dbErr = error as PostgrestErrorPayload;
@@ -80,7 +78,10 @@ export const sanitizeSupabaseError = (error: unknown, userId?: string | null): s
             (('name' in error &&
                 typeof (error as AuthErrorPayload).name === 'string' &&
                 (error as AuthErrorPayload).name?.startsWith('Auth')) ||
-                ('status' in error && typeof (error as AuthErrorPayload).status === 'number'));
+                ('status' in error && typeof (error as AuthErrorPayload).status === 'number') ||
+                ('code' in error &&
+                    typeof (error as AuthErrorPayload).code === 'string' &&
+                    AUTH_CODE_MAP[(error as AuthErrorPayload).code!]));
 
         if (isAuthErrorInstance || isAuthErrorObject) {
             const authErr = error as AuthErrorPayload;

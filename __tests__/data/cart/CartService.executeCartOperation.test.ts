@@ -189,28 +189,6 @@ describe('CartService Operations (executeCartOperation)', () => {
             });
         });
 
-        it('should return error when operation returns null data without error', async () => {
-            (Repo.upsertItem as jest.MockedFunction<typeof Repo.upsertItem>).mockResolvedValue({
-                data: null,
-                error: null,
-            } as unknown as Awaited<ReturnType<typeof Repo.upsertItem>>);
-
-            const result = await executeCartOperation(
-                CART_OPERATION_TYPES.INSERT,
-                validCartID,
-                validBookID,
-                1,
-            );
-
-            expect(sanitizeSupabaseError).toHaveBeenCalledWith(
-                APP_ERROR_MESSAGES.UNSUPPORTED_ACTION_TYPE,
-            );
-            expect(result).toEqual({
-                data: null,
-                error: `Sanitized: ${APP_ERROR_MESSAGES.UNSUPPORTED_ACTION_TYPE}`,
-            });
-        });
-
         it('should hit the catch block when an unexpected error is thrown inside the try block', async () => {
             const unexpectedError = new Error('Unexpected execution failure');
 

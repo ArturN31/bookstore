@@ -42,9 +42,9 @@ jest.mock('@/app/user/profile/components/UserProfilePage/UserProfilePage', () =>
     UserProfilePage: jest.fn(),
 }));
 
-jest.mock('@/app/user/profile/components/AddressForm/AddressForm', () => ({
-    AddressForm: jest.fn(({ mode }) => (
-        <div data-testid="add-address-form">Mock Address Form - {mode}</div>
+jest.mock('@/app/user/profile/components/OnboardingForm/OnboardingForm', () => ({
+    OnboardingForm: jest.fn(({ mode }) => (
+        <div data-testid="add-address-form">Mock Onboarding Form - {mode}</div>
     )),
 }));
 
@@ -54,8 +54,8 @@ jest.mock('@/app/user/profile/components/UserProfilePage/UserProfilePage', () =>
     )),
 }));
 
-jest.mock('@/data/user/address/UserAddressAction', () => ({
-    UserAddressAction: jest.fn(async (prevState, formData) => {
+jest.mock('@/data/user/onboarding/OnboardingAction', () => ({
+    OnboardingAction: jest.fn(async (prevState, formData) => {
         return {};
     }),
 }));

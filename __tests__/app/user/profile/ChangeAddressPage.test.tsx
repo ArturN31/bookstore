@@ -12,8 +12,8 @@ let mockReturnState: OnboardingFormState = {
     error: undefined,
 };
 
-jest.mock('@/data/user/address/UserAddressAction', () => ({
-    UserAddressAction: jest.fn(async () => mockReturnState),
+jest.mock('@/data/user/onboarding/OnboardingAction', () => ({
+    OnboardingAction: jest.fn(async () => mockReturnState),
 }));
 
 jest.mock('next/navigation', () => ({
@@ -28,8 +28,8 @@ jest.mock('@/utils/db/server', () => ({
     createBackendClient: jest.fn(() => ({})),
 }));
 
-jest.mock('@/app/user/profile/components/AddressForm/AddressForm', () => ({
-    AddressForm: jest.fn(({ initialData }) => (
+jest.mock('@/app/user/profile/components/OnboardingForm/OnboardingForm', () => ({
+    OnboardingForm: jest.fn(({ initialData }) => (
         <div data-testid="update-address-form">{initialData?.streetAddress}</div>
     )),
 }));

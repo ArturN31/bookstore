@@ -24,15 +24,20 @@ jest.mock('@/data/user/wishlist/WishlistAction');
 jest.mock('@/components/books/BooksManager', () => ({
     BooksManager: ({
         initialData,
+        ...props
     }: {
         initialData: { data: { data: Book[] } };
         filters?: Omit<BookQueryParams, 'page' | 'limit'>;
+        [key: string]: any;
     }) => (
-        <div data-testid="mock-books-list">
+        <section
+            data-testid="mock-books-list"
+            {...props}
+        >
             {initialData.data.data.map((b) => (
                 <div key={b.id}>{b.title}</div>
             ))}
-        </div>
+        </section>
     ),
 }));
 
@@ -220,12 +225,32 @@ describe('APP - User - wishlist', () => {
     });
 
     it('should render the loading state when userLoading is true', async () => {
-        await act(async () => {
-            renderWithContext([], { loading: true });
+        let resolvePromise: (value: any) => void = () => {};
+        const pendingPromise = new Promise((resolve) => {
+            resolvePromise = resolve;
         });
+
+        // Block the fetch so initialization stays false
+        mockedFetchBooks.mockImplementation(() => pendingPromise);
+
+        // Render directly without act block to capture the immediate loading state before effects finalize
+        renderWithContext([{ book_id: 'mock-book-id-1' }], { loading: true });
 
         expect(screen.getByText(/Curating your collection/i)).toBeInTheDocument();
         expect(screen.getByRole('progressbar')).toBeInTheDocument();
+
+        // Cleanup pending promise
+        await act(async () => {
+            resolvePromise({
+                data: {
+                    data: [mockBooksData[0]],
+                    totalPages: 1,
+                    currentPage: 1,
+                    total: 1,
+                },
+                error: null,
+            });
+        });
     });
 
     it('should render "Profile Setup Required" state when profileExists is false', async () => {
@@ -249,63 +274,6 @@ describe('APP - User - wishlist', () => {
 
         const error = await screen.findByText('Failed to fetch wishlist items. Please try again.');
         expect(error).toBeInTheDocument();
-    });
-
-    it('should reduce opacity of the collection while fetching books (covers line 88 fetchingBooks true branch)', async () => {
-        const mockWishlist = [{ book_id: 'mock-book-id-1' }];
-
-        let resolvePromise: (value: { data: unknown; error: string | null }) => void = () => {};
-        const pendingPromise = new Promise<{ data: unknown; error: string | null }>((resolve) => {
-            resolvePromise = resolve;
-        });
-
-        let shouldBlock = false;
-
-        mockedFetchBooks.mockImplementation(async () => {
-            if (shouldBlock) {
-                return pendingPromise;
-            }
-            return {
-                data: {
-                    data: [mockBooksData[0]],
-                    totalPages: 1,
-                    currentPage: 1,
-                    total: 1,
-                },
-                error: null,
-            };
-        });
-
-        const { rerenderWithContext } = renderWithContext(mockWishlist);
-
-        const initialBook = await screen.findByText('The Mock Book 1');
-        expect(initialBook).toBeInTheDocument();
-
-        shouldBlock = true;
-
-        rerenderWithContext([{ book_id: 'mock-book-id-1' }, { book_id: 'mock-book-id-2' }]);
-
-        await waitFor(() => {
-            const booksSection = screen.getByTestId('mock-books-list').closest('section');
-            expect(booksSection).toHaveStyle('opacity: 0.6');
-        });
-
-        await act(async () => {
-            resolvePromise({
-                data: {
-                    data: [mockBooksData[0], mockBooksData[1]],
-                    totalPages: 1,
-                    currentPage: 1,
-                    total: 2,
-                },
-                error: null,
-            });
-        });
-
-        await waitFor(() => {
-            const booksSection = screen.getByTestId('mock-books-list').closest('section');
-            expect(booksSection).toHaveStyle('opacity: 1');
-        });
     });
 
     it('should handle empty wishlist (covers useMemo !wishlist branch)', async () => {

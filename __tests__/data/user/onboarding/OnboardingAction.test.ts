@@ -19,6 +19,30 @@ jest.mock('@/data/advancedFiltering/FilteringConstants', () => ({
     }),
 }));
 
+jest.mock('@/data/schemas/onboardingSchema', () => ({
+    addressSchema: {
+        safeParse: jest.fn().mockImplementation((data: Record<string, unknown>) => {
+            if (data.postcode === 'INVALID_POSTCODE') {
+                return {
+                    success: false,
+                    error: {
+                        issues: [
+                            { code: 'custom', message: 'Invalid postcode', path: ['postcode'] },
+                        ],
+                    },
+                };
+            }
+            return { success: true, data };
+        }),
+    },
+    fullUserSchema: {
+        safeParse: jest.fn().mockImplementation((data: Record<string, unknown>) => ({
+            success: true,
+            data,
+        })),
+    },
+}));
+
 jest.mock('next/cache', () => ({
     revalidatePath: jest.fn(),
 }));
@@ -28,7 +52,7 @@ jest.mock('next/navigation', () => ({
 }));
 
 jest.mock('@/utils/db/server');
-jest.mock('@/data/user/address/UserAddressRepository');
+jest.mock('@/data/user/onboarding/OnboardingRepository');
 jest.mock('@/utils/errors/SupabaseErrorHandler', () => ({
     sanitizeSupabaseError: jest.fn((err: unknown) =>
         err instanceof Error ? err.message : String(err),
@@ -41,7 +65,7 @@ type MockSupabaseClient = {
     };
 };
 
-describe('APP - data - actions - AddressForm - OnboardingAction', () => {
+describe('APP - data - actions - OnboardingForm - OnboardingAction', () => {
     let mockSupabase: MockSupabaseClient;
     let consoleErrorSpy: jest.SpyInstance;
     let consoleWarnSpy: jest.SpyInstance;
@@ -139,7 +163,7 @@ describe('APP - data - actions - AddressForm - OnboardingAction', () => {
 
         const result = await OnboardingAction('update', {}, formData);
 
-        expect(result.message).toBe('Failed to save address details.');
+        expect(result.message).toBe('DB fail');
         expect(result.error).toBe('DB fail');
         expect(updateOnboardingRecord).toHaveBeenCalledWith(
             mockSupabase,
@@ -179,7 +203,7 @@ describe('APP - data - actions - AddressForm - OnboardingAction', () => {
 
         const result = await OnboardingAction('add', {}, formData);
 
-        expect(result.message).toBe('Failed to save address details.');
+        expect(result.message).toBe('Insert DB failure');
         expect(result.error).toBe('Insert DB failure');
     });
 
@@ -282,7 +306,7 @@ describe('APP - data - actions - AddressForm - OnboardingAction', () => {
 
         const result = await OnboardingAction('update', {}, formData);
 
-        expect(result.message).toBe('Failed to save address details.');
+        expect(result.message).toBe('Unexpected system crash');
         expect(result.error).toBe('Unexpected system crash');
         expect(sanitizeSupabaseError).toHaveBeenCalledWith(expect.any(Error));
     });
