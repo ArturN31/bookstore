@@ -6,7 +6,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
-import { useWishlistSharing } from './useWishlistSharing';
+import { useWishlistSharing } from './hook/useWishlistSharing';
 import { VisibilityToggle } from './VisibilityToggle';
 import { ShareLinkDisplay } from './ShareLinkDisplay';
 import { EmptyShareState } from './EmptyShareState';

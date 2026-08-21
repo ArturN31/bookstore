@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, ChangeEvent } from 'react';
 import { enqueueSnackbar } from 'notistack';
 import { useUserState } from '@/providers/user/utils/useUser';
 import { updateWishlistVisibilityAction } from '@/data/user/wishlist/sharing/WishlistShareAction';
+import { getErrorMessage, getShareUrl } from './wishlistSharingUtils';
 
 export interface UserRecord {
     id?: string;
@@ -11,6 +12,8 @@ export interface UserRecord {
     is_wishlist_public?: boolean;
     wishlist_share_token?: string | null;
 }
+
+const CLIPBOARD_RESET_DELAY_MS = 2500;
 
 export const useWishlistSharing = () => {
     const { user } = useUserState();
@@ -29,8 +32,9 @@ export const useWishlistSharing = () => {
 
     const isPublic = localIsPublic ?? serverIsPublic;
     const shareToken = localToken ?? serverToken;
+    const activeShareUrl = getShareUrl(isPublic, username, shareToken);
 
-    const handleTogglePublic = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleTogglePublic = (event: ChangeEvent<HTMLInputElement>) => {
         const newPublicState = event.target.checked;
         setLocalIsPublic(newPublicState);
 
@@ -50,13 +54,10 @@ export const useWishlistSharing = () => {
 
                 enqueueSnackbar(
                     newPublicState ? 'Wishlist is now public' : 'Wishlist is now private',
-                    {
-                        variant: 'success',
-                    },
+                    { variant: 'success' },
                 );
             } catch (err: unknown) {
-                const errorMessage =
-                    err instanceof Error ? err.message : 'Failed to update visibility';
+                const errorMessage = getErrorMessage(err, 'Failed to update visibility');
                 enqueueSnackbar(errorMessage, { variant: 'error' });
                 setLocalIsPublic(null);
                 setLocalToken(null);
@@ -71,37 +72,29 @@ export const useWishlistSharing = () => {
         startTransition(async () => {
             try {
                 if (!userId) throw new Error('User identifier missing');
+
                 const result = await updateWishlistVisibilityAction(userId, isPublic, newToken);
                 if (result.error) throw new Error(result.error);
+
                 enqueueSnackbar('Private share link updated successfully', { variant: 'success' });
             } catch (err: unknown) {
-                const errorMessage =
-                    err instanceof Error ? err.message : 'Failed to generate token';
+                const errorMessage = getErrorMessage(err, 'Failed to generate token');
                 enqueueSnackbar(errorMessage, { variant: 'error' });
                 setLocalToken(null);
             }
         });
     };
 
-    const activeShareUrl = isPublic
-        ? `${typeof window !== 'undefined' ? window.location.origin : ''}/user/wishlist/shared/${encodeURIComponent(
-              username,
-          )}`
-        : shareToken
-          ? `${typeof window !== 'undefined' ? window.location.origin : ''}/user/wishlist/shared/token/${encodeURIComponent(
-                shareToken,
-            )}`
-          : '';
-
     const handleCopyShareLink = async (): Promise<void> => {
         if (!activeShareUrl) return;
+
         try {
             await navigator.clipboard.writeText(activeShareUrl);
             setCopied(true);
             enqueueSnackbar('Link copied to clipboard!', { variant: 'success' });
-            setTimeout(() => setCopied(false), 2500);
+            setTimeout(() => setCopied(false), CLIPBOARD_RESET_DELAY_MS);
         } catch (err: unknown) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to copy link';
+            const errorMessage = getErrorMessage(err, 'Failed to copy link');
             console.error('[useWishlistSharing] Clipboard failure:', errorMessage);
             enqueueSnackbar('Failed to copy link.', { variant: 'error' });
         }
