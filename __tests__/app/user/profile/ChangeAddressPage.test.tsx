@@ -1,19 +1,19 @@
 import ChangeAddressPage from '@/app/user/profile/change_address/page';
-import { UserAddressFormState } from '@/data/user/address/UserAddressAction';
+import { OnboardingFormState } from '@/data/user/onboarding/OnboardingAction';
 import { getUserData } from '@/data/user/UserService';
 import { render, screen } from '@testing-library/react';
 import { redirect } from 'next/navigation';
 
 const MOCK_MESSAGE = 'Please correct the errors below.';
 
-let mockReturnState: UserAddressFormState = {
+let mockReturnState: OnboardingFormState = {
     validationErrors: undefined,
     message: MOCK_MESSAGE,
     error: undefined,
 };
 
-jest.mock('@/data/user/address/UserAddressAction', () => ({
-    UserAddressAction: jest.fn(async () => mockReturnState),
+jest.mock('@/data/user/onboarding/OnboardingAction', () => ({
+    OnboardingAction: jest.fn(async () => mockReturnState),
 }));
 
 jest.mock('next/navigation', () => ({
@@ -28,8 +28,8 @@ jest.mock('@/utils/db/server', () => ({
     createBackendClient: jest.fn(() => ({})),
 }));
 
-jest.mock('@/app/user/profile/components/AddressForm/AddressForm', () => ({
-    AddressForm: jest.fn(({ initialData }) => (
+jest.mock('@/app/user/profile/components/OnboardingForm/OnboardingForm', () => ({
+    OnboardingForm: jest.fn(({ initialData }) => (
         <div data-testid="update-address-form">{initialData?.streetAddress}</div>
     )),
 }));

@@ -283,43 +283,102 @@ describe('CartServiceUtils', () => {
     });
 
     describe('CART_OPERATIONS', () => {
-        it('should execute add operation successfully', async () => {
-            (Repo.upsertItem as jest.MockedFunction<typeof Repo.upsertItem>).mockResolvedValue({
-                data: true,
-                error: null,
-            } as unknown as Awaited<ReturnType<typeof Repo.upsertItem>>);
+        describe('add', () => {
+            it('should execute add operation successfully', async () => {
+                (Repo.upsertItem as jest.MockedFunction<typeof Repo.upsertItem>).mockResolvedValue({
+                    data: true,
+                    error: null,
+                } as unknown as Awaited<ReturnType<typeof Repo.upsertItem>>);
 
-            const operationFn = CART_OPERATIONS.add(validCartID, validBookID, 1);
-            const result = await operationFn(mockSupabase as unknown as BackendClient);
+                const operationFn = CART_OPERATIONS.add(validCartID, validBookID, 1);
+                const result = await operationFn(mockSupabase as unknown as BackendClient);
 
-            expect(result).toEqual({ data: true, error: null });
-            expect(Repo.upsertItem).toHaveBeenCalledWith(mockSupabase, validCartID, validBookID, 1);
+                expect(result).toEqual({ data: true, error: null });
+                expect(Repo.upsertItem).toHaveBeenCalledWith(
+                    mockSupabase,
+                    validCartID,
+                    validBookID,
+                    1,
+                );
+            });
+
+            it('should return data as null and propagate error if add operation fails', async () => {
+                const mockError = new Error('Insert failed');
+                (Repo.upsertItem as jest.MockedFunction<typeof Repo.upsertItem>).mockResolvedValue({
+                    data: null,
+                    error: mockError,
+                } as unknown as Awaited<ReturnType<typeof Repo.upsertItem>>);
+
+                const operationFn = CART_OPERATIONS.add(validCartID, validBookID, 1);
+                const result = await operationFn(mockSupabase as unknown as BackendClient);
+
+                expect(result).toEqual({ data: null, error: mockError });
+            });
         });
 
-        it('should execute update operation successfully', async () => {
-            (Repo.updateItem as jest.MockedFunction<typeof Repo.updateItem>).mockResolvedValue({
-                data: true,
-                error: null,
-            } as unknown as Awaited<ReturnType<typeof Repo.updateItem>>);
+        describe('update', () => {
+            it('should execute update operation successfully', async () => {
+                (Repo.updateItem as jest.MockedFunction<typeof Repo.updateItem>).mockResolvedValue({
+                    data: true,
+                    error: null,
+                } as unknown as Awaited<ReturnType<typeof Repo.updateItem>>);
 
-            const operationFn = CART_OPERATIONS.update(validCartID, validBookID, 2);
-            const result = await operationFn(mockSupabase as unknown as BackendClient);
+                const operationFn = CART_OPERATIONS.update(validCartID, validBookID, 2);
+                const result = await operationFn(mockSupabase as unknown as BackendClient);
 
-            expect(result).toEqual({ data: true, error: null });
-            expect(Repo.updateItem).toHaveBeenCalledWith(mockSupabase, validCartID, validBookID, 2);
+                expect(result).toEqual({ data: true, error: null });
+                expect(Repo.updateItem).toHaveBeenCalledWith(
+                    mockSupabase,
+                    validCartID,
+                    validBookID,
+                    2,
+                );
+            });
+
+            it('should return data as null and propagate error if update operation fails', async () => {
+                const mockError = new Error('Update failed');
+                (Repo.updateItem as jest.MockedFunction<typeof Repo.updateItem>).mockResolvedValue({
+                    data: null,
+                    error: mockError,
+                } as unknown as Awaited<ReturnType<typeof Repo.updateItem>>);
+
+                const operationFn = CART_OPERATIONS.update(validCartID, validBookID, 2);
+                const result = await operationFn(mockSupabase as unknown as BackendClient);
+
+                expect(result).toEqual({ data: null, error: mockError });
+            });
         });
 
-        it('should execute remove operation successfully', async () => {
-            (Repo.deleteItem as jest.MockedFunction<typeof Repo.deleteItem>).mockResolvedValue({
-                data: true,
-                error: null,
-            } as unknown as Awaited<ReturnType<typeof Repo.deleteItem>>);
+        describe('remove', () => {
+            it('should execute remove operation successfully', async () => {
+                (Repo.deleteItem as jest.MockedFunction<typeof Repo.deleteItem>).mockResolvedValue({
+                    data: true,
+                    error: null,
+                } as unknown as Awaited<ReturnType<typeof Repo.deleteItem>>);
 
-            const operationFn = CART_OPERATIONS.remove(validCartID, validBookID, 0);
-            const result = await operationFn(mockSupabase as unknown as BackendClient);
+                const operationFn = CART_OPERATIONS.remove(validCartID, validBookID, 0);
+                const result = await operationFn(mockSupabase as unknown as BackendClient);
 
-            expect(result).toEqual({ data: true, error: null });
-            expect(Repo.deleteItem).toHaveBeenCalledWith(mockSupabase, validCartID, validBookID);
+                expect(result).toEqual({ data: true, error: null });
+                expect(Repo.deleteItem).toHaveBeenCalledWith(
+                    mockSupabase,
+                    validCartID,
+                    validBookID,
+                );
+            });
+
+            it('should return data as null and propagate error if remove operation fails', async () => {
+                const mockError = new Error('Delete failed');
+                (Repo.deleteItem as jest.MockedFunction<typeof Repo.deleteItem>).mockResolvedValue({
+                    data: null,
+                    error: mockError,
+                } as unknown as Awaited<ReturnType<typeof Repo.deleteItem>>);
+
+                const operationFn = CART_OPERATIONS.remove(validCartID, validBookID, 0);
+                const result = await operationFn(mockSupabase as unknown as BackendClient);
+
+                expect(result).toEqual({ data: null, error: mockError });
+            });
         });
     });
 });

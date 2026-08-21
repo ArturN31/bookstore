@@ -24,10 +24,10 @@ describe('APP - pages/user - QuickActions', () => {
 
         const changePasswordLink = screen.getByRole('link', { name: /Change Password/i });
         const changeAddressLink = screen.getByRole('link', { name: /Change Address/i });
-        const changeUsernameLink = screen.getByRole('link', { name: /Change Username/i });
+        const myReviewsLink = screen.getByRole('link', { name: /My Book Reviews/i });
 
         expect(changePasswordLink).toHaveAttribute('href', '/user/auth/change_password');
         expect(changeAddressLink).toHaveAttribute('href', '/user/profile/change_address');
-        expect(changeUsernameLink).toHaveAttribute('href', '/user/profile/change_username');
+        expect(myReviewsLink).toHaveAttribute('href', '/user/content/reviews');
     });
 });

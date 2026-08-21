@@ -1,6 +1,6 @@
 import { getUserData } from '@/data/user/UserService';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { AddressForm } from './components/AddressForm/AddressForm';
+import { OnboardingForm } from './components/OnboardingForm/OnboardingForm';
 import { UserProfilePage } from './components/UserProfilePage/UserProfilePage';
 
 export const dynamic = 'force-dynamic';
@@ -26,7 +26,7 @@ export default async function ProfilePage() {
                     <h1 className="text-2xl font-bold">Welcome!</h1>
                     <p className="text-gray-600">Please complete your profile to continue.</p>
                 </div>
-                <AddressForm mode="add" />
+                <OnboardingForm mode="add" />
             </div>
         );
 

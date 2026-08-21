@@ -14,7 +14,8 @@ export default function UsersWishlist() {
     const { wishlist, profileExists, loading: userLoading } = useUserState();
     const [books, setBooks] = useState<Book[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [fetchingBooks, setFetchingBooks] = useState(false);
+    const [fetchingBooks, setFetchingBooks] = useState<boolean>(false);
+    const [hasInitialized, setHasInitialized] = useState<boolean>(false);
 
     const bookIDs = useMemo(() => {
         if (!wishlist) return [];
@@ -22,11 +23,12 @@ export default function UsersWishlist() {
     }, [wishlist]);
 
     const loadWishlistBooks = useCallback(
-        async (signal?: AbortSignal) => {
+        async (signal?: AbortSignal): Promise<void> => {
             if (!profileExists || bookIDs.length === 0) {
                 startTransition(() => {
                     setBooks([]);
                     setFetchingBooks(false);
+                    setHasInitialized(true);
                 });
                 return;
             }
@@ -46,19 +48,19 @@ export default function UsersWishlist() {
 
                 startTransition(() => {
                     if (response.error) setError(response.error);
-                    else setBooks(response.data?.data ?? []);
+                    else setBooks((response.data?.data as Book[]) ?? []);
                 });
-            } catch (err) {
+            } catch (err: unknown) {
                 if (signal?.aborted) return;
                 startTransition(() => {
                     setError('Failed to fetch wishlist items. Please try again.');
                 });
             } finally {
-                if (!signal?.aborted) {
+                if (!signal?.aborted)
                     startTransition(() => {
                         setFetchingBooks(false);
+                        setHasInitialized(true);
                     });
-                }
             }
         },
         [bookIDs, profileExists],
@@ -72,7 +74,7 @@ export default function UsersWishlist() {
         return () => controller.abort();
     }, [loadWishlistBooks]);
 
-    if (error) {
+    if (error)
         return (
             <ErrorState
                 title="Wishlist Unavailable"
@@ -80,23 +82,19 @@ export default function UsersWishlist() {
                 onRetry={() => loadWishlistBooks()}
             />
         );
-    }
 
-    if (userLoading) return <WishlistLoading />;
+    if (userLoading && !hasInitialized) return <WishlistLoading />;
     if (!profileExists) return <WishlistProfileRequired />;
 
     return (
-        <main className="container mx-auto max-w-7xl space-y-10 px-4 py-12">
+        <main className="mx-auto max-w-7xl space-y-12 pb-20">
             <WishlistHeader
                 count={books.length}
                 isSyncing={fetchingBooks}
             />
 
             {books.length > 0 ? (
-                <section
-                    className="transition-opacity duration-500"
-                    style={{ opacity: fetchingBooks ? 0.6 : 1 }}
-                >
+                <div className="w-full">
                     <BooksManager
                         initialData={{
                             error: null,
@@ -108,7 +106,7 @@ export default function UsersWishlist() {
                             },
                         }}
                     />
-                </section>
+                </div>
             ) : (
                 <WishlistEmptyState />
             )}

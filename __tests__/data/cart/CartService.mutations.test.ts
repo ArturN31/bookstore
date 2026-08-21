@@ -132,14 +132,14 @@ describe('CartService Item Mutations (addItem, updateItem, removeItem)', () => {
 
             it('should handle error when mutation fails', async () => {
                 (Repo.upsertItem as jest.MockedFunction<typeof Repo.upsertItem>).mockResolvedValue({
-                    data: false,
+                    data: null,
                     error: 'Add failed',
                 } as unknown as Awaited<ReturnType<typeof Repo.upsertItem>>);
 
                 const result = await addItemToUsersCart(validCartID, validBookID, 2);
 
                 expect(result).toEqual({
-                    data: false,
+                    data: null,
                     error: 'Add failed',
                 });
             });
@@ -177,14 +177,14 @@ describe('CartService Item Mutations (addItem, updateItem, removeItem)', () => {
 
             it('should handle error when update mutation fails', async () => {
                 (Repo.updateItem as jest.MockedFunction<typeof Repo.updateItem>).mockResolvedValue({
-                    data: false,
+                    data: null,
                     error: 'Update failed',
                 } as unknown as Awaited<ReturnType<typeof Repo.updateItem>>);
 
                 const result = await updateItemInUsersCart(validCartID, validBookID, 3);
 
                 expect(result).toEqual({
-                    data: false,
+                    data: null,
                     error: 'Update failed',
                 });
             });
@@ -212,14 +212,14 @@ describe('CartService Item Mutations (addItem, updateItem, removeItem)', () => {
 
             it('should handle error when remove mutation fails', async () => {
                 (Repo.deleteItem as jest.MockedFunction<typeof Repo.deleteItem>).mockResolvedValue({
-                    data: false,
+                    data: null,
                     error: 'Remove failed',
                 } as unknown as Awaited<ReturnType<typeof Repo.deleteItem>>);
 
                 const result = await removeItemFromUsersCart(validCartID, validBookID);
 
                 expect(result).toEqual({
-                    data: false,
+                    data: null,
                     error: 'Remove failed',
                 });
             });

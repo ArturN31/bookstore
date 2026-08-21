@@ -42,9 +42,10 @@ export const addItemToUsersCart = async (
     bookQuantity: number,
 ): Promise<ActionResponse<boolean>> => {
     if (bookQuantity < 1) return { data: false, error: APP_ERROR_MESSAGES.INVALID_QUANTITY };
-    return handleItemMutation('addItemToUsersCart', cartID, bookID, (supabase) =>
-        Repo.upsertItem(supabase, cartID, bookID, bookQuantity),
-    );
+    return handleItemMutation('addItemToUsersCart', cartID, bookID, async (supabase) => {
+        const { error } = await Repo.upsertItem(supabase, cartID, bookID, bookQuantity);
+        return { data: error ? null : true, error };
+    });
 };
 
 export const updateItemInUsersCart = async (
@@ -53,18 +54,20 @@ export const updateItemInUsersCart = async (
     bookQuantity: number,
 ): Promise<ActionResponse<boolean>> => {
     if (bookQuantity < 1) return { data: false, error: APP_ERROR_MESSAGES.INVALID_QUANTITY };
-    return handleItemMutation('updateItemInUsersCart', cartID, bookID, (supabase) =>
-        Repo.updateItem(supabase, cartID, bookID, bookQuantity),
-    );
+    return handleItemMutation('updateItemInUsersCart', cartID, bookID, async (supabase) => {
+        const { error } = await Repo.updateItem(supabase, cartID, bookID, bookQuantity);
+        return { data: error ? null : true, error };
+    });
 };
 
 export const removeItemFromUsersCart = async (
     cartID: string,
     bookID: string,
 ): Promise<ActionResponse<boolean>> => {
-    return handleItemMutation('removeItemFromUsersCart', cartID, bookID, (supabase) =>
-        Repo.deleteItem(supabase, cartID, bookID),
-    );
+    return handleItemMutation('removeItemFromUsersCart', cartID, bookID, async (supabase) => {
+        const { error } = await Repo.deleteItem(supabase, cartID, bookID);
+        return { data: error ? null : true, error };
+    });
 };
 
 export const getCartData = async (
@@ -129,15 +132,15 @@ export const executeCartOperation = async (
 
     try {
         const result = await operation(cartId, bookId, quantity);
-        if (result.error || result.data === null)
+
+        if (result.error)
             return {
                 data: null,
-                error: sanitizeSupabaseError(
-                    result.error ?? APP_ERROR_MESSAGES.UNSUPPORTED_ACTION_TYPE,
-                ),
+                error: sanitizeSupabaseError(result.error),
             };
+
         return {
-            data: result.data,
+            data: result.data as boolean,
             error: null,
             message:
                 CART_SUCCESS_MESSAGES[type as keyof typeof CART_SUCCESS_MESSAGES] ||

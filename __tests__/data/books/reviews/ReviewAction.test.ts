@@ -139,7 +139,7 @@ describe('UserReviewAction', () => {
         formData.append('reset', 'true');
 
         const result = await UserReviewAction(undefined, formData);
-        expect(result).toEqual({ message: null, username: '', isUsernameTaken: false });
+        expect(result).toEqual({ message: null, validationErrors: [] });
     });
 
     it('should return validation error when bookId is missing', async () => {
@@ -215,7 +215,7 @@ describe('UserReviewAction', () => {
         formData.append('username', 'testuser');
 
         const result = await UserReviewAction(undefined, formData);
-        expect(result).toEqual({ message: null, username: '', isUsernameTaken: false });
+        expect(result).toEqual({ message: null, validationErrors: [] });
         expect(mockRevalidatePath).toHaveBeenCalled();
         expect(mockRevalidateTag).toHaveBeenCalled();
     });
@@ -231,7 +231,7 @@ describe('UserReviewAction', () => {
         formData.append('review', 'Updated review');
 
         const result = await UserReviewAction(undefined, formData);
-        expect(result).toEqual({ message: null, username: '', isUsernameTaken: false });
+        expect(result).toEqual({ message: null, validationErrors: [] });
         expect(mockRevalidatePath).toHaveBeenCalledWith('/book/test-slug', 'page');
     });
 

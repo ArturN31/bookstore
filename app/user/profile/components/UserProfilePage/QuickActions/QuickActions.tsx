@@ -14,12 +14,6 @@ export const QuickActions = () => {
                 description="Update your profile information"
             >
                 <ActionLink
-                    href="/user/profile/change_username"
-                    icon={Edit}
-                    label="Change Username"
-                    color="gray"
-                />
-                <ActionLink
                     href="/user/profile/change_address"
                     icon={EditLocationOutlinedIcon}
                     label="Change Address"

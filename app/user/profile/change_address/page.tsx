@@ -1,6 +1,6 @@
 import { getUserData } from '@/data/user/UserService';
 import { redirect } from 'next/navigation';
-import { AddressForm } from '../components/AddressForm/AddressForm';
+import { OnboardingForm } from '../components/OnboardingForm/OnboardingForm';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +26,7 @@ export default async function ChangeAddressPage() {
 
     return (
         <div className="relative grid w-full max-w-md place-self-center">
-            <AddressForm
+            <OnboardingForm
                 mode="update"
                 initialData={formattedData}
             />

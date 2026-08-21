@@ -1,0 +1,345 @@
+import { OnboardingForm } from '@/app/user/profile/components/OnboardingForm/OnboardingForm';
+import { OnboardingAction } from '@/data/user/onboarding/OnboardingAction';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { z } from 'zod';
+
+interface MockAddressFormFields {
+    firstName: string;
+    lastName: string;
+    dob: string;
+    streetAddress: string;
+    postcode: string;
+    city: string;
+    country: string;
+    phoneNumber: string;
+}
+
+jest.mock('@/data/user/onboarding/OnboardingAction', () => ({
+    OnboardingAction: jest.fn(),
+}));
+
+jest.mock('@/data/advancedFiltering/FilteringConstants', () => ({
+    DEFAULT_FILTERING_CONSTANTS: {
+        categories: [],
+        tags: [],
+    },
+    getFilteringConstants: jest.fn().mockResolvedValue({
+        categories: [],
+        tags: [],
+    }),
+}));
+
+const mockAction = OnboardingAction as jest.Mock;
+
+describe('APP - pages/user - OnboardingForm', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('"add" mode branches and nullish coalescing fallbacks', () => {
+        render(
+            <OnboardingForm
+                mode="add"
+                initialData={{}}
+            />,
+        );
+
+        expect(screen.getByText('Welcome - Complete Your Profile')).toBeInTheDocument();
+        const firstNameInput = screen.getByLabelText(/First Name/i) as HTMLInputElement;
+        expect(firstNameInput.value).toBe('');
+    });
+
+    it('"update" mode branches and hides user-specific fields', () => {
+        render(
+            <OnboardingForm
+                mode="update"
+                initialData={{ city: 'London' }}
+            />,
+        );
+
+        expect(screen.getByText('Update Address')).toBeInTheDocument();
+        expect(screen.queryByLabelText(/First Name/i)).not.toBeInTheDocument();
+
+        const cityInput = screen.getByLabelText(/City/i) as HTMLInputElement;
+        expect(cityInput.value).toBe('London');
+    });
+
+    it('handleFieldChange validation branches', async () => {
+        render(<OnboardingForm mode="update" />);
+        const cityInput = screen.getByLabelText(/City/i);
+
+        await act(async () => {
+            fireEvent.change(cityInput, { target: { name: 'city', value: 'A' } });
+        });
+
+        const errorHeaders = screen.getAllByText(/Validation Issues/i);
+        expect(errorHeaders.length).toBeGreaterThan(0);
+        expect(screen.getByText(/City name must be at least 2 characters/i)).toBeInTheDocument();
+
+        await act(async () => {
+            fireEvent.change(cityInput, { target: { name: 'city', value: 'Glasgow' } });
+        });
+        expect(
+            screen.queryByText(/City name must be at least 2 characters/i),
+        ).not.toBeInTheDocument();
+    });
+
+    it('handleSubmit early return and successful submission loop', async () => {
+        const mockResult = { message: 'Address Saved!', validationErrors: [] };
+        mockAction.mockImplementation(async () => {
+            return mockResult;
+        });
+
+        render(
+            <OnboardingForm
+                mode="update"
+                initialData={{
+                    streetAddress: '123 Test St',
+                    postcode: 'G1 1AA',
+                    city: 'Glasgow',
+                    country: 'UK',
+                }}
+            />,
+        );
+
+        const submitBtn = screen.getByRole('button', { name: /submit/i });
+        const streetInput = screen.getByLabelText(/Street Address/i);
+
+        await act(async () => {
+            fireEvent.change(streetInput, { target: { name: 'streetAddress', value: '' } });
+        });
+
+        await act(async () => {
+            fireEvent.click(submitBtn);
+        });
+
+        expect(screen.getAllByText(/Validation Issues/i).length).toBeGreaterThan(0);
+
+        await act(async () => {
+            fireEvent.change(streetInput, {
+                target: { name: 'streetAddress', value: '123 Valid Street' },
+            });
+        });
+
+        await act(async () => {
+            fireEvent.click(submitBtn);
+        });
+
+        expect(mockAction).toHaveBeenCalled();
+        const successMsg = await screen.findByText(/Address Saved!/i);
+        expect(successMsg).toBeInTheDocument();
+    });
+
+    it('failing Zod validation', async () => {
+        render(
+            <OnboardingForm
+                mode="update"
+                initialData={{
+                    streetAddress: '123 Valid St',
+                    postcode: 'G1 1AA',
+                    city: 'A',
+                    country: 'UK',
+                }}
+            />,
+        );
+
+        const form = document.getElementById('update-onboarding-form') as HTMLFormElement;
+        expect(form).not.toBeNull();
+
+        await act(async () => {
+            fireEvent.submit(form);
+        });
+
+        expect(
+            await screen.findByText(/Please fix the errors before submitting/i),
+        ).toBeInTheDocument();
+        expect(mockAction).not.toHaveBeenCalled();
+    });
+
+    it('handleReset and transition block', async () => {
+        render(<OnboardingForm mode="add" />);
+        const clearBtn = screen.getByRole('button', { name: /clear/i });
+
+        await act(async () => {
+            fireEvent.click(clearBtn);
+        });
+
+        expect(mockAction).toHaveBeenCalled();
+        const sentData = mockAction.mock.calls[0][2] as FormData;
+        expect(sentData.get('reset')).toBe('yes');
+    });
+
+    it('exhaustively covers lines by exercising every "add" mode field', async () => {
+        render(<OnboardingForm mode="add" />);
+
+        const addModeFields = [
+            { label: /First Name/i, name: 'firstName', value: 'John' },
+            { label: /Last Name/i, name: 'lastName', value: 'Doe' },
+            { label: /Phone/i, name: 'phoneNumber', value: '07123456789' },
+            { label: /Date of Birth/i, name: 'dob', value: '1990-01-01' },
+        ];
+
+        for (const field of addModeFields) {
+            const input = screen.getByLabelText(field.label);
+            await act(async () => {
+                fireEvent.change(input, { target: { name: field.name, value: field.value } });
+            });
+            expect((input as HTMLInputElement).value).toBe(field.value);
+        }
+
+        const firstNameInput = screen.getByLabelText(/First Name/i);
+        await act(async () => {
+            fireEvent.change(firstNameInput, { target: { name: 'firstName', value: 'J' } });
+        });
+
+        const errorTitles = screen.getAllByText(/Validation Issues/i);
+        expect(errorTitles.length).toBeGreaterThan(0);
+        expect(screen.getByText(/First name must be at least 2 characters/i)).toBeInTheDocument();
+    });
+
+    it('covers the case where validationErrors is undefined', () => {
+        const dataWithMissingKey: Partial<MockAddressFormFields> = {
+            streetAddress: '123 St',
+            postcode: 'G1 1AA',
+            city: 'Glasgow',
+            country: 'UK',
+        };
+
+        render(
+            <OnboardingForm
+                mode="update"
+                initialData={dataWithMissingKey}
+            />,
+        );
+
+        expect(screen.queryByText(/Validation Issues/i)).not.toBeInTheDocument();
+    });
+
+    it('satisfying both sides of the validation and add-mode branches', () => {
+        const fullInitialData = {
+            firstName: 'John',
+            lastName: 'Doe',
+            dob: '1990-01-01',
+            phoneNumber: '0123456789',
+        };
+
+        render(
+            <OnboardingForm
+                mode="add"
+                initialData={fullInitialData}
+            />,
+        );
+
+        expect(screen.queryByText(/Validation Issues/i)).not.toBeInTheDocument();
+    });
+
+    it('covers nullish coalescing branches in JSX', async () => {
+        render(
+            <OnboardingForm
+                mode="update"
+                initialData={{
+                    streetAddress: undefined,
+                    postcode: undefined,
+                    city: undefined,
+                    country: undefined,
+                }}
+            />,
+        );
+
+        const cityInput = screen.getByLabelText(/City/i) as HTMLInputElement;
+        expect(cityInput.value).toBe('');
+    });
+
+    it('covers nullish coalescing branches in JSX when values are defined', async () => {
+        render(
+            <OnboardingForm
+                mode="update"
+                initialData={{
+                    streetAddress: '123 Main St',
+                    postcode: '12345',
+                    city: 'New York',
+                    country: 'USA',
+                }}
+            />,
+        );
+
+        const cityInput = screen.getByLabelText(/City/i) as HTMLInputElement;
+        expect(cityInput.value).toBe('New York');
+
+        const streetInput = screen.getByLabelText(/Street Address/i) as HTMLInputElement;
+        expect(streetInput.value).toBe('123 Main St');
+    });
+
+    it('BRANCH COVERAGE: executes useActionState state update branches when action returns a result', async () => {
+        const mockResult = {
+            message: 'Action Result Message',
+            validationErrors: [
+                {
+                    code: z.ZodIssueCode.custom,
+                    path: ['city'],
+                    message: 'Server side city error feedback',
+                },
+            ] as z.core.$ZodIssue[],
+        };
+
+        mockAction.mockImplementation(async () => {
+            return mockResult;
+        });
+
+        render(
+            <OnboardingForm
+                mode="update"
+                initialData={{
+                    streetAddress: '456 Alternate St',
+                    postcode: 'G2 2BB',
+                    city: 'Edinburgh',
+                    country: 'UK',
+                }}
+            />,
+        );
+
+        const form = document.getElementById('update-onboarding-form') as HTMLFormElement;
+        expect(form).not.toBeNull();
+
+        await act(async () => {
+            fireEvent.submit(form);
+        });
+
+        expect(mockAction).toHaveBeenCalled();
+        expect(await screen.findByText('Action Result Message')).toBeInTheDocument();
+        expect(await screen.findByText(/Server side city error feedback/i)).toBeInTheDocument();
+    });
+
+    it('BRANCH COVERAGE: executes useActionState fallback nullish coalescing operators when action result options are missing', async () => {
+        const mockEmptyResult = {
+            message: undefined,
+            validationErrors: undefined,
+        };
+
+        mockAction.mockImplementation(async () => {
+            return mockEmptyResult;
+        });
+
+        render(
+            <OnboardingForm
+                mode="update"
+                initialData={{
+                    streetAddress: '789 Empty Route St',
+                    postcode: 'G3 3CC',
+                    city: 'Aberdeen',
+                    country: 'UK',
+                }}
+            />,
+        );
+
+        const form = document.getElementById('update-onboarding-form') as HTMLFormElement;
+        expect(form).not.toBeNull();
+
+        await act(async () => {
+            fireEvent.submit(form);
+        });
+
+        expect(mockAction).toHaveBeenCalled();
+        expect(screen.queryByText('Validation Issues')).not.toBeInTheDocument();
+    });
+});

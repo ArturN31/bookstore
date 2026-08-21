@@ -1,6 +1,5 @@
 'use server';
 
-import { INITIAL_STATE } from '@/data/user/username/ChangeUsernameConstants';
 import { ReviewFormState, ReviewInsert } from './ReviewConstants';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { reviewSchema } from '@/data/schemas/reviewSchema';
@@ -11,6 +10,7 @@ import { isDuplicateReviewError, resolveUsername } from './ReviewActionUtils';
 import { mapToReviewPayload } from './ReviewMapper';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { INITIAL_REVIEW_FORM_STATE } from '@/app/book/[slug]/components/Reviews/ReviewForm/ReviewForm';
 
 export async function UserReviewAction(
     prevState: ReviewFormState | undefined,
@@ -18,7 +18,7 @@ export async function UserReviewAction(
 ): Promise<ReviewFormState> {
     const rawData = Object.fromEntries(formData.entries());
 
-    if (rawData.reset) return INITIAL_STATE;
+    if (rawData.reset) return INITIAL_REVIEW_FORM_STATE;
 
     const bookId: string = typeof rawData.bookId === 'string' ? rawData.bookId : '';
     const slug: string =
@@ -123,5 +123,5 @@ export async function UserReviewAction(
     revalidatePath('/user/content/reviews', 'page');
     revalidatePath('/', 'page');
 
-    return INITIAL_STATE;
+    return INITIAL_REVIEW_FORM_STATE;
 }

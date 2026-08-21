@@ -97,12 +97,15 @@ export const CART_OPERATIONS: Record<
     ) => (supabase: BackendClient) => Promise<{ data: boolean | null; error: unknown }>
 > = {
     add: (cartID, bookID, qty) => async (supabase: BackendClient) => {
-        return await Repo.upsertItem(supabase, cartID, bookID, qty);
+        const { error } = await Repo.upsertItem(supabase, cartID, bookID, qty);
+        return { data: error ? null : true, error };
     },
     update: (cartID, bookID, qty) => async (supabase: BackendClient) => {
-        return await Repo.updateItem(supabase, cartID, bookID, qty);
+        const { error } = await Repo.updateItem(supabase, cartID, bookID, qty);
+        return { data: error ? null : true, error };
     },
     remove: (cartID, bookID, _qty) => async (supabase: BackendClient) => {
-        return await Repo.deleteItem(supabase, cartID, bookID);
+        const { error } = await Repo.deleteItem(supabase, cartID, bookID);
+        return { data: error ? null : true, error };
     },
 };
