@@ -5,8 +5,9 @@ import { revalidatePath } from 'next/cache';
 import { getUserData } from '@/data/user/UserService';
 import { cartSchema } from '@/data/schemas/cartSchema';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
-import { ensureCartExists, executeCartOperation } from '@/data/cart/CartService';
+import { ensureCartExists, executeCartOperation, clearUsersCart } from '@/data/cart/CartService';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
+import { CART_SUCCESS_MESSAGES } from '@/data/cart/CartConstants';
 
 export type CartFormState = {
     success: boolean;
@@ -19,21 +20,7 @@ export async function CartAction(
     prevState: CartFormState | undefined,
     formData: FormData,
 ): Promise<CartFormState> {
-    const rawData = {
-        bookId: formData.get('book-id'),
-        bookQuantity: formData.get('book-quantity') || '1',
-        actionType: formData.get('action-type'),
-    };
-
-    const validated = cartSchema.safeParse(rawData);
-    if (!validated.success)
-        return {
-            success: false,
-            message: 'Invalid cart request.',
-            validationErrors: validated.error.issues,
-        };
-
-    const { bookId, bookQuantity, actionType } = validated.data;
+    const actionType = formData.get('action-type');
     let userId: string | null = null;
 
     try {
@@ -45,7 +32,6 @@ export async function CartAction(
                 : 'Authorization required.';
             void recordSecurityAuditLog('FAILED_AUTHENTICATION_ATTEMPT', null, {
                 operation: 'CartAction_auth_failed',
-                bookId,
                 actionType,
                 error: sanitizedError,
             });
@@ -69,8 +55,42 @@ export async function CartAction(
             };
         }
 
-        const result = await executeCartOperation(
+        if (actionType === 'CLEAR') {
+            const result = await clearUsersCart(cartContext.data);
+            if (result.error) {
+                return {
+                    success: false,
+                    message: sanitizeSupabaseError(result.error),
+                };
+            }
+
+            revalidatePath('/', 'layout');
+
+            return {
+                success: true,
+                message: CART_SUCCESS_MESSAGES.CLEAR,
+                timestamp: Date.now(),
+            };
+        }
+
+        const rawData = {
+            bookId: formData.get('book-id'),
+            bookQuantity: formData.get('book-quantity') || '1',
             actionType,
+        };
+
+        const validated = cartSchema.safeParse(rawData);
+        if (!validated.success)
+            return {
+                success: false,
+                message: 'Invalid cart request.',
+                validationErrors: validated.error.issues,
+            };
+
+        const { bookId, bookQuantity } = validated.data;
+
+        const result = await executeCartOperation(
+            actionType as string,
             cartContext.data,
             bookId,
             bookQuantity,

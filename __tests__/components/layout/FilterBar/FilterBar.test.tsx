@@ -47,14 +47,6 @@ jest.mock('@/components/layout/FilterBar/Home', () => ({
     Home: () => <div data-testid="filterbar-home">Home</div>,
 }));
 
-jest.mock('@/components/layout/FilterBar/Genre', () => ({
-    Genre: () => <div data-testid="filterbar-genre">Genre</div>,
-}));
-
-jest.mock('@/components/layout/FilterBar/Format', () => ({
-    Format: () => <div data-testid="filterbar-format">Format</div>,
-}));
-
 jest.mock('@/components/layout/FilterBar/SortBy', () => ({
     SortBy: () => <div data-testid="filterbar-sortby">SortBy</div>,
 }));
@@ -68,12 +60,6 @@ describe('FilterBar', () => {
 
         const mockHomeElement = screen.getByTestId('filterbar-home');
         expect(mockHomeElement).toBeInTheDocument();
-
-        const mockGenreElement = await screen.findByTestId('filterbar-genre');
-        expect(mockGenreElement).toBeInTheDocument();
-
-        const mockFormatElement = await screen.findByTestId('filterbar-format');
-        expect(mockFormatElement).toBeInTheDocument();
 
         const mockSortbyElement = await screen.findByTestId('filterbar-sortby');
         expect(mockSortbyElement).toBeInTheDocument();

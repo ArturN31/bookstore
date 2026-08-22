@@ -32,14 +32,6 @@ jest.mock('next/link', () => {
 
 jest.mock('@/providers/cart/utils/useCart');
 
-jest.mock('@/components/layout/FilterBar/Genre', () => ({
-    Genre: jest.fn(() => <div data-testid="mock-genre">Mock Genre</div>),
-}));
-
-jest.mock('@/components/layout/FilterBar/Format', () => ({
-    Format: jest.fn(() => <div data-testid="mock-format">Mock Format</div>),
-}));
-
 jest.mock('@/components/layout/UserNavbar/UserNavbar', () => ({
     UserNavbar: () => <div data-testid="mock-user-navbar" />,
 }));

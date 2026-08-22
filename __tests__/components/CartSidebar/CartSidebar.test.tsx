@@ -1,5 +1,6 @@
 import { CartSidebar } from '@/components/CartSidebar/CartSidebar';
 import { useCartState } from '@/providers/cart/utils/useCart';
+import { useUserState } from '@/providers/user/utils/useUser';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { useRouter } from 'next/navigation';
 
@@ -10,19 +11,38 @@ jest.mock('@/utils/security/securityAuditLogger', () => ({
 jest.mock('next/navigation', () => ({
     useRouter: jest.fn(),
 }));
+
 jest.mock('@/providers/cart/utils/useCart', () => ({
     useCartState: jest.fn(),
+    useCartActions: jest.fn(() => ({
+        refreshCart: jest.fn(),
+    })),
 }));
+
+jest.mock('@/providers/user/utils/useUser', () => ({
+    useUserState: jest.fn(() => ({
+        user: { id: 'user-1' },
+        loggedIn: true,
+        profileExists: true,
+    })),
+}));
+
+jest.mock('@/data/cart/CartAction', () => ({
+    CartAction: jest.fn(),
+}));
+
 jest.mock('@/components/CartSidebar/CartItem/CartItem', () => ({
     CartItem: ({ book }: { book: { id?: string; title: string } }) => (
         <div data-testid="cart-item">{book.title}</div>
     ),
 }));
+
 jest.mock('@/components/CartSidebar/CartHeader', () => ({
     CartHeader: ({ handleCloseCart }: { handleCloseCart: () => void }) => (
         <button onClick={handleCloseCart}>Close Header</button>
     ),
 }));
+
 jest.mock('@/components/CartSidebar/CartSummary', () => ({
     CartSummary: () => <div>Summary</div>,
 }));
@@ -73,7 +93,7 @@ describe('APP - CartSidebar', () => {
             typeof useCartState
         >);
 
-        const { container } = render(
+        render(
             <CartSidebar
                 openCart={true}
                 setOpenCart={mockSetOpenCart}
@@ -83,7 +103,7 @@ describe('APP - CartSidebar', () => {
         const items = screen.getAllByTestId('cart-item');
         expect(items).toHaveLength(2);
 
-        const separators = container.querySelectorAll('hr');
+        const separators = document.body.querySelectorAll('hr');
         expect(separators).toHaveLength(1);
     });
 

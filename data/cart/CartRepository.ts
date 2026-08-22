@@ -50,6 +50,10 @@ export const deleteItem = async (
         .select();
 };
 
+export const clearCartItems = async (supabase: SupabaseClient<Database>, cartId: string) => {
+    return supabase.from('shopping_cart_items').delete().eq('cart_id', cartId).select();
+};
+
 export const fetchFullCartWithBooks = async (
     supabase: SupabaseClient<Database>,
     userId: string,

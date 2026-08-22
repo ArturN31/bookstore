@@ -1,7 +1,11 @@
-import { Dispatch, SetStateAction } from 'react';
+'use client';
+
+import { Dispatch, SetStateAction, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import { CartSummary } from '@/components/CartSidebar/CartSummary';
 import { CartHeader } from '@/components/CartSidebar/CartHeader';
 import { CartItem } from '@/components/CartSidebar/CartItem/CartItem';
+import { ClearCartButton } from '@/components/CartSidebar/ClearCartButton';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { useRouter } from 'next/navigation';
 import { useCartState } from '@/providers/cart/utils/useCart';
@@ -16,26 +20,36 @@ export const CartSidebar = ({
     const router = useRouter();
     const { cartBooks } = useCartState();
 
+    const mounted = useSyncExternalStore(
+        () => () => {},
+        () => true,
+        () => false,
+    );
+
     const handleCloseCart = () => setOpenCart(false);
 
     const isCartEmpty = !cartBooks || cartBooks.length === 0;
 
-    return (
+    if (!mounted) return null;
+
+    return createPortal(
         <div
             aria-modal="true"
             role="dialog"
-            className={`fixed top-0 right-0 z-50 h-full w-auto max-w-[90vw] min-w-75 transform overflow-y-auto border-l border-black bg-white transition-transform duration-1000 ease-in-out ${openCart ? 'translate-x-0' : 'translate-x-full'}`}
+            className={`fixed top-0 right-0 z-50 flex h-full w-96 max-w-[90vw] flex-col border-l border-black bg-white transition-transform duration-1000 ease-in-out ${openCart ? 'translate-x-0' : 'translate-x-full'}`}
         >
             <CartHeader handleCloseCart={handleCloseCart} />
 
             {isCartEmpty ? (
-                <div className="grid gap-3 py-10 text-center">
+                <div className="grid flex-1 place-content-center gap-3 py-10 text-center">
                     <ShoppingCartIcon sx={{ color: '#6a7282', margin: 'auto' }} />
                     <p className="text-gray-500">Your cart is currently empty.</p>
                 </div>
             ) : (
                 <>
-                    <ul className="space-y-4 overflow-auto p-4">
+                    <ClearCartButton />
+
+                    <ul className="flex-1 space-y-4 overflow-y-auto p-4">
                         {[...cartBooks].map((book, index) => (
                             <li key={book.id || `cart-item-${index}`}>
                                 <CartItem book={book} />
@@ -46,7 +60,7 @@ export const CartSidebar = ({
                         ))}
                     </ul>
 
-                    <div className="sticky bottom-0">
+                    <div className="shrink-0">
                         <div className="w-full bg-gray-50">
                             <CartSummary />
                         </div>
@@ -61,6 +75,7 @@ export const CartSidebar = ({
                     </div>
                 </>
             )}
-        </div>
+        </div>,
+        document.body,
     );
 };
