@@ -6,7 +6,7 @@ import { CART_OPERATION_TYPES, CART_SUCCESS_MESSAGES } from './CartConstants';
 import { SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
-import { executeCartAction, handleItemMutation } from './CartServiceUtils';
+import { executeCartAction, handleItemMutation, isValidUUID } from './CartServiceUtils';
 
 export interface ActionResponse<T> {
     data: T | null;
@@ -68,6 +68,24 @@ export const removeItemFromUsersCart = async (
         const { error } = await Repo.deleteItem(supabase, cartID, bookID);
         return { data: error ? null : true, error };
     });
+};
+
+export const clearUsersCart = async (cartID: string): Promise<ActionResponse<boolean>> => {
+    if (!isValidUUID(cartID))
+        return { data: false, error: APP_ERROR_MESSAGES.MALFORMED_IDENTIFIER };
+
+    const result = await executeCartAction<boolean>(
+        'clearUsersCart',
+        null,
+        async (supabase) => {
+            const { error } = await Repo.clearCartItems(supabase, cartID);
+            return { data: error ? null : true, error };
+        },
+        false,
+    );
+
+    if (result.error) return { data: false, error: result.error };
+    return { data: result.data, error: null };
 };
 
 export const getCartData = async (

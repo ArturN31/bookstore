@@ -6,6 +6,7 @@ import {
     upsertItem,
     updateItem,
     deleteItem,
+    clearCartItems,
     fetchFullCartWithBooks,
 } from '@/data/cart/CartRepository';
 
@@ -123,6 +124,17 @@ describe('CartRepository', () => {
                 cart_id: 'cart-123',
                 book_id: 'book-1',
             });
+        });
+    });
+
+    describe('clearCartItems', () => {
+        it('should delete items matching cart_id', async () => {
+            await clearCartItems(typedSupabase, 'cart-123');
+
+            expect(mockSupabase.from).toHaveBeenCalledWith('shopping_cart_items');
+            expect(mockSupabase.delete).toHaveBeenCalled();
+            expect(mockSupabase.eq).toHaveBeenCalledWith('cart_id', 'cart-123');
+            expect(mockSupabase.select).toHaveBeenCalled();
         });
     });
 
