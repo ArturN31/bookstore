@@ -3,6 +3,18 @@ import { useCartState } from '@/providers/cart/utils/useCart';
 import { useUserState } from '@/providers/user/utils/useUser';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { useRouter } from 'next/navigation';
+import * as React from 'react';
+
+const mockUseSyncExternalStore = jest.fn();
+
+jest.mock('react', () => {
+    const actualReact = jest.requireActual('react');
+    return {
+        ...actualReact,
+        useSyncExternalStore: (...args: Parameters<typeof actualReact.useSyncExternalStore>) =>
+            mockUseSyncExternalStore(...args),
+    };
+});
 
 jest.mock('@/utils/security/securityAuditLogger', () => ({
     recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
@@ -55,15 +67,35 @@ describe('APP - CartSidebar', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        mockUseRouter.mockReturnValue({ push: mockPush } as unknown as ReturnType<
-            typeof useRouter
-        >);
+        mockUseRouter.mockReturnValue({
+            push: mockPush,
+        } as unknown as ReturnType<typeof useRouter>);
+        const actualReact = jest.requireActual('react');
+        mockUseSyncExternalStore.mockImplementation((...args) =>
+            actualReact.useSyncExternalStore(...args),
+        );
+    });
+
+    it('should return null when not mounted', () => {
+        mockUseSyncExternalStore.mockReturnValue(false);
+        mockUseCartState.mockReturnValue({
+            cartBooks: [],
+        } as unknown as ReturnType<typeof useCartState>);
+
+        const { container } = render(
+            <CartSidebar
+                openCart={true}
+                setOpenCart={mockSetOpenCart}
+            />,
+        );
+
+        expect(container).toBeEmptyDOMElement();
     });
 
     it('should show empty state when cartBooks is null or empty', () => {
-        mockUseCartState.mockReturnValue({ cartBooks: null } as unknown as ReturnType<
-            typeof useCartState
-        >);
+        mockUseCartState.mockReturnValue({
+            cartBooks: null,
+        } as unknown as ReturnType<typeof useCartState>);
         const { rerender } = render(
             <CartSidebar
                 openCart={true}
@@ -72,9 +104,9 @@ describe('APP - CartSidebar', () => {
         );
         expect(screen.getByText(/your cart is currently empty/i)).toBeInTheDocument();
 
-        mockUseCartState.mockReturnValue({ cartBooks: [] } as unknown as ReturnType<
-            typeof useCartState
-        >);
+        mockUseCartState.mockReturnValue({
+            cartBooks: [],
+        } as unknown as ReturnType<typeof useCartState>);
         rerender(
             <CartSidebar
                 openCart={true}
@@ -89,9 +121,9 @@ describe('APP - CartSidebar', () => {
             { id: '1', title: 'Book 1' },
             { id: '2', title: 'Book 2' },
         ];
-        mockUseCartState.mockReturnValue({ cartBooks: mockBooks } as unknown as ReturnType<
-            typeof useCartState
-        >);
+        mockUseCartState.mockReturnValue({
+            cartBooks: mockBooks,
+        } as unknown as ReturnType<typeof useCartState>);
 
         render(
             <CartSidebar
@@ -108,9 +140,9 @@ describe('APP - CartSidebar', () => {
     });
 
     it('should call setOpenCart(false) via handleCloseCart', () => {
-        mockUseCartState.mockReturnValue({ cartBooks: [] } as unknown as ReturnType<
-            typeof useCartState
-        >);
+        mockUseCartState.mockReturnValue({
+            cartBooks: [],
+        } as unknown as ReturnType<typeof useCartState>);
         render(
             <CartSidebar
                 openCart={true}
@@ -123,9 +155,9 @@ describe('APP - CartSidebar', () => {
     });
 
     it('should navigate to checkout when proceed button is clicked', () => {
-        mockUseCartState.mockReturnValue({ cartBooks: [{ id: '1' }] } as unknown as ReturnType<
-            typeof useCartState
-        >);
+        mockUseCartState.mockReturnValue({
+            cartBooks: [{ id: '1' }],
+        } as unknown as ReturnType<typeof useCartState>);
         render(
             <CartSidebar
                 openCart={true}
@@ -139,9 +171,9 @@ describe('APP - CartSidebar', () => {
 
     it('should use fallback key when book id is missing', () => {
         const mockBooks = [{ title: 'Book No ID' }];
-        mockUseCartState.mockReturnValue({ cartBooks: mockBooks } as unknown as ReturnType<
-            typeof useCartState
-        >);
+        mockUseCartState.mockReturnValue({
+            cartBooks: mockBooks,
+        } as unknown as ReturnType<typeof useCartState>);
 
         render(
             <CartSidebar

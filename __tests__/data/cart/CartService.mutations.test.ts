@@ -2,6 +2,7 @@ import {
     addItemToUsersCart,
     updateItemInUsersCart,
     removeItemFromUsersCart,
+    clearUsersCart,
 } from '@/data/cart/CartService';
 import * as Repo from '@/data/cart/CartRepository';
 import { createBackendClient } from '@/utils/db/server';
@@ -24,6 +25,12 @@ jest.mock('@/utils/db/safeSupabaseQuery', () => ({
     safeSupabaseQuery: jest.fn(<T>(fn: () => Promise<T>) => fn()),
 }));
 
+const mockSupabase = {
+    auth: {
+        getUser: jest.fn(),
+    },
+};
+
 jest.mock('@/data/cart/CartServiceUtils', () => {
     const actual = jest.requireActual<typeof import('@/data/cart/CartServiceUtils')>(
         '@/data/cart/CartServiceUtils',
@@ -37,7 +44,7 @@ jest.mock('@/data/cart/CartServiceUtils', () => {
                 _bookID: string,
                 mutationFn: (client: unknown) => Promise<unknown>,
             ) => {
-                return mutationFn({});
+                return mutationFn(mockSupabase);
             },
         ),
     };
@@ -74,16 +81,10 @@ jest.mock('@/utils/errors/SupabaseErrorHandler', () => {
     };
 });
 
-describe('CartService Item Mutations (addItem, updateItem, removeItem)', () => {
+describe('CartService Item Mutations and Clear Cart', () => {
     const validUUID = '550e8400-e29b-41d4-a716-446655440000';
     const validCartID = '123e4567-e89b-12d3-a456-426614174000';
     const validBookID = '987e6543-e21b-12d3-a456-426614174000';
-
-    const mockSupabase = {
-        auth: {
-            getUser: jest.fn(),
-        },
-    };
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -119,7 +120,7 @@ describe('CartService Item Mutations (addItem, updateItem, removeItem)', () => {
                 const result = await addItemToUsersCart(validCartID, validBookID, 2);
 
                 expect(Repo.upsertItem).toHaveBeenCalledWith(
-                    expect.any(Object),
+                    mockSupabase,
                     validCartID,
                     validBookID,
                     2,
@@ -164,7 +165,7 @@ describe('CartService Item Mutations (addItem, updateItem, removeItem)', () => {
                 const result = await updateItemInUsersCart(validCartID, validBookID, 3);
 
                 expect(Repo.updateItem).toHaveBeenCalledWith(
-                    expect.any(Object),
+                    mockSupabase,
                     validCartID,
                     validBookID,
                     3,
@@ -200,7 +201,7 @@ describe('CartService Item Mutations (addItem, updateItem, removeItem)', () => {
                 const result = await removeItemFromUsersCart(validCartID, validBookID);
 
                 expect(Repo.deleteItem).toHaveBeenCalledWith(
-                    expect.any(Object),
+                    mockSupabase,
                     validCartID,
                     validBookID,
                 );
@@ -221,6 +222,50 @@ describe('CartService Item Mutations (addItem, updateItem, removeItem)', () => {
                 expect(result).toEqual({
                     data: null,
                     error: 'Remove failed',
+                });
+            });
+        });
+
+        describe('clearUsersCart', () => {
+            it('should return error for malformed cartID UUID', async () => {
+                const result = await clearUsersCart('invalid-uuid');
+
+                expect(result).toEqual({
+                    data: false,
+                    error: APP_ERROR_MESSAGES.MALFORMED_IDENTIFIER,
+                });
+            });
+
+            it('should successfully clear cart items', async () => {
+                (
+                    Repo.clearCartItems as jest.MockedFunction<typeof Repo.clearCartItems>
+                ).mockResolvedValue({
+                    data: true,
+                    error: null,
+                } as unknown as Awaited<ReturnType<typeof Repo.clearCartItems>>);
+
+                const result = await clearUsersCart(validCartID);
+
+                expect(Repo.clearCartItems).toHaveBeenCalledWith(mockSupabase, validCartID);
+                expect(result).toEqual({
+                    data: true,
+                    error: null,
+                });
+            });
+
+            it('should handle error when clearing cart fails', async () => {
+                (
+                    Repo.clearCartItems as jest.MockedFunction<typeof Repo.clearCartItems>
+                ).mockResolvedValue({
+                    data: null,
+                    error: 'Clear failed',
+                } as unknown as Awaited<ReturnType<typeof Repo.clearCartItems>>);
+
+                const result = await clearUsersCart(validCartID);
+
+                expect(result).toEqual({
+                    data: false,
+                    error: 'Sanitized: Clear failed',
                 });
             });
         });

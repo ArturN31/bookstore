@@ -1,9 +1,11 @@
 import { CartAction } from '@/data/cart/CartAction';
 import { getUserData } from '@/data/user/UserService';
-import { ensureCartExists, executeCartOperation } from '@/data/cart/CartService';
+import { ensureCartExists, executeCartOperation, clearUsersCart } from '@/data/cart/CartService';
 import { revalidatePath } from 'next/cache';
 import { cartSchema } from '@/data/schemas/cartSchema';
 import { ZodError } from 'zod';
+import { CART_SUCCESS_MESSAGES } from '@/data/cart/CartConstants';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 
 type MockedSafeParseReturn = ReturnType<typeof cartSchema.safeParse>;
 type MockUser = NonNullable<Awaited<ReturnType<typeof getUserData>>['data']>;
@@ -16,6 +18,9 @@ jest.mock('next/cache', () => ({
 }));
 jest.mock('@/utils/security/securityAuditLogger', () => ({
     recordSecurityAuditLog: jest.fn(),
+}));
+jest.mock('@/utils/errors/SupabaseErrorHandler', () => ({
+    sanitizeSupabaseError: jest.fn((err: unknown) => `Sanitized: ${String(err)}`),
 }));
 
 const mockUser: MockUser = {
@@ -41,6 +46,10 @@ describe('CartAction', () => {
     const mockedExecuteCartOperation = executeCartOperation as jest.MockedFunction<
         typeof executeCartOperation
     >;
+    const mockedClearUsersCart = clearUsersCart as jest.MockedFunction<typeof clearUsersCart>;
+    const mockedSanitizeSupabaseError = sanitizeSupabaseError as jest.MockedFunction<
+        typeof sanitizeSupabaseError
+    >;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -56,6 +65,10 @@ describe('CartAction', () => {
             if (actionType === 'REMOVE') return { data: true, error: null, message: 'Removed' };
             return { data: null, error: 'Unsupported action' };
         });
+        mockedClearUsersCart.mockResolvedValue({ data: true, error: null });
+        mockedSanitizeSupabaseError.mockImplementation(
+            (err: unknown) => `Sanitized: ${String(err)}`,
+        );
     });
 
     const createFormData = (bookId: string, action: string, qty: string = '1') => {
@@ -92,7 +105,7 @@ describe('CartAction', () => {
 
         const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
         expect(result.success).toBe(false);
-        expect(result.message).toBe('Not logged in');
+        expect(result.message).toBe('Sanitized: Not logged in');
     });
 
     it('should return default authorization message if user is null and authError is null', async () => {
@@ -214,6 +227,26 @@ describe('CartAction', () => {
         expect(result.success).toBe(true);
     });
 
+    it('should cover the CLEAR happy path and break', async () => {
+        mockedClearUsersCart.mockResolvedValue({ data: true, error: null });
+
+        const result = await CartAction(undefined, createFormData('', 'CLEAR'));
+
+        expect(result.success).toBe(true);
+        expect(result.message).toBe(CART_SUCCESS_MESSAGES.CLEAR);
+        expect(revalidatePath).toHaveBeenCalledWith('/', 'layout');
+    });
+
+    it('should return failure message when clearUsersCart returns an error', async () => {
+        mockedClearUsersCart.mockResolvedValue({ data: null, error: 'Clear failed' });
+
+        const result = await CartAction(undefined, createFormData('', 'CLEAR'));
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Sanitized: Clear failed');
+        expect(revalidatePath).not.toHaveBeenCalled();
+    });
+
     it('should handle generic catch-block rejections (The catch err branch)', async () => {
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         mockedCartSchema.safeParse.mockReturnValue({
@@ -225,7 +258,7 @@ describe('CartAction', () => {
         const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
         expect(result.success).toBe(false);
         expect(consoleSpy).toHaveBeenCalled();
-        expect(result.message).toBe('An unexpected error occurred. We are looking into it.');
+        expect(result.message).toBe('Sanitized: Error: Network Fail');
         consoleSpy.mockRestore();
     });
 
@@ -239,7 +272,7 @@ describe('CartAction', () => {
         const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
 
         expect(result.success).toBe(false);
-        expect(result.message).toBe('Auth failed');
+        expect(result.message).toBe('Sanitized: Auth failed');
     });
 
     it('should return error message from cartContext.error when it exists', async () => {
@@ -252,7 +285,7 @@ describe('CartAction', () => {
         const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
 
         expect(result.success).toBe(false);
-        expect(result.message).toBe('Cart lookup failed');
+        expect(result.message).toBe('Sanitized: Cart lookup failed');
     });
 
     it('BRANCH COVERAGE: should handle missing cartContext data when error is empty string (fallback message)', async () => {
@@ -286,7 +319,7 @@ describe('CartAction', () => {
         const result = await CartAction(undefined, createFormData('b1', 'INSERT'));
 
         expect(result.success).toBe(false);
-        expect(result.message).toBeDefined();
+        expect(result.message).toBe('Sanitized: Database initialization error');
     });
 
     it('BRANCH COVERAGE: should return "Cart updated successfully." fallback message when result.message is completely missing', async () => {
