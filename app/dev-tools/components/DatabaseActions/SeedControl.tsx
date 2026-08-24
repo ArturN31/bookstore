@@ -3,7 +3,8 @@
 import { useActionState, useEffect } from 'react';
 import { useSnackbar } from 'notistack';
 import { sysLog } from '../SystemLog/useSystemLogic';
-import { systemCommandAction, fullResetAction } from '../../actions/actions';
+import { fullResetAction, systemCommandAction } from '../../actions/DevToolsActions';
+import * as service from '../../actions/DevToolsService';
 
 interface SeedControlProps {
     type:
@@ -17,9 +18,11 @@ interface SeedControlProps {
         | 'add_books';
 }
 
+const initialState: service.CommandResponse = { message: '', success: false };
+
 export function SeedControl({ type }: SeedControlProps) {
     const actionToRun = type === 'reset' ? fullResetAction : systemCommandAction;
-    const [state, formAction, isPending] = useActionState(actionToRun, null);
+    const [state, formAction, isPending] = useActionState(actionToRun, initialState);
     const { enqueueSnackbar } = useSnackbar();
 
     useEffect(() => {
@@ -37,7 +40,7 @@ export function SeedControl({ type }: SeedControlProps) {
     }, [isPending, type]);
 
     useEffect(() => {
-        if (state) {
+        if (state.message !== '') {
             const variant = state.success ? 'success' : 'error';
             enqueueSnackbar(state.message, {
                 variant,

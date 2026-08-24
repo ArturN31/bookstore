@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { SeedControl } from '@/app/dev-tools/components/DatabaseActions/SeedControl';
 import { useSnackbar } from 'notistack';
 import { sysLog } from '@/app/dev-tools/components/SystemLog/useSystemLogic';
-import { systemCommandAction, fullResetAction } from '@/app/dev-tools/actions/actions';
+import { systemCommandAction, fullResetAction } from '@/app/dev-tools/actions/DevToolsActions';
 
 interface ActionState {
     success: boolean;
@@ -17,7 +17,7 @@ jest.mock('@/app/dev-tools/components/SystemLog/useSystemLogic', () => ({
     sysLog: jest.fn(),
 }));
 
-jest.mock('@/app/dev-tools/actions/actions', () => ({
+jest.mock('@/app/dev-tools/actions/DevToolsActions', () => ({
     systemCommandAction: jest.fn(),
     fullResetAction: jest.fn(),
 }));
