@@ -1,26 +1,37 @@
 'use client';
 
 import { useState } from 'react';
-import { impulseLogin } from '../../actions/actions';
+import { useRouter } from 'next/navigation';
+import { impulseLogin } from '../../actions/DevToolsActions';
 
-export const CredentialRow = ({ value, label, isPrimary }: any) => {
+interface CredentialRowProps {
+    value: string;
+    label?: string;
+    isPrimary?: boolean;
+    variant?: string;
+}
+
+export const CredentialRow = ({ value, label, isPrimary, variant }: CredentialRowProps) => {
     const [isLoggingIn, setIsLoggingIn] = useState(false);
+    const router = useRouter();
 
     const handleLogin = async () => {
         setIsLoggingIn(true);
         try {
             const result = await impulseLogin(value);
-            if (result.success) window.location.href = '/';
+            if (result.success) router.push('/');
         } catch (err) {
             alert('Auth sequence interrupted.');
             setIsLoggingIn(false);
         }
     };
 
-    //admin section
     if (isPrimary) {
         return (
-            <div className="bg-white p-6">
+            <div
+                className="bg-white p-6"
+                data-variant={variant}
+            >
                 <p className="text-yellow mb-2 text-[10px] font-black tracking-[0.2em] uppercase">
                     {label}
                 </p>
@@ -42,6 +53,7 @@ export const CredentialRow = ({ value, label, isPrimary }: any) => {
         <button
             onClick={handleLogin}
             disabled={isLoggingIn}
+            data-variant={variant}
             className="hover:text-gunmetal flex cursor-pointer items-center gap-3 text-left font-mono text-xs font-bold text-slate-500 transition-colors disabled:opacity-50"
         >
             <span className="flex items-center gap-3">

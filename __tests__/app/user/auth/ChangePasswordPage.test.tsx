@@ -10,39 +10,64 @@ let mockReturnState: ChangePasswordFormState = {
 };
 
 jest.mock('@/data/auth/ChangePasswordAction', () => ({
-    ChangePasswordAction: jest.fn(async (prevState, formData) => {
-        const reset = formData.get('reset');
-        if (reset === 'yes') {
-            return {
-                password: '',
-                cnfPassword: '',
-                message: undefined,
-                error: undefined,
-                validationErrors: undefined,
-            };
-        }
-        return mockReturnState;
-    }),
+    ChangePasswordAction: jest.fn(
+        async (prevState: ChangePasswordFormState, formData: FormData) => {
+            const reset = formData.get('reset');
+            if (reset === 'yes') {
+                return {
+                    password: '',
+                    cnfPassword: '',
+                    message: undefined,
+                    error: undefined,
+                    validationErrors: undefined,
+                };
+            }
+            return mockReturnState;
+        },
+    ),
 }));
 
 jest.mock('react', () => {
-    const originalReact = jest.requireActual('react');
+    const originalReact = jest.requireActual<typeof import('react')>('react');
     return {
         ...originalReact,
-        useActionState: (actionFn: any, initialState: any) => {
-            const [state, setState] = originalReact.useState(initialState);
-            const formAction = async (formData: FormData) => {
+        useActionState: (
+            actionFn: (
+                state: ChangePasswordFormState,
+                payload: FormData,
+            ) => Promise<ChangePasswordFormState>,
+            initialState: ChangePasswordFormState,
+        ): [ChangePasswordFormState, (formData: FormData) => Promise<void>] => {
+            const [state, setState] = originalReact.useState<ChangePasswordFormState>(initialState);
+            const formAction = async (formData: FormData): Promise<void> => {
                 const newState = await actionFn(state, formData);
                 setState(newState);
             };
             return [state, formAction];
         },
-        useTransition: () => [false, (callback: any) => callback()],
+        useTransition: (): [boolean, (callback: () => void) => void] => [
+            false,
+            (callback: () => void) => callback(),
+        ],
     };
 });
 
+interface FieldProps {
+    id: string;
+    value?: string;
+    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+interface FormBtnsProps {
+    handleReset?: () => void;
+}
+
+interface FormErrorsProps {
+    formError?: string | null;
+}
+
 jest.mock('@/components/formItems/PasswordField', () => ({
-    PasswordField: (props: any) => (
+    PasswordField: (props: FieldProps) => (
         <input
             id={props.id}
             name={props.id}
@@ -54,7 +79,7 @@ jest.mock('@/components/formItems/PasswordField', () => ({
 }));
 
 jest.mock('@/components/formItems/FormBtns', () => ({
-    FormBtns: (props: any) => (
+    FormBtns: (props: FormBtnsProps) => (
         <div className="flex justify-end gap-3 pt-4">
             <button type="submit">Save</button>
             <button
@@ -69,7 +94,7 @@ jest.mock('@/components/formItems/FormBtns', () => ({
 }));
 
 jest.mock('@/components/formItems/FormErrors', () => ({
-    FormErrors: ({ formError }: any) =>
+    FormErrors: ({ formError }: FormErrorsProps) =>
         formError ? <div data-testid="form-error-display">{formError}</div> : null,
 }));
 
@@ -205,7 +230,7 @@ describe('APP - Auth - ChangePasswordPage', () => {
         expect((p2 as HTMLInputElement).value).toBe(valid);
     });
 
-    it('BRANCH COVERAGE: covers empty validationErrors array (line 26 branch)', async () => {
+    it('BRANCH COVERAGE: covers empty validationErrors array (line 26 branch)', () => {
         mockReturnState = {
             message: null,
             validationErrors: [],
@@ -216,7 +241,7 @@ describe('APP - Auth - ChangePasswordPage', () => {
         expect(screen.queryByText(/Validation Issues/i)).not.toBeInTheDocument();
     });
 
-    it('BRANCH COVERAGE: covers displayErrors.length === 0 (line 74 branch)', async () => {
+    it('BRANCH COVERAGE: covers displayErrors.length === 0 (line 74 branch)', () => {
         mockReturnState = {
             message: null,
             validationErrors: [],

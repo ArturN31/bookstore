@@ -1,26 +1,6 @@
 import { ReviewFormActionBtns } from '@/app/book/[slug]/components/Reviews/ReviewForm/FormItems/ReviewFormActionBtns';
 import { render, screen, fireEvent } from '@testing-library/react';
 
-jest.mock('@/utils/db/client', () => ({
-    createClient: jest.fn().mockReturnValue({
-        from: jest.fn().mockReturnValue({
-            select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockResolvedValue({ data: [], error: null }),
-            }),
-        }),
-    }),
-}));
-
-jest.mock('@/utils/db/server', () => ({
-    createBackendClient: jest.fn().mockResolvedValue({
-        from: jest.fn().mockReturnValue({
-            select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockResolvedValue({ data: [], error: null }),
-            }),
-        }),
-    }),
-}));
-
 describe('ReviewFormActionBtns', () => {
     it('should render default buttons and handle clicks correctly', () => {
         const handleClose = jest.fn();

@@ -11,8 +11,8 @@ jest.mock('@/utils/security/securityAuditLogger', () => ({
 jest.mock('next/cache', () => ({
     unstable_cache: jest.fn(
         <T extends (...args: unknown[]) => unknown>(fn: T) =>
-            (...args: Parameters<T>) =>
-                fn(...args),
+            (...args: Parameters<T>): ReturnType<T> =>
+                fn(...args) as ReturnType<T>,
     ),
 }));
 

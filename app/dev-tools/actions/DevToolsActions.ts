@@ -4,25 +4,27 @@ import { createAdminClient } from '@/utils/db/admin';
 import { runFullDatabaseSeed } from '@/utils/db/dbSeed/seedDatabase';
 import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
-import * as handlers from './handlers';
+import * as service from './DevToolsService';
 
-const COMMAND_REGISTRY: Record<string, handlers.CommandHandler> = {
-    add_sales: handlers.handleAddSales,
-    seed_discounts: handlers.handleSeedDiscounts,
-    stock_purge: handlers.handleStockPurge,
-    review_bomb: handlers.handleReviewBomb,
-    add_carts: handlers.handleAddCarts,
-    add_wishlists: handlers.handleAddWishlists,
-    add_books: handlers.handleAddBooks,
+const COMMAND_REGISTRY: Record<string, service.CommandHandler> = {
+    add_sales: service.addSales,
+    seed_discounts: service.seedDiscounts,
+    stock_purge: service.stockPurge,
+    review_bomb: service.reviewBomb,
+    add_carts: service.addCarts,
+    add_wishlists: service.addWishlists,
+    add_books: service.addBooks,
 };
 
 /**
  * CORE COMMAND SYSTEM
  */
-export async function systemCommandAction(prevState: any, formData: FormData) {
-    if (process.env.NODE_ENV === 'production') {
+export async function systemCommandAction(
+    prevState: service.CommandResponse,
+    formData: FormData,
+): Promise<service.CommandResponse> {
+    if (process.env.NODE_ENV === 'production' || process.env.FORCE_PRODUCTION === 'true')
         return { message: 'Unauthorized: Command rejected in production.', success: false };
-    }
 
     const command = formData.get('command') as string;
     const handler = COMMAND_REGISTRY[command];
@@ -35,22 +37,27 @@ export async function systemCommandAction(prevState: any, formData: FormData) {
 
         revalidatePath('/');
         return result;
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error(`[DevTools] Command "${command}" failed:`, e);
-        return { message: e.message || 'Operation Failed', success: false };
+        const errorMessage = e instanceof Error ? e.message : 'Operation Failed';
+        return { message: errorMessage, success: false };
     }
 }
 
 /**
  * NUCLEAR OPTION
  */
-export async function fullResetAction(prevState: any, formData: FormData) {
-    if (process.env.NODE_ENV === 'production') return { message: 'Unauthorized', success: false };
+export async function fullResetAction(
+    prevState: service.CommandResponse,
+    formData: FormData,
+): Promise<service.CommandResponse> {
+    if (process.env.NODE_ENV === 'production' || process.env.FORCE_PRODUCTION === 'true')
+        return { message: 'Unauthorized', success: false };
     try {
         await runFullDatabaseSeed();
         revalidatePath('/');
         return { message: 'Full Reset Complete', success: true };
-    } catch (e) {
+    } catch (e: unknown) {
         return { message: 'Reset Failed', success: false };
     }
 }
@@ -58,12 +65,17 @@ export async function fullResetAction(prevState: any, formData: FormData) {
 /**
  * AUTH TOOLS
  */
-export async function impulseLogin(email: string) {
+export async function impulseLogin(email: string): Promise<{ success: boolean }> {
     const adminClient = await createAdminClient();
     const supabase = await createBackendClient();
 
-    const { data: userList } = await adminClient.auth.admin.listUsers();
-    const userId = userList.users.find((u) => u.email === email)?.id || '';
+    const { data: userList, error: listError } = await adminClient.auth.admin.listUsers();
+    if (listError) throw new Error('LIST_USERS_FAILED: ' + listError.message);
+
+    const targetUser = userList?.users.find((u: { email?: string }) => u.email === email);
+    if (!targetUser) throw new Error('USER_NOT_FOUND: No user found with email ' + email);
+
+    const userId = targetUser.id;
 
     const { error: updateError } = await adminClient.auth.admin.updateUserById(userId, {
         password: 'DevTempPassword123!',

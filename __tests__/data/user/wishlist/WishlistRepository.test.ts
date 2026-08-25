@@ -39,8 +39,8 @@ describe('WishlistRepository', () => {
     });
 
     afterEach(() => {
-        (console.error as jest.Mock<unknown, unknown[]>).mockRestore();
-        (console.warn as jest.Mock<unknown, unknown[]>).mockRestore();
+        jest.spyOn(console, 'error').mockRestore();
+        jest.spyOn(console, 'warn').mockRestore();
     });
 
     describe('addToWishlist', () => {

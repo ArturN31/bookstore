@@ -4,12 +4,7 @@ import { fetchWishlistByUserId, fetchUserAuthData } from '@/data/user/UserReposi
 import { UserServiceLogPrefix } from '@/data/user/UserConstants';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { withRetry } from '@/utils/network/retry';
-import {
-    VALID_UUID,
-    OTHER_UUID,
-    mockGetUser,
-    setupUserServiceTestDefaults,
-} from './UserServiceTestHelpers';
+import { OTHER_UUID, mockGetUser, setupUserServiceTestDefaults } from './UserServiceTestHelpers';
 
 jest.mock('@/utils/db/server');
 jest.mock('@/data/user/UserRepository');
@@ -20,7 +15,7 @@ jest.mock('@/utils/db/safeSupabaseQuery', () => ({
     safeSupabaseQuery: jest.fn(<T>(fn: () => Promise<T>) => fn()),
 }));
 jest.mock('@/utils/errors/SupabaseErrorHandler', () => ({
-    sanitizeSupabaseError: jest.fn((err: unknown) => {
+    sanitizeSupabaseError: jest.fn((err: unknown): string => {
         if (typeof err === 'string') return `Sanitized: ${err}`;
         if (
             err &&

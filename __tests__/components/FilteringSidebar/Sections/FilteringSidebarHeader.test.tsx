@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { FilteringSidebarHeader } from '@/components/FilteringSidebar/Sections/FilteringSidebarHeader';
 
 describe('FilteringSidebarHeader', () => {
@@ -24,9 +24,7 @@ describe('FilteringSidebarHeader', () => {
 
         const closeButton = screen.getByRole('button', { name: /close filters sidebar/i });
 
-        act(() => {
-            fireEvent.click(closeButton);
-        });
+        fireEvent.click(closeButton);
 
         expect(mockHandleClose).toHaveBeenCalledTimes(1);
     });

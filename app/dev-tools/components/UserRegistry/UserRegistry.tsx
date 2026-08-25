@@ -1,5 +1,4 @@
 import { createAdminClient } from '@/utils/db/admin';
-import { CredentialRow } from './CredentialRow';
 import { Suspense } from 'react';
 import { AdminSection } from './AdminSection';
 import { UsersSection } from './UsersSection';

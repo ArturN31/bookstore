@@ -20,7 +20,7 @@ jest.mock('@/utils/security/securityAuditLogger', () => ({
     recordSecurityAuditLog: jest.fn(),
 }));
 jest.mock('@/utils/errors/SupabaseErrorHandler', () => ({
-    sanitizeSupabaseError: jest.fn((err: unknown) => `Sanitized: ${String(err)}`),
+    sanitizeSupabaseError: jest.fn((err: unknown): string => `Sanitized: ${String(err)}`),
 }));
 
 const mockUser: MockUser = {
@@ -67,11 +67,11 @@ describe('CartAction', () => {
         });
         mockedClearUsersCart.mockResolvedValue({ data: true, error: null });
         mockedSanitizeSupabaseError.mockImplementation(
-            (err: unknown) => `Sanitized: ${String(err)}`,
+            (err: unknown): string => `Sanitized: ${String(err)}`,
         );
     });
 
-    const createFormData = (bookId: string, action: string, qty: string = '1') => {
+    const createFormData = (bookId: string, action: string, qty: string = '1'): FormData => {
         const formData = new FormData();
         formData.append('book-id', bookId);
         formData.append('book-quantity', qty);

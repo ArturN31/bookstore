@@ -18,7 +18,7 @@ export const UsersSection = ({ standardUsers }: { standardUsers: User[] }) => {
                         className="transition-transform hover:translate-x-1"
                     >
                         <CredentialRow
-                            value={user.email}
+                            value={user.email ?? ''}
                             variant="minimal"
                         />
                     </div>

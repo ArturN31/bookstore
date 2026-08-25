@@ -131,7 +131,9 @@ describe('CartReducer', () => {
     describe('default case', () => {
         it('should return state unchanged for unknown action', () => {
             const state = { ...INITIAL_CART_STATE, cartID: 'test-123' };
-            const action = { type: 'UNKNOWN_ACTION' as any };
+            const action = { type: 'UNKNOWN_ACTION' } as unknown as Parameters<
+                typeof cartReducer
+            >[1];
 
             const newState = cartReducer(state, action);
 
