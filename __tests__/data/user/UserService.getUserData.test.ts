@@ -14,13 +14,13 @@ import {
 jest.mock('@/utils/db/server');
 jest.mock('@/data/user/UserRepository');
 jest.mock('@/utils/network/retry', () => ({
-    withRetry: jest.fn(<T>(fn: () => Promise<T>) => fn()),
+    withRetry: jest.fn(<T>(fn: () => Promise<T>): Promise<T> => fn()),
 }));
 jest.mock('@/utils/db/safeSupabaseQuery', () => ({
-    safeSupabaseQuery: jest.fn(<T>(fn: () => Promise<T>) => fn()),
+    safeSupabaseQuery: jest.fn(<T>(fn: () => Promise<T>): Promise<T> => fn()),
 }));
 jest.mock('@/utils/errors/SupabaseErrorHandler', () => ({
-    sanitizeSupabaseError: jest.fn((err: unknown) => {
+    sanitizeSupabaseError: jest.fn((err: unknown): string => {
         if (typeof err === 'string') return `Sanitized: ${err}`;
         if (
             err &&
@@ -66,7 +66,7 @@ describe('UserService - getUserData', () => {
     beforeAll(() => {
         jest.spyOn(console, 'error').mockImplementation(() => {});
         jest.spyOn(console, 'warn').mockImplementation(
-            (message: unknown, ...optionalParams: unknown[]) => {
+            (message: unknown, ...optionalParams: unknown[]): void => {
                 if (typeof message === 'string' && message.includes('[SecurityAudit]')) {
                     return;
                 }
@@ -81,7 +81,7 @@ describe('UserService - getUserData', () => {
 
     beforeEach(() => {
         setupUserServiceTestDefaults();
-        (withRetry as jest.Mock).mockImplementation(<T>(fn: () => Promise<T>) => fn());
+        (withRetry as jest.Mock).mockImplementation(<T>(fn: () => Promise<T>): Promise<T> => fn());
     });
 
     afterEach(() => {

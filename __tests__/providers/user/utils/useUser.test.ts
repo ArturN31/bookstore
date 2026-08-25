@@ -4,7 +4,6 @@ import { UserStateContext, UserActionsContext } from '@/providers/user/UserConte
 describe('useUser', () => {
     describe('useUserState', () => {
         it('should throw error when used outside UserProvider', () => {
-            // Mock useContext to return undefined
             jest.spyOn(require('react'), 'useContext').mockReturnValue(undefined);
 
             expect(() => useUserState()).toThrow('useUserState must be used within UserProvider');
@@ -24,7 +23,9 @@ describe('useUser', () => {
         it('should throw error when used outside UserProvider', () => {
             jest.spyOn(require('react'), 'useContext').mockReturnValue(undefined);
 
-            expect(() => useUserActions()).toThrow('useUserActions must be used within UserProvider');
+            expect(() => useUserActions()).toThrow(
+                'useUserActions must be used within UserProvider',
+            );
         });
 
         it('should return context when used inside UserProvider', () => {

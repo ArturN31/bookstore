@@ -3,7 +3,7 @@ import { useUserState } from '@/providers/user/utils/useUser';
 import { useCartActions, useCartState } from '@/providers/cart/utils/useCart';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { enqueueSnackbar } from 'notistack';
-import React, { act, useActionState } from 'react';
+import React, { useActionState } from 'react';
 import { CartAction, CartFormState } from '@/data/cart/CartAction';
 
 const globalMockRefreshCart = jest.fn();
@@ -17,7 +17,10 @@ jest.mock('react', () => {
     return {
         ...actual,
         useActionState: jest.fn(),
-        useTransition: jest.fn(() => [false, (cb: () => void) => cb()]),
+        useTransition: jest.fn((): [boolean, (cb: () => void) => void] => [
+            false,
+            (cb: () => void): void => cb(),
+        ]),
     };
 });
 
@@ -29,7 +32,11 @@ jest.mock('@/providers/cart/utils/useCart', () => ({
 }));
 
 jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
-    BookAdvancedFilteringProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    BookAdvancedFilteringProvider: ({
+        children,
+    }: {
+        children: React.ReactNode;
+    }): React.JSX.Element => <>{children}</>,
 }));
 
 jest.mock('notistack', () => ({ enqueueSnackbar: jest.fn() }));
@@ -105,7 +112,7 @@ describe('APP - CartForms - CartActionForm', () => {
         expect(CartAction).toHaveBeenCalledWith(prevState, formData);
     });
 
-    it('should call enqueueSnackbar with "warning" variant when success is false', () => {
+    it('should call enqueueSnackbar with "error" variant when success is false', () => {
         (useActionState as jest.Mock).mockReturnValue([
             {
                 success: false,
@@ -151,7 +158,7 @@ describe('APP - CartForms - CartActionForm', () => {
         });
     });
 
-    it('should show "Processing..." and disable button', () => {
+    it('should show "Add to cart" and correct button state', () => {
         (useActionState as jest.Mock).mockReturnValue([
             { success: false, message: '' },
             jest.fn(),
@@ -174,7 +181,7 @@ describe('APP - CartForms - CartActionForm', () => {
 
         (useActionState as jest.Mock).mockImplementation((action, initialState) => {
             const [state, setState] = React.useState(initialState);
-            const dispatch = async (fd: FormData) => {
+            const dispatch = async (fd: FormData): Promise<void> => {
                 const result = await action(state, fd);
                 setState(result);
             };
@@ -331,7 +338,7 @@ describe('APP - CartForms - CartActionForm', () => {
         expect(screen.getByText('Cart is full (Max 10 items)')).toBeInTheDocument();
     });
 
-    it('BRANCH COVERAGE: should return null from getStatusContent when userLoading is true (covers line 50 true branch)', () => {
+    it('BRANCH COVERAGE: should return null from getStatusContent when userLoading is true', () => {
         (useUserState as jest.Mock).mockReturnValue({
             user: { id: 'user-123' },
             loggedIn: true,

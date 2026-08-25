@@ -21,6 +21,11 @@ type MockSupabaseClient = {
     from: jest.Mock;
 };
 
+interface SignInActionResult {
+    message: string | null;
+    validationErrors?: Record<string, string[]>;
+}
+
 describe('APP - Auth - SignInAction', () => {
     let mockSupabase: MockSupabaseClient;
 
@@ -54,7 +59,7 @@ describe('APP - Auth - SignInAction', () => {
         const formData = new FormData();
         formData.append('reset', 'true');
 
-        const result = await SignInAction(undefined, formData);
+        const result = (await SignInAction(undefined, formData)) as SignInActionResult;
 
         expect(result).toEqual({
             message: null,
@@ -67,7 +72,7 @@ describe('APP - Auth - SignInAction', () => {
         formData.append('email', 'invalid-email');
         formData.append('password', '123');
 
-        const result = await SignInAction(undefined, formData);
+        const result = (await SignInAction(undefined, formData)) as SignInActionResult;
 
         expect(result.validationErrors).toBeDefined();
         expect(result.message).toBe('Please correct the highlighted errors.');
@@ -75,7 +80,7 @@ describe('APP - Auth - SignInAction', () => {
 
     it('should return null for email and password if they are missing from formData', async () => {
         const formData = new FormData();
-        const result = await SignInAction(undefined, formData);
+        const result = (await SignInAction(undefined, formData)) as SignInActionResult;
 
         expect(result.validationErrors).toBeDefined();
     });
@@ -93,7 +98,7 @@ describe('APP - Auth - SignInAction', () => {
         const formData = new FormData();
         formData.append('captchaToken', 'mocked-test-token');
 
-        const result = await SignInAction(undefined, formData);
+        const result = (await SignInAction(undefined, formData)) as SignInActionResult;
 
         expect(result.message).toBeDefined();
 
@@ -112,7 +117,7 @@ describe('APP - Auth - SignInAction', () => {
         formData.append('password', 'Password123!');
         formData.append('captchaToken', 'mocked-test-token');
 
-        const result = await SignInAction(undefined, formData);
+        const result = (await SignInAction(undefined, formData)) as SignInActionResult;
 
         expect(result.message).toBe('A direct message from Supabase');
     });
@@ -127,7 +132,7 @@ describe('APP - Auth - SignInAction', () => {
         formData.append('password', 'Password123!');
         formData.append('captchaToken', 'mocked-test-token');
 
-        const result = await SignInAction(undefined, formData);
+        const result = (await SignInAction(undefined, formData)) as SignInActionResult;
 
         expect(result.message).toBeDefined();
     });
@@ -145,7 +150,7 @@ describe('APP - Auth - SignInAction', () => {
         formData.append('password', 'Password123!');
         formData.append('captchaToken', 'mocked-test-token');
 
-        const result = await SignInAction(undefined, formData);
+        const result = (await SignInAction(undefined, formData)) as SignInActionResult;
 
         expect(result.message).toBeDefined();
     });
@@ -234,7 +239,7 @@ describe('APP - Auth - SignInAction', () => {
         formData.append('password', 'Password123!');
         formData.append('captchaToken', 'mocked-test-token');
 
-        const result = await SignInAction(undefined, formData);
+        const result = (await SignInAction(undefined, formData)) as SignInActionResult;
 
         expect(result.message).toBeDefined();
         expect(console.error).toHaveBeenCalledWith(
@@ -263,7 +268,7 @@ describe('APP - Auth - SignInAction', () => {
         formData.append('password', 'Password123!');
         formData.append('captchaToken', 'mocked-test-token');
 
-        const result = await SignInAction(undefined, formData);
+        const result = (await SignInAction(undefined, formData)) as SignInActionResult;
 
         expect(result.message).toBe('Non-error string failure');
         expect(console.error).toHaveBeenCalledWith(
@@ -298,7 +303,7 @@ describe('APP - Auth - SignInAction', () => {
         formData.append('email', 'test@example.com');
         formData.append('password', 'Password123!');
 
-        const result = await SignInAction(undefined, formData);
+        const result = (await SignInAction(undefined, formData)) as SignInActionResult;
 
         expect(result.message).toBe(
             'Authentication rejected due to an invalid or missing security token.',

@@ -137,13 +137,19 @@ describe('SeedControl', () => {
     it('should use fullResetAction for reset type', () => {
         render(<SeedControl type="reset" />);
 
-        expect(require('react').useActionState).toHaveBeenCalledWith(fullResetAction, null);
+        expect(require('react').useActionState).toHaveBeenCalledWith(fullResetAction, {
+            message: '',
+            success: false,
+        });
     });
 
     it('should use systemCommandAction for non-reset types', () => {
         render(<SeedControl type="add_books" />);
 
-        expect(require('react').useActionState).toHaveBeenCalledWith(systemCommandAction, null);
+        expect(require('react').useActionState).toHaveBeenCalledWith(systemCommandAction, {
+            message: '',
+            success: false,
+        });
     });
 
     it('should be disabled when pending', () => {

@@ -448,6 +448,8 @@ describe('useUserReviews Hook', () => {
         });
 
         it('should not fetch more if already loading more', async () => {
+            jest.useRealTimers();
+
             let resolveFetch!: (value: Awaited<ReturnType<typeof fetchUserReviewsAction>>) => void;
             const fetchPromise = new Promise<Awaited<ReturnType<typeof fetchUserReviewsAction>>>(
                 (resolve) => {
@@ -464,22 +466,20 @@ describe('useUserReviews Hook', () => {
                 }),
             );
 
-            // Start first load
+            let firstLoadPromise: Promise<void>;
             act(() => {
-                void result.current.loadMoreReviews();
+                firstLoadPromise = result.current.loadMoreReviews();
             });
 
             expect(mockFetchUserReviewsAction).toHaveBeenCalledTimes(1);
             expect(result.current.isLoadingMore).toBe(true);
 
-            // Trigger loadMoreReviews again while isLoadingMore is true
             await act(async () => {
                 await result.current.loadMoreReviews();
             });
 
             expect(mockFetchUserReviewsAction).toHaveBeenCalledTimes(1);
 
-            // Resolve promise
             await act(async () => {
                 resolveFetch({
                     reviews: [],
@@ -487,6 +487,7 @@ describe('useUserReviews Hook', () => {
                     hasMore: false,
                     error: null,
                 });
+                await firstLoadPromise!;
             });
         });
     });

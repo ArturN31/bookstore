@@ -4,7 +4,6 @@ import { mapToReviewPayload } from '@/data/books/reviews/ReviewMapper';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 import { DB_ERROR_MAP } from '@/utils/errors/ErrorHandlerConstants';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { resolveUsername, isDuplicateReviewError } from '@/data/books/reviews/ReviewActionUtils';
 
 jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({

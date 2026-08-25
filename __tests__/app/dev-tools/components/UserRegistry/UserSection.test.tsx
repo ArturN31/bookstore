@@ -38,4 +38,14 @@ describe('UsersSection', () => {
         expect(screen.getByText(/Standard_Identities \[00\]/i)).toBeInTheDocument();
         expect(screen.queryAllByTestId('credential-row')).toHaveLength(0);
     });
+
+    it('should handle users with missing email by falling back to an empty string', () => {
+        const mockUsers = [{ id: '1', email: null }] as unknown as User[];
+
+        render(<UsersSection standardUsers={mockUsers} />);
+
+        const credentialRows = screen.getAllByTestId('credential-row');
+        expect(credentialRows).toHaveLength(1);
+        expect(credentialRows[0]).toHaveAttribute('data-value', '');
+    });
 });

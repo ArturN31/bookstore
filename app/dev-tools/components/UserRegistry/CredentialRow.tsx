@@ -8,9 +8,10 @@ interface CredentialRowProps {
     value: string;
     label?: string;
     isPrimary?: boolean;
+    variant?: string;
 }
 
-export const CredentialRow = ({ value, label, isPrimary }: CredentialRowProps) => {
+export const CredentialRow = ({ value, label, isPrimary, variant }: CredentialRowProps) => {
     const [isLoggingIn, setIsLoggingIn] = useState(false);
     const router = useRouter();
 
@@ -27,7 +28,10 @@ export const CredentialRow = ({ value, label, isPrimary }: CredentialRowProps) =
 
     if (isPrimary) {
         return (
-            <div className="bg-white p-6">
+            <div
+                className="bg-white p-6"
+                data-variant={variant}
+            >
                 <p className="text-yellow mb-2 text-[10px] font-black tracking-[0.2em] uppercase">
                     {label}
                 </p>
@@ -49,6 +53,7 @@ export const CredentialRow = ({ value, label, isPrimary }: CredentialRowProps) =
         <button
             onClick={handleLogin}
             disabled={isLoggingIn}
+            data-variant={variant}
             className="hover:text-gunmetal flex cursor-pointer items-center gap-3 text-left font-mono text-xs font-bold text-slate-500 transition-colors disabled:opacity-50"
         >
             <span className="flex items-center gap-3">

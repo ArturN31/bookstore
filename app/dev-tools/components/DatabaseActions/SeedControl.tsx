@@ -40,7 +40,7 @@ export function SeedControl({ type }: SeedControlProps) {
     }, [isPending, type]);
 
     useEffect(() => {
-        if (state.message !== '') {
+        if (state?.message && state.message !== '') {
             const variant = state.success ? 'success' : 'error';
             enqueueSnackbar(state.message, {
                 variant,
