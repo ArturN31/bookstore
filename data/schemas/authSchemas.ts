@@ -1,4 +1,4 @@
-import z from 'zod';
+import { z } from 'zod';
 
 export const passwordRules = z
     .string()
@@ -13,7 +13,7 @@ export const passwordRules = z
 export const passwordSchema = z
     .object({
         password: passwordRules,
-        cnfPassword: z.string(),
+        cnfPassword: z.string().trim(),
     })
     .refine((data) => data.password === data.cnfPassword, {
         message: 'Passwords must match',
@@ -22,20 +22,24 @@ export const passwordSchema = z
 
 export const signInSchema = z.object({
     email: z
-        .email({ message: 'Invalid email format' })
+        .string()
         .trim()
-        .min(1, { message: 'Email is required' }),
-    password: z.string().min(1, { message: 'Password is required' }),
+        .min(1, 'Email is required')
+        .pipe(z.email('Invalid email format'))
+        .transform((val) => val.toLowerCase()),
+    password: z.string().min(1, 'Password is required'),
 });
 
 export const signUpSchema = z
     .object({
         email: z
-            .email({ message: 'Invalid email format' })
+            .string()
             .trim()
-            .min(1, { message: 'Email is required' }),
+            .min(1, 'Email is required')
+            .pipe(z.email('Invalid email format'))
+            .transform((val) => val.toLowerCase()),
         password: passwordRules,
-        cnfPassword: z.string().min(1, 'Please confirm your password'),
+        cnfPassword: z.string().trim().min(1, 'Please confirm your password'),
     })
     .refine((data) => data.password === data.cnfPassword, {
         message: 'Passwords must match',

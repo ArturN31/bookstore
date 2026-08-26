@@ -431,4 +431,6 @@ The following features are partially or not yet implemented:
   - [ ] **Security Audit Logging - admin actions** - Log all administrative actions (book edits, user management, discount changes) with timestamps and user IDs for accountability.
   - [X] **Security Audit Logging - failed auth attempts** - Log all failed authentication attempts with timestamps and IP addresses for monitoring and alerting.
 - [X] **Security Headers**: Implement security headers (CSP, HSTS, X-Frame-Options, etc.) via Next.js configuration and middleware for enhanced protection.
-- [ ] **Advanced Input Validation**: Expand Zod schema validation with custom sanitization rules and continue the schema-first validation pattern for all user inputs.
+- [ ] **Advanced Input Validation**: Expand Zod schema validation with custom sanitization rules.
+  - [X] **Advanced Input Validation**: Enhanced Auth, Cart, Onboarding, Review, and Wishlist Zod schemas with custom HTML/XSS sanitization, input normalization (trimming/casing) and strict boundary constraints (age, quantity, integer ratings).
+  - [ ] **Advanced Input Validation**: Continue the schema-first validation pattern for all user inputs.
