@@ -1,6 +1,5 @@
 import { z } from 'zod';
-
-const sanitizeText = (val: string): string => val.replace(/<[^>]*>?/gm, '').trim();
+import { sanitizeText } from './schemaUtils';
 
 export const reviewSchema = z.object({
     rating: z
