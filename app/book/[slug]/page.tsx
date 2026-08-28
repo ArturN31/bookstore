@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { BookHeader } from '@/app/book/[slug]/components/Header/BookHeader';
 import { BookDetails } from '@/app/book/[slug]/components/BookDetails';
+import { RelatedBooks } from './components/RelatedBooks/RelatedBooks';
 
 type BookByIdProps = {
     params: Promise<{ slug: string }>;
@@ -54,7 +55,7 @@ export default async function BookById({ params, searchParams }: BookByIdProps) 
 
     return (
         <article
-            className="px m-auto grid max-w-375 gap-5 px-4 sm:max-w-3xl md:max-w-5xl lg:max-w-7xl"
+            className="px m-auto mt-50 grid max-w-375 gap-5 px-4 sm:max-w-3xl md:max-w-5xl lg:max-w-7xl"
             role="main"
         >
             <BookHeader book={book} />
@@ -65,6 +66,13 @@ export default async function BookById({ params, searchParams }: BookByIdProps) 
             />
 
             <BookDetails book={book} />
+
+            <hr
+                aria-hidden="true"
+                className="border-gray-200"
+            />
+
+            <RelatedBooks bookId={bookId} />
 
             <hr
                 aria-hidden="true"
