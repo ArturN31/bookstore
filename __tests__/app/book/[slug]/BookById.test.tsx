@@ -71,6 +71,10 @@ jest.mock('@/app/book/[slug]/components/Reviews/BookReviews', () => ({
     BookReviews: () => <div data-testid="book-reviews" />,
 }));
 
+jest.mock('@/app/book/[slug]/components/RelatedBooks/RelatedBooks', () => ({
+    RelatedBooks: () => <div data-testid="related-books" />,
+}));
+
 const mockBookData = {
     id: 'mock-book-id-123',
     created_at: new Date().getUTCDate().toString(),

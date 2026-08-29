@@ -108,7 +108,7 @@ export const fetchBooksWithReviews = async (
     }
 };
 
-const getCachedRelatedBooksData = unstable_cache(
+export const getCachedRelatedBooksData = unstable_cache(
     async (bookId: string, limit: number) => {
         const supabase = await createPublicServerClient();
 
