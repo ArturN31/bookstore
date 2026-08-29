@@ -21,13 +21,6 @@
       "lines": "100.00%",
       "average": "100.00%"
     },
-    "app/books": {
-      "statements": "100.00%",
-      "branches": "100.00%",
-      "functions": "100.00%",
-      "lines": "100.00%",
-      "average": "100.00%"
-    },
     "app/dev-tools": {
       "statements": "100.00%",
       "branches": "100.00%",

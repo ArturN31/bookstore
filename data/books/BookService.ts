@@ -4,6 +4,7 @@ import {
     createBaseBookQuery,
     applyBookSorting,
     applyBookPagination,
+    getRelatedBooksQuery,
     BookQueryParams,
 } from './BookRepository';
 import { mapToPaginatedBookResponse } from './BookMapper';
@@ -14,6 +15,7 @@ import {
     MIN_PAGE_NUMBER,
     PaginatedBookResult,
 } from './BookConstants';
+import { Tables } from '@/database.types';
 import { unstable_cache } from 'next/cache';
 import { createPublicServerClient } from '@/utils/db/publicServer';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
@@ -98,6 +100,59 @@ export const fetchBooksWithReviews = async (
         };
     } catch (err: unknown) {
         console.error('[BookService] Orchestration Error:', err);
+
+        return {
+            data: null,
+            error: sanitizeSupabaseError(err),
+        };
+    }
+};
+
+export const getCachedRelatedBooksData = unstable_cache(
+    async (bookId: string, limit: number) => {
+        const supabase = await createPublicServerClient();
+
+        return await safeSupabaseQuery(async () => {
+            const response = await getRelatedBooksQuery(supabase, bookId, limit);
+            if (response.error) return { data: null, error: response.error };
+
+            return {
+                data: response.data || [],
+                error: null,
+            };
+        });
+    },
+    ['related-books-results'],
+    {
+        revalidate: 600,
+        tags: ['books'],
+    },
+);
+
+export const fetchRelatedBooks = async (
+    bookId: string,
+    limit: number = 12,
+): Promise<ActionResponse<Tables<'books_with_stats'>[]>> => {
+    if (!bookId)
+        return {
+            data: [],
+            error: null,
+        };
+
+    try {
+        const result = await getCachedRelatedBooksData(bookId, limit);
+        if (result.error)
+            return {
+                data: null,
+                error: sanitizeSupabaseError(result.error),
+            };
+
+        return {
+            data: (result.data as Tables<'books_with_stats'>[]) || [],
+            error: null,
+        };
+    } catch (err: unknown) {
+        console.error('[BookService] Related Books Error:', err);
 
         return {
             data: null,

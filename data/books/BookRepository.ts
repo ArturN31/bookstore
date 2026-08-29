@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '@/database.types';
+import { Database, Tables } from '@/database.types';
 import { SORT_MAP, BOOK_SORT_OPTIONS, FilterableBookColumns } from './BookConstants';
 
 export interface BookQueryParams {
@@ -86,4 +86,35 @@ export const applyBookPagination = (query: SortedBookQueryType, page: number, li
     const from = (page - 1) * limit;
     const to = from + limit - 1;
     return query.range(from, to);
+};
+
+export const getRelatedBooksQuery = (
+    supabase: SupabaseClient<Database>,
+    targetBookId: string,
+    limitCount: number = 4,
+) => {
+    type RelatedBooksRPC = {
+        get_related_books: {
+            Args: {
+                target_book_id: string;
+                limit_count: number;
+            };
+            Returns: Tables<'books_with_stats'>[];
+        };
+    };
+
+    const clientWithRPC = supabase as unknown as SupabaseClient<{
+        public: {
+            Tables: Database['public']['Tables'];
+            Views: Database['public']['Views'];
+            Functions: Database['public']['Functions'] & RelatedBooksRPC;
+            Enums: Database['public']['Enums'];
+            CompositeTypes: Database['public']['CompositeTypes'];
+        };
+    }>;
+
+    return clientWithRPC.rpc('get_related_books', {
+        target_book_id: targetBookId,
+        limit_count: limitCount,
+    });
 };

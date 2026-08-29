@@ -1,4 +1,4 @@
-import { createBaseBookQuery } from '@/data/books/BookRepository';
+import { createBaseBookQuery, getRelatedBooksQuery } from '@/data/books/BookRepository';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/database.types';
 
@@ -17,6 +17,7 @@ describe('BookRepository Range and Filter Logic', () => {
 
         mockSupabase = {
             from: jest.fn().mockReturnValue(mockQuery),
+            rpc: jest.fn().mockReturnValue(mockQuery),
         } as unknown as SupabaseClient<Database>;
     });
 
@@ -120,6 +121,26 @@ describe('BookRepository Range and Filter Logic', () => {
             createBaseBookQuery(mockSupabase, { publications: ['', '2024-05-15'] });
 
             expect(mockQuery.eq).toHaveBeenCalledWith('publication_date', '2024-05-15');
+        });
+    });
+
+    describe('getRelatedBooksQuery', () => {
+        it('should invoke rpc with target_book_id and default limit_count of 4', () => {
+            getRelatedBooksQuery(mockSupabase, 'book-123');
+
+            expect(mockSupabase.rpc).toHaveBeenCalledWith('get_related_books', {
+                target_book_id: 'book-123',
+                limit_count: 4,
+            });
+        });
+
+        it('should invoke rpc with target_book_id and custom limit_count', () => {
+            getRelatedBooksQuery(mockSupabase, 'book-123', 8);
+
+            expect(mockSupabase.rpc).toHaveBeenCalledWith('get_related_books', {
+                target_book_id: 'book-123',
+                limit_count: 8,
+            });
         });
     });
 });

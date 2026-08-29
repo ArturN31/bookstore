@@ -9,7 +9,7 @@ This project is an online bookstore built with **Next.js 16 (App Router)**, **Re
 **Current Phase**: Core marketplace MVP - Production-ready with strong automated test coverage
 **Test Coverage**: **100% average coverage** (100% statements, 100% branches, 100% functions)
 **Performance**: Lighthouse Desktop 99/100 (0.3s FCP, 0.8s LCP, 0ms TBT, 0 CLS)
-**Last Updated**: August 24, 2026 (latest automated coverage report)
+**Last Updated**: August 28, 2026 (latest automated coverage report)
 
 ## Key Highlights
 
@@ -405,7 +405,7 @@ The following features are partially or not yet implemented:
 
 - [ ] **Discount & Promo Logic**: Implement server-side validation service to check the discounts table for expiry, usage limits, and user eligibility before applying final order totals.
 - [ ] **Bestseller Gallery Section**: Homepage showcase driven by aggregate SQL queries of `order_items` and real-time sales rankings.
-- [ ] **Related Books Discovery**: Product page section suggesting similar books using PostgreSQL similarity functions based on shared genres, authors, and user ratings.
+- [X] **Related Books Discovery**: Product page section suggesting similar books using PostgreSQL similarity functions based on shared genres, authors, and user ratings.
 - [ ] **Personalised Recommendations**: ML-driven product recommendations based on browsing history, wishlist patterns, and purchase behaviour.
 - [ ] **Email Notifications**: Transactional emails for order confirmations, wishlist alerts, and promotional offers using SendGrid or similar service.
 
