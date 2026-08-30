@@ -1,4 +1,4 @@
-import { RelatedBooksNavigationButtons } from '@/app/book/[slug]/components/RelatedBooks/RelatedBooksNavigationButtons';
+import { RelatedBooksNavigationButtons } from '@/components/books/BooksCarousel/BooksNavigationButtons';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 describe('RelatedBooksNavigationButtons Component', () => {

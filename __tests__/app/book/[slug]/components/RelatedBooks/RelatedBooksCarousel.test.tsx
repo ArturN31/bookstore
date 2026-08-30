@@ -1,5 +1,5 @@
-import { RelatedBooksCarousel } from '@/app/book/[slug]/components/RelatedBooks/RelatedBooksCarousel';
-import { useCarouselScroll } from '@/app/book/[slug]/components/RelatedBooks/useCarouselScroll';
+import { RelatedBooksCarousel } from '@/components/books/BooksCarousel/BooksCarousel';
+import { useCarouselScroll } from '@/components/books/BooksCarousel/useCarouselScroll';
 import { render, screen } from '@testing-library/react';
 
 jest.mock('@/app/book/[slug]/components/RelatedBooks/useCarouselScroll');

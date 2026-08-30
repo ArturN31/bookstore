@@ -5,25 +5,36 @@ import logo from '@/public/logo.jpg';
 import { UserNavbar } from '@/components/layout/UserNavbar/UserNavbar';
 import Link from 'next/link';
 import { FilterBar } from '@/components/layout/FilterBar/FilterBar';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 export const Header = () => {
     const [isVisible, setIsVisible] = useState<boolean>(true);
     const [lastScrollY, setLastScrollY] = useState<number>(0);
+    const headerRef = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        const updateHeaderHeight = () => {
+            if (headerRef.current) {
+                const height = headerRef.current.getBoundingClientRect().height;
+                document.documentElement.style.setProperty('--header-height', `${height}px`);
+            }
+        };
+
+        updateHeaderHeight();
+
+        const resizeObserver = new ResizeObserver(updateHeaderHeight);
+        if (headerRef.current) resizeObserver.observe(headerRef.current);
+
+        return () => resizeObserver.disconnect();
+    }, []);
 
     useEffect(() => {
         const handleScroll = () => {
             const currentScrollY = window.scrollY;
 
-            if (currentScrollY <= 50) {
-                setIsVisible(true);
-            } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
-                // Scrolling down past threshold -> hide header
-                setIsVisible(false);
-            } else if (currentScrollY < lastScrollY) {
-                // Scrolling up -> show header immediately
-                setIsVisible(true);
-            }
+            if (currentScrollY <= 50) setIsVisible(true);
+            else if (currentScrollY > lastScrollY && currentScrollY > 100) setIsVisible(false);
+            else if (currentScrollY < lastScrollY) setIsVisible(true);
 
             setLastScrollY(currentScrollY);
         };
@@ -37,6 +48,7 @@ export const Header = () => {
 
     return (
         <header
+            ref={headerRef}
             className={`fixed top-0 right-0 left-0 z-45 transition-transform duration-300 ease-in-out ${
                 isVisible ? 'translate-y-0' : '-translate-y-full'
             }`}

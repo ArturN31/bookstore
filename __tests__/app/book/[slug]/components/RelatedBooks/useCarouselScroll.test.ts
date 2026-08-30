@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { useCarouselScroll } from '@/app/book/[slug]/components/RelatedBooks/useCarouselScroll';
+import { useCarouselScroll } from '@/components/books/BooksCarousel/useCarouselScroll';
 
 type ResizeCallback = (entries: ResizeObserverEntry[], observer: ResizeObserver) => void;
 

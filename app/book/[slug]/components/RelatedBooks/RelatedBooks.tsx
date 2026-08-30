@@ -1,5 +1,5 @@
+import { BooksCarousel } from '@/components/books/BooksCarousel/BooksCarousel';
 import { fetchRelatedBooks } from '@/data/books/BookService';
-import { RelatedBooksCarousel } from './RelatedBooksCarousel';
 
 interface RelatedBooksProps {
     bookId: string;
@@ -16,7 +16,10 @@ export const RelatedBooks = async ({ bookId, limit = 12 }: RelatedBooksProps) =>
             className="w-full border-t border-slate-200/80 py-8 dark:border-slate-800"
             aria-label="Related Books"
         >
-            <RelatedBooksCarousel books={relatedBooks as unknown as Book[]} />
+            <BooksCarousel
+                books={relatedBooks as unknown as Book[]}
+                mode="related_books"
+            />
         </section>
     );
 };
