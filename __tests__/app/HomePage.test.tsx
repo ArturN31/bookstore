@@ -1,6 +1,6 @@
 import HomePage from '@/app/page';
 import { render, screen, act } from '@testing-library/react';
-import { fetchBooksWithReviews } from '@/data/books/BookService';
+import { fetchBooksWithReviews, fetchBestsellers } from '@/data/books/BookService';
 import { Providers } from '@/providers/Providers';
 
 interface PaginatedBookResult {
@@ -82,9 +82,11 @@ jest.mock('next/navigation', () => ({
 
 jest.mock('@/data/books/BookService', () => ({
     fetchBooksWithReviews: jest.fn(),
+    fetchBestsellers: jest.fn().mockResolvedValue({ data: [], error: null }),
 }));
 
 const mockedFetchBooks = fetchBooksWithReviews as jest.Mock;
+const mockedFetchBestsellers = fetchBestsellers as jest.Mock;
 
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
     return (
@@ -125,6 +127,7 @@ const createMockBook = (overrides: Partial<Book>): Book => ({
 describe('APP - Homepage', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        mockedFetchBestsellers.mockResolvedValue({ data: [], error: null });
     });
 
     it('Should render the ErrorState when no books are returned', async () => {

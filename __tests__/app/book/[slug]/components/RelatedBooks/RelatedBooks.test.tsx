@@ -8,9 +8,9 @@ jest.mock('@/data/books/BookService', () => ({
     fetchRelatedBooks: jest.fn(),
 }));
 
-jest.mock('@/app/book/[slug]/components/RelatedBooks/RelatedBooksCarousel', () => ({
-    RelatedBooksCarousel: ({ books }: { books: Array<{ id: string; title: string }> }) => (
-        <div data-testid="related-books-carousel">
+jest.mock('@/components/books/BooksCarousel/BooksCarousel', () => ({
+    BooksCarousel: ({ books }: { books: Array<{ id: string; title: string }> }) => (
+        <div data-testid="books-carousel">
             {books.map((book) => (
                 <span key={book.id}>{book.title}</span>
             ))}
@@ -93,7 +93,7 @@ describe('RelatedBooks Component', () => {
 
         expect(mockedFetchRelatedBooks).toHaveBeenCalledWith('123', 6);
         expect(screen.getByRole('region', { name: 'Related Books' })).toBeInTheDocument();
-        expect(screen.getByTestId('related-books-carousel')).toBeInTheDocument();
+        expect(screen.getByTestId('books-carousel')).toBeInTheDocument();
         expect(screen.getByText('Related Book One')).toBeInTheDocument();
     });
 });
