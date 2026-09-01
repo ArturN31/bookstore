@@ -27,7 +27,7 @@
         "@supabase/supabase-js": "^2.97.0",
         "@tailwindcss/postcss": "^4.0.0",
         "@vercel/analytics": "^2.0.1",
-        "next": "^16.2.10",
+        "next": "^16.3.4",
         "notistack": "^3.0.2",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
@@ -46,7 +46,7 @@
         "@types/react-dom": "^19.0.0",
         "@types/testing-library__jest-dom": "^5",
         "eslint": "^9.39.5",
-        "eslint-config-next": "^16.2.10",
+        "eslint-config-next": "^16.3.4",
         "eslint-plugin-react": "^7.37.0",
         "jest": "^30.1.3",
         "jest-environment-jsdom": "^30.1.2",
@@ -55,7 +55,8 @@
         "prettier-plugin-tailwindcss": "^0.8.0",
         "supabase": "^2.0.0",
         "tailwindcss": "^4.0.0",
-        "typescript": "6.0.3",
+        "typescript": "npm:@typescript/typescript6@^6.0.0",
+        "typescript-7": "npm:typescript@^7.0.0",
         "typescript-eslint": "^8.64.0"
     },
     "browserslist": [
@@ -63,5 +64,13 @@
         "last 2 Firefox versions",
         "last 2 Edge versions",
         "last 2 Safari versions"
-    ]
+    ],
+    "overrides": {
+        "@typescript-eslint/eslint-plugin": {
+            "typescript": "$typescript"
+        },
+        "@typescript-eslint/parser": {
+            "typescript": "$typescript"
+        }
+    }
 }

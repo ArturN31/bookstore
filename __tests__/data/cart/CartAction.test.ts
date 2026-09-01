@@ -12,7 +12,11 @@ type MockUser = NonNullable<Awaited<ReturnType<typeof getUserData>>['data']>;
 
 jest.mock('@/data/user/UserService');
 jest.mock('@/data/cart/CartService');
-jest.mock('@/data/schemas/cartSchema');
+jest.mock('@/data/schemas/cartSchema', () => ({
+    cartSchema: {
+        safeParse: jest.fn(),
+    },
+}));
 jest.mock('next/cache', () => ({
     revalidatePath: jest.fn(),
 }));

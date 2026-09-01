@@ -3,7 +3,7 @@ import { useCarouselScroll } from '@/components/books/BooksCarousel/useCarouselS
 import { render, screen } from '@testing-library/react';
 
 jest.mock('@/components/books/BooksCarousel/useCarouselScroll');
-const mockedUseCarouselScroll = useCarouselScroll as jest.Mock;
+const mockedUseCarouselScroll = useCarouselScroll as unknown as jest.Mock;
 
 jest.mock('@/components/books/bookCard/BookCard', () => ({
     BookCard: ({ book }: { book: { title: string } }) => (
@@ -90,7 +90,7 @@ describe('BooksCarousel Component', () => {
         });
     });
 
-    it('should render the heading and description', () => {
+    it('should render the heading and description for related books mode', () => {
         render(
             <BooksCarousel
                 books={mockBooks}
@@ -103,6 +103,24 @@ describe('BooksCarousel Component', () => {
         ).toBeInTheDocument();
         expect(
             screen.getByText('Discover similar titles based on author, genre, and reader ratings.'),
+        ).toBeInTheDocument();
+    });
+
+    it('should render the heading and description for bestsellers mode', () => {
+        render(
+            <BooksCarousel
+                books={mockBooks}
+                mode="bestsellers"
+            />,
+        );
+
+        expect(
+            screen.getByRole('heading', { level: 2, name: 'Trending Bestsellers' }),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByText(
+                "Discover the most popular titles currently capturing our readers' imaginations.",
+            ),
         ).toBeInTheDocument();
     });
 
