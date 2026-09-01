@@ -1,7 +1,7 @@
-import { RelatedBooksNavigationButtons } from '@/app/book/[slug]/components/RelatedBooks/RelatedBooksNavigationButtons';
+import { BooksNavigationButtons } from '@/components/books/BooksCarousel/BooksNavigationButtons';
 import { render, screen, fireEvent } from '@testing-library/react';
 
-describe('RelatedBooksNavigationButtons Component', () => {
+describe('BooksNavigationButtons Component', () => {
     const mockHandleScroll = jest.fn();
 
     beforeEach(() => {
@@ -10,7 +10,7 @@ describe('RelatedBooksNavigationButtons Component', () => {
 
     it('should render left and right navigation buttons', () => {
         render(
-            <RelatedBooksNavigationButtons
+            <BooksNavigationButtons
                 handleScroll={mockHandleScroll}
                 canScrollLeft={true}
                 canScrollRight={true}
@@ -23,7 +23,7 @@ describe('RelatedBooksNavigationButtons Component', () => {
 
     it('should disable scroll left button when canScrollLeft is false', () => {
         render(
-            <RelatedBooksNavigationButtons
+            <BooksNavigationButtons
                 handleScroll={mockHandleScroll}
                 canScrollLeft={false}
                 canScrollRight={true}
@@ -36,7 +36,7 @@ describe('RelatedBooksNavigationButtons Component', () => {
 
     it('should disable scroll right button when canScrollRight is false', () => {
         render(
-            <RelatedBooksNavigationButtons
+            <BooksNavigationButtons
                 handleScroll={mockHandleScroll}
                 canScrollLeft={true}
                 canScrollRight={false}
@@ -49,7 +49,7 @@ describe('RelatedBooksNavigationButtons Component', () => {
 
     it('should call handleScroll with "left" when the left button is clicked', () => {
         render(
-            <RelatedBooksNavigationButtons
+            <BooksNavigationButtons
                 handleScroll={mockHandleScroll}
                 canScrollLeft={true}
                 canScrollRight={true}
@@ -62,7 +62,7 @@ describe('RelatedBooksNavigationButtons Component', () => {
 
     it('should call handleScroll with "right" when the right button is clicked', () => {
         render(
-            <RelatedBooksNavigationButtons
+            <BooksNavigationButtons
                 handleScroll={mockHandleScroll}
                 canScrollLeft={true}
                 canScrollRight={true}

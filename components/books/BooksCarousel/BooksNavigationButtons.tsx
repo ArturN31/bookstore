@@ -1,4 +1,4 @@
-export const RelatedBooksNavigationButtons = ({
+export const BooksNavigationButtons = ({
     handleScroll,
     canScrollLeft,
     canScrollRight,

@@ -1,4 +1,8 @@
-import { createBaseBookQuery, getRelatedBooksQuery } from '@/data/books/BookRepository';
+import {
+    createBaseBookQuery,
+    getRelatedBooksQuery,
+    getBestsellersQuery,
+} from '@/data/books/BookRepository';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/database.types';
 
@@ -13,6 +17,8 @@ describe('BookRepository Range and Filter Logic', () => {
             in: jest.fn().mockReturnThis(),
             gte: jest.fn().mockReturnThis(),
             lte: jest.fn().mockReturnThis(),
+            order: jest.fn().mockReturnThis(),
+            limit: jest.fn().mockReturnThis(),
         };
 
         mockSupabase = {
@@ -141,6 +147,28 @@ describe('BookRepository Range and Filter Logic', () => {
                 target_book_id: 'book-123',
                 limit_count: 8,
             });
+        });
+    });
+
+    describe('getBestsellersQuery', () => {
+        it('should query bestsellers with default limit of 10', () => {
+            getBestsellersQuery(mockSupabase);
+
+            expect(mockSupabase.from).toHaveBeenCalledWith('books_with_stats');
+            expect(mockQuery.select).toHaveBeenCalledWith('*');
+            expect(mockQuery.eq).toHaveBeenCalledWith('is_active', true);
+            expect(mockQuery.order).toHaveBeenCalledWith('sales_count', { ascending: false });
+            expect(mockQuery.limit).toHaveBeenCalledWith(10);
+        });
+
+        it('should query bestsellers with custom limit', () => {
+            getBestsellersQuery(mockSupabase, 5);
+
+            expect(mockSupabase.from).toHaveBeenCalledWith('books_with_stats');
+            expect(mockQuery.select).toHaveBeenCalledWith('*');
+            expect(mockQuery.eq).toHaveBeenCalledWith('is_active', true);
+            expect(mockQuery.order).toHaveBeenCalledWith('sales_count', { ascending: false });
+            expect(mockQuery.limit).toHaveBeenCalledWith(5);
         });
     });
 });

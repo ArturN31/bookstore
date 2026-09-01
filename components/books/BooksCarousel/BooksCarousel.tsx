@@ -1,14 +1,15 @@
 'use client';
 
 import { BookCard } from '@/components/books/bookCard/BookCard';
-import { RelatedBooksNavigationButtons } from './RelatedBooksNavigationButtons';
 import { useCarouselScroll } from './useCarouselScroll';
+import { BooksNavigationButtons } from './BooksNavigationButtons';
 
-interface RelatedBooksCarouselProps {
+interface BooksCarouselProps {
     books: Book[];
+    mode: 'related_books' | 'bestsellers';
 }
 
-export const RelatedBooksCarousel = ({ books }: RelatedBooksCarouselProps) => {
+export const BooksCarousel = ({ books, mode }: BooksCarouselProps) => {
     const { scrollContainerRef, canScrollLeft, canScrollRight, handleScroll } = useCarouselScroll(
         books.length,
     );
@@ -16,14 +17,20 @@ export const RelatedBooksCarousel = ({ books }: RelatedBooksCarouselProps) => {
     return (
         <div className="grid w-full min-w-0 grid-cols-1 overflow-hidden">
             <div className="mb-6">
-                <h2 className="text-xl font-semibold">You Might Also Like</h2>
+                <h2 className="text-xl font-semibold">
+                    {mode === 'related_books' && 'You Might Also Like'}
+                    {mode === 'bestsellers' && 'Trending Bestsellers'}
+                </h2>
                 <p className="mt-1 text-gray-500">
-                    Discover similar titles based on author, genre, and reader ratings.
+                    {mode === 'related_books' &&
+                        'Discover similar titles based on author, genre, and reader ratings.'}
+                    {mode === 'bestsellers' &&
+                        "Discover the most popular titles currently capturing our readers' imaginations."}
                 </p>
             </div>
 
             <div className="relative w-full min-w-0 px-12">
-                <RelatedBooksNavigationButtons
+                <BooksNavigationButtons
                     handleScroll={handleScroll}
                     canScrollLeft={canScrollLeft}
                     canScrollRight={canScrollRight}

@@ -1,9 +1,9 @@
-import { RelatedBooksCarousel } from '@/app/book/[slug]/components/RelatedBooks/RelatedBooksCarousel';
-import { useCarouselScroll } from '@/app/book/[slug]/components/RelatedBooks/useCarouselScroll';
+import { BooksCarousel } from '@/components/books/BooksCarousel/BooksCarousel';
+import { useCarouselScroll } from '@/components/books/BooksCarousel/useCarouselScroll';
 import { render, screen } from '@testing-library/react';
 
-jest.mock('@/app/book/[slug]/components/RelatedBooks/useCarouselScroll');
-const mockedUseCarouselScroll = useCarouselScroll as jest.Mock;
+jest.mock('@/components/books/BooksCarousel/useCarouselScroll');
+const mockedUseCarouselScroll = useCarouselScroll as unknown as jest.Mock;
 
 jest.mock('@/components/books/bookCard/BookCard', () => ({
     BookCard: ({ book }: { book: { title: string } }) => (
@@ -11,7 +11,19 @@ jest.mock('@/components/books/bookCard/BookCard', () => ({
     ),
 }));
 
-jest.mock('@/app/book/[slug]/components/RelatedBooks/RelatedBooksNavigationButtons', () => ({
+jest.mock('@/components/books/BooksCarousel/BooksNavigationButtons', () => ({
+    BooksNavigationButtons: ({
+        canScrollLeft,
+        canScrollRight,
+    }: {
+        canScrollLeft: boolean;
+        canScrollRight: boolean;
+    }) => (
+        <div data-testid="nav-buttons">
+            <span data-testid="can-scroll-left">{String(canScrollLeft)}</span>
+            <span data-testid="can-scroll-right">{String(canScrollRight)}</span>
+        </div>
+    ),
     RelatedBooksNavigationButtons: ({
         canScrollLeft,
         canScrollRight,
@@ -67,7 +79,7 @@ const mockBooks = [
     },
 ];
 
-describe('RelatedBooksCarousel Component', () => {
+describe('BooksCarousel Component', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockedUseCarouselScroll.mockReturnValue({
@@ -78,14 +90,37 @@ describe('RelatedBooksCarousel Component', () => {
         });
     });
 
-    it('should render the heading and description', () => {
-        render(<RelatedBooksCarousel books={mockBooks} />);
+    it('should render the heading and description for related books mode', () => {
+        render(
+            <BooksCarousel
+                books={mockBooks}
+                mode="related_books"
+            />,
+        );
 
         expect(
             screen.getByRole('heading', { level: 2, name: 'You Might Also Like' }),
         ).toBeInTheDocument();
         expect(
             screen.getByText('Discover similar titles based on author, genre, and reader ratings.'),
+        ).toBeInTheDocument();
+    });
+
+    it('should render the heading and description for bestsellers mode', () => {
+        render(
+            <BooksCarousel
+                books={mockBooks}
+                mode="bestsellers"
+            />,
+        );
+
+        expect(
+            screen.getByRole('heading', { level: 2, name: 'Trending Bestsellers' }),
+        ).toBeInTheDocument();
+        expect(
+            screen.getByText(
+                "Discover the most popular titles currently capturing our readers' imaginations.",
+            ),
         ).toBeInTheDocument();
     });
 
@@ -97,14 +132,24 @@ describe('RelatedBooksCarousel Component', () => {
             handleScroll: jest.fn(),
         });
 
-        render(<RelatedBooksCarousel books={mockBooks} />);
+        render(
+            <BooksCarousel
+                books={mockBooks}
+                mode="related_books"
+            />,
+        );
 
         expect(screen.getByTestId('can-scroll-left')).toHaveTextContent('true');
         expect(screen.getByTestId('can-scroll-right')).toHaveTextContent('false');
     });
 
     it('should render a BookCard for each book provided in props', () => {
-        render(<RelatedBooksCarousel books={mockBooks} />);
+        render(
+            <BooksCarousel
+                books={mockBooks}
+                mode="related_books"
+            />,
+        );
 
         const cards = screen.getAllByTestId('book-card');
         expect(cards).toHaveLength(2);
@@ -113,7 +158,12 @@ describe('RelatedBooksCarousel Component', () => {
     });
 
     it('should call useCarouselScroll with the correct item count', () => {
-        render(<RelatedBooksCarousel books={mockBooks} />);
+        render(
+            <BooksCarousel
+                books={mockBooks}
+                mode="related_books"
+            />,
+        );
 
         expect(mockedUseCarouselScroll).toHaveBeenCalledWith(2);
     });

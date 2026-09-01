@@ -118,3 +118,15 @@ export const getRelatedBooksQuery = (
         limit_count: limitCount,
     });
 };
+
+export const getBestsellersQuery = (
+    supabase: SupabaseClient<Database>,
+    limitCount: number = 10,
+) => {
+    return supabase
+        .from('books_with_stats')
+        .select('*')
+        .eq('is_active', true)
+        .order('sales_count', { ascending: false })
+        .limit(limitCount);
+};

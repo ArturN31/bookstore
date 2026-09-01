@@ -6,6 +6,7 @@ import {
     applyBookPagination,
     getRelatedBooksQuery,
     BookQueryParams,
+    getBestsellersQuery,
 } from './BookRepository';
 import { mapToPaginatedBookResponse } from './BookMapper';
 import {
@@ -153,6 +154,52 @@ export const fetchRelatedBooks = async (
         };
     } catch (err: unknown) {
         console.error('[BookService] Related Books Error:', err);
+
+        return {
+            data: null,
+            error: sanitizeSupabaseError(err),
+        };
+    }
+};
+
+export const getCachedBestsellersData = unstable_cache(
+    async (limit: number) => {
+        const supabase = await createPublicServerClient();
+
+        return await safeSupabaseQuery(async () => {
+            const response = await getBestsellersQuery(supabase, limit);
+            if (response.error) return { data: null, error: response.error };
+
+            return {
+                data: response.data || [],
+                error: null,
+            };
+        });
+    },
+    ['bestsellers-results'],
+    {
+        revalidate: 600,
+        tags: ['books'],
+    },
+);
+
+export const fetchBestsellers = async (
+    limit: number = 10,
+): Promise<ActionResponse<Tables<'books_with_stats'>[]>> => {
+    try {
+        const result = await getCachedBestsellersData(limit);
+        if (result.error)
+            return {
+                data: null,
+                error: sanitizeSupabaseError(result.error),
+            };
+
+        return {
+            data: (result.data as Tables<'books_with_stats'>[]) || [],
+            error: null,
+        };
+    } catch (err: unknown) {
+        console.error('[BookService] Bestsellers Error:', err);
 
         return {
             data: null,

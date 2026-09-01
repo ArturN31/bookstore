@@ -28,14 +28,16 @@ jest.mock('next/cache', () => ({
 }));
 
 describe('WishlistAction', () => {
-    const mockedGetUserData = getUserData as jest.MockedFunction<typeof getUserData>;
-    const mockedExecuteWishlistOperation = executeWishlistOperation as jest.MockedFunction<
-        typeof executeWishlistOperation
-    >;
-    const mockedWishlistSchema = wishlistSchema as unknown as { safeParse: jest.Mock };
+    const mockedGetUserData = jest.mocked(getUserData);
+    const mockedExecuteWishlistOperation = jest.mocked(executeWishlistOperation);
+    const mockedWishlistSchema = jest.mocked(wishlistSchema);
 
     beforeEach(() => {
         jest.clearAllMocks();
+
+        if (!mockedWishlistSchema.safeParse) {
+            mockedWishlistSchema.safeParse = jest.fn();
+        }
 
         mockedGetUserData.mockResolvedValue({
             data: { id: 'user-123', email: 'test@test.com' } as unknown as NonNullable<
@@ -45,10 +47,11 @@ describe('WishlistAction', () => {
         });
 
         mockedWishlistSchema.safeParse.mockImplementation(
-            (data: { bookId: string; actionType: string }) => ({
-                success: true,
-                data: { bookId: data.bookId, actionType: data.actionType },
-            }),
+            (data: any) =>
+                ({
+                    success: true,
+                    data: { bookId: data?.bookId, actionType: data?.actionType },
+                }) as any,
         );
 
         mockedExecuteWishlistOperation.mockResolvedValue({
@@ -68,7 +71,7 @@ describe('WishlistAction', () => {
     it('should return failure if validated.success is false', async () => {
         mockedWishlistSchema.safeParse.mockReturnValue({
             success: false,
-            error: { issues: [{ message: 'Invalid ID' }] },
+            error: { issues: [{ message: 'Invalid ID' }] } as any,
         });
         const result = await WishlistAction(undefined, new FormData());
         expect(result.success).toBe(false);
