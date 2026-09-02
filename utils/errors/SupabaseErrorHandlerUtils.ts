@@ -71,9 +71,19 @@ export const handlePostgrestError = (dbErr: PostgrestErrorPayload): string => {
             errorDetails.includes('username') ||
             errorMessage.includes('users_username_key') ||
             errorMessage.includes('username')
-        ) {
+        )
             return APP_ERROR_MESSAGES.USERNAME_TAKEN;
-        }
+    }
+
+    if (dbErr.code === '23514') {
+        const errorDetails = (dbErr.details ?? '').toLowerCase();
+        const errorMessage = (dbErr.message ?? '').toLowerCase();
+        if (
+            errorDetails.includes('username') ||
+            errorMessage.includes('users_username_format_check') ||
+            errorMessage.includes('username')
+        )
+            return APP_ERROR_MESSAGES.INVALID_USERNAME_FORMAT;
     }
 
     if (dbErr.code && DB_ERROR_MAP[dbErr.code]) return DB_ERROR_MAP[dbErr.code];

@@ -13,6 +13,7 @@ export const WISHLIST_TABLE = 'wishlist';
 
 export const USER_ROUTES = {
     PROFILE: '/user/profile',
+    PUBLIC_PROFILE: '/user',
 } as const;
 
 export const USER_DB_COLUMN_MAP = {

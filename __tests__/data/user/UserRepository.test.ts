@@ -2,7 +2,6 @@ import {
     fetchUserProfileById,
     fetchWishlistByUserId,
     fetchUserAuthData,
-    updateUsername,
 } from '@/data/user/UserRepository';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/database.types';
@@ -178,49 +177,6 @@ describe('UserRepository', () => {
 
             expect(result.data.user).toBeNull();
             expect(result.error).toEqual(mockAuthError);
-        });
-    });
-
-    describe('updateUsername', () => {
-        it('should update username successfully', async () => {
-            const mockUpdatedData = [{ id: 'user-123', username: 'newusername' }];
-            const mockResponse = { data: mockUpdatedData, error: null };
-
-            const mockSelect = jest.fn().mockResolvedValue(mockResponse);
-            const mockEq = jest.fn().mockReturnValue({ select: mockSelect });
-            const mockUpdate = jest.fn().mockReturnValue({ eq: mockEq });
-            const mockFrom = jest.fn().mockReturnValue({ update: mockUpdate });
-
-            const mockSupabase = {
-                from: mockFrom,
-            } as unknown as SupabaseClient<Database>;
-
-            const result = await updateUsername(mockSupabase, 'user-123', 'newusername');
-
-            expect(mockFrom).toHaveBeenCalledWith('users');
-            expect(mockUpdate).toHaveBeenCalledWith({ username: 'newusername' });
-            expect(mockEq).toHaveBeenCalledWith('id', 'user-123');
-            expect(mockSelect).toHaveBeenCalled();
-            expect(result).toEqual(mockResponse);
-        });
-
-        it('should return error when update fails', async () => {
-            const mockError = { message: 'Update error', code: 'PGRST100' };
-            const mockResponse = { data: null, error: mockError };
-
-            const mockSelect = jest.fn().mockResolvedValue(mockResponse);
-            const mockEq = jest.fn().mockReturnValue({ select: mockSelect });
-            const mockUpdate = jest.fn().mockReturnValue({ eq: mockEq });
-            const mockFrom = jest.fn().mockReturnValue({ update: mockUpdate });
-
-            const mockSupabase = {
-                from: mockFrom,
-            } as unknown as SupabaseClient<Database>;
-
-            const result = await updateUsername(mockSupabase, 'user-123', 'newusername');
-
-            expect(result.data).toBeNull();
-            expect(result.error).toEqual(mockError);
         });
     });
 });

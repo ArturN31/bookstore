@@ -13,10 +13,9 @@ export const fetchUserAuthData = async (supabase: SupabaseClient<Database>) => {
     return supabase.auth.getUser();
 };
 
-export const updateUsername = async (
+export const fetchPublicUserProfileByUsername = async (
     supabase: SupabaseClient<Database>,
-    userId: string,
-    newUsername: string,
+    username: string,
 ) => {
-    return supabase.from('users').update({ username: newUsername }).eq('id', userId).select();
+    return supabase.rpc('get_public_profile', { target_username: username }).maybeSingle();
 };

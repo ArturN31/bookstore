@@ -1,4 +1,5 @@
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { APP_ERROR_MESSAGES } from '../errors/ErrorHandlerConstants';
 
 type QuerySuccess<T> = {
     data: T;
@@ -27,7 +28,7 @@ export async function safeSupabaseQuery<T>(
         if (data === null)
             return {
                 data: null,
-                error: 'No data returned.',
+                error: APP_ERROR_MESSAGES.NO_DATA_RETURNED,
             };
 
         return {

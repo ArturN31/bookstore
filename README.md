@@ -399,6 +399,17 @@ The following features are partially or not yet implemented:
   - [X] **Wishlist Sharing - Visibility Controls**: Implement functionality that enables users to switch between the two modes.
   - [X] **Wishlist Sharing - Restricted View**: Implement a "Restricted Access" UI to gracefully handle invalid/revoked private links, or attempts to view a public wishlist that is turned off or doesn't exist.
 - [ ] **User Profile - Public**: Add public profile page to allow users to view other users content.
+  - [ ] **User Profile - Public Profile Sharing**: Allow users to share their public profiles with other users, with appropriate privacy controls and access restrictions.
+    - [ ] **User Profile - Public Profile Visibility Controls**: Implement functionality that enables users to switch between public and private profile visibility.
+    - [X] **User Profile - Public Profile Restricted View**: Implement a "Restricted Access" UI to gracefully handle attempts to view a public profile that is turned off or doesn't exist.
+    - [X] **User Profile - Public Profile URL**: Generate a unique, user-friendly URL for public profiles (e.g., `user/[username]`).
+    - [X] **User Profile - Public Profile Banner**: Display relevant user information on public profiles, such as username, profile picture and joined in date.
+  - [ ] **User Profile - Public Wishlist**: Allow users to view other users' public wishlists, with appropriate privacy controls and access restrictions.
+  - [ ] **User Profile - Public Reviews**: Allow users to view other users' public reviews, with appropriate privacy controls and access restrictions.
+  - [ ] **User Profile - Public Recommendations**: Allow users to share their public recommendations with other users, with appropriate privacy controls and access restrictions.
+  - [ ] **User Profile - Public Profile Editing**: Allow users to edit their public profiles, with appropriate privacy controls and access restrictions.
+  - [ ] **User Profile - Public Profile Privacy Settings**: Allow users to manage privacy settings for their public profiles, with appropriate access controls and restrictions.
+  - [ ] **User Profile - Public Profile Account Settings**: Allow users to manage account settings for their public profiles, with appropriate access controls and restrictions.
 - [ ] **Accessibility Enhancements**: Conduct a full WCAG 2.1 audit and implement ARIA roles, keyboard navigation, and screen reader support across the application.
 
 ### 3. Advanced Store Features

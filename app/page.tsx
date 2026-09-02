@@ -29,10 +29,7 @@ export default async function HomePage() {
         );
 
     return (
-        <main
-            className="mx-auto max-w-[1680px] space-y-10 pb-20"
-            style={{ marginTop: 'calc(var(--header-height, 150px) + 1rem)' }}
-        >
+        <main className="mx-auto max-w-[1680px] space-y-10 pb-20">
             <HomepageHero booksAmount={booksResponse.data.total} />
 
             <div className="grid gap-12 px-6">

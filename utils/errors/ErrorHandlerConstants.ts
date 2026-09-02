@@ -31,6 +31,8 @@ export const APP_ERROR_MESSAGES = {
     USERNAME_VALIDATION_ERROR: 'Please resolve the validation errors.',
     USERNAME_TAKEN: 'This username is already taken.',
     USERNAME_EXISTS_DB_ERROR: 'This record already exists. Please use a different value.',
+    INVALID_USERNAME_FORMAT:
+        'The username contains invalid characters. Only alphanumeric characters, underscores, and hyphens are allowed.',
 
     // ==========================================
     // Shopping Cart Errors
@@ -64,6 +66,8 @@ export const DB_ERROR_MAP: Record<string, string> = {
     '23505': 'This record already exists. Please use a different value.',
     '23503': 'The requested operation cannot be completed because related data is missing.',
     '23502': 'Please fill in all required fields.',
+    '23514':
+        'The username contains invalid characters. Only alphanumeric characters, underscores, and hyphens are allowed.',
     '42P01': 'We encountered an issue processing your request. Please contact support.',
     '42703': 'We encountered an issue processing your request. Please contact support.',
     PGRST116: 'Could not find the exact record requested.',

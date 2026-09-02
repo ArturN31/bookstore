@@ -17,7 +17,7 @@ export interface ReviewFormState {
     validationErrors?: z.core.$ZodIssue[];
 }
 
-export const INITIAL_EMPTY_STATE: ReviewFormState = {
+export const INITIAL_EMPTY_REVIEW_FORM_STATE: ReviewFormState = {
     message: null,
     error: null,
     validationErrors: [],

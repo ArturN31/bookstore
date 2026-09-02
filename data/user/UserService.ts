@@ -111,3 +111,48 @@ export const getUserWishlist = async (): Promise<ActionResponse<WishlistRow[]>> 
         return { data: null, error: sanitizedError };
     }
 };
+
+export const getPublicUserProfile = async (
+    username: string,
+): Promise<ActionResponse<{ username: string; created_at: string }>> => {
+    try {
+        const supabase = await createBackendClient();
+
+        const profileResult = await withRetry<{
+            data: { username: string; created_at: string } | null;
+            error: string | null;
+        }>(async () => {
+            const res = await safeSupabaseQuery(
+                async () => await Repo.fetchPublicUserProfileByUsername(supabase, username),
+            );
+
+            if (res.error) {
+                if (res.error === APP_ERROR_MESSAGES.NO_DATA_RETURNED)
+                    return { data: null, error: APP_ERROR_MESSAGES.NO_DATA_RETURNED };
+                throw new Error(res.error);
+            }
+
+            return { data: res.data, error: null };
+        });
+
+        if (profileResult.error) {
+            if (profileResult.error === APP_ERROR_MESSAGES.NO_DATA_RETURNED) {
+                return { data: null, error: APP_ERROR_MESSAGES.ERROR_PROFILE_NOT_FOUND };
+            }
+            const sanitizedError = sanitizeSupabaseError(profileResult.error);
+            return { data: null, error: sanitizedError };
+        }
+
+        if (!profileResult.data)
+            return { data: null, error: APP_ERROR_MESSAGES.ERROR_PROFILE_NOT_FOUND };
+
+        return {
+            data: profileResult.data,
+            error: null,
+        };
+    } catch (err: unknown) {
+        console.error(`${UserServiceLogPrefix} Public Profile Error:`, err);
+        const sanitizedError = sanitizeSupabaseError(err);
+        return { data: null, error: sanitizedError };
+    }
+};

@@ -8,7 +8,10 @@ import { ReviewFormActionBtns } from './FormItems/ReviewFormActionBtns';
 import { useActionState, useState, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { ReviewFormFields } from './ReviewFormModal';
-import { ReviewFormState } from '@/data/books/reviews/ReviewConstants';
+import {
+    INITIAL_EMPTY_REVIEW_FORM_STATE,
+    ReviewFormState,
+} from '@/data/books/reviews/ReviewConstants';
 import { z } from 'zod';
 import { reviewSchema } from '@/data/schemas/reviewSchema';
 import { useUserState } from '@/providers/user/utils/useUser';
@@ -23,11 +26,6 @@ interface ReviewFormProps {
     handleClose: () => void;
     isEditing?: boolean;
 }
-
-export const INITIAL_REVIEW_FORM_STATE: ReviewFormState = {
-    message: null,
-    validationErrors: [],
-};
 
 export const ReviewForm = ({
     bookId,
@@ -63,7 +61,7 @@ export const ReviewForm = ({
 
             return result;
         },
-        INITIAL_REVIEW_FORM_STATE,
+        INITIAL_EMPTY_REVIEW_FORM_STATE,
     );
 
     const handleFieldChangeByName = (name: 'rating' | 'review', value: number | null | string) => {

@@ -14,7 +14,12 @@ export const RootLayoutContent = ({ children }: { children: React.ReactNode }) =
                 >
                     <Header />
                     <main className="flex w-full flex-1 flex-row gap-8 bg-slate-50 px-8 md:flex">
-                        <div className="flex w-full flex-1 flex-col py-8">{children}</div>
+                        <div
+                            className="flex w-full flex-1 flex-col py-8"
+                            style={{ marginTop: 'calc(var(--header-height, 150px) + 1rem)' }}
+                        >
+                            {children}
+                        </div>
                     </main>
                     <Footer />
                 </div>
