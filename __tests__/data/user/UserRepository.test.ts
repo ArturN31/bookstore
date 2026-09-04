@@ -2,6 +2,7 @@ import {
     fetchUserProfileById,
     fetchWishlistByUserId,
     fetchUserAuthData,
+    fetchPublicUserProfileByUsername,
 } from '@/data/user/UserRepository';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/database.types';
@@ -177,6 +178,61 @@ describe('UserRepository', () => {
 
             expect(result.data.user).toBeNull();
             expect(result.error).toEqual(mockAuthError);
+        });
+    });
+
+    describe('fetchPublicUserProfileByUsername', () => {
+        it('should return public user profile data when RPC query succeeds', async () => {
+            const mockData = { username: 'testuser', created_at: '2026-01-01T00:00:00.000Z' };
+            const mockResponse = { data: mockData, error: null };
+
+            const mockMaybeSingle = jest.fn().mockResolvedValue(mockResponse);
+            const mockRpc = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+
+            const mockSupabase = {
+                rpc: mockRpc,
+            } as unknown as SupabaseClient<Database>;
+
+            const result = await fetchPublicUserProfileByUsername(mockSupabase, 'testuser');
+
+            expect(mockRpc).toHaveBeenCalledWith('get_public_profile', {
+                target_username: 'testuser',
+            });
+            expect(mockMaybeSingle).toHaveBeenCalled();
+            expect(result).toEqual(mockResponse);
+        });
+
+        it('should return error when RPC query fails', async () => {
+            const mockError = { message: 'RPC error', code: 'PGRST200' };
+            const mockResponse = { data: null, error: mockError };
+
+            const mockMaybeSingle = jest.fn().mockResolvedValue(mockResponse);
+            const mockRpc = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+
+            const mockSupabase = {
+                rpc: mockRpc,
+            } as unknown as SupabaseClient<Database>;
+
+            const result = await fetchPublicUserProfileByUsername(mockSupabase, 'testuser');
+
+            expect(result.data).toBeNull();
+            expect(result.error).toEqual(mockError);
+        });
+
+        it('should return null data when public profile is not found (no error)', async () => {
+            const mockResponse = { data: null, error: null };
+
+            const mockMaybeSingle = jest.fn().mockResolvedValue(mockResponse);
+            const mockRpc = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+
+            const mockSupabase = {
+                rpc: mockRpc,
+            } as unknown as SupabaseClient<Database>;
+
+            const result = await fetchPublicUserProfileByUsername(mockSupabase, 'nonexistent');
+
+            expect(result.data).toBeNull();
+            expect(result.error).toBeNull();
         });
     });
 });

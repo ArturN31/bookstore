@@ -13,10 +13,7 @@ export default async function PublicProfilePage({
 
     const { data: profile, error } = await getPublicUserProfile(username);
 
-    if (error === APP_ERROR_MESSAGES.ERROR_PROFILE_NOT_FOUND || !profile)
-        return <PublicProfileUnavailable />;
-
-    if (error) {
+    if (error && error !== APP_ERROR_MESSAGES.ERROR_PROFILE_NOT_FOUND) {
         return (
             <div className="flex min-h-[60vh] items-center justify-center p-4">
                 <div className="w-full max-w-md rounded-xl border border-red-200 bg-red-50 p-8 text-center dark:border-red-900/50 dark:bg-red-900/10">
@@ -28,6 +25,9 @@ export default async function PublicProfilePage({
             </div>
         );
     }
+
+    if (error === APP_ERROR_MESSAGES.ERROR_PROFILE_NOT_FOUND || !profile)
+        return <PublicProfileUnavailable />;
 
     return (
         <div>
