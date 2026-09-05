@@ -53,6 +53,8 @@ const mockedUserData: User = {
     phone_number: '555-1234',
     username: 'johndoe',
     email: 'user@test.com',
+    is_wishlist_public: false,
+    wishlist_share_token: null,
 };
 
 describe('APP - pages/user - UserDetails', () => {

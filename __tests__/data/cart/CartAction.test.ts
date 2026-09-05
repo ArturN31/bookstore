@@ -8,7 +8,6 @@ import { CART_SUCCESS_MESSAGES } from '@/data/cart/CartConstants';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 
 type MockedSafeParseReturn = ReturnType<typeof cartSchema.safeParse>;
-type MockUser = NonNullable<Awaited<ReturnType<typeof getUserData>>['data']>;
 
 jest.mock('@/data/user/UserService');
 jest.mock('@/data/cart/CartService');
@@ -27,7 +26,7 @@ jest.mock('@/utils/errors/SupabaseErrorHandler', () => ({
     sanitizeSupabaseError: jest.fn((err: unknown): string => `Sanitized: ${String(err)}`),
 }));
 
-const mockUser: MockUser = {
+const mockUser: User = {
     id: 'user-123',
     email: 'test@example.com',
     city: 'Test City',
@@ -41,6 +40,8 @@ const mockUser: MockUser = {
     username: 'testuser',
     date_of_birth: '1990-01-01',
     phone_number: '1234567890',
+    is_wishlist_public: false,
+    wishlist_share_token: null,
 };
 
 describe('CartAction', () => {

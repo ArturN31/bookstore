@@ -38,6 +38,7 @@ describe('UserRepository - Address Operations', () => {
                 postcode: 'ML3 0AA',
                 country: 'United Kingdom',
                 phone_number: '1234567890',
+                username: '',
             };
 
             const mockData: UserRow[] = [
@@ -54,6 +55,8 @@ describe('UserRepository - Address Operations', () => {
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
                     username: 'johndoe',
+                    is_wishlist_public: false,
+                    wishlist_share_token: null,
                 },
             ];
 
@@ -83,6 +86,7 @@ describe('UserRepository - Address Operations', () => {
                 postcode: 'ML3 0AA',
                 country: 'United Kingdom',
                 phone_number: '1234567890',
+                username: '',
             };
 
             const mockError = { message: 'Insert failed', code: '23505', details: '', hint: '' };
@@ -124,6 +128,8 @@ describe('UserRepository - Address Operations', () => {
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
                     username: 'johndoe',
+                    is_wishlist_public: false,
+                    wishlist_share_token: null,
                 },
             ];
 

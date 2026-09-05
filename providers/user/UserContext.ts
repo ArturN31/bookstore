@@ -24,6 +24,8 @@ export const DEFAULT_USER: User = {
     phone_number: '',
     username: '',
     email: '',
+    is_wishlist_public: false,
+    wishlist_share_token: null,
 };
 
 export const INITIAL_USER_STATE: UserState = {
