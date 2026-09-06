@@ -22,12 +22,12 @@ describe('SharedWishlistHero', () => {
 
             const userProfileLink = screen.getByRole('link', { name: `@${mockUsername}` });
             expect(userProfileLink).toBeInTheDocument();
-            expect(userProfileLink).toHaveAttribute('href', `/user/profile/public/${mockUsername}`);
+            expect(userProfileLink).toHaveAttribute('href', `/user/${mockUsername}`);
         });
     });
 
     describe('Private Mode', () => {
-        it('renders correct text and no link for the username', () => {
+        it('renders correct text and a link for the username', () => {
             render(
                 <SharedWishlistHero
                     username={mockUsername}
@@ -42,11 +42,9 @@ describe('SharedWishlistHero', () => {
                 screen.getByText(/A private shared reading list curated via secure link by/i),
             ).toBeInTheDocument();
 
-            expect(
-                screen.queryByRole('link', { name: `@${mockUsername}` }),
-            ).not.toBeInTheDocument();
-
-            expect(screen.getByText(`@${mockUsername}`)).toBeInTheDocument();
+            const userProfileLink = screen.getByRole('link', { name: `@${mockUsername}` });
+            expect(userProfileLink).toBeInTheDocument();
+            expect(userProfileLink).toHaveAttribute('href', `/user/${mockUsername}`);
         });
     });
 

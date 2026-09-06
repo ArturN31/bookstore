@@ -22,7 +22,10 @@ describe('ReviewCardHeader', () => {
     it('should render username and created date correctly', () => {
         render(<ReviewCardHeader review={mockReview} />);
 
-        expect(screen.getByText(/— johndoe/i)).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /johndoe/i })).toHaveAttribute(
+            'href',
+            '/user/johndoe',
+        );
         const expectedDate = new Date(mockReview.created_at).toLocaleDateString();
         expect(screen.getByText(new RegExp(`Posted ${expectedDate}`, 'i'))).toBeInTheDocument();
         expect(screen.queryByText(/edited/i)).not.toBeInTheDocument();
@@ -56,7 +59,10 @@ describe('ReviewCardHeader', () => {
 
         render(<ReviewCardHeader review={invalidDateReview} />);
 
-        expect(screen.getByText(/— johndoe/i)).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /johndoe/i })).toHaveAttribute(
+            'href',
+            '/user/johndoe',
+        );
         expect(screen.getByText(/^posted\s*$/i)).toBeInTheDocument();
     });
 

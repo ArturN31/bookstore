@@ -56,7 +56,6 @@ export default async function BookById({ params, searchParams }: BookByIdProps) 
     return (
         <article
             className="mx-auto grid max-w-375 gap-5 px-4 sm:max-w-3xl md:max-w-5xl lg:max-w-7xl"
-            style={{ marginTop: 'calc(var(--header-height, 150px) + 1rem)' }}
             role="main"
         >
             <BookHeader book={book} />

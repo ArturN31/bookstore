@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Typography } from '@mui/material';
+import { Box, Link, Typography } from '@mui/material';
 import { SelectedReview } from './ReviewCard';
 import { ReviewCardBodyActionBtns } from './ReviewCardBodyActionBtns';
 
@@ -41,7 +41,7 @@ export const ReviewCardHeader = ({ review, onEdit, onDelete }: ReviewCardHeaderP
                     variant="subtitle2"
                     className="text-sm! font-bold! tracking-[0.3px]! text-[#1C1917]!"
                 >
-                    — {review.username}
+                    — <Link href={`/user/${review.username}`}>{review.username}</Link>
                 </Typography>
                 <Typography
                     variant="caption"

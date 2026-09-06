@@ -25,6 +25,8 @@ export const generateMockUsersArray = (count: number = 10): MockUserSetup[] => {
             city: faker.location.city(),
             country: 'United Kingdom',
             phone_number: faker.phone.number(),
+            is_wishlist_public: false,
+            wishlist_share_token: null,
         };
     });
 };

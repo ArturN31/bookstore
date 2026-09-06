@@ -1,8 +1,14 @@
 import { QuickActions } from '@/app/user/profile/components/UserProfilePage/QuickActions/QuickActions';
-import { screen, render } from '@testing-library/react';
+import { screen, render, act } from '@testing-library/react';
 
 jest.mock('@/utils/security/securityAuditLogger', () => ({
     recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('@/data/user/UserService', () => ({
+    getUserData: jest.fn().mockResolvedValue({
+        data: { username: 'testuser' },
+    }),
 }));
 
 describe('APP - pages/user - QuickActions', () => {
@@ -19,12 +25,14 @@ describe('APP - pages/user - QuickActions', () => {
         consoleWarnSpy.mockRestore();
     });
 
-    it('should render component', () => {
-        render(<QuickActions />);
+    it('should render component', async () => {
+        await act(async () => {
+            render(await QuickActions());
+        });
 
-        const changePasswordLink = screen.getByRole('link', { name: /Change Password/i });
-        const changeAddressLink = screen.getByRole('link', { name: /Change Address/i });
-        const myReviewsLink = screen.getByRole('link', { name: /My Book Reviews/i });
+        const changePasswordLink = await screen.findByRole('link', { name: /Change Password/i });
+        const changeAddressLink = await screen.findByRole('link', { name: /Change Address/i });
+        const myReviewsLink = await screen.findByRole('link', { name: /My Book Reviews/i });
 
         expect(changePasswordLink).toHaveAttribute('href', '/user/auth/change_password');
         expect(changeAddressLink).toHaveAttribute('href', '/user/profile/change_address');

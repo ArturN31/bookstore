@@ -16,7 +16,10 @@ describe('EmptyWishlistView', () => {
         expect(screen.getByText('Wishlist is Empty')).toBeInTheDocument();
 
         expect(screen.getByText(/The public reading list belonging to/i)).toBeInTheDocument();
-        expect(screen.getByText(`@${mockUsername}`)).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: mockUsername })).toHaveAttribute(
+            'href',
+            `/user/${mockUsername}`,
+        );
         expect(screen.getByText(/does not contain any books yet/i)).toBeInTheDocument();
     });
 
@@ -34,7 +37,10 @@ describe('EmptyWishlistView', () => {
         expect(
             screen.getByText(/This private shared collection belonging to/i),
         ).toBeInTheDocument();
-        expect(screen.getByText(`@${mockUsername}`)).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: mockUsername })).toHaveAttribute(
+            'href',
+            `/user/${mockUsername}`,
+        );
         expect(screen.getByText(/does not have any books added at this time/i)).toBeInTheDocument();
     });
 
@@ -47,6 +53,7 @@ describe('EmptyWishlistView', () => {
         );
 
         const returnLink = screen.getByRole('link', { name: /Return to Store/i });
+        expect(screen.getByRole('link', { name: mockUsername })).toBeInTheDocument();
         expect(returnLink).toBeInTheDocument();
         expect(returnLink).toHaveAttribute('href', '/');
     });

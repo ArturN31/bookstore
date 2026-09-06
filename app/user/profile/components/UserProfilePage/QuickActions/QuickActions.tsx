@@ -1,12 +1,17 @@
-import { Edit, RateReview } from '@mui/icons-material';
+import { RateReview } from '@mui/icons-material';
+import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
 import EditLocationOutlinedIcon from '@mui/icons-material/EditLocationOutlined';
 import LockPersonOutlinedIcon from '@mui/icons-material/LockPersonOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import { ActionSection } from './ActionSection';
 import { ActionLink } from './ActionLink';
+import { getUserData } from '@/data/user/UserService';
 
-export const QuickActions = () => {
+export const QuickActions = async () => {
+    const response = await getUserData();
+    const user = response.data;
+
     return (
         <div className="space-y-6">
             <ActionSection
@@ -25,6 +30,14 @@ export const QuickActions = () => {
                 title="My Content & History"
                 description="View your orders, reviews, and personal activity"
             >
+                {user?.username && (
+                    <ActionLink
+                        href={`/user/${user.username}`}
+                        icon={PersonOutlinedIcon}
+                        label="My Public Profile"
+                        color="blue"
+                    />
+                )}
                 <ActionLink
                     href="/user/content/reviews"
                     icon={RateReview}

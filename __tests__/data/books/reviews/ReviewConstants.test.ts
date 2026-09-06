@@ -1,8 +1,11 @@
-import { INITIAL_EMPTY_STATE, REVIEW_ROUTES } from '@/data/books/reviews/ReviewConstants';
+import {
+    INITIAL_EMPTY_REVIEW_FORM_STATE,
+    REVIEW_ROUTES,
+} from '@/data/books/reviews/ReviewConstants';
 
 describe('ReviewConstants', () => {
     it('should have the correct initial empty state', () => {
-        expect(INITIAL_EMPTY_STATE).toEqual({
+        expect(INITIAL_EMPTY_REVIEW_FORM_STATE).toEqual({
             message: null,
             error: null,
             validationErrors: [],

@@ -30,7 +30,9 @@ describe('RestrictedAccessView', () => {
         expect(screen.getByText('Wishlist Unavailable')).toBeInTheDocument();
 
         expect(screen.getByText(/The public collection belonging to/i)).toBeInTheDocument();
-        expect(screen.getByText(`@${mockUsername}`)).toBeInTheDocument();
+        const userLink = screen.getByRole('link', { name: mockUsername });
+        expect(userLink).toBeInTheDocument();
+        expect(userLink).toHaveAttribute('href', `/user/${mockUsername}`);
         expect(
             screen.getByText(/cannot be accessed because it is currently set to private/i),
         ).toBeInTheDocument();
@@ -48,7 +50,9 @@ describe('RestrictedAccessView', () => {
         expect(screen.getByText('Wishlist Unavailable')).toBeInTheDocument();
 
         expect(screen.getByText(/This private link for/i)).toBeInTheDocument();
-        expect(screen.getByText(`@${mockUsername}`)).toBeInTheDocument();
+        const userLink = screen.getByRole('link', { name: mockUsername });
+        expect(userLink).toBeInTheDocument();
+        expect(userLink).toHaveAttribute('href', `/user/${mockUsername}`);
         expect(screen.getByText(/is invalid, has been revoked\/reset/i)).toBeInTheDocument();
     });
 

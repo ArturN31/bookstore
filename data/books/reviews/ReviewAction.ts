@@ -1,6 +1,6 @@
 'use server';
 
-import { ReviewFormState, ReviewInsert } from './ReviewConstants';
+import { INITIAL_EMPTY_REVIEW_FORM_STATE, ReviewFormState, ReviewInsert } from './ReviewConstants';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { reviewSchema } from '@/data/schemas/reviewSchema';
 import { createBackendClient } from '@/utils/db/server';
@@ -10,7 +10,6 @@ import { isDuplicateReviewError, resolveUsername } from './ReviewActionUtils';
 import { mapToReviewPayload } from './ReviewMapper';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { INITIAL_REVIEW_FORM_STATE } from '@/app/book/[slug]/components/Reviews/ReviewForm/ReviewForm';
 
 export async function UserReviewAction(
     prevState: ReviewFormState | undefined,
@@ -18,7 +17,7 @@ export async function UserReviewAction(
 ): Promise<ReviewFormState> {
     const rawData = Object.fromEntries(formData.entries());
 
-    if (rawData.reset) return INITIAL_REVIEW_FORM_STATE;
+    if (rawData.reset) return INITIAL_EMPTY_REVIEW_FORM_STATE;
 
     const bookId: string = typeof rawData.bookId === 'string' ? rawData.bookId : '';
     const slug: string =
@@ -33,12 +32,11 @@ export async function UserReviewAction(
     const isEditing = Boolean(reviewId);
 
     const validated = reviewSchema.safeParse(rawData);
-    if (!validated.success) {
+    if (!validated.success)
         return {
             validationErrors: validated.error.issues,
             message: APP_ERROR_MESSAGES.VALIDATION_ERROR,
         };
-    }
 
     try {
         const supabase = await createBackendClient();
@@ -123,5 +121,5 @@ export async function UserReviewAction(
     revalidatePath('/user/content/reviews', 'page');
     revalidatePath('/', 'page');
 
-    return INITIAL_REVIEW_FORM_STATE;
+    return INITIAL_EMPTY_REVIEW_FORM_STATE;
 }

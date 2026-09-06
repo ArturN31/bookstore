@@ -1,5 +1,5 @@
 import { AuthError } from '@supabase/supabase-js';
-import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
+import { APP_ERROR_MESSAGES, DB_ERROR_MAP } from '@/utils/errors/ErrorHandlerConstants';
 import {
     fallbackErrorMessage,
     isPostgrestError,
@@ -44,8 +44,8 @@ describe('SupabaseErrorHandlerUtils', () => {
 
             it('should return false for invalid objects', () => {
                 expect(isPostgrestError(null)).toBe(false);
-                expect(isPostgrestError({ code: '23505' })).toBe(false); // Missing details or hint
-                expect(isPostgrestError({ details: 'some detail' })).toBe(false); // Missing code
+                expect(isPostgrestError({ code: '23505' })).toBe(false);
+                expect(isPostgrestError({ details: 'some detail' })).toBe(false);
             });
         });
 
@@ -93,6 +93,63 @@ describe('SupabaseErrorHandlerUtils', () => {
             };
             const result = handlePostgrestError(mockPostgrestError);
             expect(result).toBe('This record already exists. Please use a different value.');
+        });
+
+        it('should sanitize 23514 (check_violation) error for invalid username format via constraint name', () => {
+            const mockPostgrestError = {
+                code: '23514',
+                message:
+                    'new row for relation "users" violates check constraint "users_username_format_check"',
+                details: 'Failing row contains (username)=(invalid user).',
+            };
+            const result = handlePostgrestError(mockPostgrestError);
+            expect(result).toBe(APP_ERROR_MESSAGES.INVALID_USERNAME_FORMAT);
+            expect(consoleErrorSpy).toHaveBeenCalled();
+        });
+
+        it('should sanitize 23514 (check_violation) error with username in details', () => {
+            const mockPostgrestError = {
+                code: '23514',
+                message: 'check constraint violation',
+                details: 'Key (username) failed check.',
+            };
+            const result = handlePostgrestError(mockPostgrestError);
+            expect(result).toBe(APP_ERROR_MESSAGES.INVALID_USERNAME_FORMAT);
+        });
+
+        it('should sanitize 23514 (check_violation) error with username in message via errorMessage evaluation', () => {
+            const mockPostgrestError = {
+                code: '23514',
+                message: 'Username does not meet rules',
+            };
+            const result = handlePostgrestError(mockPostgrestError);
+            expect(result).toBe(APP_ERROR_MESSAGES.INVALID_USERNAME_FORMAT);
+        });
+
+        it('should sanitize 23514 (check_violation) error when message is undefined/null and details is undefined/null', () => {
+            const mockPostgrestError = {
+                code: '23514',
+                message: undefined,
+                details: undefined,
+            };
+            const result = handlePostgrestError(mockPostgrestError as any);
+            expect(result).toBe(
+                DB_ERROR_MAP['23514'] ??
+                    'An unexpected database error occurred. Please try again later.',
+            );
+        });
+
+        it('should sanitize 23514 (check_violation) error with fallback when not username-related', () => {
+            const mockPostgrestError = {
+                code: '23514',
+                message: 'some other check constraint',
+                details: 'some details',
+            };
+            const result = handlePostgrestError(mockPostgrestError);
+            expect(result).toBe(
+                DB_ERROR_MAP['23514'] ??
+                    'An unexpected database error occurred. Please try again later.',
+            );
         });
 
         it('should sanitize 23503 (foreign_key_violation) error', () => {

@@ -37,7 +37,7 @@ export function SharedWishlistHero({
                             <>
                                 A public selection of titles handpicked by{' '}
                                 <Link
-                                    href={`/user/profile/public/${username}`}
+                                    href={`/user/${username}`}
                                     className="font-semibold text-slate-900 hover:underline hover:underline-offset-4"
                                 >
                                     @{username}
@@ -47,7 +47,13 @@ export function SharedWishlistHero({
                         ) : (
                             <>
                                 A private shared reading list curated via secure link by{' '}
-                                <span className="font-semibold text-slate-900">@{username}</span>.
+                                <Link
+                                    href={`/user/${username}`}
+                                    className="font-semibold text-slate-900 hover:underline hover:underline-offset-4"
+                                >
+                                    @{username}
+                                </Link>
+                                .
                             </>
                         )}
                     </p>
