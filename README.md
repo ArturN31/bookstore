@@ -656,7 +656,7 @@ The commands above reproduce the documented test, lint, and build verification s
 - [ ] Add profile visibility controls
 - [ ] Define and expose public profile content sections
 - [ ] Add public reviews with privacy-aware access rules
-- [ ] Add public wishlist presentation within the profile model
+- [X] Add public wishlist presentation within the profile model
 - [ ] Add public recommendations
 - [ ] Add public profile editing and privacy settings
 

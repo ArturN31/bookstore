@@ -112,14 +112,20 @@ export const getUserWishlist = async (): Promise<ActionResponse<WishlistRow[]>> 
     }
 };
 
+export interface PublicUserProfileData {
+    username: string;
+    created_at: string;
+    is_wishlist_public: boolean;
+}
+
 export const getPublicUserProfile = async (
     username: string,
-): Promise<ActionResponse<{ username: string; created_at: string }>> => {
+): Promise<ActionResponse<PublicUserProfileData>> => {
     try {
         const supabase = await createBackendClient();
 
         const profileResult = await withRetry<{
-            data: { username: string; created_at: string } | null;
+            data: PublicUserProfileData | null;
             error: string | null;
         }>(async () => {
             const res = await safeSupabaseQuery(
@@ -132,7 +138,9 @@ export const getPublicUserProfile = async (
                 throw new Error(res.error);
             }
 
-            return { data: res.data, error: null };
+            const profileData = res.data as PublicUserProfileData | null;
+
+            return { data: profileData, error: null };
         });
 
         if (profileResult.error) {
