@@ -17,6 +17,16 @@ jest.mock('@/app/user/[username]/components/PublicProfileBanner', () => ({
     ),
 }));
 
+jest.mock('@/app/user/[username]/components/Cards/PublicWishlistCard', () => ({
+    PublicWishlistCard: ({ username }: { username: string }) => (
+        <div data-testid="public-wishlist-card">Wishlist for {username}</div>
+    ),
+}));
+
+jest.mock('@/app/user/[username]/components/Cards/ReadingActivityCard', () => ({
+    ReadingActivityCard: () => <div data-testid="reading-activity-card">Reading Activity</div>,
+}));
+
 describe('PublicProfilePage', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -65,8 +75,12 @@ describe('PublicProfilePage', () => {
         expect(getPublicUserProfile).toHaveBeenCalledWith('johndoe');
     });
 
-    it('should render PublicProfileBanner when profile is successfully fetched', async () => {
-        const mockProfile = { username: 'johndoe', created_at: '2026-01-01T00:00:00.000Z' };
+    it('should render profile banner, reading activity card, and hide public wishlist card when wishlist is not public', async () => {
+        const mockProfile = {
+            username: 'johndoe',
+            created_at: '2026-01-01T00:00:00.000Z',
+            is_wishlist_public: false,
+        };
         (getPublicUserProfile as jest.Mock).mockResolvedValue({
             data: mockProfile,
             error: null,
@@ -78,6 +92,30 @@ describe('PublicProfilePage', () => {
 
         expect(screen.getByTestId('public-profile-banner')).toBeInTheDocument();
         expect(screen.getByText('Banner for johndoe')).toBeInTheDocument();
+        expect(screen.getByTestId('reading-activity-card')).toBeInTheDocument();
+        expect(screen.queryByTestId('public-wishlist-card')).not.toBeInTheDocument();
+        expect(getPublicUserProfile).toHaveBeenCalledWith('johndoe');
+    });
+
+    it('should render profile banner, reading activity card, and public wishlist card when wishlist is public', async () => {
+        const mockProfile = {
+            username: 'johndoe',
+            created_at: '2026-01-01T00:00:00.000Z',
+            is_wishlist_public: true,
+        };
+        (getPublicUserProfile as jest.Mock).mockResolvedValue({
+            data: mockProfile,
+            error: null,
+        });
+
+        const params = Promise.resolve({ username: 'johndoe' });
+        const ui = await PublicProfilePage({ params });
+        render(ui);
+
+        expect(screen.getByTestId('public-profile-banner')).toBeInTheDocument();
+        expect(screen.getByTestId('reading-activity-card')).toBeInTheDocument();
+        expect(screen.getByTestId('public-wishlist-card')).toBeInTheDocument();
+        expect(screen.getByText('Wishlist for johndoe')).toBeInTheDocument();
         expect(getPublicUserProfile).toHaveBeenCalledWith('johndoe');
     });
 });
