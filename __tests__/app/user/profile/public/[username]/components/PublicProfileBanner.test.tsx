@@ -1,4 +1,4 @@
-import { PublicProfileBanner } from '@/app/user/[username]/components/PublicProfileBanner';
+import { PublicProfileBanner } from '@/app/user/profile/public/[username]/components/PublicProfileBanner';
 import { render, screen } from '@testing-library/react';
 
 describe('PublicProfileBanner', () => {

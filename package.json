@@ -14,7 +14,11 @@
         "test:coverage": "jest --coverage --coverageReporters=\"json-summary\" --watchAll=false --forceExit",
         "test:generate-report": "node utils/scripts/generate-test-summary-file.js",
         "test:report": "node -e \"const { execSync } = require('child_process'); try { execSync('npm run test:coverage', { stdio: 'inherit' }); } catch (e) {} execSync('npm run test:generate-report', { stdio: 'inherit' });\"",
-        "test:watch": "jest --watchAll"
+        "test:watch": "jest --watchAll",
+        "lighthouse:mobile": "npx concurrently -k -s first \"npm run dev\" \"npx wait-on http://localhost:3000 && npx lighthouse http://localhost:3000 --output json --output html --output-path ./lighthouse-mobile\"",
+        "lighthouse:desktop": "npx concurrently -k -s first \"npm run dev\" \"npx wait-on http://localhost:3000 && npx lighthouse http://localhost:3000 --preset=desktop --output json --output html --output-path ./lighthouse-desktop\"",
+        "lighthouse:all": "npx concurrently -k -s first \"npm run dev\" \"npx wait-on http://localhost:3000 && npx lighthouse http://localhost:3000 --output json --output html --output-path ./lighthouse-mobile && npx lighthouse http://localhost:3000 --preset=desktop --output json --output html --output-path ./lighthouse-desktop\"",
+        "build:audit": "npm run build && npm run lighthouse:all"
     },
     "dependencies": {
         "@emotion/react": "^11.14.0",

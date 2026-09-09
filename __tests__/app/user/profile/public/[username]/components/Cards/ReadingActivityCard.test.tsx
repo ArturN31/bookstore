@@ -1,13 +1,16 @@
-import { ReadingActivityCard } from '@/app/user/[username]/components/Cards/ReadingActivityCard';
+import { ReadingActivityCard } from '@/app/user/profile/public/[username]/components/Cards/ReadingActivityCard';
 import { render, screen } from '@testing-library/react';
 
-jest.mock('@/app/user/[username]/components//ProfileCard/ProfileCardContainer', () => ({
-    ProfileCardContainer: ({ children }: { children: React.ReactNode }) => (
-        <div data-testid="profile-card-container">{children}</div>
-    ),
-}));
+jest.mock(
+    '@/app/user/profile/public/[username]/components/ProfileCard/ProfileCardContainer',
+    () => ({
+        ProfileCardContainer: ({ children }: { children: React.ReactNode }) => (
+            <div data-testid="profile-card-container">{children}</div>
+        ),
+    }),
+);
 
-jest.mock('@/app/user/[username]/components//ProfileCard/ProfileCardHeader', () => ({
+jest.mock('@/app/user/profile/public/[username]/components/ProfileCard/ProfileCardHeader', () => ({
     ProfileCardHeader: ({ title, subtitle }: { title: string; subtitle: string }) => (
         <div data-testid="profile-card-header">
             <span>{title}</span>

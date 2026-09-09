@@ -1,4 +1,4 @@
-import { ProfileCardHeader } from '@/app/user/[username]/components/ProfileCard/ProfileCardHeader';
+import { ProfileCardHeader } from '@/app/user/profile/public/[username]/components/ProfileCard/ProfileCardHeader';
 import { render, screen } from '@testing-library/react';
 
 describe('ProfileCardHeader', () => {

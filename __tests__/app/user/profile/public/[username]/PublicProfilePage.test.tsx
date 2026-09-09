@@ -1,29 +1,29 @@
 import { render, screen } from '@testing-library/react';
 import { getPublicUserProfile } from '@/data/user/UserService';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
-import PublicProfilePage from '@/app/user/[username]/page';
+import PublicProfilePage from '@/app/user/profile/public/[username]/page';
 
 jest.mock('@/data/user/UserService', () => ({
     getPublicUserProfile: jest.fn(),
 }));
 
-jest.mock('@/app/user/[username]/components/PublicProfileUnavailable', () => ({
+jest.mock('@/app/user/profile/public/[username]/components/PublicProfileUnavailable', () => ({
     PublicProfileUnavailable: () => <div data-testid="public-profile-unavailable">Unavailable</div>,
 }));
 
-jest.mock('@/app/user/[username]/components/PublicProfileBanner', () => ({
+jest.mock('@/app/user/profile/public/[username]/components/PublicProfileBanner', () => ({
     PublicProfileBanner: ({ profile }: { profile: { username: string } }) => (
         <div data-testid="public-profile-banner">Banner for {profile.username}</div>
     ),
 }));
 
-jest.mock('@/app/user/[username]/components/Cards/PublicWishlistCard', () => ({
+jest.mock('@/app/user/profile/public/[username]/components/Cards/PublicWishlistCard', () => ({
     PublicWishlistCard: ({ username }: { username: string }) => (
         <div data-testid="public-wishlist-card">Wishlist for {username}</div>
     ),
 }));
 
-jest.mock('@/app/user/[username]/components/Cards/ReadingActivityCard', () => ({
+jest.mock('@/app/user/profile/public/[username]/components/Cards/ReadingActivityCard', () => ({
     ReadingActivityCard: () => <div data-testid="reading-activity-card">Reading Activity</div>,
 }));
 

@@ -32,7 +32,10 @@ export function EmptyWishlistView({ username, isPublicMode }: EmptyWishlistViewP
                             <>
                                 The public reading list belonging to{' '}
                                 <span className="font-semibold text-slate-900">
-                                    @<Link href={`/user/${username}`}>{username}</Link>
+                                    @
+                                    <Link href={`/user/profile/public/${username}`}>
+                                        {username}
+                                    </Link>
                                 </span>{' '}
                                 does not contain any books yet.
                             </>
@@ -40,7 +43,10 @@ export function EmptyWishlistView({ username, isPublicMode }: EmptyWishlistViewP
                             <>
                                 This private shared collection belonging to{' '}
                                 <span className="font-semibold text-slate-900">
-                                    @<Link href={`/user/${username}`}>{username}</Link>
+                                    @
+                                    <Link href={`/user/profile/public/${username}`}>
+                                        {username}
+                                    </Link>
                                 </span>{' '}
                                 does not have any books added at this time.
                             </>

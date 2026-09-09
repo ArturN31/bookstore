@@ -1,13 +1,16 @@
-import { PublicWishlistCard } from '@/app/user/[username]/components/Cards/PublicWishlistCard';
+import { PublicWishlistCard } from '@/app/user/profile/public/[username]/components/Cards/PublicWishlistCard';
 import { render, screen } from '@testing-library/react';
 
-jest.mock('@/app/user/[username]/components/ProfileCard/ProfileCardContainer', () => ({
-    ProfileCardContainer: ({ children }: { children: React.ReactNode }) => (
-        <div data-testid="profile-card-container">{children}</div>
-    ),
-}));
+jest.mock(
+    '@/app/user/profile/public/[username]/components/ProfileCard/ProfileCardContainer',
+    () => ({
+        ProfileCardContainer: ({ children }: { children: React.ReactNode }) => (
+            <div data-testid="profile-card-container">{children}</div>
+        ),
+    }),
+);
 
-jest.mock('@/app/user/[username]/components//ProfileCard/ProfileCardHeader', () => ({
+jest.mock('@/app/user/profile/public/[username]/components/ProfileCard/ProfileCardHeader', () => ({
     ProfileCardHeader: ({ title, subtitle }: { title: string; subtitle: string }) => (
         <div data-testid="profile-card-header">
             <span>{title}</span>
@@ -16,16 +19,25 @@ jest.mock('@/app/user/[username]/components//ProfileCard/ProfileCardHeader', () 
     ),
 }));
 
-jest.mock('@/app/user/[username]/components//ProfileCard/ProfileCardActionButton', () => ({
-    ProfileCardActionButton: ({ href, children }: { href: string; children: React.ReactNode }) => (
-        <a
-            href={href}
-            data-testid="profile-card-action-button"
-        >
-            {children}
-        </a>
-    ),
-}));
+jest.mock(
+    '@/app/user/profile/public/[username]/components/ProfileCard/ProfileCardActionButton',
+    () => ({
+        ProfileCardActionButton: ({
+            href,
+            children,
+        }: {
+            href: string;
+            children: React.ReactNode;
+        }) => (
+            <a
+                href={href}
+                data-testid="profile-card-action-button"
+            >
+                {children}
+            </a>
+        ),
+    }),
+);
 
 describe('PublicWishlistCard', () => {
     const mockUsername = 'janedoe';

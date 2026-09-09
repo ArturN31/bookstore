@@ -1,4 +1,4 @@
-import { PublicProfileUnavailable } from '@/app/user/[username]/components/PublicProfileUnavailable';
+import { PublicProfileUnavailable } from '@/app/user/profile/public/[username]/components/PublicProfileUnavailable';
 import { render, screen } from '@testing-library/react';
 
 describe('PublicProfileUnavailable', () => {

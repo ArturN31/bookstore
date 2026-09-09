@@ -1,4 +1,4 @@
-import { ProfileCardContainer } from '@/app/user/[username]/components/ProfileCard/ProfileCardContainer';
+import { ProfileCardContainer } from '@/app/user/profile/public/[username]/components/ProfileCard/ProfileCardContainer';
 import { render, screen } from '@testing-library/react';
 
 describe('ProfileCardContainer', () => {

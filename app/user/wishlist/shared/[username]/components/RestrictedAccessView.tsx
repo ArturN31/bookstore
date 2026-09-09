@@ -37,7 +37,10 @@ export function RestrictedAccessView({ username, isPublicMode }: RestrictedAcces
                                     <>
                                         The public collection belonging to{' '}
                                         <span className="font-semibold text-slate-900">
-                                            @<Link href={`/user/${username}`}>{username}</Link>
+                                            @
+                                            <Link href={`/user/profile/public/${username}`}>
+                                                {username}
+                                            </Link>
                                         </span>{' '}
                                         cannot be accessed because it is currently set to private or
                                         does not exist in our catalog.
@@ -46,7 +49,10 @@ export function RestrictedAccessView({ username, isPublicMode }: RestrictedAcces
                                     <>
                                         This private link for{' '}
                                         <span className="font-semibold text-slate-900">
-                                            @<Link href={`/user/${username}`}>{username}</Link>
+                                            @
+                                            <Link href={`/user/profile/public/${username}`}>
+                                                {username}
+                                            </Link>
                                         </span>{' '}
                                         is invalid, has been revoked/reset, or does not exist in our
                                         catalog.

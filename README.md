@@ -11,8 +11,8 @@ This README documents both what is implemented and what is intentionally still i
 ## Project Status
 
 **Current Phase**: Core bookstore paths implemented; checkout and payment remain the next product milestone
-**Last Verified**: September 6, 2026
-**Test Run**: 182 suites passed, 1,334 tests passed, 1 snapshot passed
+**Last Verified**: September 8, 2026
+**Test Run**: 186 suites passed, 1,341 tests passed, 1 snapshot passed
 **Coverage**: 100.00% statements, branches, functions, lines, and average
 **Quality Checks**: `npm run lint` and `npm run build` pass
 
@@ -20,8 +20,8 @@ This README documents both what is implemented and what is intentionally still i
 
 | Check | Result |
 | :---- | :----- |
-| Jest suites | 182 passed / 182 total |
-| Jest tests | 1,334 passed / 1,334 total |
+| Jest suites | 186 passed / 186 total |
+| Jest tests | 1,341 passed / 1,341 total |
 | Snapshots | 1 passed / 1 total |
 | Statements | 100.00% |
 | Branches | 100.00% |
@@ -678,6 +678,8 @@ The commands above reproduce the documented test, lint, and build verification s
 - [ ] Test dialogs, drawers, forms, search, and filters with keyboard-only interaction
 - [ ] Verify screen-reader behavior for asynchronous feedback and validation errors
 - [ ] Generate reproducible desktop and mobile performance benchmarks
+- [X] Add Lighthouse benchmarks to the verified build output
+- [ ] Improve Lighthouse scores
 
 ### 5. Security and Reliability
 

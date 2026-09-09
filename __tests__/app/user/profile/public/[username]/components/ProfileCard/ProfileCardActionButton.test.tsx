@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import CardGiftcardOutlinedIcon from '@mui/icons-material/CardGiftcardOutlined';
-import { ProfileCardActionButton } from '@/app/user/[username]/components/ProfileCard/ProfileCardActionButton';
+import { ProfileCardActionButton } from '@/app/user/profile/public/[username]/components/ProfileCard/ProfileCardActionButton';
 
 describe('ProfileCardActionButton', () => {
     it('renders the link with correct href and text children', () => {
