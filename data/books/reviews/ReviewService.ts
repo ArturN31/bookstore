@@ -142,7 +142,7 @@ export async function deleteReviewAction(
     revalidateTag('books', 'max');
     if (bookId) revalidateTag(`reviews-${bookId}`, 'max');
 
-    revalidatePath('/user/content/reviews', 'page');
+    revalidatePath('/user/reviews/[username]', 'page');
     revalidatePath('/book/[slug]', 'page');
     if (bookId) revalidatePath(`/book/${bookId}`, 'page');
     revalidatePath('/', 'page');

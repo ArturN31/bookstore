@@ -422,7 +422,7 @@ describe('UserReviewsActions', () => {
             expect(mockRevalidateTag).toHaveBeenCalledWith('reviews', 'max');
             expect(mockRevalidateTag).toHaveBeenCalledWith('books', 'max');
             expect(mockRevalidateTag).toHaveBeenCalledWith('reviews-book-1', 'max');
-            expect(mockRevalidatePath).toHaveBeenCalledWith('/user/content/reviews', 'page');
+            expect(mockRevalidatePath).toHaveBeenCalledWith('/user/reviews/[username]', 'page');
             expect(mockRevalidatePath).toHaveBeenCalledWith('/book/[slug]', 'page');
             expect(mockRevalidatePath).toHaveBeenCalledWith('/book/book-1', 'page');
             expect(mockRevalidatePath).toHaveBeenCalledWith('/', 'page');

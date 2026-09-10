@@ -29,7 +29,7 @@
 
 - **Read Reviews**: [app/book/[slug]/components/Reviews/](app/book/[slug]/components/Reviews/) - Paginated reviews with ratings and reviewer information
 - **Create Reviews**: [app/book/[slug]/components/Reviews/ReviewForm/](app/book/[slug]/components/Reviews/ReviewForm/) - Authenticated, profile-complete users can submit a rating and comment
-- **Manage Own Reviews**: [app/user/content/reviews/](app/user/content/reviews/) - View, edit, and delete user reviews
+- **Manage Own Reviews**: [app/user/reviews/[username]](app/user/reviews/[username]) - View, edit, and delete user reviews
 - **Review Data Operations**: [data/books/reviews/](data/books/reviews/) - Validated server actions, service, repository, and mapper
 
 ### ✅ Authentication & User Management

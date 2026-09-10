@@ -1,4 +1,4 @@
-import { InfiniteScrollSentinel } from '@/app/user/content/reviews/components/InfiniteScrollSentinel';
+import { InfiniteScrollSentinel } from '@/app/user/reviews/[username]/components/InfiniteScrollSentinel';
 import { render, screen } from '@testing-library/react';
 import { createRef } from 'react';
 

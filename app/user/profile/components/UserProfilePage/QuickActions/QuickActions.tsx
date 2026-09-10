@@ -38,12 +38,14 @@ export const QuickActions = async () => {
                         color="blue"
                     />
                 )}
-                <ActionLink
-                    href="/user/content/reviews"
-                    icon={RateReview}
-                    label="My Book Reviews"
-                    color="blue"
-                />
+                {user?.username && (
+                    <ActionLink
+                        href={`/user/reviews/${user.username}`}
+                        icon={RateReview}
+                        label="My Book Reviews"
+                        color="blue"
+                    />
+                )}
             </ActionSection>
 
             <ActionSection

@@ -107,7 +107,7 @@ Reviews are no longer read-only. The implemented review lifecycle includes:
 - Review submission for authenticated users with completed profiles
 - Rating input and comment input components
 - Server-side validation before insertion
-- User review management at `/user/content/reviews`
+- User review management at `/user/reviews/[username]`
 - Editing and deleting a user's own reviews
 - Authorization checks around review mutations
 - Security audit events for relevant review access and mutations
@@ -115,7 +115,7 @@ Reviews are no longer read-only. The implemented review lifecycle includes:
 Primary implementation areas:
 
 - [app/book/[slug]/components/Reviews/](app/book/[slug]/components/Reviews/)
-- [app/user/content/reviews/](app/user/content/reviews/)
+- [app/user/reviews/[username]](app/user/reviews/[username])
 - [data/books/reviews/](data/books/reviews/)
 
 ### Authentication and Onboarding
@@ -519,7 +519,7 @@ The verified production build completed successfully with TypeScript verificatio
 /user/auth/change_password
 /user/auth/signin
 /user/auth/signup
-/user/content/reviews
+/user/reviews/[username]
 /user/profile
 /user/profile/change_address
 /user/wishlist

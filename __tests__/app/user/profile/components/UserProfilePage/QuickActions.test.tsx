@@ -36,6 +36,6 @@ describe('APP - pages/user - QuickActions', () => {
 
         expect(changePasswordLink).toHaveAttribute('href', '/user/auth/change_password');
         expect(changeAddressLink).toHaveAttribute('href', '/user/profile/change_address');
-        expect(myReviewsLink).toHaveAttribute('href', '/user/content/reviews');
+        expect(myReviewsLink).toHaveAttribute('href', '/user/reviews/testuser');
     });
 });

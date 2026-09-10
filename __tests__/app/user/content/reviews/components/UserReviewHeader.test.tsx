@@ -1,4 +1,4 @@
-import { UserReviewHeader } from '@/app/user/content/reviews/components/UserReviewHeader';
+import { UserReviewHeader } from '@/app/user/reviews/[username]/components/UserReviewHeader';
 import { render, screen } from '@testing-library/react';
 
 describe('UserReviewHeader', () => {

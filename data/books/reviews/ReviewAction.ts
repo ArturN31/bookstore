@@ -118,7 +118,7 @@ export async function UserReviewAction(
 
     revalidatePath(`/book/${slug}`, 'page');
     revalidatePath('/book/[slug]', 'page');
-    revalidatePath('/user/content/reviews', 'page');
+    revalidatePath('/user/reviews/[username]', 'page');
     revalidatePath('/', 'page');
 
     return INITIAL_EMPTY_REVIEW_FORM_STATE;
