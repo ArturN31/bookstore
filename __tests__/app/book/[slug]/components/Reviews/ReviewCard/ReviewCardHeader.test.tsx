@@ -24,7 +24,7 @@ describe('ReviewCardHeader', () => {
 
         expect(screen.getByRole('link', { name: /johndoe/i })).toHaveAttribute(
             'href',
-            '/user/johndoe',
+            '/user/profile/public/johndoe',
         );
         const expectedDate = new Date(mockReview.created_at).toLocaleDateString();
         expect(screen.getByText(new RegExp(`Posted ${expectedDate}`, 'i'))).toBeInTheDocument();
@@ -61,7 +61,7 @@ describe('ReviewCardHeader', () => {
 
         expect(screen.getByRole('link', { name: /johndoe/i })).toHaveAttribute(
             'href',
-            '/user/johndoe',
+            '/user/profile/public/johndoe',
         );
         expect(screen.getByText(/^posted\s*$/i)).toBeInTheDocument();
     });

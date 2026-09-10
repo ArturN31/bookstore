@@ -32,7 +32,7 @@ export const QuickActions = async () => {
             >
                 {user?.username && (
                     <ActionLink
-                        href={`/user/${user.username}`}
+                        href={`/user/profile/public/${user.username}`}
                         icon={PersonOutlinedIcon}
                         label="My Public Profile"
                         color="blue"
