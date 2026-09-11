@@ -7,7 +7,7 @@ interface PublicWishlistCardProps {
     username: string;
 }
 
-export function PublicWishlistCard({ username }: PublicWishlistCardProps) {
+export const PublicWishlistCard = ({ username }: PublicWishlistCardProps) => {
     return (
         <ProfileCardContainer colorTheme="amber">
             <ProfileCardHeader
@@ -28,4 +28,4 @@ export function PublicWishlistCard({ username }: PublicWishlistCardProps) {
             </ProfileCardActionButton>
         </ProfileCardContainer>
     );
-}
+};

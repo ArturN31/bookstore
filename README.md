@@ -653,12 +653,17 @@ The commands above reproduce the documented test, lint, and build verification s
 
 ### 2. Public Profiles and Community Features
 
-- [ ] Add profile visibility controls
 - [ ] Define and expose public profile content sections
-- [ ] Add public reviews with privacy-aware access rules
-- [X] Add public wishlist presentation within the profile model
-- [ ] Add public recommendations
+    - [X] Add public reviews within the profile model
+    - [X] Add public wishlist presentation within the profile model
+    - [ ] Add public recommendations
 - [ ] Add public profile editing and privacy settings
+    - [ ] Wishlist visibility controls
+        - [X] Public wishlist visibility controls within the wishlist page
+        - [X] Private/Token wishlist visibility controls within the wishlist page
+        - [ ] Public profile visibility controls for wishlist
+    - [ ] Review visibility controls
+    - [ ] Profile visibility controls
 
 ### 3. Store Operations
 

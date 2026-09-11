@@ -7,21 +7,31 @@ import { UserReviewsInteractive } from './components/UserReviewsInteractive';
 
 const PAGE_SIZE = 5;
 
-export default async function UserReviewsPage() {
+export default async function UserReviewsPage({
+    params,
+}: {
+    params: Promise<{ username: string }>;
+}) {
+    const resolvedParams = await params;
+    const { username } = resolvedParams;
+
     const supabase = await createBackendClient();
 
     const {
         data: { user },
-        error: userError,
     } = await supabase.auth.getUser();
 
-    if (userError || !user) {
-        return (
-            <div className="mx-auto max-w-4xl p-6 text-center">
-                <p className="text-gray-600">Please sign in to view your reviews.</p>
-            </div>
-        );
+    let loggedInUsername: string | null = null;
+    if (user) {
+        const { data: profileData } = await supabase
+            .from('users')
+            .select('username')
+            .eq('id', user.id)
+            .single();
+        loggedInUsername = profileData?.username ?? null;
     }
+
+    const isOwner = loggedInUsername !== null && loggedInUsername === username;
 
     const reviewsQueryResult = await safeSupabaseQuery(async () =>
         supabase
@@ -43,7 +53,7 @@ export default async function UserReviewsPage() {
                 )
             `,
             )
-            .eq('user_id', user.id)
+            .eq('username', username)
             .order('created_at', { ascending: false })
             .range(0, PAGE_SIZE),
     );
@@ -64,16 +74,14 @@ export default async function UserReviewsPage() {
         <div className="mx-auto w-full max-w-4xl space-y-6 p-6">
             <div>
                 <Link
-                    href="/user/profile"
+                    href={`/user/profile/public/${username}`}
                     className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
                 >
                     <ArrowBackIcon fontSize="small" />
                     Back to Profile
                 </Link>
-                <h1 className="text-2xl font-bold text-gray-900">My Book Reviews</h1>
-                <p className="text-sm text-gray-600">
-                    View and manage all the reviews you have written for books.
-                </p>
+                <h1 className="text-2xl font-bold text-gray-900">{username}&apos;s Book Reviews</h1>
+                <p className="text-sm text-gray-600">View all the reviews written by {username}.</p>
             </div>
 
             {reviewsQueryResult.error && (
@@ -87,8 +95,7 @@ export default async function UserReviewsPage() {
                     <RateReviewOutlinedIcon className="mx-auto mb-3 h-12 w-12 text-gray-400" />
                     <h2 className="text-lg font-medium text-gray-800">No reviews yet</h2>
                     <p className="mt-1 text-sm text-gray-600">
-                        You haven&apos;t written any book reviews yet. Browse books and share your
-                        thoughts!
+                        This user hasn&apos;t written any book reviews yet.
                     </p>
                 </div>
             )}
@@ -98,6 +105,7 @@ export default async function UserReviewsPage() {
                     initialReviews={initialReviews}
                     initialBooksMap={initialBooksMap}
                     initialHasMore={initialHasMore}
+                    isOwner={isOwner}
                 />
             )}
         </div>

@@ -31,6 +31,7 @@ export default async function PublicProfilePage({
         return <PublicProfileUnavailable />;
 
     const hasPublicWishlist = Boolean(profile.is_wishlist_public);
+    const hasPublicReviews = Boolean(profile.are_reviews_public);
 
     return (
         <div className="space-y-8 pb-16">
@@ -39,9 +40,11 @@ export default async function PublicProfilePage({
             <div className="mx-auto max-w-4xl px-4 md:px-8">
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     {hasPublicWishlist && <PublicWishlistCard username={username} />}
-                    <ReadingActivityCard />
+                    {hasPublicReviews && <ReadingActivityCard username={username} />}
                 </div>
             </div>
         </div>
     );
 }
+
+//TODO: Reviews require a toggle private/public - requires server action and components as db is prepared

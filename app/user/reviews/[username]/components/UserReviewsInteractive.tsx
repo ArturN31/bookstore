@@ -12,12 +12,14 @@ interface UserReviewsInteractiveProps {
     initialReviews: Review[];
     initialBooksMap: Record<string | number, Partial<BookDB> | null>;
     initialHasMore: boolean;
+    isOwner: boolean;
 }
 
 export const UserReviewsInteractive = ({
     initialReviews,
     initialBooksMap,
     initialHasMore,
+    isOwner,
 }: UserReviewsInteractiveProps) => {
     const {
         reviews,
@@ -47,8 +49,8 @@ export const UserReviewsInteractive = ({
                             />
                             <ReviewCard
                                 review={review}
-                                onEdit={handleOpenEditModal}
-                                onDelete={handleOpenDeleteModal}
+                                onEdit={isOwner ? handleOpenEditModal : undefined}
+                                onDelete={isOwner ? handleOpenDeleteModal : undefined}
                             />
                         </div>
                     </Fragment>
@@ -62,20 +64,24 @@ export const UserReviewsInteractive = ({
                 />
             </div>
 
-            <DeleteReviewModal
-                isOpen={isDeleteModalOpen}
-                onClose={handleCloseDeleteModal}
-                onConfirm={handleConfirmDelete}
-            />
+            {isOwner && (
+                <>
+                    <DeleteReviewModal
+                        isOpen={isDeleteModalOpen}
+                        onClose={handleCloseDeleteModal}
+                        onConfirm={handleConfirmDelete}
+                    />
 
-            <ReviewFormModal
-                bookId={selectedEditReview?.book_id || ''}
-                reviewId={selectedEditReview?.id}
-                initialRating={selectedEditReview?.rating || 0}
-                initialReviewText={selectedEditReview?.review || ''}
-                isOpen={isEditModalOpen}
-                onClose={handleCloseEditModal}
-            />
+                    <ReviewFormModal
+                        bookId={selectedEditReview?.book_id || ''}
+                        reviewId={selectedEditReview?.id}
+                        initialRating={selectedEditReview?.rating || 0}
+                        initialReviewText={selectedEditReview?.review || ''}
+                        isOpen={isEditModalOpen}
+                        onClose={handleCloseEditModal}
+                    />
+                </>
+            )}
         </>
     );
 };
