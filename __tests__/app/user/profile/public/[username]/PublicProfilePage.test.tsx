@@ -80,6 +80,7 @@ describe('PublicProfilePage', () => {
             username: 'johndoe',
             created_at: '2026-01-01T00:00:00.000Z',
             is_wishlist_public: false,
+            are_reviews_public: true,
         };
         (getPublicUserProfile as jest.Mock).mockResolvedValue({
             data: mockProfile,
@@ -102,6 +103,7 @@ describe('PublicProfilePage', () => {
             username: 'johndoe',
             created_at: '2026-01-01T00:00:00.000Z',
             is_wishlist_public: true,
+            are_reviews_public: true,
         };
         (getPublicUserProfile as jest.Mock).mockResolvedValue({
             data: mockProfile,

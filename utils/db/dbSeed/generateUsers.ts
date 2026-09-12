@@ -27,6 +27,7 @@ export const generateMockUsersArray = (count: number = 10): MockUserSetup[] => {
             phone_number: faker.phone.number(),
             is_wishlist_public: false,
             wishlist_share_token: null,
+            are_reviews_public: false,
         };
     });
 };

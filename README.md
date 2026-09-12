@@ -11,8 +11,8 @@ This README documents both what is implemented and what is intentionally still i
 ## Project Status
 
 **Current Phase**: Core bookstore paths implemented; checkout and payment remain the next product milestone
-**Last Verified**: September 8, 2026
-**Test Run**: 186 suites passed, 1,341 tests passed, 1 snapshot passed
+**Last Verified**: September 11, 2026
+**Test Run**: 187 suites passed, 1,355 tests passed, 1 snapshot passed
 **Coverage**: 100.00% statements, branches, functions, lines, and average
 **Quality Checks**: `npm run lint` and `npm run build` pass
 
@@ -20,8 +20,8 @@ This README documents both what is implemented and what is intentionally still i
 
 | Check | Result |
 | :---- | :----- |
-| Jest suites | 186 passed / 186 total |
-| Jest tests | 1,341 passed / 1,341 total |
+| Jest suites | 187 passed / 187 total |
+| Jest tests | 1,355 passed / 1,355 total |
 | Snapshots | 1 passed / 1 total |
 | Statements | 100.00% |
 | Branches | 100.00% |
@@ -29,6 +29,34 @@ This README documents both what is implemented and what is intentionally still i
 | Lines | 100.00% |
 | ESLint | Passed with no reported errors |
 | Production build | Passed, including TypeScript verification |
+
+### Lighthouse Benchmark
+
+The verified production build includes Lighthouse benchmarks for both desktop and mobile. These scores are not a guarantee of accessibility or performance, but they provide a reproducible baseline for future improvements.
+
+The Lighthouse benchmark is generated from the production build output, not from a local development server. The scores are therefore representative of the verified production surface rather than a local development environment.
+
+The reports can be found in the root of the repository as `lighthouse-desktop-report.html` and `lighthouse-mobile-report.html`, also included in the json format. They are generated with the following command:
+
+```npm run build:audit```
+
+#### Desktop
+
+| Metric | Score |
+| :----- | :----: |
+| Performance | 99 |
+| Accessibility | 90 |
+| Best Practices | 96 |
+| SEO | 100 |
+
+#### Mobile
+
+| Metric | Score |
+| :----- | :----: |
+| Performance | 71 |
+| Accessibility | 90 |
+| Best Practices | 96 |
+| SEO | 100 |
 
 ## Technology Stack
 
@@ -636,7 +664,6 @@ The commands above reproduce the documented test, lint, and build verification s
 
 - Distributed rate limiting is not present
 - A full WCAG 2.1 audit has not been completed
-- No current Lighthouse benchmark is included in the verified outputs
 - A complete production exception-logging and observability pipeline is not implemented
 
 ## Roadmap

@@ -26,7 +26,6 @@ export const ReadingActivityCard = ({ username }: ReadingActivityCardProps) => {
             >
                 View Reviews
             </ProfileCardActionButton>
-            ;
         </ProfileCardContainer>
     );
 };

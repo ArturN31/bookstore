@@ -6,10 +6,14 @@ import { reviewSchema } from '@/data/schemas/reviewSchema';
 import { createBackendClient } from '@/utils/db/server';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
-import { isDuplicateReviewError, resolveUsername } from './ReviewActionUtils';
+import {
+    isDuplicateReviewError,
+    resolveUsername,
+    verifyReviewOwnership,
+    revalidateReviewCaches,
+} from './ReviewActionUtils';
 import { mapToReviewPayload } from './ReviewMapper';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
-import { revalidatePath, revalidateTag } from 'next/cache';
 
 export async function UserReviewAction(
     prevState: ReviewFormState | undefined,
@@ -58,6 +62,9 @@ export async function UserReviewAction(
         const mappedPayload = mapToReviewPayload(validated.data, bookId);
 
         if (isEditing && reviewId) {
+            const isAuthorized = await verifyReviewOwnership(supabase, reviewId, user.id);
+            if (!isAuthorized) return { message: APP_ERROR_MESSAGES.ERROR_REVIEW_SUBMIT_FAILED };
+
             const updateResult = await safeSupabaseQuery<{ id: string | number }[]>(async () =>
                 supabase
                     .from('book_reviews')
@@ -112,14 +119,6 @@ export async function UserReviewAction(
         return { message: sanitizeSupabaseError(err) };
     }
 
-    revalidateTag('books', 'max');
-    revalidateTag('reviews', 'max');
-    revalidateTag(`reviews-${bookId}`, 'max');
-
-    revalidatePath(`/book/${slug}`, 'page');
-    revalidatePath('/book/[slug]', 'page');
-    revalidatePath('/user/reviews/[username]', 'page');
-    revalidatePath('/', 'page');
-
+    revalidateReviewCaches(bookId, slug);
     return INITIAL_EMPTY_REVIEW_FORM_STATE;
 }

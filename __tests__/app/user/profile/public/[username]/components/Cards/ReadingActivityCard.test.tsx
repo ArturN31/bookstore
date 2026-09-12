@@ -21,7 +21,7 @@ jest.mock('@/app/user/profile/public/[username]/components/ProfileCard/ProfileCa
 
 describe('ReadingActivityCard', () => {
     it('renders the reading activity card structure and contents correctly', () => {
-        render(<ReadingActivityCard />);
+        render(<ReadingActivityCard username="testuser" />);
 
         expect(screen.getByTestId('profile-card-container')).toBeInTheDocument();
         expect(screen.getByTestId('profile-card-header')).toBeInTheDocument();
@@ -32,6 +32,6 @@ describe('ReadingActivityCard', () => {
                 'Check out recent reviews, ratings, and literary milestones achieved by this reader.',
             ),
         ).toBeInTheDocument();
-        expect(screen.getByText('Coming Soon')).toBeInTheDocument();
+        expect(screen.getByText('View Reviews')).toBeInTheDocument();
     });
 });

@@ -39,16 +39,25 @@ describe('UserReviewsPage', () => {
     const mockEq = jest.fn();
     const mockOrder = jest.fn();
     const mockRange = jest.fn();
+    const mockSingle = jest.fn();
 
     beforeEach(() => {
         jest.clearAllMocks();
+
+        mockSingle.mockResolvedValue({
+            data: { username: 'testuser' },
+            error: null,
+        });
 
         mockRange.mockResolvedValue({
             data: [],
             error: null,
         });
         mockOrder.mockReturnValue({ range: mockRange });
-        mockEq.mockReturnValue({ order: mockOrder });
+        mockEq.mockReturnValue({
+            order: mockOrder,
+            single: mockSingle,
+        });
         mockSelect.mockReturnValue({ eq: mockEq });
         mockFrom.mockReturnValue({ select: mockSelect });
 
@@ -68,28 +77,117 @@ describe('UserReviewsPage', () => {
         });
     });
 
-    it('should render sign-in message when userError is present', async () => {
-        mockGetUser.mockResolvedValue({
-            data: { user: null },
-            error: { message: 'Not authenticated' },
-        });
-
-        const ui = await UserReviewsPage();
-        render(ui);
-
-        expect(screen.getByText('Please sign in to view your reviews.')).toBeInTheDocument();
-    });
-
-    it('should render sign-in message when user is null', async () => {
+    it('should render reviews page successfully when user is not authenticated', async () => {
         mockGetUser.mockResolvedValue({
             data: { user: null },
             error: null,
         });
 
-        const ui = await UserReviewsPage();
+        const mockReviews = [
+            {
+                id: 1,
+                book_id: 10,
+                user_id: 'user-123',
+                username: 'testuser',
+                rating: 5,
+                review: 'Great book!',
+                created_at: '2026-01-01T00:00:00.000Z',
+                updated_at: '2026-01-01T00:00:00.000Z',
+                books: { id: 10, title: 'Book Title', author: 'Author Name' },
+            },
+        ];
+
+        mockRange.mockResolvedValue({
+            data: mockReviews,
+            error: null,
+        });
+
+        const ui = await UserReviewsPage({ params: Promise.resolve({ username: 'testuser' }) });
         render(ui);
 
-        expect(screen.getByText('Please sign in to view your reviews.')).toBeInTheDocument();
+        expect(screen.getByText("testuser's Book Reviews")).toBeInTheDocument();
+        expect(screen.getByTestId('user-reviews-interactive')).toBeInTheDocument();
+        expect(UserReviewsInteractive).toHaveBeenCalled();
+        const calledProps = (UserReviewsInteractive as jest.Mock).mock.calls[0][0];
+        expect(calledProps.isOwner).toBe(false);
+    });
+
+    it('should pass isOwner as true when logged-in user matches profile username', async () => {
+        mockGetUser.mockResolvedValue({
+            data: { user: { id: 'user-123' } },
+            error: null,
+        });
+
+        mockSingle.mockResolvedValue({
+            data: { username: 'testuser' },
+            error: null,
+        });
+
+        const mockReviews = [
+            {
+                id: 1,
+                book_id: 10,
+                user_id: 'user-123',
+                username: 'testuser',
+                rating: 5,
+                review: 'Great book!',
+                created_at: '2026-01-01T00:00:00.000Z',
+                updated_at: '2026-01-01T00:00:00.000Z',
+                books: { id: 10, title: 'Book Title', author: 'Author Name' },
+            },
+        ];
+
+        mockRange.mockResolvedValue({
+            data: mockReviews,
+            error: null,
+        });
+
+        const ui = await UserReviewsPage({ params: Promise.resolve({ username: 'testuser' }) });
+        render(ui);
+
+        expect(screen.getByText("testuser's Book Reviews")).toBeInTheDocument();
+        expect(screen.getByTestId('user-reviews-interactive')).toBeInTheDocument();
+        expect(UserReviewsInteractive).toHaveBeenCalled();
+        const calledProps = (UserReviewsInteractive as jest.Mock).mock.calls[0][0];
+        expect(calledProps.isOwner).toBe(true);
+    });
+
+    it('should set isOwner to false when user is authenticated but profileData is null', async () => {
+        mockGetUser.mockResolvedValue({
+            data: { user: { id: 'user-123' } },
+            error: null,
+        });
+
+        mockSingle.mockResolvedValue({
+            data: null,
+            error: { message: 'Not found' },
+        });
+
+        const mockReviews = [
+            {
+                id: 1,
+                book_id: 10,
+                user_id: 'user-123',
+                username: 'testuser',
+                rating: 5,
+                review: 'Great book!',
+                created_at: '2026-01-01T00:00:00.000Z',
+                updated_at: '2026-01-01T00:00:00.000Z',
+                books: { id: 10, title: 'Book Title', author: 'Author Name' },
+            },
+        ];
+
+        mockRange.mockResolvedValue({
+            data: mockReviews,
+            error: null,
+        });
+
+        const ui = await UserReviewsPage({ params: Promise.resolve({ username: 'testuser' }) });
+        render(ui);
+
+        expect(screen.getByTestId('user-reviews-interactive')).toBeInTheDocument();
+        const calledProps = (UserReviewsInteractive as jest.Mock).mock.calls[0][0];
+        expect(calledProps.isOwner).toBe(false);
     });
 
     it('should render error message when safeSupabaseQuery returns an error', async () => {
@@ -106,7 +204,7 @@ describe('UserReviewsPage', () => {
             error: new Error('Database query failed'),
         });
 
-        const ui = await UserReviewsPage();
+        const ui = await UserReviewsPage({ params: Promise.resolve({ username: 'testuser' }) });
         render(ui);
 
         expect(
@@ -128,11 +226,13 @@ describe('UserReviewsPage', () => {
             error: null,
         });
 
-        const ui = await UserReviewsPage();
+        const ui = await UserReviewsPage({ params: Promise.resolve({ username: 'testuser' }) });
         render(ui);
 
         expect(screen.getByText('No reviews yet')).toBeInTheDocument();
-        expect(screen.getByText(/You haven't written any book reviews yet/i)).toBeInTheDocument();
+        expect(
+            screen.getByText("This user hasn't written any book reviews yet."),
+        ).toBeInTheDocument();
     });
 
     it('should render UserReviewsInteractive with reviews, single object book, and nullish coalescing when books is null', async () => {
@@ -171,7 +271,7 @@ describe('UserReviewsPage', () => {
             error: null,
         });
 
-        const ui = await UserReviewsPage();
+        const ui = await UserReviewsPage({ params: Promise.resolve({ username: 'testuser' }) });
         render(ui);
 
         expect(screen.getByTestId('user-reviews-interactive')).toBeInTheDocument();
@@ -184,7 +284,7 @@ describe('UserReviewsPage', () => {
             2: null,
         });
         expect(mockFrom).toHaveBeenCalledWith('book_reviews');
-        expect(mockEq).toHaveBeenCalledWith('user_id', 'user-123');
+        expect(mockEq).toHaveBeenCalledWith('username', 'testuser');
         expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false });
         expect(mockRange).toHaveBeenCalledWith(0, 5);
     });
@@ -212,7 +312,7 @@ describe('UserReviewsPage', () => {
             error: null,
         });
 
-        const ui = await UserReviewsPage();
+        const ui = await UserReviewsPage({ params: Promise.resolve({ username: 'testuser' }) });
         render(ui);
 
         expect(UserReviewsInteractive).toHaveBeenCalled();

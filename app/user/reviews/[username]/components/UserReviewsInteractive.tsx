@@ -12,14 +12,14 @@ interface UserReviewsInteractiveProps {
     initialReviews: Review[];
     initialBooksMap: Record<string | number, Partial<BookDB> | null>;
     initialHasMore: boolean;
-    isOwner: boolean;
+    isOwner?: boolean;
 }
 
 export const UserReviewsInteractive = ({
     initialReviews,
     initialBooksMap,
     initialHasMore,
-    isOwner,
+    isOwner = false,
 }: UserReviewsInteractiveProps) => {
     const {
         reviews,
@@ -35,7 +35,7 @@ export const UserReviewsInteractive = ({
         handleConfirmDelete,
         handleOpenEditModal,
         handleCloseEditModal,
-    } = useUserReviews({ initialReviews, initialBooksMap, initialHasMore });
+    } = useUserReviews({ initialReviews, initialBooksMap, initialHasMore, isOwner });
 
     return (
         <>
@@ -49,8 +49,10 @@ export const UserReviewsInteractive = ({
                             />
                             <ReviewCard
                                 review={review}
-                                onEdit={isOwner ? handleOpenEditModal : undefined}
-                                onDelete={isOwner ? handleOpenDeleteModal : undefined}
+                                {...(isOwner && {
+                                    onEdit: handleOpenEditModal,
+                                    onDelete: handleOpenDeleteModal,
+                                })}
                             />
                         </div>
                     </Fragment>

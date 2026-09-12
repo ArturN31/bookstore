@@ -81,6 +81,7 @@ describe('useUserReviews Hook', () => {
                 initialReviews,
                 initialBooksMap,
                 initialHasMore,
+                isOwner: true,
             }),
         );
 
@@ -99,12 +100,14 @@ describe('useUserReviews Hook', () => {
                 initialReviews: Review[];
                 initialBooksMap: Record<string | number, Partial<BookDB> | null>;
                 initialHasMore: boolean;
+                isOwner?: boolean;
             }) => useUserReviews(props),
             {
                 initialProps: {
                     initialReviews,
                     initialBooksMap,
                     initialHasMore,
+                    isOwner: true,
                 },
             },
         );
@@ -129,6 +132,7 @@ describe('useUserReviews Hook', () => {
             initialReviews: newReviews,
             initialBooksMap: newBooksMap,
             initialHasMore: false,
+            isOwner: true,
         });
 
         expect(result.current.reviews).toEqual(newReviews);
@@ -143,6 +147,7 @@ describe('useUserReviews Hook', () => {
                     initialReviews,
                     initialBooksMap,
                     initialHasMore,
+                    isOwner: true,
                 }),
             );
 
@@ -159,6 +164,23 @@ describe('useUserReviews Hook', () => {
             expect(result.current.isDeleteModalOpen).toBe(false);
         });
 
+        it('should not open delete modal if isOwner is false', () => {
+            const { result } = renderHook(() =>
+                useUserReviews({
+                    initialReviews,
+                    initialBooksMap,
+                    initialHasMore,
+                    isOwner: false,
+                }),
+            );
+
+            act(() => {
+                result.current.handleOpenDeleteModal('1');
+            });
+
+            expect(result.current.isDeleteModalOpen).toBe(false);
+        });
+
         it('should successfully confirm delete, filter reviews, and refresh router', async () => {
             mockDeleteReviewAction.mockResolvedValueOnce({ success: true });
 
@@ -167,6 +189,7 @@ describe('useUserReviews Hook', () => {
                     initialReviews,
                     initialBooksMap,
                     initialHasMore,
+                    isOwner: true,
                 }),
             );
 
@@ -193,6 +216,7 @@ describe('useUserReviews Hook', () => {
                     initialReviews,
                     initialBooksMap,
                     initialHasMore,
+                    isOwner: true,
                 }),
             );
 
@@ -219,6 +243,7 @@ describe('useUserReviews Hook', () => {
                     initialReviews,
                     initialBooksMap,
                     initialHasMore,
+                    isOwner: true,
                 }),
             );
 
@@ -237,6 +262,7 @@ describe('useUserReviews Hook', () => {
                     initialReviews,
                     initialBooksMap,
                     initialHasMore,
+                    isOwner: true,
                 }),
             );
 
@@ -253,12 +279,31 @@ describe('useUserReviews Hook', () => {
             });
         });
 
+        it('should not open edit modal if isOwner is false', () => {
+            const { result } = renderHook(() =>
+                useUserReviews({
+                    initialReviews,
+                    initialBooksMap,
+                    initialHasMore,
+                    isOwner: false,
+                }),
+            );
+
+            act(() => {
+                result.current.handleOpenEditModal('1');
+            });
+
+            expect(result.current.isEditModalOpen).toBe(false);
+            expect(result.current.selectedEditReview).toBeNull();
+        });
+
         it('should not open edit modal if review id is not found', () => {
             const { result } = renderHook(() =>
                 useUserReviews({
                     initialReviews,
                     initialBooksMap,
                     initialHasMore,
+                    isOwner: true,
                 }),
             );
 
@@ -276,6 +321,7 @@ describe('useUserReviews Hook', () => {
                     initialReviews,
                     initialBooksMap,
                     initialHasMore,
+                    isOwner: true,
                 }),
             );
 
@@ -340,6 +386,7 @@ describe('useUserReviews Hook', () => {
                     initialReviews,
                     initialBooksMap,
                     initialHasMore,
+                    isOwner: true,
                 }),
             );
 
@@ -400,6 +447,7 @@ describe('useUserReviews Hook', () => {
                     initialReviews,
                     initialBooksMap,
                     initialHasMore,
+                    isOwner: true,
                 }),
             );
 
@@ -427,6 +475,7 @@ describe('useUserReviews Hook', () => {
                     initialReviews,
                     initialBooksMap,
                     initialHasMore: false,
+                    isOwner: true,
                 }),
             );
 
@@ -463,6 +512,7 @@ describe('useUserReviews Hook', () => {
                     initialReviews,
                     initialBooksMap,
                     initialHasMore: true,
+                    isOwner: true,
                 }),
             );
 

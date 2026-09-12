@@ -13,13 +13,13 @@ jest.mock('@/app/book/[slug]/components/Reviews/ReviewCard/ReviewCard', () => ({
         onDelete,
     }: {
         review: Review;
-        onEdit: (rev: Review) => void;
-        onDelete: (id: string | number) => void;
+        onEdit?: (rev: Review) => void;
+        onDelete?: (id: string | number) => void;
     }) => (
         <div data-testid={`review-card-${review.id}`}>
             <span>{review.review}</span>
-            <button onClick={() => onEdit(review)}>Edit</button>
-            <button onClick={() => onDelete(review.id)}>Delete</button>
+            <button onClick={() => onEdit?.(review)}>Edit</button>
+            <button onClick={() => onDelete?.(review.id)}>Delete</button>
         </div>
     ),
 }));
@@ -155,6 +155,7 @@ describe('UserReviewsInteractive', () => {
                 initialReviews={[mockReview]}
                 initialBooksMap={{}}
                 initialHasMore={true}
+                isOwner={true}
             />,
         );
 
@@ -170,6 +171,7 @@ describe('UserReviewsInteractive', () => {
                 initialReviews={[mockReview]}
                 initialBooksMap={{}}
                 initialHasMore={true}
+                isOwner={true}
             />,
         );
 
@@ -190,6 +192,7 @@ describe('UserReviewsInteractive', () => {
                 initialReviews={[mockReview]}
                 initialBooksMap={{}}
                 initialHasMore={true}
+                isOwner={true}
             />,
         );
 
@@ -216,6 +219,7 @@ describe('UserReviewsInteractive', () => {
                 initialReviews={[mockReview]}
                 initialBooksMap={{}}
                 initialHasMore={true}
+                isOwner={true}
             />,
         );
 

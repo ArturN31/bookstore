@@ -4,7 +4,12 @@ import { mapToReviewPayload } from '@/data/books/reviews/ReviewMapper';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 import { DB_ERROR_MAP } from '@/utils/errors/ErrorHandlerConstants';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { resolveUsername, isDuplicateReviewError } from '@/data/books/reviews/ReviewActionUtils';
+import {
+    resolveUsername,
+    isDuplicateReviewError,
+    verifyReviewOwnership,
+    revalidateReviewCaches,
+} from '@/data/books/reviews/ReviewActionUtils';
 
 jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
     BookAdvancedFilteringProvider: ({ children }: { children: React.ReactNode }) => children,
@@ -35,6 +40,8 @@ jest.mock('@/utils/db/safeSupabaseQuery', () => ({
 jest.mock('@/data/books/reviews/ReviewActionUtils', () => ({
     resolveUsername: jest.fn(),
     isDuplicateReviewError: jest.fn(),
+    verifyReviewOwnership: jest.fn(),
+    revalidateReviewCaches: jest.fn(),
 }));
 
 jest.mock('@/utils/errors/SupabaseErrorHandler', () => ({
@@ -66,6 +73,8 @@ describe('UserReviewAction', () => {
     const mockRecordSecurityAuditLog = recordSecurityAuditLog as jest.Mock;
     const mockResolveUsername = resolveUsername as jest.Mock;
     const mockIsDuplicateReviewError = isDuplicateReviewError as jest.Mock;
+    const mockVerifyReviewOwnership = verifyReviewOwnership as jest.Mock;
+    const mockRevalidateReviewCaches = revalidateReviewCaches as jest.Mock;
     const mockRevalidatePath = revalidatePath as jest.Mock;
     const mockRevalidateTag = revalidateTag as jest.Mock;
 
@@ -126,6 +135,7 @@ describe('UserReviewAction', () => {
         mockMapToReviewPayload.mockReturnValue({ rating: 5, review: 'Great book!' });
         mockResolveUsername.mockResolvedValue('dbuser');
         mockIsDuplicateReviewError.mockReturnValue(false);
+        mockVerifyReviewOwnership.mockResolvedValue(true);
     });
 
     afterEach(() => {
@@ -215,8 +225,7 @@ describe('UserReviewAction', () => {
 
         const result = await UserReviewAction(undefined, formData);
         expect(result).toEqual({ error: null, message: null, validationErrors: [] });
-        expect(mockRevalidatePath).toHaveBeenCalled();
-        expect(mockRevalidateTag).toHaveBeenCalled();
+        expect(mockRevalidateReviewCaches).toHaveBeenCalledWith('book-123', 'book-123');
     });
 
     it('should successfully update an existing review', async () => {
@@ -231,7 +240,21 @@ describe('UserReviewAction', () => {
 
         const result = await UserReviewAction(undefined, formData);
         expect(result).toEqual({ error: null, message: null, validationErrors: [] });
-        expect(mockRevalidatePath).toHaveBeenCalledWith('/book/test-slug', 'page');
+        expect(mockVerifyReviewOwnership).toHaveBeenCalledWith(mockSupabase, 'rev-1', 'user-123');
+        expect(mockRevalidateReviewCaches).toHaveBeenCalledWith('book-123', 'test-slug');
+    });
+
+    it('should handle update failure when review ownership verification fails', async () => {
+        mockVerifyReviewOwnership.mockResolvedValueOnce(false);
+
+        const formData = new FormData();
+        formData.append('bookId', 'book-123');
+        formData.append('reviewId', 'rev-1');
+        formData.append('rating', '5');
+        formData.append('review', 'Updated review');
+
+        const result = await UserReviewAction(undefined, formData);
+        expect(result.message).toBeDefined();
     });
 
     it('should handle update failure when update result has explicit error', async () => {

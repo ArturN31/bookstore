@@ -15,6 +15,7 @@ export interface UseUserReviewsProps {
     initialReviews: Review[];
     initialBooksMap: Record<string | number, Partial<BookDB> | null>;
     initialHasMore: boolean;
+    isOwner?: boolean;
 }
 
 export interface UseUserReviewsReturn {
@@ -38,6 +39,7 @@ export const useUserReviews = ({
     initialReviews,
     initialBooksMap,
     initialHasMore,
+    isOwner = false,
 }: UseUserReviewsProps): UseUserReviewsReturn => {
     const router = useRouter();
     const [reviews, setReviews] = useState<Review[]>(initialReviews);
@@ -109,6 +111,7 @@ export const useUserReviews = ({
     }, [observerNode, hasMore, isLoadingMore, loadMoreReviews]);
 
     const handleOpenDeleteModal = (id: string | number) => {
+        if (!isOwner) return;
         setSelectedDeleteId(id);
         setIsDeleteModalOpen(true);
     };
@@ -119,7 +122,7 @@ export const useUserReviews = ({
     };
 
     const handleConfirmDelete = async () => {
-        if (selectedDeleteId === null) return;
+        if (!isOwner || selectedDeleteId === null) return;
 
         try {
             const result = await deleteReviewAction(selectedDeleteId);
@@ -135,6 +138,7 @@ export const useUserReviews = ({
     };
 
     const handleOpenEditModal = (id: string | number) => {
+        if (!isOwner) return;
         const targetReview = reviews.find((item) => item.id === id);
         if (targetReview) {
             setSelectedEditReview({

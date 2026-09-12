@@ -55,6 +55,7 @@ const mockedUserData: User = {
     email: 'user@test.com',
     is_wishlist_public: false,
     wishlist_share_token: null,
+    are_reviews_public: false,
 };
 
 describe('APP - pages/user - UserDetails', () => {

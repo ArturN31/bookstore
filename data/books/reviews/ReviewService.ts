@@ -4,7 +4,7 @@ import { createBackendClient } from '@/utils/db/server';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
-import { revalidatePath, revalidateTag } from 'next/cache';
+import { verifyReviewForDeletion, revalidateServiceCaches } from './ReviewServiceUtils';
 
 const PAGE_SIZE = 5;
 
@@ -113,11 +113,10 @@ export async function deleteReviewAction(
         return { success: false, message: 'Session expired' };
     }
 
-    const reviewResult = await safeSupabaseQuery<{ book_id: string }[]>(async () =>
-        supabase.from('book_reviews').select('book_id').eq('id', reviewId).eq('user_id', user.id),
-    );
+    const verification = await verifyReviewForDeletion(supabase, reviewId, user.id);
+    if (!verification.isValid) return { success: false, message: 'Unauthorized operation.' };
 
-    const bookId = reviewResult.data?.[0]?.book_id;
+    const bookId = verification.bookId;
 
     const deleteResult = await safeSupabaseQuery<{ id: string | number }[]>(async () =>
         supabase
@@ -138,14 +137,6 @@ export async function deleteReviewAction(
         };
     }
 
-    revalidateTag('reviews', 'max');
-    revalidateTag('books', 'max');
-    if (bookId) revalidateTag(`reviews-${bookId}`, 'max');
-
-    revalidatePath('/user/reviews/[username]', 'page');
-    revalidatePath('/book/[slug]', 'page');
-    if (bookId) revalidatePath(`/book/${bookId}`, 'page');
-    revalidatePath('/', 'page');
-
+    revalidateServiceCaches(bookId);
     return { success: true };
 }

@@ -1,8 +1,11 @@
 import { deleteReviewAction, fetchUserReviewsAction } from '@/data/books/reviews/ReviewService';
+import {
+    revalidateServiceCaches,
+    verifyReviewForDeletion,
+} from '@/data/books/reviews/ReviewServiceUtils';
 import { createBackendClient } from '@/utils/db/server';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
-import { revalidatePath, revalidateTag } from 'next/cache';
 
 jest.mock('@/utils/db/server', () => ({
     createBackendClient: jest.fn(),
@@ -22,35 +25,50 @@ jest.mock('@/utils/security/securityAuditLogger', () => ({
     recordSecurityAuditLog: jest.fn(),
 }));
 
-jest.mock('next/cache', () => ({
-    revalidatePath: jest.fn(),
-    revalidateTag: jest.fn(),
+jest.mock('@/data/books/reviews/ReviewServiceUtils', () => ({
+    verifyReviewForDeletion: jest.fn(),
+    revalidateServiceCaches: jest.fn(),
 }));
 
 describe('UserReviewsActions', () => {
-    const mockCreateBackendClient = createBackendClient as jest.Mock;
-    const mockSanitizeSupabaseError = sanitizeSupabaseError as jest.Mock;
-    const mockRecordSecurityAuditLog = recordSecurityAuditLog as jest.Mock;
-    const mockRevalidatePath = revalidatePath as jest.Mock;
-    const mockRevalidateTag = revalidateTag as jest.Mock;
+    const mockCreateBackendClient = createBackendClient as jest.MockedFunction<
+        typeof createBackendClient
+    >;
+    const mockSanitizeSupabaseError = sanitizeSupabaseError as jest.MockedFunction<
+        typeof sanitizeSupabaseError
+    >;
+    const mockRecordSecurityAuditLog = recordSecurityAuditLog as jest.MockedFunction<
+        typeof recordSecurityAuditLog
+    >;
+    const mockVerifyReviewForDeletion = verifyReviewForDeletion as jest.MockedFunction<
+        typeof verifyReviewForDeletion
+    >;
+    const mockRevalidateServiceCaches = revalidateServiceCaches as jest.MockedFunction<
+        typeof revalidateServiceCaches
+    >;
 
     let mockSupabase: {
-        auth: { getUser: jest.Mock };
-        from: jest.Mock;
+        auth: {
+            getUser: jest.MockedFunction<
+                () => Promise<{
+                    data: { user: { id: string } | null };
+                    error: { message: string } | null;
+                }>
+            >;
+        };
+        from: jest.MockedFunction<(table: string) => unknown>;
     };
 
-    let mockRange: jest.Mock;
-    let mockOrder: jest.Mock;
-    let mockEqFetch2: jest.Mock;
+    let mockRange: jest.MockedFunction<() => Promise<{ data: unknown; error: unknown }>>;
+    let mockOrder: jest.MockedFunction<() => { range: typeof mockRange }>;
+    let mockEqFetch2: jest.MockedFunction<() => { order: typeof mockOrder }>;
 
-    let mockEqGetBook2: jest.Mock;
-    let mockEqGetBook1: jest.Mock;
-
-    let mockEqDelete2: jest.Mock;
-    let mockEqDelete1: jest.Mock;
-    let mockSelectDelete: jest.Mock;
-    let mockDelete: jest.Mock;
-    let mockFrom: jest.Mock;
+    let mockEqDelete2: jest.MockedFunction<
+        () => { select: jest.MockedFunction<() => Promise<{ data: unknown; error: unknown }>> }
+    >;
+    let mockEqDelete1: jest.MockedFunction<() => { eq: typeof mockEqDelete2 }>;
+    let mockDelete: jest.MockedFunction<() => { eq: typeof mockEqDelete1 }>;
+    let mockFrom: jest.MockedFunction<(table: string) => unknown>;
 
     let consoleErrorSpy: jest.SpyInstance;
 
@@ -70,25 +88,16 @@ describe('UserReviewsActions', () => {
         mockOrder = jest.fn().mockReturnValue({ range: mockRange });
         mockEqFetch2 = jest.fn().mockReturnValue({ order: mockOrder });
 
-        mockEqGetBook2 = jest
-            .fn()
-            .mockResolvedValue({ data: [{ book_id: 'book-1' }], error: null });
-        mockEqGetBook1 = jest.fn().mockReturnValue({ eq: mockEqGetBook2 });
-
-        mockSelectDelete = jest.fn().mockResolvedValue({ data: [{ id: 'rev-1' }], error: null });
-        mockEqDelete2 = jest.fn().mockReturnValue({ select: mockSelectDelete });
+        mockEqDelete2 = jest.fn().mockReturnValue({
+            select: jest.fn().mockResolvedValue({ data: [{ id: 'rev-1' }], error: null }),
+        });
         mockEqDelete1 = jest.fn().mockReturnValue({ eq: mockEqDelete2 });
         mockDelete = jest.fn().mockReturnValue({ eq: mockEqDelete1 });
 
         mockFrom = jest.fn().mockImplementation((table: string) => {
             if (table === 'book_reviews') {
                 return {
-                    select: jest.fn((query?: string) => {
-                        if (query === 'book_id') {
-                            return { eq: mockEqGetBook1 };
-                        }
-                        return { eq: mockEqFetch2 };
-                    }),
+                    select: jest.fn().mockReturnValue({ eq: mockEqFetch2 }),
                     delete: mockDelete,
                 };
             }
@@ -107,7 +116,10 @@ describe('UserReviewsActions', () => {
             from: mockFrom,
         };
 
-        mockCreateBackendClient.mockResolvedValue(mockSupabase);
+        mockCreateBackendClient.mockResolvedValue(
+            mockSupabase as unknown as Awaited<ReturnType<typeof createBackendClient>>,
+        );
+        mockVerifyReviewForDeletion.mockResolvedValue({ isValid: true, bookId: 'book-1' });
     });
 
     afterEach(() => {
@@ -366,15 +378,22 @@ describe('UserReviewsActions', () => {
             expect(result).toEqual({ success: false, message: 'Session expired' });
         });
 
+        it('should return success false when review verification fails', async () => {
+            mockVerifyReviewForDeletion.mockResolvedValueOnce({ isValid: false });
+
+            const result = await deleteReviewAction('rev-1');
+
+            expect(result).toEqual({ success: false, message: 'Unauthorized operation.' });
+        });
+
         it('should handle delete failure when delete result has explicit error', async () => {
-            mockEqGetBook2.mockResolvedValueOnce({
-                data: [{ book_id: 'book-1' }],
-                error: null,
-            });
-            mockSelectDelete.mockResolvedValueOnce({
+            mockVerifyReviewForDeletion.mockResolvedValueOnce({ isValid: true, bookId: 'book-1' });
+
+            const mockSelectDelete = jest.fn().mockResolvedValue({
                 data: [],
                 error: 'Delete database error',
             });
+            mockEqDelete2.mockReturnValueOnce({ select: mockSelectDelete });
 
             mockSanitizeSupabaseError.mockReturnValueOnce('Sanitized Delete Error');
 
@@ -388,14 +407,13 @@ describe('UserReviewsActions', () => {
         });
 
         it('should handle delete failure with default fallback message when error is null and data is empty', async () => {
-            mockEqGetBook2.mockResolvedValueOnce({
-                data: [{ book_id: 'book-1' }],
-                error: null,
-            });
-            mockSelectDelete.mockResolvedValueOnce({
+            mockVerifyReviewForDeletion.mockResolvedValueOnce({ isValid: true, bookId: 'book-1' });
+
+            const mockSelectDelete = jest.fn().mockResolvedValue({
                 data: [],
                 error: null,
             });
+            mockEqDelete2.mockReturnValueOnce({ select: mockSelectDelete });
 
             const result = await deleteReviewAction('rev-1');
 
@@ -406,26 +424,19 @@ describe('UserReviewsActions', () => {
             });
         });
 
-        it('should successfully delete review and revalidate paths and tags', async () => {
-            mockEqGetBook2.mockResolvedValueOnce({
-                data: [{ book_id: 'book-1' }],
-                error: null,
-            });
-            mockSelectDelete.mockResolvedValueOnce({
+        it('should successfully delete review and revalidate service caches', async () => {
+            mockVerifyReviewForDeletion.mockResolvedValueOnce({ isValid: true, bookId: 'book-1' });
+
+            const mockSelectDelete = jest.fn().mockResolvedValue({
                 data: [{ id: 'rev-1' }],
                 error: null,
             });
+            mockEqDelete2.mockReturnValueOnce({ select: mockSelectDelete });
 
             const result = await deleteReviewAction('rev-1');
 
             expect(result).toEqual({ success: true });
-            expect(mockRevalidateTag).toHaveBeenCalledWith('reviews', 'max');
-            expect(mockRevalidateTag).toHaveBeenCalledWith('books', 'max');
-            expect(mockRevalidateTag).toHaveBeenCalledWith('reviews-book-1', 'max');
-            expect(mockRevalidatePath).toHaveBeenCalledWith('/user/reviews/[username]', 'page');
-            expect(mockRevalidatePath).toHaveBeenCalledWith('/book/[slug]', 'page');
-            expect(mockRevalidatePath).toHaveBeenCalledWith('/book/book-1', 'page');
-            expect(mockRevalidatePath).toHaveBeenCalledWith('/', 'page');
+            expect(mockRevalidateServiceCaches).toHaveBeenCalledWith('book-1');
         });
     });
 });

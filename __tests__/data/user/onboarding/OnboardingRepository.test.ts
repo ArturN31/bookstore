@@ -57,6 +57,7 @@ describe('UserRepository - Address Operations', () => {
                     username: 'johndoe',
                     is_wishlist_public: false,
                     wishlist_share_token: null,
+                    are_reviews_public: false,
                 },
             ];
 
@@ -130,6 +131,7 @@ describe('UserRepository - Address Operations', () => {
                     username: 'johndoe',
                     is_wishlist_public: false,
                     wishlist_share_token: null,
+                    are_reviews_public: false,
                 },
             ];
 

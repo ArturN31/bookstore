@@ -26,6 +26,7 @@ export const DEFAULT_USER: User = {
     email: '',
     is_wishlist_public: false,
     wishlist_share_token: null,
+    are_reviews_public: false,
 };
 
 export const INITIAL_USER_STATE: UserState = {
