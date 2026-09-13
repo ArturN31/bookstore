@@ -30,12 +30,27 @@ export default async function PublicProfilePage({
     if (error === APP_ERROR_MESSAGES.ERROR_PROFILE_NOT_FOUND || !profile)
         return <PublicProfileUnavailable />;
 
+    const isProfilePublic = Boolean(profile.is_profile_public);
+
+    if (!isProfilePublic)
+        return (
+            <div className="space-y-8 pb-16">
+                <PublicProfileBanner
+                    profile={profile}
+                    mode="private"
+                />
+            </div>
+        );
+
     const hasPublicWishlist = Boolean(profile.is_wishlist_public);
     const hasPublicReviews = Boolean(profile.are_reviews_public);
 
     return (
         <div className="space-y-8 pb-16">
-            <PublicProfileBanner profile={profile} />
+            <PublicProfileBanner
+                profile={profile}
+                mode="public"
+            />
 
             <div className="mx-auto max-w-4xl px-4 md:px-8">
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

@@ -382,6 +382,7 @@ export type Database = {
           date_of_birth: string
           first_name: string
           id: string
+          is_profile_public: boolean
           is_wishlist_public: boolean
           last_name: string
           phone_number: string
@@ -399,6 +400,7 @@ export type Database = {
           date_of_birth: string
           first_name: string
           id: string
+          is_profile_public?: boolean
           is_wishlist_public?: boolean
           last_name: string
           phone_number: string
@@ -416,6 +418,7 @@ export type Database = {
           date_of_birth?: string
           first_name?: string
           id?: string
+          is_profile_public?: boolean
           is_wishlist_public?: boolean
           last_name?: string
           phone_number?: string
@@ -500,16 +503,9 @@ export type Database = {
       get_public_profile: {
         Args: { target_username: string }
         Returns: {
-          created_at: string
-          is_wishlist_public: boolean
-          username: string
-        }[]
-      }
-      get_public_user_profile: {
-        Args: { target_username: string }
-        Returns: {
           are_reviews_public: boolean
           created_at: string
+          is_profile_public: boolean
           is_wishlist_public: boolean
           username: string
         }[]
@@ -542,6 +538,18 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_user_profile: {
+        Args: { target_username: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          created_at: string
+          id: string
+          is_profile_public: boolean
+          updated_at: string
+          username: string
+        }[]
       }
     }
     Enums: {

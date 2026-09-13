@@ -2,11 +2,13 @@ import AutoStoriesOutlinedIcon from '@mui/icons-material/AutoStoriesOutlined';
 
 export const PublicProfileBanner = ({
     profile,
+    mode,
 }: {
     profile: {
         username: string;
         created_at: string;
     };
+    mode: 'public' | 'private';
 }) => {
     const joinedDate = new Date(profile.created_at).toLocaleDateString('en-US', {
         month: 'long',
@@ -35,7 +37,8 @@ export const PublicProfileBanner = ({
 
                     <div className="flex items-center gap-1.5 rounded-full bg-amber-50 px-4 py-1.5 text-sm font-semibold text-amber-700">
                         <AutoStoriesOutlinedIcon fontSize="small" />
-                        Public Profile
+                        {mode === 'private' && 'Private Profile'}
+                        {mode === 'public' && 'Public Profile'}
                     </div>
                 </div>
             </div>

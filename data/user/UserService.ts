@@ -117,6 +117,7 @@ export interface PublicUserProfileData {
     created_at: string;
     is_wishlist_public: boolean;
     are_reviews_public: boolean;
+    is_profile_public: boolean;
 }
 
 export const getPublicUserProfile = async (
