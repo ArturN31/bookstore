@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
-import BookmarkAddedOutlinedIcon from '@mui/icons-material/BookmarkAddedOutlined';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import { CustomPopoverWithList } from '@/components/ui/CustomPopoverWithList';
 
@@ -22,9 +21,6 @@ export const UserBtn = () => {
                 break;
             case 'User Profile':
                 router.push('/user/profile');
-                break;
-            case 'Wishlist':
-                router.push('/user/wishlist');
                 break;
             case 'Sign Out':
                 handleSignOut();
@@ -60,12 +56,8 @@ export const UserBtn = () => {
 
         if (loggedIn)
             return {
-                labels: ['User Profile', 'Wishlist', 'Sign Out'],
-                icons: [
-                    <ManageAccountsIcon key="p" />,
-                    <BookmarkAddedOutlinedIcon key="w" />,
-                    <LogoutIcon key="s" />,
-                ],
+                labels: ['User Profile', 'Sign Out'],
+                icons: [<ManageAccountsIcon key="p" />, <LogoutIcon key="s" />],
             };
 
         return {

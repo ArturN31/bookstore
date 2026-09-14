@@ -551,8 +551,8 @@ The verified production build completed successfully with TypeScript verificatio
 /user/profile
 /user/profile/change_address
 /user/wishlist
-/user/wishlist/shared/[username]
-/user/wishlist/shared/token/[token]
+/user/wishlist/[username]
+/user/wishlist/token/[token]
 ```
 
 The build also included the middleware proxy. The route output confirms the current public surface and, importantly, confirms that `/checkout` is not currently an application route.

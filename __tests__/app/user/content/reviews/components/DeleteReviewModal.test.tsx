@@ -1,4 +1,4 @@
-import { DeleteReviewModal } from '@/app/user/reviews/[username]/components/DeleteReviewModal';
+import { DeleteReviewModal } from '@/app/user/reviews/components/DeleteReviewModal';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 
 describe('DeleteReviewModal', () => {

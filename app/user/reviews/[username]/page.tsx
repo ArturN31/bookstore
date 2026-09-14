@@ -3,7 +3,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined';
 import { createBackendClient } from '@/utils/db/server';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
-import { UserReviewsInteractive } from './components/UserReviewsInteractive';
+import { UserReviewsInteractive } from '../components/UserReviewsInteractive';
 
 const PAGE_SIZE = 5;
 

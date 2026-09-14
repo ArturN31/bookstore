@@ -1,4 +1,4 @@
-import { EmptyWishlistView } from '@/app/user/wishlist/shared/[username]/components/EmptyWishlistView';
+import { EmptyWishlistView } from '@/app/user/wishlist/[username]/components/EmptyWishlistView';
 import { render, screen } from '@testing-library/react';
 
 describe('EmptyWishlistView', () => {

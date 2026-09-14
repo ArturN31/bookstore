@@ -4,6 +4,7 @@ import EditLocationOutlinedIcon from '@mui/icons-material/EditLocationOutlined';
 import LockPersonOutlinedIcon from '@mui/icons-material/LockPersonOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
+import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import { ActionSection } from './ActionSection';
 import { ActionLink } from './ActionLink';
 import { getUserData } from '@/data/user/UserService';
@@ -46,6 +47,12 @@ export const QuickActions = async () => {
                         color="blue"
                     />
                 )}
+                <ActionLink
+                    href={`/user/wishlist`}
+                    icon={BookmarkBorderIcon}
+                    label="My Book Wishlist"
+                    color="blue"
+                />
             </ActionSection>
 
             <ActionSection

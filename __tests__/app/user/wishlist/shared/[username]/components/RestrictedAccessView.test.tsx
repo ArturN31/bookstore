@@ -1,7 +1,7 @@
-import { RestrictedAccessView } from '@/app/user/wishlist/shared/[username]/components/RestrictedAccessView';
+import { RestrictedAccessView } from '@/app/user/wishlist/[username]/components/RestrictedAccessView';
 import { render, screen } from '@testing-library/react';
 
-jest.mock('@/app/user/wishlist/shared/[username]/components/SharedWishlistHeader', () => ({
+jest.mock('@/app/user/wishlist/[username]/components/SharedWishlistHeader', () => ({
     SharedWishlistHeader: () => <header data-testid="mock-shared-header">Mock Header</header>,
 }));
 

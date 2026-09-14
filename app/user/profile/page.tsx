@@ -1,7 +1,7 @@
 import { getUserData } from '@/data/user/UserService';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { OnboardingForm } from './components/OnboardingForm/OnboardingForm';
-import { QuickActions } from './components/UserProfilePage/QuickActions/QuickActions';
+import { QuickActions } from './components/QuickActions/QuickActions';
 import { UserDetails } from './components/UserProfilePage/UserDetails';
 
 export const dynamic = 'force-dynamic';

@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { createBackendClient } from '@/utils/db/server';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import UserReviewsPage from '@/app/user/reviews/[username]/page';
-import { UserReviewsInteractive } from '@/app/user/reviews/[username]/components/UserReviewsInteractive';
+import { UserReviewsInteractive } from '@/app/user/reviews/components/UserReviewsInteractive';
 
 jest.mock('@/utils/db/server', () => ({
     createBackendClient: jest.fn(),
@@ -12,7 +12,7 @@ jest.mock('@/utils/db/safeSupabaseQuery', () => ({
     safeSupabaseQuery: jest.fn(),
 }));
 
-jest.mock('@/app/user/reviews/[username]/components/UserReviewsInteractive', () => ({
+jest.mock('@/app/user/reviews/components/UserReviewsInteractive', () => ({
     UserReviewsInteractive: jest.fn(() => <div data-testid="user-reviews-interactive" />),
 }));
 

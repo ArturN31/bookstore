@@ -39,7 +39,7 @@ jest.mock('@/app/user/profile/components/OnboardingForm/OnboardingForm', () => (
     ),
 }));
 
-jest.mock('@/app/user/profile/components/UserProfilePage/QuickActions/QuickActions', () => ({
+jest.mock('@/app/user/profile/components/QuickActions/QuickActions', () => ({
     QuickActions: () => <div data-testid="quick-actions">Quick Actions</div>,
 }));
 

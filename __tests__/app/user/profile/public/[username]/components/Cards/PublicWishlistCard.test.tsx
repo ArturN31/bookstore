@@ -61,7 +61,7 @@ describe('PublicWishlistCard', () => {
 
         const actionButton = screen.getByTestId('profile-card-action-button');
         expect(actionButton).toBeInTheDocument();
-        expect(actionButton).toHaveAttribute('href', `/user/wishlist/shared/${mockUsername}`);
+        expect(actionButton).toHaveAttribute('href', `/user/wishlist/${mockUsername}`);
         expect(screen.getByText('View Wishlist')).toBeInTheDocument();
     });
 });

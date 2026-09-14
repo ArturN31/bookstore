@@ -1,4 +1,4 @@
-import { SharedWishlistHero } from '@/app/user/wishlist/shared/[username]/components/SharedWishlistHero';
+import { SharedWishlistHero } from '@/app/user/wishlist/[username]/components/SharedWishlistHero';
 import { render, screen } from '@testing-library/react';
 
 describe('SharedWishlistHero', () => {

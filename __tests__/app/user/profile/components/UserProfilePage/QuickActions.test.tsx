@@ -1,4 +1,4 @@
-import { QuickActions } from '@/app/user/profile/components/UserProfilePage/QuickActions/QuickActions';
+import { QuickActions } from '@/app/user/profile/components/QuickActions/QuickActions';
 import { screen, render, act } from '@testing-library/react';
 
 jest.mock('@/utils/security/securityAuditLogger', () => ({

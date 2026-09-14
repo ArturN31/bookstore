@@ -21,7 +21,7 @@ export const PublicWishlistCard = ({ username }: PublicWishlistCardProps) => {
                 community.
             </p>
             <ProfileCardActionButton
-                href={`/user/wishlist/shared/${username}`}
+                href={`/user/wishlist/${username}`}
                 icon={<CardGiftcardOutlinedIcon fontSize="small" />}
             >
                 View Wishlist

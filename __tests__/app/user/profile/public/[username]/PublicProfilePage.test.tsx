@@ -79,6 +79,7 @@ describe('PublicProfilePage', () => {
         const mockProfile = {
             username: 'johndoe',
             created_at: '2026-01-01T00:00:00.000Z',
+            is_profile_public: true,
             is_wishlist_public: false,
             are_reviews_public: true,
         };
@@ -102,6 +103,7 @@ describe('PublicProfilePage', () => {
         const mockProfile = {
             username: 'johndoe',
             created_at: '2026-01-01T00:00:00.000Z',
+            is_profile_public: true,
             is_wishlist_public: true,
             are_reviews_public: true,
         };

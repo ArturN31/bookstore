@@ -1,4 +1,4 @@
-import { UserReviewsInteractive } from '@/app/user/reviews/[username]/components/UserReviewsInteractive';
+import { UserReviewsInteractive } from '@/app/user/reviews/components/UserReviewsInteractive';
 import { useUserReviews } from '@/data/books/reviews/useUserReviews';
 import { render, screen, fireEvent } from '@testing-library/react';
 
@@ -24,7 +24,7 @@ jest.mock('@/app/book/[slug]/components/Reviews/ReviewCard/ReviewCard', () => ({
     ),
 }));
 
-jest.mock('@/app/user/reviews/[username]/components/DeleteReviewModal', () => ({
+jest.mock('@/app/user/reviews/components/DeleteReviewModal', () => ({
     DeleteReviewModal: ({
         isOpen,
         onClose,
@@ -70,13 +70,13 @@ jest.mock('@/app/book/[slug]/components/Reviews/ReviewForm/ReviewFormModal', () 
         ) : null,
 }));
 
-jest.mock('@/app/user/reviews/[username]/components/UserReviewHeader', () => ({
+jest.mock('@/app/user/reviews/components/UserReviewHeader', () => ({
     UserReviewHeader: ({ bookId }: { bookId: string }) => (
         <div data-testid={`user-review-header-${bookId}`} />
     ),
 }));
 
-jest.mock('@/app/user/reviews/[username]/components/InfiniteScrollSentinel', () => ({
+jest.mock('@/app/user/reviews/components/InfiniteScrollSentinel', () => ({
     InfiniteScrollSentinel: ({
         isLoadingMore,
         hasMore,
