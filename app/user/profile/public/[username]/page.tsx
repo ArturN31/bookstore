@@ -1,8 +1,13 @@
-import { getPublicUserProfile } from '@/data/user/UserService';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { PublicProfileUnavailable } from './components/PublicProfileUnavailable';
 import { PublicProfileBanner } from './components/PublicProfileBanner';
 import { ReadingActivityCard } from './components/Cards/ReadingActivityCard';
+import {
+    getPublicProfile,
+    getUserPrivacySettings,
+} from '@/data/user/profile/PrivacySettingsService';
+import { checkIsOwner } from '@/utils/auth/checkOwnership';
+import { PrivacySettingsControl } from './components/Settings/PrivacySettingsControl';
 import { PublicWishlistCard } from './components/Cards/PublicWishlistCard';
 
 export default async function PublicProfilePage({
@@ -13,7 +18,10 @@ export default async function PublicProfilePage({
     const resolvedParams = await params;
     const { username } = resolvedParams;
 
-    const { data: profile, error } = await getPublicUserProfile(username);
+    const [isOwner, { data: profile, error }] = await Promise.all([
+        checkIsOwner(username),
+        getPublicProfile(username),
+    ]);
 
     if (error && error !== APP_ERROR_MESSAGES.ERROR_PROFILE_NOT_FOUND)
         return (
@@ -32,7 +40,7 @@ export default async function PublicProfilePage({
 
     const isProfilePublic = Boolean(profile.is_profile_public);
 
-    if (!isProfilePublic)
+    if (!isProfilePublic && !isOwner)
         return (
             <div className="space-y-8 pb-16">
                 <PublicProfileBanner
@@ -45,21 +53,41 @@ export default async function PublicProfilePage({
     const hasPublicWishlist = Boolean(profile.is_wishlist_public);
     const hasPublicReviews = Boolean(profile.are_reviews_public);
 
+    const ownerSettingsResult = isOwner ? await getUserPrivacySettings(profile.id) : null;
+    const initialSettings = ownerSettingsResult?.data ?? null;
+
     return (
         <div className="space-y-8 pb-16">
             <PublicProfileBanner
                 profile={profile}
-                mode="public"
+                mode={isProfilePublic ? 'public' : 'private'}
             />
+
+            {isOwner && initialSettings && (
+                <div className="mx-auto flex max-w-4xl justify-end px-4 md:px-8">
+                    <PrivacySettingsControl
+                        userId={profile.id}
+                        initialSettings={initialSettings}
+                    />
+                </div>
+            )}
 
             <div className="mx-auto max-w-4xl px-4 md:px-8">
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    {hasPublicWishlist && <PublicWishlistCard username={username} />}
-                    {hasPublicReviews && <ReadingActivityCard username={username} />}
+                    {(hasPublicWishlist || isOwner) && (
+                        <PublicWishlistCard
+                            username={username}
+                            isPublic={hasPublicWishlist}
+                        />
+                    )}
+                    {(hasPublicReviews || isOwner) && (
+                        <ReadingActivityCard
+                            username={username}
+                            isPublic={hasPublicReviews}
+                        />
+                    )}
                 </div>
             </div>
         </div>
     );
 }
-
-//TODO: Reviews require a toggle private/public - requires server action and components as db is prepared

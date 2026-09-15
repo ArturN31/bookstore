@@ -4,6 +4,7 @@ import RateReviewOutlinedIcon from '@mui/icons-material/RateReviewOutlined';
 import { createBackendClient } from '@/utils/db/server';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { UserReviewsInteractive } from '../components/UserReviewsInteractive';
+import { checkIsOwner } from '@/utils/auth/checkOwnership';
 
 const PAGE_SIZE = 5;
 
@@ -16,22 +17,7 @@ export default async function UserReviewsPage({
     const { username } = resolvedParams;
 
     const supabase = await createBackendClient();
-
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-
-    let loggedInUsername: string | null = null;
-    if (user) {
-        const { data: profileData } = await supabase
-            .from('users')
-            .select('username')
-            .eq('id', user.id)
-            .single();
-        loggedInUsername = profileData?.username ?? null;
-    }
-
-    const isOwner = loggedInUsername !== null && loggedInUsername === username;
+    const isOwner = await checkIsOwner(username);
 
     const reviewsQueryResult = await safeSupabaseQuery(async () =>
         supabase

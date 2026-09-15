@@ -505,6 +505,7 @@ export type Database = {
         Returns: {
           are_reviews_public: boolean
           created_at: string
+          id: string
           is_profile_public: boolean
           is_wishlist_public: boolean
           username: string
