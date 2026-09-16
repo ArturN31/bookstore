@@ -1,15 +1,17 @@
 import { ReactNode } from 'react';
 
+export type ProfileCardColorTheme = 'amber' | 'blue' | 'purple' | 'emerald';
+
 interface ProfileCardContainerProps {
     children: ReactNode;
-    colorTheme?: 'amber' | 'blue' | 'purple' | 'emerald';
+    colorTheme?: ProfileCardColorTheme;
 }
 
 export function ProfileCardContainer({
     children,
     colorTheme = 'amber',
 }: ProfileCardContainerProps) {
-    const glowColors = {
+    const glowColors: Record<ProfileCardColorTheme, string> = {
         amber: 'bg-amber-500/10',
         blue: 'bg-blue-500/10',
         purple: 'bg-purple-500/10',

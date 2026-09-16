@@ -17,7 +17,7 @@ export const PublicWishlistCard = ({ username, isPublic = true }: PublicWishlist
                     icon={<CardGiftcardOutlinedIcon fontSize="small" />}
                     title={isPublic ? 'Public Wishlist' : 'Wishlist'}
                     subtitle="Book recommendations & saved items"
-                    iconContainerClassName="bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                    colorTheme="amber"
                 />
                 <PrivacyStatusBadge isPublic={isPublic} />
             </div>
@@ -28,6 +28,7 @@ export const PublicWishlistCard = ({ username, isPublic = true }: PublicWishlist
             <ProfileCardActionButton
                 href={`/user/wishlist/${username}`}
                 icon={<CardGiftcardOutlinedIcon fontSize="small" />}
+                colorTheme="amber"
             >
                 View Wishlist
             </ProfileCardActionButton>

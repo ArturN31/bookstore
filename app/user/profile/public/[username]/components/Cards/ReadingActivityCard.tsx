@@ -18,7 +18,7 @@ export const ReadingActivityCard = ({ username, isPublic = true }: ReadingActivi
                     icon={<AutoStoriesOutlinedIcon fontSize="small" />}
                     title="Reading Activity"
                     subtitle={isPublic ? 'Public stats and reviews' : 'Private stats and reviews'}
-                    iconContainerClassName="bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                    colorTheme="blue"
                 />
                 <PrivacyStatusBadge isPublic={isPublic} />
             </div>
@@ -28,6 +28,7 @@ export const ReadingActivityCard = ({ username, isPublic = true }: ReadingActivi
             <ProfileCardActionButton
                 href={`/user/reviews/${username}`}
                 icon={<BookmarkBorderOutlinedIcon fontSize="small" />}
+                colorTheme="blue"
             >
                 View Reviews
             </ProfileCardActionButton>
