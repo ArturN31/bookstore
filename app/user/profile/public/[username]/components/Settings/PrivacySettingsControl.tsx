@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { PrivacySettingsModal } from './PrivacySettingsModal';
+import { PrivacySettingsModal } from './PrivacySettingsModal/PrivacySettingsModal';
 import { UserPrivacySettingsDto } from '@/data/user/profile/PrivacySettingsService';
 
 export interface PrivacySettingsControlProps {
