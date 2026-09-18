@@ -8,7 +8,9 @@ import {
 } from '@/app/user/wishlist/components/WishlistSharing/hook/useWishlistSharing';
 
 jest.mock('@/providers/user/utils/useUser');
-jest.mock('@/data/user/wishlist/sharing/WishlistShareAction');
+jest.mock('@/data/user/wishlist/sharing/WishlistShareAction', () => ({
+    updateWishlistVisibilityAction: jest.fn(),
+}));
 jest.mock('notistack', () => ({
     enqueueSnackbar: jest.fn(),
 }));

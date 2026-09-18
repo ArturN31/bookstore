@@ -34,7 +34,7 @@ jest.mock('@/utils/network/retry', () => ({
 }));
 
 jest.mock('@/utils/db/safeSupabaseQuery', () => ({
-    safeSupabaseQuery: jest.fn(async (cb: () => Promise<{ data: unknown; error: unknown }>) => {
+    safeSupabaseQuery: jest.fn(async <T>(cb: () => Promise<{ data: T; error: unknown }>) => {
         try {
             const res = await cb();
             return { data: res.data || null, error: res.error || null };
@@ -256,7 +256,10 @@ describe('WishlistShareRepository', () => {
 
             const result = await updateWishlistVisibilityAndToken('user-123', true);
 
-            expect(sanitizeSupabaseError).toHaveBeenCalledWith(new Error('Update failed'));
+            expect(sanitizeSupabaseError).toHaveBeenCalledWith(
+                new Error('Update failed'),
+                'user-123',
+            );
             expect(result).toEqual({ error: 'Update failed' });
         });
 
@@ -267,7 +270,10 @@ describe('WishlistShareRepository', () => {
 
             const result = await updateWishlistVisibilityAndToken('user-123', true);
 
-            expect(sanitizeSupabaseError).toHaveBeenCalledWith(new Error('Unexpected throw'));
+            expect(sanitizeSupabaseError).toHaveBeenCalledWith(
+                new Error('Unexpected throw'),
+                'user-123',
+            );
             expect(result).toEqual({ error: 'Unexpected throw' });
         });
     });

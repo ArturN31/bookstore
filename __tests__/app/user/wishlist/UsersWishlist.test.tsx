@@ -2,7 +2,7 @@ import UsersWishlist from '@/app/user/wishlist/page';
 import { BookQueryParams } from '@/data/books/BookRepository';
 import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { UserStateContext } from '@/providers/user/UserContext';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { act } from 'react';
 
 interface MockUserContext {
@@ -21,6 +21,10 @@ jest.mock('@/data/books/BookService', () => ({
 
 jest.mock('@/data/user/wishlist/WishlistAction');
 
+jest.mock('@/data/user/wishlist/sharing/WishlistShareAction', () => ({
+    updateWishlistVisibilityAction: jest.fn(),
+}));
+
 jest.mock('@/components/books/BooksManager', () => ({
     BooksManager: ({
         initialData,
@@ -28,7 +32,7 @@ jest.mock('@/components/books/BooksManager', () => ({
     }: {
         initialData: { data: { data: Book[] } };
         filters?: Omit<BookQueryParams, 'page' | 'limit'>;
-        [key: string]: any;
+        [key: string]: unknown;
     }) => (
         <section
             data-testid="mock-books-list"
@@ -225,21 +229,18 @@ describe('APP - User - wishlist', () => {
     });
 
     it('should render the loading state when userLoading is true', async () => {
-        let resolvePromise: (value: any) => void = () => {};
+        let resolvePromise: (value: unknown) => void = () => {};
         const pendingPromise = new Promise((resolve) => {
             resolvePromise = resolve;
         });
 
-        // Block the fetch so initialization stays false
         mockedFetchBooks.mockImplementation(() => pendingPromise);
 
-        // Render directly without act block to capture the immediate loading state before effects finalize
         renderWithContext([{ book_id: 'mock-book-id-1' }], { loading: true });
 
         expect(screen.getByText(/Curating your collection/i)).toBeInTheDocument();
         expect(screen.getByRole('progressbar')).toBeInTheDocument();
 
-        // Cleanup pending promise
         await act(async () => {
             resolvePromise({
                 data: {
