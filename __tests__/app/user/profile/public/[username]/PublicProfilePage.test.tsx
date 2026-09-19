@@ -26,19 +26,27 @@ jest.mock('@/app/user/profile/public/[username]/components/PublicProfileUnavaila
 }));
 
 jest.mock('@/app/user/profile/public/[username]/components/PublicProfileBanner', () => ({
-    PublicProfileBanner: ({ profile }: { profile: { username: string } }) => (
-        <div data-testid="public-profile-banner">Banner for {profile.username}</div>
+    PublicProfileBanner: ({ profile, mode }: { profile: { username: string }; mode?: string }) => (
+        <div data-testid="public-profile-banner">
+            Banner for {profile.username} (mode: {mode})
+        </div>
     ),
 }));
 
 jest.mock('@/app/user/profile/public/[username]/components/Cards/PublicWishlistCard', () => ({
-    PublicWishlistCard: ({ username }: { username: string }) => (
-        <div data-testid="public-wishlist-card">Wishlist for {username}</div>
+    PublicWishlistCard: ({ username, isPublic }: { username: string; isPublic?: boolean }) => (
+        <div data-testid="public-wishlist-card">
+            Wishlist for {username} (public: {String(isPublic)})
+        </div>
     ),
 }));
 
 jest.mock('@/app/user/profile/public/[username]/components/Cards/ReadingActivityCard', () => ({
-    ReadingActivityCard: () => <div data-testid="reading-activity-card">Reading Activity</div>,
+    ReadingActivityCard: ({ username, isPublic }: { username: string; isPublic?: boolean }) => (
+        <div data-testid="reading-activity-card">
+            Reading Activity for {username} (public: {String(isPublic)})
+        </div>
+    ),
 }));
 
 jest.mock(
@@ -105,6 +113,31 @@ describe('PublicProfilePage', () => {
         expect(mockGetPublicProfile).toHaveBeenCalledWith('johndoe');
     });
 
+    it('should render private banner and no cards when profile is private and user is not owner', async () => {
+        const mockProfile = {
+            id: 'user-123',
+            username: 'johndoe',
+            created_at: '2026-01-01T00:00:00.000Z',
+            is_profile_public: false,
+            is_wishlist_public: true,
+            are_reviews_public: true,
+        };
+        mockGetPublicProfile.mockResolvedValue({
+            data: mockProfile,
+            error: null,
+        });
+
+        const params = Promise.resolve({ username: 'johndoe' });
+        const ui = await PublicProfilePage({ params });
+        render(ui);
+
+        expect(screen.getByTestId('public-profile-banner')).toBeInTheDocument();
+        expect(screen.getByText('Banner for johndoe (mode: private)')).toBeInTheDocument();
+        expect(screen.queryByTestId('public-wishlist-card')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('reading-activity-card')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('privacy-settings-control')).not.toBeInTheDocument();
+    });
+
     it('should render profile banner, reading activity card, and hide public wishlist card when wishlist is not public', async () => {
         const mockProfile = {
             id: 'user-123',
@@ -124,13 +157,35 @@ describe('PublicProfilePage', () => {
         render(ui);
 
         expect(screen.getByTestId('public-profile-banner')).toBeInTheDocument();
-        expect(screen.getByText('Banner for johndoe')).toBeInTheDocument();
+        expect(screen.getByText('Banner for johndoe (mode: public)')).toBeInTheDocument();
         expect(screen.getByTestId('reading-activity-card')).toBeInTheDocument();
         expect(screen.queryByTestId('public-wishlist-card')).not.toBeInTheDocument();
-        expect(mockGetPublicProfile).toHaveBeenCalledWith('johndoe');
     });
 
-    it('should render profile banner, reading activity card, and public wishlist card when wishlist is public', async () => {
+    it('should render profile banner, public wishlist card, and hide reading activity card when reviews are not public', async () => {
+        const mockProfile = {
+            id: 'user-123',
+            username: 'johndoe',
+            created_at: '2026-01-01T00:00:00.000Z',
+            is_profile_public: true,
+            is_wishlist_public: true,
+            are_reviews_public: false,
+        };
+        mockGetPublicProfile.mockResolvedValue({
+            data: mockProfile,
+            error: null,
+        });
+
+        const params = Promise.resolve({ username: 'johndoe' });
+        const ui = await PublicProfilePage({ params });
+        render(ui);
+
+        expect(screen.getByTestId('public-profile-banner')).toBeInTheDocument();
+        expect(screen.getByTestId('public-wishlist-card')).toBeInTheDocument();
+        expect(screen.queryByTestId('reading-activity-card')).not.toBeInTheDocument();
+    });
+
+    it('should render profile banner, reading activity card, and public wishlist card when both are public', async () => {
         const mockProfile = {
             id: 'user-123',
             username: 'johndoe',
@@ -151,7 +206,99 @@ describe('PublicProfilePage', () => {
         expect(screen.getByTestId('public-profile-banner')).toBeInTheDocument();
         expect(screen.getByTestId('reading-activity-card')).toBeInTheDocument();
         expect(screen.getByTestId('public-wishlist-card')).toBeInTheDocument();
-        expect(screen.getByText('Wishlist for johndoe')).toBeInTheDocument();
-        expect(mockGetPublicProfile).toHaveBeenCalledWith('johndoe');
+    });
+
+    it('should render privacy settings control and all cards when user is owner', async () => {
+        mockCheckIsOwner.mockResolvedValue(true);
+        const mockProfile = {
+            id: 'user-123',
+            username: 'owneruser',
+            created_at: '2026-01-01T00:00:00.000Z',
+            is_profile_public: true,
+            is_wishlist_public: false,
+            are_reviews_public: false,
+        };
+        mockGetPublicProfile.mockResolvedValue({
+            data: mockProfile,
+            error: null,
+        });
+        mockGetUserPrivacySettings.mockResolvedValue({
+            data: {
+                is_profile_public: true,
+                is_wishlist_public: false,
+                are_reviews_public: false,
+                wishlist_share_token: 'token-123',
+            },
+            error: null,
+        });
+
+        const params = Promise.resolve({ username: 'owneruser' });
+        const ui = await PublicProfilePage({ params });
+        render(ui);
+
+        expect(mockGetUserPrivacySettings).toHaveBeenCalledWith('user-123');
+        expect(screen.getByTestId('privacy-settings-control')).toBeInTheDocument();
+        expect(screen.getByTestId('public-wishlist-card')).toBeInTheDocument();
+        expect(screen.getByTestId('reading-activity-card')).toBeInTheDocument();
+    });
+
+    it('should render private banner and privacy settings control when user is owner and profile is private', async () => {
+        mockCheckIsOwner.mockResolvedValue(true);
+        const mockProfile = {
+            id: 'user-123',
+            username: 'owneruser',
+            created_at: '2026-01-01T00:00:00.000Z',
+            is_profile_public: false,
+            is_wishlist_public: false,
+            are_reviews_public: false,
+        };
+        mockGetPublicProfile.mockResolvedValue({
+            data: mockProfile,
+            error: null,
+        });
+        mockGetUserPrivacySettings.mockResolvedValue({
+            data: {
+                is_profile_public: false,
+                is_wishlist_public: false,
+                are_reviews_public: false,
+                wishlist_share_token: null,
+            },
+            error: null,
+        });
+
+        const params = Promise.resolve({ username: 'owneruser' });
+        const ui = await PublicProfilePage({ params });
+        render(ui);
+
+        expect(screen.getByText('Banner for owneruser (mode: private)')).toBeInTheDocument();
+        expect(screen.getByTestId('privacy-settings-control')).toBeInTheDocument();
+    });
+
+    it('should not render privacy settings control when owner settings data is null', async () => {
+        mockCheckIsOwner.mockResolvedValue(true);
+        const mockProfile = {
+            id: 'user-123',
+            username: 'owneruser',
+            created_at: '2026-01-01T00:00:00.000Z',
+            is_profile_public: true,
+            is_wishlist_public: true,
+            are_reviews_public: true,
+        };
+        mockGetPublicProfile.mockResolvedValue({
+            data: mockProfile,
+            error: null,
+        });
+        mockGetUserPrivacySettings.mockResolvedValue({
+            data: null,
+            error: 'Failed to fetch settings',
+        });
+
+        const params = Promise.resolve({ username: 'owneruser' });
+        const ui = await PublicProfilePage({ params });
+        render(ui);
+
+        expect(screen.queryByTestId('privacy-settings-control')).not.toBeInTheDocument();
+        expect(screen.getByTestId('public-wishlist-card')).toBeInTheDocument();
+        expect(screen.getByTestId('reading-activity-card')).toBeInTheDocument();
     });
 });

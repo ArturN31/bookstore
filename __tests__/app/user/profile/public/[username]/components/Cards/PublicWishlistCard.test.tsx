@@ -42,7 +42,7 @@ jest.mock(
 describe('PublicWishlistCard', () => {
     const mockUsername = 'janedoe';
 
-    it('renders the wishlist card structure and contents correctly', () => {
+    it('renders the wishlist card structure and contents correctly when public', () => {
         render(<PublicWishlistCard username={mockUsername} />);
 
         expect(screen.getByTestId('profile-card-container')).toBeInTheDocument();
@@ -63,5 +63,17 @@ describe('PublicWishlistCard', () => {
         expect(actionButton).toBeInTheDocument();
         expect(actionButton).toHaveAttribute('href', `/user/wishlist/${mockUsername}`);
         expect(screen.getByText('View Wishlist')).toBeInTheDocument();
+    });
+
+    it('renders "Wishlist" as the title when isPublic is false', () => {
+        render(
+            <PublicWishlistCard
+                username={mockUsername}
+                isPublic={false}
+            />,
+        );
+
+        expect(screen.getByText('Wishlist')).toBeInTheDocument();
+        expect(screen.queryByText('Public Wishlist')).not.toBeInTheDocument();
     });
 });

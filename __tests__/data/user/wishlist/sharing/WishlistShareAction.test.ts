@@ -2,6 +2,7 @@ import { updateWishlistVisibilityAction } from '@/data/user/wishlist/sharing/Wis
 import { updateWishlistVisibilityAndToken } from '@/data/user/wishlist/sharing/WishlistShareRepository';
 import { revalidatePath } from 'next/cache';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
+import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 
 const mockGetUser = jest.fn();
 
@@ -39,6 +40,9 @@ describe('WishlistShareAction', () => {
             typeof updateWishlistVisibilityAndToken
         >;
     const mockRevalidatePath = revalidatePath as jest.MockedFunction<typeof revalidatePath>;
+    const mockRecordSecurityAuditLog = recordSecurityAuditLog as jest.MockedFunction<
+        typeof recordSecurityAuditLog
+    >;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -48,7 +52,7 @@ describe('WishlistShareAction', () => {
         });
     });
 
-    it('should return unauthenticated error when user is not logged in', async () => {
+    it('should return unauthenticated error when user is not logged in with an error message', async () => {
         mockGetUser.mockResolvedValueOnce({
             data: { user: null },
             error: new Error('Auth session missing'),
@@ -57,6 +61,36 @@ describe('WishlistShareAction', () => {
         const result = await updateWishlistVisibilityAction('user-123', true);
 
         expect(result).toEqual({ error: APP_ERROR_MESSAGES.UNAUTHENTICATED_USER });
+        expect(mockRecordSecurityAuditLog).toHaveBeenCalledWith(
+            'FAILED_AUTHENTICATION_ATTEMPT',
+            null,
+            {
+                targetUserId: 'user-123',
+                action: 'UPDATE_WISHLIST_VISIBILITY',
+                reason: 'Auth session missing',
+            },
+        );
+        expect(mockUpdateWishlistVisibilityAndToken).not.toHaveBeenCalled();
+    });
+
+    it('should fallback to default reason when user is null and auth error message is missing', async () => {
+        mockGetUser.mockResolvedValueOnce({
+            data: { user: null },
+            error: null,
+        });
+
+        const result = await updateWishlistVisibilityAction('user-123', true);
+
+        expect(result).toEqual({ error: APP_ERROR_MESSAGES.UNAUTHENTICATED_USER });
+        expect(mockRecordSecurityAuditLog).toHaveBeenCalledWith(
+            'FAILED_AUTHENTICATION_ATTEMPT',
+            null,
+            {
+                targetUserId: 'user-123',
+                action: 'UPDATE_WISHLIST_VISIBILITY',
+                reason: APP_ERROR_MESSAGES.ERROR_AUTH_FAILED,
+            },
+        );
         expect(mockUpdateWishlistVisibilityAndToken).not.toHaveBeenCalled();
     });
 
@@ -69,6 +103,15 @@ describe('WishlistShareAction', () => {
         const result = await updateWishlistVisibilityAction('user-123', true);
 
         expect(result).toEqual({ error: APP_ERROR_MESSAGES.UNAUTHORIZED_ACCESS });
+        expect(mockRecordSecurityAuditLog).toHaveBeenCalledWith(
+            'UNAUTHORIZED_ACCESS_ATTEMPT',
+            'different-user-456',
+            {
+                targetUserId: 'user-123',
+                action: 'UPDATE_WISHLIST_VISIBILITY',
+                reason: 'Authenticated user ID does not match target user ID',
+            },
+        );
         expect(mockUpdateWishlistVisibilityAndToken).not.toHaveBeenCalled();
     });
 

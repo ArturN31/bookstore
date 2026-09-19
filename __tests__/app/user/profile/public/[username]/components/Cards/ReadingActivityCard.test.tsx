@@ -20,7 +20,7 @@ jest.mock('@/app/user/profile/public/[username]/components/ProfileCard/ProfileCa
 }));
 
 describe('ReadingActivityCard', () => {
-    it('renders the reading activity card structure and contents correctly', () => {
+    it('renders the reading activity card structure and contents correctly when public', () => {
         render(<ReadingActivityCard username="testuser" />);
 
         expect(screen.getByTestId('profile-card-container')).toBeInTheDocument();
@@ -33,5 +33,16 @@ describe('ReadingActivityCard', () => {
             ),
         ).toBeInTheDocument();
         expect(screen.getByText('View Reviews')).toBeInTheDocument();
+    });
+
+    it('renders private stats and reviews subtitle when isPublic is false', () => {
+        render(
+            <ReadingActivityCard
+                username="testuser"
+                isPublic={false}
+            />,
+        );
+
+        expect(screen.getByText('Private stats and reviews')).toBeInTheDocument();
     });
 });

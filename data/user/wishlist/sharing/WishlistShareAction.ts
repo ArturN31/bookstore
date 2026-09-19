@@ -23,7 +23,7 @@ export async function updateWishlistVisibilityAction(
             await recordSecurityAuditLog('FAILED_AUTHENTICATION_ATTEMPT', null, {
                 targetUserId: userId,
                 action: 'UPDATE_WISHLIST_VISIBILITY',
-                reason: authError?.message ?? 'No active user session',
+                reason: authError?.message ?? APP_ERROR_MESSAGES.ERROR_AUTH_FAILED,
             });
             return { error: APP_ERROR_MESSAGES.UNAUTHENTICATED_USER };
         }
