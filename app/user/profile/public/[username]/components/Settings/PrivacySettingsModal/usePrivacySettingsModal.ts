@@ -6,7 +6,13 @@ import {
 } from '@/data/user/profile/PrivacySettingsAction';
 import { UserPrivacySettingsDto } from '@/data/user/profile/PrivacySettingsService';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
-import { useState, useTransition, useEffect, useCallback } from 'react';
+import { useState, useTransition, useEffect, useRef } from 'react';
+import {
+    buildWishlistShareUrl,
+    getNextRegeneratedTokenSettings,
+    getNextToggleSettings,
+    PrivacyToggleKey,
+} from './usePrivacySettingsModalUtils';
 
 export interface UsePrivacySettingsModalOptions {
     isOpen: boolean;
@@ -27,62 +33,61 @@ export function usePrivacySettingsModal({
         useState<UserPrivacySettingsDto>(initialSettings);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [copied, setCopied] = useState<boolean>(false);
+    const copyTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     if (prevInitialSettings !== initialSettings) {
         setPrevInitialSettings(initialSettings);
         setSettings(initialSettings);
     }
 
-    const handleKeyDown = useCallback(
-        (event: KeyboardEvent) => {
-            if (event.key === 'Escape' && !isPending) onClose();
-        },
-        [onClose, isPending],
-    );
-
     useEffect(() => {
-        if (isOpen) {
-            document.addEventListener('keydown', handleKeyDown);
-            document.body.style.overflow = 'hidden';
-        }
+        if (!isOpen) return;
+
+        const originalOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && !isPending) {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
 
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
-            document.body.style.overflow = 'unset';
+            document.body.style.overflow = originalOverflow;
         };
-    }, [isOpen, handleKeyDown]);
+    }, [isOpen, isPending, onClose]);
 
-    const shareUrl = settings.wishlist_share_token
-        ? `${typeof window !== 'undefined' ? window.location.origin : ''}/user/wishlist/shared?token=${settings.wishlist_share_token}`
-        : '';
-
-    const handleToggle = (key: keyof Omit<UserPrivacySettingsDto, 'wishlist_share_token'>) => {
-        const newValue = !settings[key];
-        const updatedPayload = {
-            ...settings,
-            [key]: newValue,
+    useEffect(() => {
+        return () => {
+            if (copyTimerRef.current) {
+                clearTimeout(copyTimerRef.current);
+            }
         };
+    }, []);
+
+    const shareUrl = buildWishlistShareUrl(settings.wishlist_share_token);
+
+    const handleToggle = (key: PrivacyToggleKey) => {
+        const { nextSettings, newValue } = getNextToggleSettings(settings, key);
 
         setErrorMessage(null);
 
         startTransition(async () => {
             try {
                 const result = await updatePrivacySettingsAction(userId, {
-                    is_profile_public: updatedPayload.is_profile_public,
-                    is_wishlist_public: updatedPayload.is_wishlist_public,
-                    are_reviews_public: updatedPayload.are_reviews_public,
+                    is_profile_public: nextSettings.is_profile_public,
+                    is_wishlist_public: nextSettings.is_wishlist_public,
+                    are_reviews_public: nextSettings.are_reviews_public,
                 });
 
-                if (result.success)
-                    setSettings((prev) => ({
-                        ...prev,
-                        [key]: newValue,
-                        wishlist_share_token:
-                            key === 'is_wishlist_public' && newValue
-                                ? null
-                                : prev.wishlist_share_token,
-                    }));
-                else setErrorMessage(sanitizeSupabaseError(result.error, userId));
+                if (result.success) {
+                    setSettings((prev) => getNextToggleSettings(prev, key).nextSettings);
+                } else {
+                    setErrorMessage(sanitizeSupabaseError(result.error, userId));
+                }
             } catch (err: unknown) {
                 setErrorMessage(sanitizeSupabaseError(err, userId));
             }
@@ -96,13 +101,12 @@ export function usePrivacySettingsModal({
             try {
                 const result = await regenerateWishlistShareTokenAction(userId);
 
-                if (result.success && result.data?.token)
-                    setSettings((prev) => ({
-                        ...prev,
-                        is_wishlist_public: false,
-                        wishlist_share_token: result.data ? result.data.token : null,
-                    }));
-                else setErrorMessage(sanitizeSupabaseError(result.error, userId));
+                if (result.success && result.data?.token) {
+                    const newToken = result.data.token;
+                    setSettings((prev) => getNextRegeneratedTokenSettings(prev, newToken));
+                } else {
+                    setErrorMessage(sanitizeSupabaseError(result.error, userId));
+                }
             } catch (err: unknown) {
                 setErrorMessage(sanitizeSupabaseError(err, userId));
             }
@@ -115,7 +119,11 @@ export function usePrivacySettingsModal({
         try {
             await navigator.clipboard.writeText(shareUrl);
             setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+
+            if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+            copyTimerRef.current = setTimeout(() => {
+                setCopied(false);
+            }, 2000);
         } catch (err: unknown) {
             setErrorMessage(sanitizeSupabaseError(err, userId));
         }
