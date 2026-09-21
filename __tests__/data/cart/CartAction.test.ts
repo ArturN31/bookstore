@@ -42,6 +42,8 @@ const mockUser: User = {
     phone_number: '1234567890',
     is_wishlist_public: false,
     wishlist_share_token: null,
+    are_reviews_public: false,
+    is_profile_public: false,
 };
 
 describe('CartAction', () => {

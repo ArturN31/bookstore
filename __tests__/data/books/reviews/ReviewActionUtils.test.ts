@@ -1,17 +1,30 @@
 import {
     isDuplicateReviewError,
     resolveUsername,
+    verifyReviewOwnership,
+    revalidateReviewCaches,
     UserTableRow,
     AuthUser,
     SupabaseClient,
 } from '@/data/books/reviews/ReviewActionUtils';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { DB_ERROR_MAP } from '@/utils/errors/ErrorHandlerConstants';
+import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 jest.mock('@/utils/db/safeSupabaseQuery', () => ({
     safeSupabaseQuery: jest.fn(async (queryFn: () => Promise<unknown>) => {
         return queryFn();
     }),
+}));
+
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn(),
+}));
+
+jest.mock('next/cache', () => ({
+    revalidatePath: jest.fn(),
+    revalidateTag: jest.fn(),
 }));
 
 describe('ReviewActionUtils', () => {
@@ -110,7 +123,7 @@ describe('ReviewActionUtils', () => {
 
             const userWithMeta: AuthUser = {
                 ...baseUser,
-                user_metadata: { username: '   metaUser   ' },
+                user_metadata: { username: '  metaUser  ' },
             };
 
             const username = await resolveUsername(mockSupabase, userWithMeta, '');
@@ -145,6 +158,81 @@ describe('ReviewActionUtils', () => {
 
             const username = await resolveUsername(mockSupabase, anonymousUser);
             expect(username).toBe('Anonymous');
+        });
+    });
+
+    describe('verifyReviewOwnership', () => {
+        const mockMaybeSingle = jest.fn();
+        const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+        const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+        const mockFrom = jest.fn().mockReturnValue({ select: mockSelect });
+
+        const mockSupabase = {
+            from: mockFrom,
+        } as unknown as SupabaseClient;
+
+        it('should return true if review exists and belongs to the user', async () => {
+            mockMaybeSingle.mockResolvedValueOnce({
+                data: { user_id: 'user-123' },
+                error: null,
+            });
+
+            const isValid = await verifyReviewOwnership(mockSupabase, 'review-1', 'user-123');
+            expect(isValid).toBe(true);
+            expect(recordSecurityAuditLog).not.toHaveBeenCalled();
+        });
+
+        it('should return false and log audit event if review does not belong to the user', async () => {
+            mockMaybeSingle.mockResolvedValueOnce({
+                data: { user_id: 'other-user' },
+                error: null,
+            });
+
+            const isValid = await verifyReviewOwnership(mockSupabase, 'review-1', 'user-123');
+            expect(isValid).toBe(false);
+            expect(recordSecurityAuditLog).toHaveBeenCalledWith(
+                'UNAUTHORIZED_ACCESS_ATTEMPT',
+                'user-123',
+                {
+                    operation: 'verifyReviewOwnership_failed',
+                    reviewId: 'review-1',
+                },
+            );
+        });
+
+        it('should return false and log audit event if review is not found', async () => {
+            mockMaybeSingle.mockResolvedValueOnce({
+                data: null,
+                error: null,
+            });
+
+            const isValid = await verifyReviewOwnership(mockSupabase, 'review-1', 'user-123');
+            expect(isValid).toBe(false);
+            expect(recordSecurityAuditLog).toHaveBeenCalledWith(
+                'UNAUTHORIZED_ACCESS_ATTEMPT',
+                'user-123',
+                {
+                    operation: 'verifyReviewOwnership_failed',
+                    reviewId: 'review-1',
+                },
+            );
+        });
+    });
+
+    describe('revalidateReviewCaches', () => {
+        it('should call revalidateTag and revalidatePath with expected values', () => {
+            revalidateReviewCaches('book-123', 'my-book-slug');
+
+            expect(revalidateTag).toHaveBeenCalledTimes(3);
+            expect(revalidateTag).toHaveBeenCalledWith('books', 'max');
+            expect(revalidateTag).toHaveBeenCalledWith('reviews', 'max');
+            expect(revalidateTag).toHaveBeenCalledWith('reviews-book-123', 'max');
+
+            expect(revalidatePath).toHaveBeenCalledTimes(4);
+            expect(revalidatePath).toHaveBeenCalledWith('/book/my-book-slug', 'page');
+            expect(revalidatePath).toHaveBeenCalledWith('/book/[slug]', 'page');
+            expect(revalidatePath).toHaveBeenCalledWith('/user/reviews/[username]', 'page');
+            expect(revalidatePath).toHaveBeenCalledWith('/', 'page');
         });
     });
 });

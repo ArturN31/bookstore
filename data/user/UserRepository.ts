@@ -12,10 +12,3 @@ export const fetchWishlistByUserId = async (supabase: SupabaseClient<Database>, 
 export const fetchUserAuthData = async (supabase: SupabaseClient<Database>) => {
     return supabase.auth.getUser();
 };
-
-export const fetchPublicUserProfileByUsername = async (
-    supabase: SupabaseClient<Database>,
-    username: string,
-) => {
-    return supabase.rpc('get_public_profile', { target_username: username }).maybeSingle();
-};

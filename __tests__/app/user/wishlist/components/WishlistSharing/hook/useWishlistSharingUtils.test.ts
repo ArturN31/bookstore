@@ -7,12 +7,12 @@ describe('wishlistSharingUtils (Browser)', () => {
     describe('getShareUrl', () => {
         it('should return public URL when isPublic is true and window is defined', () => {
             const url = getShareUrl(true, 'john_doe', 'token-123');
-            expect(url).toBe('http://localhost/user/wishlist/shared/john_doe');
+            expect(url).toBe('http://localhost/user/wishlist/john_doe');
         });
 
         it('should return token URL when isPublic is false and shareToken is present', () => {
             const url = getShareUrl(false, 'john_doe', 'token-123');
-            expect(url).toBe('http://localhost/user/wishlist/shared/token/token-123');
+            expect(url).toBe('http://localhost/user/wishlist/token/token-123');
         });
 
         it('should return empty string if public but username is missing', () => {

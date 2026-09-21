@@ -1,6 +1,8 @@
 import { createBackendClient } from '@/utils/db/server';
 import { DB_ERROR_MAP } from '@/utils/errors/ErrorHandlerConstants';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
+import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 export interface UserTableRow {
     username: string | null;
@@ -38,9 +40,7 @@ export async function resolveUsername(
     user: AuthUser,
     providedUsername?: string,
 ): Promise<string> {
-    if (providedUsername && providedUsername.trim() !== '') {
-        return providedUsername.trim();
-    }
+    if (providedUsername && providedUsername.trim() !== '') return providedUsername.trim();
 
     const result = await safeSupabaseQuery<UserTableRow>(async () =>
         supabase.from('users').select('username').eq('id', user.id).maybeSingle<UserTableRow>(),
@@ -56,4 +56,36 @@ export async function resolveUsername(
         user.email?.split('@')[0] ||
         'Anonymous'
     );
+}
+
+export async function verifyReviewOwnership(
+    supabase: SupabaseClient,
+    reviewId: string | number,
+    userId: string,
+): Promise<boolean> {
+    const ownershipCheck = await safeSupabaseQuery<{ user_id: string }>(async () =>
+        supabase.from('book_reviews').select('user_id').eq('id', reviewId).maybeSingle(),
+    );
+
+    const ownershipData = ownershipCheck.data;
+
+    if (!ownershipData || ownershipData.user_id !== userId) {
+        void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userId, {
+            operation: 'verifyReviewOwnership_failed',
+            reviewId,
+        });
+        return false;
+    }
+    return true;
+}
+
+export function revalidateReviewCaches(bookId: string, slug: string): void {
+    revalidateTag('books', 'max');
+    revalidateTag('reviews', 'max');
+    revalidateTag(`reviews-${bookId}`, 'max');
+
+    revalidatePath(`/book/${slug}`, 'page');
+    revalidatePath('/book/[slug]', 'page');
+    revalidatePath('/user/reviews/[username]', 'page');
+    revalidatePath('/', 'page');
 }

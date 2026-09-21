@@ -35,6 +35,16 @@ export const APP_ERROR_MESSAGES = {
         'The username contains invalid characters. Only alphanumeric characters, underscores, and hyphens are allowed.',
 
     // ==========================================
+    // Privacy Settings Errors
+    // ==========================================
+    ERROR_PRIVACY_SETTINGS_FETCH_FAILED: 'Failed to retrieve privacy settings.',
+    ERROR_PRIVACY_SETTINGS_UPDATE_FAILED: 'Failed to update privacy settings.',
+    ERROR_PRIVACY_SETTINGS_NOT_FOUND: 'Privacy settings not found.',
+    UNAUTHORIZED_PRIVACY_UPDATE_ATTEMPT: 'Unauthorized. Please log in to update privacy settings.',
+    FORBIDDEN_PRIVACY_UPDATE_ATTEMPT:
+        'Forbidden. You do not have permission to modify these settings.',
+
+    // ==========================================
     // Shopping Cart Errors
     // ==========================================
     INVALID_QUANTITY: 'Invalid quantity assignment.',

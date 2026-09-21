@@ -3,6 +3,10 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { WishlistShareButton } from '@/app/user/wishlist/components/WishlistSharing/WishlistShareButton';
 import { useWishlistSharing } from '@/app/user/wishlist/components/WishlistSharing/hook/useWishlistSharing';
 
+jest.mock('@/data/user/wishlist/sharing/WishlistShareAction', () => ({
+    updateWishlistVisibilityAction: jest.fn(),
+}));
+
 jest.mock('@/app/user/wishlist/components/WishlistSharing/hook/useWishlistSharing');
 
 jest.mock('@/app/user/wishlist/components/WishlistSharing/VisibilityToggle', () => ({

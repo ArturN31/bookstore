@@ -1,4 +1,4 @@
-import { EmptyWishlistView } from '@/app/user/wishlist/shared/[username]/components/EmptyWishlistView';
+import { EmptyWishlistView } from '@/app/user/wishlist/[username]/components/EmptyWishlistView';
 import { render, screen } from '@testing-library/react';
 
 describe('EmptyWishlistView', () => {
@@ -18,7 +18,7 @@ describe('EmptyWishlistView', () => {
         expect(screen.getByText(/The public reading list belonging to/i)).toBeInTheDocument();
         expect(screen.getByRole('link', { name: mockUsername })).toHaveAttribute(
             'href',
-            `/user/${mockUsername}`,
+            `/user/profile/public/${mockUsername}`,
         );
         expect(screen.getByText(/does not contain any books yet/i)).toBeInTheDocument();
     });
@@ -39,7 +39,7 @@ describe('EmptyWishlistView', () => {
         ).toBeInTheDocument();
         expect(screen.getByRole('link', { name: mockUsername })).toHaveAttribute(
             'href',
-            `/user/${mockUsername}`,
+            `/user/profile/public/${mockUsername}`,
         );
         expect(screen.getByText(/does not have any books added at this time/i)).toBeInTheDocument();
     });

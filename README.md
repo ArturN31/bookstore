@@ -11,8 +11,8 @@ This README documents both what is implemented and what is intentionally still i
 ## Project Status
 
 **Current Phase**: Core bookstore paths implemented; checkout and payment remain the next product milestone
-**Last Verified**: September 6, 2026
-**Test Run**: 182 suites passed, 1,334 tests passed, 1 snapshot passed
+**Last Verified**: September 21, 2026
+**Test Run**: 198 suites passed, 1,454 tests passed, 1 snapshot passed
 **Coverage**: 100.00% statements, branches, functions, lines, and average
 **Quality Checks**: `npm run lint` and `npm run build` pass
 
@@ -20,8 +20,8 @@ This README documents both what is implemented and what is intentionally still i
 
 | Check | Result |
 | :---- | :----- |
-| Jest suites | 182 passed / 182 total |
-| Jest tests | 1,334 passed / 1,334 total |
+| Jest suites | 198 passed / 198 total |
+| Jest tests | 1,454 passed / 1,454 total |
 | Snapshots | 1 passed / 1 total |
 | Statements | 100.00% |
 | Branches | 100.00% |
@@ -29,6 +29,34 @@ This README documents both what is implemented and what is intentionally still i
 | Lines | 100.00% |
 | ESLint | Passed with no reported errors |
 | Production build | Passed, including TypeScript verification |
+
+### Lighthouse Benchmark
+
+The verified production build includes Lighthouse benchmarks for both desktop and mobile. These scores are not a guarantee of accessibility or performance, but they provide a reproducible baseline for future improvements.
+
+The Lighthouse benchmark is generated from the production build output, not from a local development server. The scores are therefore representative of the verified production surface rather than a local development environment.
+
+The reports can be found in the root of the repository as `lighthouse-desktop-report.html` and `lighthouse-mobile-report.html`, also included in the json format. They are generated with the following command:
+
+```npm run build:audit```
+
+#### Desktop
+
+| Metric | Score |
+| :----- | :----: |
+| Performance | 99 |
+| Accessibility | 90 |
+| Best Practices | 96 |
+| SEO | 100 |
+
+#### Mobile
+
+| Metric | Score |
+| :----- | :----: |
+| Performance | 71 |
+| Accessibility | 90 |
+| Best Practices | 96 |
+| SEO | 100 |
 
 ## Technology Stack
 
@@ -107,7 +135,7 @@ Reviews are no longer read-only. The implemented review lifecycle includes:
 - Review submission for authenticated users with completed profiles
 - Rating input and comment input components
 - Server-side validation before insertion
-- User review management at `/user/content/reviews`
+- User review management at `/user/reviews/[username]`
 - Editing and deleting a user's own reviews
 - Authorization checks around review mutations
 - Security audit events for relevant review access and mutations
@@ -115,7 +143,7 @@ Reviews are no longer read-only. The implemented review lifecycle includes:
 Primary implementation areas:
 
 - [app/book/[slug]/components/Reviews/](app/book/[slug]/components/Reviews/)
-- [app/user/content/reviews/](app/user/content/reviews/)
+- [app/user/reviews/[username]](app/user/reviews/[username])
 - [data/books/reviews/](data/books/reviews/)
 
 ### Authentication and Onboarding
@@ -519,12 +547,12 @@ The verified production build completed successfully with TypeScript verificatio
 /user/auth/change_password
 /user/auth/signin
 /user/auth/signup
-/user/content/reviews
+/user/reviews/[username]
 /user/profile
 /user/profile/change_address
 /user/wishlist
-/user/wishlist/shared/[username]
-/user/wishlist/shared/token/[token]
+/user/wishlist/[username]
+/user/wishlist/token/[token]
 ```
 
 The build also included the middleware proxy. The route output confirms the current public surface and, importantly, confirms that `/checkout` is not currently an application route.
@@ -636,7 +664,6 @@ The commands above reproduce the documented test, lint, and build verification s
 
 - Distributed rate limiting is not present
 - A full WCAG 2.1 audit has not been completed
-- No current Lighthouse benchmark is included in the verified outputs
 - A complete production exception-logging and observability pipeline is not implemented
 
 ## Roadmap
@@ -653,12 +680,16 @@ The commands above reproduce the documented test, lint, and build verification s
 
 ### 2. Public Profiles and Community Features
 
-- [ ] Add profile visibility controls
-- [ ] Define and expose public profile content sections
-- [ ] Add public reviews with privacy-aware access rules
-- [ ] Add public wishlist presentation within the profile model
-- [ ] Add public recommendations
-- [ ] Add public profile editing and privacy settings
+- [X] Define and expose public profile content sections
+  - [X] Add public reviews within the profile model
+  - [X] Add public wishlist presentation within the profile model
+- [X] Add public profile editing and privacy settings
+  - [X] Wishlist visibility controls
+  - [X] Review visibility controls
+  - [X] Profile visibility controls
+    - [X] Profile private view
+    - [X] Profile public view
+    - [X] Profile visibility toggle
 
 ### 3. Store Operations
 
@@ -678,6 +709,8 @@ The commands above reproduce the documented test, lint, and build verification s
 - [ ] Test dialogs, drawers, forms, search, and filters with keyboard-only interaction
 - [ ] Verify screen-reader behavior for asynchronous feedback and validation errors
 - [ ] Generate reproducible desktop and mobile performance benchmarks
+- [X] Add Lighthouse benchmarks to the verified build output
+- [ ] Improve Lighthouse scores
 
 ### 5. Security and Reliability
 

@@ -1,10 +1,9 @@
 export const getShareUrl = (isPublic: boolean, username: string, shareToken: string): string => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
-    if (isPublic && username)
-        return `${origin}/user/wishlist/shared/${encodeURIComponent(username)}`;
+    if (isPublic && username) return `${origin}/user/wishlist/${encodeURIComponent(username)}`;
     if (!isPublic && shareToken)
-        return `${origin}/user/wishlist/shared/token/${encodeURIComponent(shareToken)}`;
+        return `${origin}/user/wishlist/token/${encodeURIComponent(shareToken)}`;
     return '';
 };
 

@@ -8,7 +8,9 @@ import {
 } from '@/app/user/wishlist/components/WishlistSharing/hook/useWishlistSharing';
 
 jest.mock('@/providers/user/utils/useUser');
-jest.mock('@/data/user/wishlist/sharing/WishlistShareAction');
+jest.mock('@/data/user/wishlist/sharing/WishlistShareAction', () => ({
+    updateWishlistVisibilityAction: jest.fn(),
+}));
 jest.mock('notistack', () => ({
     enqueueSnackbar: jest.fn(),
 }));
@@ -63,7 +65,7 @@ describe('useWishlistSharing', () => {
         expect(result.current.isPublic).toBe(false);
         expect(result.current.shareToken).toBe('token-456');
         expect(result.current.open).toBe(false);
-        expect(result.current.activeShareUrl).toContain('/user/wishlist/shared/token/token-456');
+        expect(result.current.activeShareUrl).toContain('/user/wishlist/token/token-456');
     });
 
     it('should return correct activeShareUrl when wishlist is public', () => {
@@ -82,7 +84,7 @@ describe('useWishlistSharing', () => {
         } as unknown as ReturnType<typeof useUserState>);
 
         const { result } = renderHook(() => useWishlistSharing());
-        expect(result.current.activeShareUrl).toContain('/user/wishlist/shared/testuser');
+        expect(result.current.activeShareUrl).toContain('/user/wishlist/testuser');
     });
 
     it('should return correct activeShareUrl when wishlist is private and has token', () => {
@@ -102,7 +104,7 @@ describe('useWishlistSharing', () => {
         } as unknown as ReturnType<typeof useUserState>);
 
         const { result } = renderHook(() => useWishlistSharing());
-        expect(result.current.activeShareUrl).toContain('/user/wishlist/shared/token/token-456');
+        expect(result.current.activeShareUrl).toContain('/user/wishlist/token/token-456');
     });
 
     it('should handle missing user state gracefully', () => {

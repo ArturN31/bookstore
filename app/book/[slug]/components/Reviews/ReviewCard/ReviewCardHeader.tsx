@@ -41,7 +41,8 @@ export const ReviewCardHeader = ({ review, onEdit, onDelete }: ReviewCardHeaderP
                     variant="subtitle2"
                     className="text-sm! font-bold! tracking-[0.3px]! text-[#1C1917]!"
                 >
-                    — <Link href={`/user/${review.username}`}>{review.username}</Link>
+                    —{' '}
+                    <Link href={`/user/profile/public/${review.username}`}>{review.username}</Link>
                 </Typography>
                 <Typography
                     variant="caption"

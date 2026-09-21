@@ -1,11 +1,11 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { getPublicWishlistByUsername } from '@/data/user/wishlist/sharing/WishlistShareService';
-import SharedWishlistPage from '@/app/user/wishlist/shared/[username]/page';
+import SharedWishlistPage from '@/app/user/wishlist/[username]/page';
 
 jest.mock('@/data/user/wishlist/sharing/WishlistShareService');
 
-jest.mock('@/app/user/wishlist/shared/[username]/components/RestrictedAccessView', () => ({
+jest.mock('@/app/user/wishlist/[username]/components/RestrictedAccessView', () => ({
     RestrictedAccessView: ({
         username,
         isPublicMode,
@@ -19,11 +19,11 @@ jest.mock('@/app/user/wishlist/shared/[username]/components/RestrictedAccessView
     ),
 }));
 
-jest.mock('@/app/user/wishlist/shared/[username]/components/SharedWishlistHeader', () => ({
+jest.mock('@/app/user/wishlist/[username]/components/SharedWishlistHeader', () => ({
     SharedWishlistHeader: () => <div data-testid="shared-header" />,
 }));
 
-jest.mock('@/app/user/wishlist/shared/[username]/components/SharedWishlistHero', () => ({
+jest.mock('@/app/user/wishlist/[username]/components/SharedWishlistHero', () => ({
     SharedWishlistHero: ({ username, totalBooks }: { username: string; totalBooks: number }) => (
         <div data-testid="shared-hero">
             Hero: {username}, Books: {totalBooks}
@@ -31,7 +31,7 @@ jest.mock('@/app/user/wishlist/shared/[username]/components/SharedWishlistHero',
     ),
 }));
 
-jest.mock('@/app/user/wishlist/shared/[username]/components/EmptyWishlistView', () => ({
+jest.mock('@/app/user/wishlist/[username]/components/EmptyWishlistView', () => ({
     EmptyWishlistView: () => <div data-testid="empty-wishlist-view" />,
 }));
 

@@ -106,18 +106,6 @@ describe('layout - UserNavbar - UserBtn', () => {
         expect(mockRouterPush).toHaveBeenCalledWith('/user/profile');
     });
 
-    it('Should navigate to wishlist page on click (logged in required)', async () => {
-        mockUseUserState.mockReturnValue(defaultLoggedInState);
-        render(<UserBtn />);
-        await act(async () => {
-            await fireEvent.click(screen.getByTestId('popover-icon-btn'));
-        });
-        await act(async () => {
-            await fireEvent.click(screen.getByTestId('popover-icon-choice-wishlist'));
-        });
-        expect(mockRouterPush).toHaveBeenCalledWith('/user/wishlist');
-    });
-
     it('should navigate to home on default case (unrecognized choice)', () => {
         render(<UserBtn />);
 

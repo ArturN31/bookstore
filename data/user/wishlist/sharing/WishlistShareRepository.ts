@@ -145,17 +145,14 @@ export const updateWishlistVisibilityAndToken = async (
                 is_wishlist_public: isPublic,
             };
 
-        if (isPublic) {
-            updatePayload.wishlist_share_token = null;
-        } else if (newToken !== undefined) {
-            updatePayload.wishlist_share_token = newToken;
-        }
+        if (isPublic) updatePayload.wishlist_share_token = null;
+        else if (newToken !== undefined) updatePayload.wishlist_share_token = newToken;
 
         const { error } = await supabase.from('users').update(updatePayload).eq('id', userId);
 
-        if (error) return { error: sanitizeSupabaseError(error) };
+        if (error) return { error: sanitizeSupabaseError(error, userId) };
         return { error: null };
     } catch (err: unknown) {
-        return { error: sanitizeSupabaseError(err) };
+        return { error: sanitizeSupabaseError(err, userId) };
     }
 };
