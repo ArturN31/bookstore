@@ -11,8 +11,8 @@ This README documents both what is implemented and what is intentionally still i
 ## Project Status
 
 **Current Phase**: Core bookstore paths implemented; checkout and payment remain the next product milestone
-**Last Verified**: September 11, 2026
-**Test Run**: 187 suites passed, 1,355 tests passed, 1 snapshot passed
+**Last Verified**: September 21, 2026
+**Test Run**: 198 suites passed, 1,454 tests passed, 1 snapshot passed
 **Coverage**: 100.00% statements, branches, functions, lines, and average
 **Quality Checks**: `npm run lint` and `npm run build` pass
 
@@ -20,8 +20,8 @@ This README documents both what is implemented and what is intentionally still i
 
 | Check | Result |
 | :---- | :----- |
-| Jest suites | 187 passed / 187 total |
-| Jest tests | 1,355 passed / 1,355 total |
+| Jest suites | 198 passed / 198 total |
+| Jest tests | 1,454 passed / 1,454 total |
 | Snapshots | 1 passed / 1 total |
 | Statements | 100.00% |
 | Branches | 100.00% |
@@ -680,17 +680,16 @@ The commands above reproduce the documented test, lint, and build verification s
 
 ### 2. Public Profiles and Community Features
 
-- [ ] Define and expose public profile content sections
+- [X] Define and expose public profile content sections
   - [X] Add public reviews within the profile model
   - [X] Add public wishlist presentation within the profile model
-  - [ ] Add public recommendations
-- [ ] Add public profile editing and privacy settings
-  - [ ] Wishlist visibility controls
-  - [ ] Review visibility controls
-  - [ ] Profile visibility controls
+- [X] Add public profile editing and privacy settings
+  - [X] Wishlist visibility controls
+  - [X] Review visibility controls
+  - [X] Profile visibility controls
     - [X] Profile private view
     - [X] Profile public view
-    - [ ] Profile visibility toggle
+    - [X] Profile visibility toggle
 
 ### 3. Store Operations
 
