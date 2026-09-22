@@ -552,6 +552,7 @@ export type Database = {
           username: string
         }[]
       }
+      process_order_transaction: { Args: { p_payload: Json }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
