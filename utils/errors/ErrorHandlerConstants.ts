@@ -70,6 +70,21 @@ export const APP_ERROR_MESSAGES = {
     ERROR_REVIEW_UPDATE_FAILED: 'Failed to update review.',
     INVALID_REVIEW_REQUEST: 'Invalid review submission request.',
     REVIEW_LOGIN_REQUIRED: 'Login required to submit a review.',
+
+    // ==========================================
+    // Checkout & Order Processing Errors
+    // ==========================================
+    CHECKOUT_LOGIN_REQUIRED: 'Login required to proceed to checkout.',
+    EMPTY_CART_CHECKOUT: 'Your cart is empty. Add items before checking out.',
+    INVALID_DISCOUNT_CODE: 'The provided discount code is invalid.',
+    EXPIRED_DISCOUNT_CODE: 'This discount code has expired.',
+    DISCOUNT_NOT_ACTIVE: 'This discount code is not currently active.',
+    INSUFFICIENT_STOCK: 'One or more items in your cart exceed available stock.',
+    ORDER_CREATION_FAILED: 'Failed to create your order. Please try again.',
+    ORDER_NOT_FOUND: 'Order details could not be found.',
+    UNAUTHORIZED_ORDER_ACCESS: 'You do not have permission to view this order.',
+    PAYMENT_PROCESSING_FAILED: 'Payment processing failed. Please check your card details.',
+    DUPLICATE_TRANSACTION: 'A transaction with this idempotency key is already being processed.',
 } as const;
 
 export const DB_ERROR_MAP: Record<string, string> = {

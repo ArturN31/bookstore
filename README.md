@@ -670,13 +670,17 @@ The commands above reproduce the documented test, lint, and build verification s
 
 ### 1. Checkout and Commerce Completion
 
-- [ ] Add the `/checkout` route
-- [ ] Integrate a payment provider through server-side actions
-- [ ] Validate stock and create orders atomically after payment confirmation
-- [ ] Add order-success, receipt, and email-confirmation workflows
-- [ ] Decrement inventory after successful purchase
-- [ ] Add protected customer order history
-- [ ] Add server-validated discount and promotion application
+- [ ] Add the `/checkout` route with unauthenticated session and empty cart access guards
+- [ ] Implement layered data architecture using Zod validation schemas and `safeSupabaseQuery` error handling
+- [ ] Integrate Stripe payment provider via server-side actions with idempotency key enforcement
+- [ ] Add rate-limiting on discount application and checkout submissions to prevent fraud and brute-forcing
+- [ ] Add server-validated discount and promotion system enforcing active dates and subtotal thresholds
+- [ ] Create atomic RPC database transaction with pessimistic row-level locking (`FOR UPDATE`) on book stock
+- [ ] Validate stock, record orders, write line items, decrement inventory, and clear cart in a single transaction
+- [ ] Implement asynchronous Stripe webhook endpoint (`/api/webhooks/stripe`) for payment lifecycle handling
+- [ ] Add protected `/checkout/confirmation/[orderId]` route guarded by strict user ownership verification (`checkIsOwner`)
+- [ ] Add post-purchase receipt display and asynchronous transactional email workflows
+- [ ] Write unit and component integration test suite using Jest and React Testing Library
 
 ### 2. Public Profiles and Community Features
 
@@ -719,6 +723,10 @@ The commands above reproduce the documented test, lint, and build verification s
 - [ ] Add centralized server, client, and database exception logging
 - [ ] Preserve sanitized query/authentication context in operational logs
 - [ ] Keep generated metrics and documentation synchronized after meaningful changes
+
+## 6. Profile
+
+- [ ] Add view orders page to the private profile area
 
 ## Engineering Decisions and Tradeoffs
 
