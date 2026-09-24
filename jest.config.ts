@@ -25,7 +25,10 @@ const customJestConfig = {
         '!**/app/globals.css.js',
         '!**/app/layout.tsx',
     ],
-    coveragePathIgnorePatterns: ['<rootDir>/app/globals.css'],
+    coveragePathIgnorePatterns: [
+        '<rootDir>/app/globals.css',
+        '<rootDir>/data/checkout/CheckoutTypes.ts',
+    ],
     coverageThreshold: {
         global: {
             branches: 99,

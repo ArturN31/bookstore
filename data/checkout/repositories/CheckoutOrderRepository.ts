@@ -1,19 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database, Json } from '@/database.types';
-
-export interface ProcessOrderPayloadItem {
-    book_id: string;
-    quantity: number;
-    price: number;
-}
-
-export interface ProcessOrderPayload {
-    user_id: string;
-    total_amount: number;
-    payment_method: string;
-    discount_id: string | null;
-    items: ProcessOrderPayloadItem[];
-}
+import { ProcessOrderPayload } from '../CheckoutTypes';
 
 export const processOrderTransaction = async (
     supabase: SupabaseClient<Database>,

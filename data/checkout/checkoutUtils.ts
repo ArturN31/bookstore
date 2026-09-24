@@ -1,5 +1,15 @@
-import { DEFAULT_CURRENCY, FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from './checkoutConstants';
+// TODO: Import Stripe SDK (import Stripe from 'stripe';) once 'stripe' npm package is installed.
+import { DEFAULT_CURRENCY, FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from './CheckoutConstants';
 import { AppliedDiscountState, CheckoutSummaryTotals } from './CheckoutTypes';
+
+// TODO: Initialize server-side Stripe instance: const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-08-27.acacia' });
+
+export interface PaymentIntentResult {
+    readonly success: boolean;
+    readonly clientSecret: string | null;
+    // TODO: Add paymentIntentId: string | null property to PaymentIntentResult interface.
+    readonly error: string | null;
+}
 
 export function calculateSubtotal(items: ReadonlyArray<CartItem>): number {
     return items.reduce((accumulator: number, item: CartItem): number => {
@@ -62,4 +72,24 @@ export function generateIdempotencyKey(): string {
         const value = character === 'x' ? randomValue : (randomValue & 0x3) | 0x8;
         return value.toString(16);
     });
+}
+
+export async function createPaymentIntentAction(
+    totalAmountInCents: number,
+    idempotencyKey: string,
+    currency: string = DEFAULT_CURRENCY,
+): Promise<PaymentIntentResult> {
+    // TODO: Replace mock return object below with actual stripe.paymentIntents.create call:
+    // const paymentIntent = await stripe.paymentIntents.create({
+    //     amount: totalAmountInCents,
+    //     currency,
+    //     automatic_payment_methods: { enabled: true },
+    // }, { idempotencyKey });
+    // return { success: true, clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id, error: null };
+
+    return {
+        success: true,
+        clientSecret: `pi_${idempotencyKey}_secret_mock`,
+        error: null,
+    };
 }

@@ -20,46 +20,6 @@ const DEV_CONFIG = {
     STOCK_PURGE_RATIO: 0.5,
 } as const;
 
-export interface BookDB {
-    id: string;
-    title: string;
-    author: string;
-    genre: string;
-    publisher: string;
-    format: string;
-    price: string;
-    stock: number;
-    stock_quantity: number;
-    sales_count: number;
-    description: string;
-    page_count: number;
-    image_url: string;
-    publication_date: string;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-}
-
-export interface DiscountDB {
-    id: string;
-    code: string;
-    value: number;
-    type: string;
-    start_date: string;
-    end_date: string;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-}
-
-export interface UserDB {
-    id: string;
-    username: string;
-    email?: string;
-    created_at?: string;
-    updated_at?: string;
-}
-
 export type CommandResponse = { message: string; success: boolean };
 export type CommandHandler = (supabase: SupabaseClient) => Promise<CommandResponse>;
 

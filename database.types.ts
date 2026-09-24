@@ -157,6 +157,7 @@ export type Database = {
           end_date: string
           id: string
           is_active: boolean
+          minimum_subtotal: number | null
           start_date: string
           type: string
           updated_at: string
@@ -168,6 +169,7 @@ export type Database = {
           end_date: string
           id?: string
           is_active: boolean
+          minimum_subtotal?: number | null
           start_date?: string
           type?: string
           updated_at?: string
@@ -179,6 +181,7 @@ export type Database = {
           end_date?: string
           id?: string
           is_active?: boolean
+          minimum_subtotal?: number | null
           start_date?: string
           type?: string
           updated_at?: string

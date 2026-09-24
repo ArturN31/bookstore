@@ -36,13 +36,12 @@ export const checkRateLimit = (key: string, limit = 5, windowMs = 60000): RateLi
         };
     }
 
-    if (record.count >= limit) {
+    if (record.count >= limit)
         return {
             success: false,
             remaining: 0,
             resetMs: Math.max(0, record.resetTime - now),
         };
-    }
 
     record.count += 1;
     rateLimitStore.set(key, record);

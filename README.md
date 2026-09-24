@@ -11,8 +11,8 @@ This README documents both what is implemented and what is intentionally still i
 ## Project Status
 
 **Current Phase**: Core bookstore paths implemented; checkout and payment remain the next product milestone
-**Last Verified**: September 21, 2026
-**Test Run**: 198 suites passed, 1,454 tests passed, 1 snapshot passed
+**Last Verified**: September 23, 2026
+**Test Run**: 209 suites passed, 1,564 tests passed, 1 snapshot passed
 **Coverage**: 100.00% statements, branches, functions, lines, and average
 **Quality Checks**: `npm run lint` and `npm run build` pass
 
@@ -20,8 +20,8 @@ This README documents both what is implemented and what is intentionally still i
 
 | Check | Result |
 | :---- | :----- |
-| Jest suites | 198 passed / 198 total |
-| Jest tests | 1,454 passed / 1,454 total |
+| Jest suites | 209 passed / 209 total |
+| Jest tests | 1,564 passed / 1,564 total |
 | Snapshots | 1 passed / 1 total |
 | Statements | 100.00% |
 | Branches | 100.00% |
@@ -671,10 +671,10 @@ The commands above reproduce the documented test, lint, and build verification s
 ### 1. Checkout and Commerce Completion
 
 - [ ] Add the `/checkout` route with unauthenticated session and empty cart access guards
-- [ ] Implement layered data architecture using Zod validation schemas and `safeSupabaseQuery` error handling
+- [X] Implement layered data architecture using Zod validation schemas and `safeSupabaseQuery` error handling
 - [ ] Integrate Stripe payment provider via server-side actions with idempotency key enforcement
-- [ ] Add rate-limiting on discount application and checkout submissions to prevent fraud and brute-forcing
-- [ ] Add server-validated discount and promotion system enforcing active dates and subtotal thresholds
+- [X] Add rate-limiting on discount application and checkout submissions to prevent fraud and brute-forcing
+- [X] Add server-validated discount and promotion system enforcing active dates and subtotal thresholds
 - [X] Create atomic RPC database transaction with pessimistic row-level locking (`FOR UPDATE`) on book stock
 - [X] Validate stock, record orders, write line items, decrement inventory, and clear cart in a single transaction
 - [ ] Implement asynchronous Stripe webhook endpoint (`/api/webhooks/stripe`) for payment lifecycle handling

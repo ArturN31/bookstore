@@ -1,4 +1,3 @@
-import { AUTH_CODE_MAP } from './ErrorHandlerConstants';
 import {
     GenericErrorPayload,
     fallbackErrorMessage,

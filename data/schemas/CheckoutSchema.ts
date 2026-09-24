@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PAYMENT_METHODS } from '../checkout/checkoutConstants';
+import { PAYMENT_METHODS } from '../checkout/CheckoutConstants';
 import { addressFields } from './onboardingSchema';
 import { sanitizeText } from './schemaUtils';
 
@@ -32,7 +32,7 @@ export const checkoutFormSchema = z.object({
         .string()
         .trim()
         .min(1, 'Email address is required.')
-        .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please enter a valid email address.'),
+        .pipe(z.email('Please enter a valid email address.')),
     phoneNumber: z
         .string()
         .trim()
