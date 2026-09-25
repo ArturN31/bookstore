@@ -1,4 +1,15 @@
 import { Database } from '@/database.types';
+import { PaymentMethod } from './CheckoutConstants';
+
+export type BookRow = Database['public']['Tables']['books']['Row'];
+export type OrderDetailsRow = Database['public']['Tables']['orders']['Row'];
+export type DiscountRow = Database['public']['Tables']['discounts']['Row'];
+
+export interface CartCheckoutItem extends BookRow {
+    readonly quantity: number;
+}
+
+export type CartItem = CartCheckoutItem;
 
 export interface AppliedDiscountState {
     readonly code: string;
@@ -31,20 +42,18 @@ export interface ProcessCheckoutResult {
     readonly success: boolean;
     readonly orderId: string | null;
     readonly clientSecret: string | null;
-    // TODO: Add paymentIntentId: string | null to ProcessCheckoutResult interface for tracking Stripe transaction state.
+    readonly paymentIntentId: string | null;
     readonly error: string | null;
 }
 
-export type OrderDetailsRow = Database['public']['Tables']['orders']['Row'];
-export type DiscountRow = Database['public']['Tables']['discounts']['Row'];
-
 export interface ProcessCheckoutParams {
     readonly userId: string;
+    readonly customerEmail: string;
+    readonly stripeCustomerId: string | null;
     readonly items: readonly { readonly bookId: string; readonly quantity: number }[];
     readonly discountId: string | null;
     readonly paymentMethod: string;
     readonly idempotencyKey: string;
-    // TODO: Add stripeCustomerId?: string to ProcessCheckoutParams if associating existing Stripe Customers.
 }
 
 export interface ProcessOrderPayloadItem {
@@ -58,5 +67,6 @@ export interface ProcessOrderPayload {
     readonly total_amount: number;
     readonly payment_method: string;
     readonly discount_id: string | null;
+    readonly payment_intent_id: string | null;
     readonly items: readonly ProcessOrderPayloadItem[];
 }

@@ -67,7 +67,6 @@ export const validateAndCalculateDiscount = async (
             calculatedDeduction = Math.min(rawValue, currentSubtotal);
         }
 
-        // TODO: If sync with Stripe Coupons/Promotion Codes is required, validate that discount.code matches an active Stripe Coupon ID.
         return {
             data: {
                 code: discount.code,

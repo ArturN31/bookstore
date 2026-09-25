@@ -35,7 +35,6 @@ export const getActiveCartCheckoutItems = async (
             const book = item.books;
             if (!book) continue;
 
-            // TODO: Ensure book prices are validated against current live database rows before sending final line item amounts to Stripe.
             formattedItems.push({
                 ...book,
                 quantity: item.quantity,

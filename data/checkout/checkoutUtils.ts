@@ -1,18 +1,30 @@
-// TODO: Import Stripe SDK (import Stripe from 'stripe';) once 'stripe' npm package is installed.
-import { DEFAULT_CURRENCY, FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from './CheckoutConstants';
-import { AppliedDiscountState, CheckoutSummaryTotals } from './CheckoutTypes';
+import {
+    DEFAULT_CURRENCY,
+    FREE_SHIPPING_THRESHOLD,
+    SHIPPING_COST,
+    STRIPE_API_VERSION,
+} from '@/data/checkout/CheckoutConstants';
+import {
+    AppliedDiscountState,
+    CartCheckoutItem,
+    CheckoutSummaryTotals,
+} from '@/data/checkout/CheckoutTypes';
+import Stripe from 'stripe';
 
-// TODO: Initialize server-side Stripe instance: const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-08-27.acacia' });
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+    apiVersion: STRIPE_API_VERSION as Stripe.LatestApiVersion,
+    httpClient: Stripe.createFetchHttpClient(),
+});
 
 export interface PaymentIntentResult {
     readonly success: boolean;
     readonly clientSecret: string | null;
-    // TODO: Add paymentIntentId: string | null property to PaymentIntentResult interface.
+    readonly paymentIntentId: string | null;
     readonly error: string | null;
 }
 
-export function calculateSubtotal(items: ReadonlyArray<CartItem>): number {
-    return items.reduce((accumulator: number, item: CartItem): number => {
+export function calculateSubtotal(items: ReadonlyArray<CartCheckoutItem>): number {
+    return items.reduce((accumulator: number, item: CartCheckoutItem): number => {
         const price = Number(item.price) || 0;
         const quantity = Number(item.quantity) || 0;
         return accumulator + price * quantity;
@@ -35,7 +47,7 @@ export function calculateShipping(subtotal: number): number {
 }
 
 export function calculateTotals(
-    items: ReadonlyArray<CartItem>,
+    items: ReadonlyArray<CartCheckoutItem>,
     discount: AppliedDiscountState | null,
     taxRate: number = 0,
 ): CheckoutSummaryTotals {
@@ -78,18 +90,33 @@ export async function createPaymentIntentAction(
     totalAmountInCents: number,
     idempotencyKey: string,
     currency: string = DEFAULT_CURRENCY,
+    metadata?: Record<string, string>,
+    customerId?: string | null,
 ): Promise<PaymentIntentResult> {
-    // TODO: Replace mock return object below with actual stripe.paymentIntents.create call:
-    // const paymentIntent = await stripe.paymentIntents.create({
-    //     amount: totalAmountInCents,
-    //     currency,
-    //     automatic_payment_methods: { enabled: true },
-    // }, { idempotencyKey });
-    // return { success: true, clientSecret: paymentIntent.client_secret, paymentIntentId: paymentIntent.id, error: null };
+    try {
+        const paymentIntent = await stripe.paymentIntents.create(
+            {
+                amount: totalAmountInCents,
+                currency: currency.toLowerCase(),
+                customer: customerId ?? undefined,
+                automatic_payment_methods: { enabled: true },
+                metadata: metadata ?? {},
+            },
+            { idempotencyKey },
+        );
 
-    return {
-        success: true,
-        clientSecret: `pi_${idempotencyKey}_secret_mock`,
-        error: null,
-    };
+        return {
+            success: true,
+            clientSecret: paymentIntent.client_secret,
+            paymentIntentId: paymentIntent.id,
+            error: null,
+        };
+    } catch (err: unknown) {
+        return {
+            success: false,
+            clientSecret: null,
+            paymentIntentId: null,
+            error: err instanceof Error ? err.message : 'Failed to initialize payment gateway.',
+        };
+    }
 }

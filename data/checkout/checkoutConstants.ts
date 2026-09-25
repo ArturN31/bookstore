@@ -4,7 +4,8 @@ export const FREE_SHIPPING_THRESHOLD = 50.0;
 
 export const DEFAULT_CURRENCY = 'GBP';
 
-// TODO: Add STRIPE_API_VERSION constant (e.g., '2025-08-27.acacia' or latest) for initializing Stripe SDK instance.
+export const STRIPE_API_VERSION = '2025-08-27.acacia';
+
 export const PAYMENT_METHODS = {
     CARD: 'card',
     PAYPAL: 'paypal',

@@ -66,7 +66,6 @@ export interface ProcessCheckoutActionPayload {
     readonly items: readonly { readonly bookId: string; readonly quantity: number }[];
     readonly discountId: string | null;
     readonly idempotencyKey: string;
-    // TODO: Add stripePaymentMethodId?: string or stripePaymentIntentId?: string to payload if handling card confirmation server-side.
 }
 
 export const processCheckoutAction = async (
@@ -89,6 +88,8 @@ export const processCheckoutAction = async (
             };
 
         const userId = userResult.data.id;
+        const customerEmail = userResult.data.email;
+        const stripeCustomerId = userResult.data.stripeCustomerId;
 
         const rateLimit = checkRateLimit(`checkout:${userId}`, 3, 300000);
         if (!rateLimit.success)
@@ -106,18 +107,20 @@ export const processCheckoutAction = async (
 
         const checkoutResult = await executeCheckoutOrder({
             userId,
+            customerEmail,
+            stripeCustomerId,
             items: payload.items,
             discountId: payload.discountId,
             paymentMethod: formParse.data.paymentMethod,
             idempotencyKey: payload.idempotencyKey,
         });
+
         if (checkoutResult.error || !checkoutResult.data)
             return {
                 success: false,
                 error: checkoutResult.error ?? APP_ERROR_MESSAGES.ORDER_CREATION_FAILED,
             };
 
-        // TODO: Handle mapping of Stripe-specific exception errors (e.g., StripeCardError) to user-friendly UI messages.
         return {
             success: true,
             data: checkoutResult.data,

@@ -1,3 +1,7 @@
+/**
+ * @jest-environment node
+ */
+
 import {
     executeCheckoutOrder,
     getOrderDetailsById,
@@ -28,6 +32,8 @@ describe('CheckoutService', () => {
 
     const mockCheckoutParams: ProcessCheckoutParams = {
         userId: 'user-uuid-123',
+        customerEmail: 'user@example.com',
+        stripeCustomerId: 'cus_123',
         items: [{ bookId: 'book-1', quantity: 2 }],
         discountId: null,
         paymentMethod: 'card',
@@ -61,6 +67,7 @@ describe('CheckoutService', () => {
         jest.mocked(createPaymentIntentAction).mockResolvedValue({
             success: true,
             clientSecret: 'seti_secret_123',
+            paymentIntentId: 'pi_test_123',
             error: null,
         });
     });
@@ -89,9 +96,19 @@ describe('CheckoutService', () => {
                 success: true,
                 orderId: 'order-uuid-888',
                 clientSecret: 'seti_secret_123',
+                paymentIntentId: 'pi_test_123',
                 error: null,
             });
-            expect(createPaymentIntentAction).toHaveBeenCalledWith(4599, 'gbp', 'idemp-key-999');
+            expect(createPaymentIntentAction).toHaveBeenCalledWith(
+                4599,
+                'idemp-key-999',
+                'GBP',
+                {
+                    userId: 'user-uuid-123',
+                    customerEmail: 'user@example.com',
+                },
+                'cus_123',
+            );
         });
 
         it('should successfully execute checkout order flow with a valid active percentage discount', async () => {
@@ -400,6 +417,7 @@ describe('CheckoutService', () => {
             jest.mocked(createPaymentIntentAction).mockResolvedValueOnce({
                 success: false,
                 clientSecret: null,
+                paymentIntentId: null,
                 error: 'Card declined',
             });
 
@@ -423,6 +441,7 @@ describe('CheckoutService', () => {
             jest.mocked(createPaymentIntentAction).mockResolvedValueOnce({
                 success: false,
                 clientSecret: null,
+                paymentIntentId: null,
                 error: null,
             });
 

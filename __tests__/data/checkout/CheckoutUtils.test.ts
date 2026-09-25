@@ -1,3 +1,7 @@
+/**
+ * @jest-environment node
+ */
+
 import {
     calculateSubtotal,
     calculateDiscount,
@@ -6,16 +10,35 @@ import {
     formatCurrency,
     generateIdempotencyKey,
     createPaymentIntentAction,
+    stripe,
 } from '@/data/checkout/CheckoutUtils';
-import { AppliedDiscountState } from '@/data/checkout/CheckoutTypes';
+import { AppliedDiscountState, CartCheckoutItem } from '@/data/checkout/CheckoutTypes';
 
 jest.mock('@/data/checkout/CheckoutConstants', () => ({
-    DEFAULT_CURRENCY: 'gbp',
+    DEFAULT_CURRENCY: 'GBP',
     FREE_SHIPPING_THRESHOLD: 50,
     SHIPPING_COST: 5.99,
+    STRIPE_API_VERSION: '2025-08-27.acacia',
 }));
 
+jest.mock('stripe', () => {
+    const MockStripe = jest.fn().mockImplementation(() => ({
+        paymentIntents: {
+            create: jest.fn(),
+        },
+    }));
+
+    return Object.assign(MockStripe, {
+        createFetchHttpClient: jest.fn(),
+        createNodeHttpClient: jest.fn(),
+    });
+});
+
 describe('CheckoutUtils', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
     describe('calculateSubtotal', () => {
         it('should return 0 when items array is empty', () => {
             const subtotal = calculateSubtotal([]);
@@ -26,7 +49,7 @@ describe('CheckoutUtils', () => {
             const items = [
                 { price: 10.5, quantity: 2 },
                 { price: 5.0, quantity: 3 },
-            ] as unknown as CartItem[];
+            ] as unknown as CartCheckoutItem[];
 
             const subtotal = calculateSubtotal(items);
             expect(subtotal).toBe(36.0);
@@ -37,7 +60,7 @@ describe('CheckoutUtils', () => {
                 { price: 'invalid', quantity: 2 },
                 { price: 10, quantity: null },
                 { price: undefined, quantity: undefined },
-            ] as unknown as CartItem[];
+            ] as unknown as CartCheckoutItem[];
 
             const subtotal = calculateSubtotal(items);
             expect(subtotal).toBe(0);
@@ -121,7 +144,7 @@ describe('CheckoutUtils', () => {
 
     describe('calculateTotals', () => {
         it('should calculate totals without discount and zero tax rate', () => {
-            const items = [{ price: 20.0, quantity: 2 }] as unknown as CartItem[];
+            const items = [{ price: 20.0, quantity: 2 }] as unknown as CartCheckoutItem[];
 
             const totals = calculateTotals(items, null);
 
@@ -135,7 +158,7 @@ describe('CheckoutUtils', () => {
         });
 
         it('should calculate totals with percentage discount, shipping threshold met, and tax rate', () => {
-            const items = [{ price: 50.0, quantity: 2 }] as unknown as CartItem[];
+            const items = [{ price: 50.0, quantity: 2 }] as unknown as CartCheckoutItem[];
 
             const discountState: AppliedDiscountState = {
                 code: 'PERCENT20',
@@ -210,25 +233,60 @@ describe('CheckoutUtils', () => {
     });
 
     describe('createPaymentIntentAction', () => {
-        it('should return PaymentIntentResult with default currency', async () => {
+        it('should create PaymentIntent successfully and return secrets', async () => {
+            const mockCreate = jest.fn().mockResolvedValue({
+                id: 'pi_test_123',
+                client_secret: 'pi_test_123_secret',
+            });
+            stripe.paymentIntents.create = mockCreate;
+
             const idempotencyKey = 'test-idempotency-key';
-            const result = await createPaymentIntentAction(4599, idempotencyKey);
+            const result = await createPaymentIntentAction(4599, idempotencyKey, 'GBP');
+
+            expect(mockCreate).toHaveBeenCalledWith(
+                {
+                    amount: 4599,
+                    currency: 'gbp',
+                    customer: undefined,
+                    automatic_payment_methods: { enabled: true },
+                    metadata: {},
+                },
+                { idempotencyKey: 'test-idempotency-key' },
+            );
 
             expect(result).toEqual({
                 success: true,
-                clientSecret: 'pi_test-idempotency-key_secret_mock',
+                clientSecret: 'pi_test_123_secret',
+                paymentIntentId: 'pi_test_123',
                 error: null,
             });
         });
 
-        it('should return PaymentIntentResult with explicit custom currency', async () => {
-            const idempotencyKey = 'usd-idempotency-key';
-            const result = await createPaymentIntentAction(5000, idempotencyKey, 'USD');
+        it('should handle Stripe API errors gracefully when error instance is thrown', async () => {
+            const mockCreate = jest.fn().mockRejectedValue(new Error('Card declined'));
+            stripe.paymentIntents.create = mockCreate;
+
+            const result = await createPaymentIntentAction(5000, 'fail-key');
 
             expect(result).toEqual({
-                success: true,
-                clientSecret: 'pi_usd-idempotency-key_secret_mock',
-                error: null,
+                success: false,
+                clientSecret: null,
+                paymentIntentId: null,
+                error: 'Card declined',
+            });
+        });
+
+        it('should fallback to default error message when non-Error object is thrown', async () => {
+            const mockCreate = jest.fn().mockRejectedValue('String error rejection');
+            stripe.paymentIntents.create = mockCreate;
+
+            const result = await createPaymentIntentAction(5000, 'fail-key-string');
+
+            expect(result).toEqual({
+                success: false,
+                clientSecret: null,
+                paymentIntentId: null,
+                error: 'Failed to initialize payment gateway.',
             });
         });
     });

@@ -1,3 +1,7 @@
+/**
+ * @jest-environment node
+ */
+
 import {
     validateAndApplyDiscountAction,
     processCheckoutAction,
@@ -16,6 +20,19 @@ jest.mock('@/utils/errors/SupabaseErrorHandler');
 jest.mock('@/data/checkout/services/CheckoutUserService');
 jest.mock('@/data/checkout/services/CheckoutDiscountService');
 jest.mock('@/data/checkout/services/CheckoutService');
+jest.mock('@/data/checkout/CheckoutUtils', () => ({
+    stripe: {
+        paymentIntents: {
+            create: jest.fn(),
+        },
+        customers: {
+            create: jest.fn(),
+        },
+    },
+    createPaymentIntentAction: jest.fn(),
+    calculateTotals: jest.fn(),
+}));
+
 jest.mock('@/data/schemas/checkoutSchema', () => ({
     checkoutFormSchema: {
         safeParse: jest.fn(),
@@ -47,7 +64,12 @@ describe('CheckoutAction', () => {
 
         it('should successfully validate and apply a valid discount code', async () => {
             jest.mocked(getCurrentUserCheckoutData).mockResolvedValue({
-                data: { id: 'user-123', email: 'user@example.com' },
+                data: {
+                    id: 'user-123',
+                    email: 'user@example.com',
+                    profile: null,
+                    stripeCustomerId: 'cus_123',
+                },
                 error: null,
             } as never);
 
@@ -110,7 +132,12 @@ describe('CheckoutAction', () => {
 
         it('should return rate limit error when user exceeds rate limit', async () => {
             jest.mocked(getCurrentUserCheckoutData).mockResolvedValue({
-                data: { id: 'user-123', email: 'user@example.com' },
+                data: {
+                    id: 'user-123',
+                    email: 'user@example.com',
+                    profile: null,
+                    stripeCustomerId: null,
+                },
                 error: null,
             } as never);
 
@@ -126,7 +153,12 @@ describe('CheckoutAction', () => {
 
         it('should return schema validation error when code or subtotal is invalid', async () => {
             jest.mocked(getCurrentUserCheckoutData).mockResolvedValue({
-                data: { id: 'user-123', email: 'user@example.com' },
+                data: {
+                    id: 'user-123',
+                    email: 'user@example.com',
+                    profile: null,
+                    stripeCustomerId: null,
+                },
                 error: null,
             } as never);
 
@@ -149,7 +181,12 @@ describe('CheckoutAction', () => {
 
         it('should fallback to INVALID_DISCOUNT_CODE when schema parse issues array is empty', async () => {
             jest.mocked(getCurrentUserCheckoutData).mockResolvedValue({
-                data: { id: 'user-123', email: 'user@example.com' },
+                data: {
+                    id: 'user-123',
+                    email: 'user@example.com',
+                    profile: null,
+                    stripeCustomerId: null,
+                },
                 error: null,
             } as never);
 
@@ -170,7 +207,12 @@ describe('CheckoutAction', () => {
 
         it('should return discount validation error when validateAndCalculateDiscount fails', async () => {
             jest.mocked(getCurrentUserCheckoutData).mockResolvedValue({
-                data: { id: 'user-123', email: 'user@example.com' },
+                data: {
+                    id: 'user-123',
+                    email: 'user@example.com',
+                    profile: null,
+                    stripeCustomerId: null,
+                },
                 error: null,
             } as never);
 
@@ -196,7 +238,12 @@ describe('CheckoutAction', () => {
 
         it('should fallback to INVALID_DISCOUNT_CODE when discount result error and data are both null', async () => {
             jest.mocked(getCurrentUserCheckoutData).mockResolvedValue({
-                data: { id: 'user-123', email: 'user@example.com' },
+                data: {
+                    id: 'user-123',
+                    email: 'user@example.com',
+                    profile: null,
+                    stripeCustomerId: null,
+                },
                 error: null,
             } as never);
 
@@ -260,7 +307,12 @@ describe('CheckoutAction', () => {
 
         it('should successfully execute checkout order when payload is valid', async () => {
             jest.mocked(getCurrentUserCheckoutData).mockResolvedValue({
-                data: { id: 'user-123', email: 'jane@example.com' },
+                data: {
+                    id: 'user-123',
+                    email: 'jane@example.com',
+                    profile: null,
+                    stripeCustomerId: 'cus_777',
+                },
                 error: null,
             } as never);
 
@@ -275,6 +327,7 @@ describe('CheckoutAction', () => {
                 success: true,
                 orderId: 'order-777',
                 clientSecret: 'pi_secret_123',
+                paymentIntentId: 'pi_123',
                 error: null,
             };
 
@@ -292,6 +345,8 @@ describe('CheckoutAction', () => {
             expect(checkRateLimit).toHaveBeenCalledWith('checkout:user-123', 3, 300000);
             expect(executeCheckoutOrder).toHaveBeenCalledWith({
                 userId: 'user-123',
+                customerEmail: 'jane@example.com',
+                stripeCustomerId: 'cus_777',
                 items: mockPayload.items,
                 discountId: 'disc-10',
                 paymentMethod: 'card',
@@ -315,7 +370,7 @@ describe('CheckoutAction', () => {
 
         it('should return CHECKOUT_LOGIN_REQUIRED when user id is missing', async () => {
             jest.mocked(getCurrentUserCheckoutData).mockResolvedValue({
-                data: { id: '' },
+                data: { id: '', email: '', profile: null, stripeCustomerId: null },
                 error: null,
             } as never);
 
@@ -329,7 +384,12 @@ describe('CheckoutAction', () => {
 
         it('should return rate limit error when user exceeds checkout attempt limit', async () => {
             jest.mocked(getCurrentUserCheckoutData).mockResolvedValue({
-                data: { id: 'user-123', email: 'jane@example.com' },
+                data: {
+                    id: 'user-123',
+                    email: 'jane@example.com',
+                    profile: null,
+                    stripeCustomerId: null,
+                },
                 error: null,
             } as never);
 
@@ -345,7 +405,12 @@ describe('CheckoutAction', () => {
 
         it('should return schema error when checkout form details are invalid', async () => {
             jest.mocked(getCurrentUserCheckoutData).mockResolvedValue({
-                data: { id: 'user-123', email: 'jane@example.com' },
+                data: {
+                    id: 'user-123',
+                    email: 'jane@example.com',
+                    profile: null,
+                    stripeCustomerId: null,
+                },
                 error: null,
             } as never);
 
@@ -371,7 +436,12 @@ describe('CheckoutAction', () => {
 
         it('should fallback to default form error message when issues array is empty', async () => {
             jest.mocked(getCurrentUserCheckoutData).mockResolvedValue({
-                data: { id: 'user-123', email: 'jane@example.com' },
+                data: {
+                    id: 'user-123',
+                    email: 'jane@example.com',
+                    profile: null,
+                    stripeCustomerId: null,
+                },
                 error: null,
             } as never);
 
@@ -392,7 +462,12 @@ describe('CheckoutAction', () => {
 
         it('should return error when executeCheckoutOrder fails with an error string', async () => {
             jest.mocked(getCurrentUserCheckoutData).mockResolvedValue({
-                data: { id: 'user-123', email: 'jane@example.com' },
+                data: {
+                    id: 'user-123',
+                    email: 'jane@example.com',
+                    profile: null,
+                    stripeCustomerId: null,
+                },
                 error: null,
             } as never);
 
@@ -418,7 +493,12 @@ describe('CheckoutAction', () => {
 
         it('should fallback to ORDER_CREATION_FAILED when executeCheckoutOrder returns null data and null error', async () => {
             jest.mocked(getCurrentUserCheckoutData).mockResolvedValue({
-                data: { id: 'user-123', email: 'jane@example.com' },
+                data: {
+                    id: 'user-123',
+                    email: 'jane@example.com',
+                    profile: null,
+                    stripeCustomerId: null,
+                },
                 error: null,
             } as never);
 

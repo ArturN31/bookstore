@@ -5,6 +5,7 @@ import { fetchUserAuthData, fetchUserProfileById } from '../repositories/Checkou
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { SafeQueryResult, safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { stripe } from '../CheckoutUtils';
 
 type UserProfileRow = Database['public']['Tables']['users']['Row'];
 
@@ -12,7 +13,7 @@ export interface UserCheckoutData {
     readonly id: string;
     readonly email: string;
     readonly profile: UserProfileRow | null;
-    // TODO: Add optional stripeCustomerId?: string to UserCheckoutData interface once Stripe Customer IDs are stored in DB profile.
+    readonly stripeCustomerId: string | null;
 }
 
 export const getCurrentUserCheckoutData = async (): Promise<SafeQueryResult<UserCheckoutData>> => {
@@ -34,12 +35,39 @@ export const getCurrentUserCheckoutData = async (): Promise<SafeQueryResult<User
             withRetry(() => fetchUserProfileById(supabase, user.id)),
         );
 
-        // TODO: Check if user has an existing Stripe Customer ID in user_metadata or profiles, or initiate creation via stripe.customers.create().
+        let stripeCustomerId: string | null = null;
+        const profile = profileResult.data;
+
+        if (profile) {
+            stripeCustomerId =
+                (profile as unknown as { stripe_customer_id?: string }).stripe_customer_id ?? null;
+
+            if (!stripeCustomerId && user.email) {
+                try {
+                    const customer = await stripe.customers.create({
+                        email: user.email,
+                        metadata: { supabaseUserId: user.id },
+                    });
+                    stripeCustomerId = customer.id;
+
+                    await supabase
+                        .from('users')
+                        .update({
+                            stripe_customer_id: stripeCustomerId,
+                        } as unknown as Partial<UserProfileRow>)
+                        .eq('id', user.id);
+                } catch (stripeErr: unknown) {
+                    console.error('Failed to create Stripe customer', stripeErr);
+                }
+            }
+        }
+
         return {
             data: {
                 id: user.id,
                 email: user.email ?? '',
-                profile: profileResult.data,
+                profile: profile,
+                stripeCustomerId: stripeCustomerId,
             },
             error: null,
         };

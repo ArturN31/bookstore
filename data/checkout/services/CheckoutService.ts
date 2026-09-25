@@ -7,6 +7,7 @@ import {
     DiscountRow,
     OrderDetailsRow,
     ProcessOrderPayloadItem,
+    CartCheckoutItem,
 } from '../CheckoutTypes';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
@@ -14,6 +15,7 @@ import { fetchOrderById, processOrderTransaction } from '../repositories/Checkou
 import { withRetry } from '@/utils/network/retry';
 import { calculateTotals, createPaymentIntentAction } from '../CheckoutUtils';
 import { Database } from '@/database.types';
+import { DEFAULT_CURRENCY } from '../CheckoutConstants';
 
 type BookRow = Database['public']['Tables']['books']['Row'];
 
@@ -43,7 +45,7 @@ export const executeCheckoutOrder = async (
             return { data: null, error: APP_ERROR_MESSAGES.INSUFFICIENT_STOCK };
 
         const processItems: ProcessOrderPayloadItem[] = [];
-        const cartItemsForTotals: CartItem[] = [];
+        const cartItemsForTotals: CartCheckoutItem[] = [];
 
         for (const itemParam of params.items) {
             const book = books.find((b) => b.id === itemParam.bookId);
@@ -62,7 +64,7 @@ export const executeCheckoutOrder = async (
             cartItemsForTotals.push({
                 ...book,
                 quantity: itemParam.quantity,
-            } as unknown as CartItem);
+            } as unknown as CartCheckoutItem);
         }
 
         const rawSubtotal = cartItemsForTotals.reduce(
@@ -110,19 +112,28 @@ export const executeCheckoutOrder = async (
         const totals = calculateTotals(cartItemsForTotals, discountState);
         const totalAmountInCents = Math.round(totals.grandTotal * 100);
 
-        // TODO: Pass user email or userId into createPaymentIntentAction to set metadata on Stripe PaymentIntent.
         const paymentIntentResult = await createPaymentIntentAction(
             totalAmountInCents,
-            'gbp', // TODO: Update default currency parameter to match project's target currency (e.g., 'gbp').
             params.idempotencyKey,
+            DEFAULT_CURRENCY,
+            {
+                userId: params.userId,
+                customerEmail: params.customerEmail,
+            },
+            params.stripeCustomerId,
         );
-        if (!paymentIntentResult.success || !paymentIntentResult.clientSecret)
+
+        if (
+            !paymentIntentResult.success ||
+            !paymentIntentResult.clientSecret ||
+            !paymentIntentResult.paymentIntentId
+        ) {
             return {
                 data: null,
                 error: paymentIntentResult.error ?? APP_ERROR_MESSAGES.PAYMENT_PROCESSING_FAILED,
             };
+        }
 
-        // TODO: Update processOrderTransaction or order payload to persist paymentIntentResult.paymentIntentId inside database order record.
         const rpcResult = await safeSupabaseQuery<{ readonly order_id: string }>(() =>
             withRetry(async () => {
                 const res = await processOrderTransaction(supabase, {
@@ -130,6 +141,7 @@ export const executeCheckoutOrder = async (
                     total_amount: totals.grandTotal,
                     payment_method: params.paymentMethod,
                     discount_id: params.discountId,
+                    payment_intent_id: paymentIntentResult.paymentIntentId,
                     items: processItems,
                 });
                 return {
@@ -138,13 +150,15 @@ export const executeCheckoutOrder = async (
                 };
             }),
         );
-        if (rpcResult.error || !rpcResult.data)
+
+        if (rpcResult.error || !rpcResult.data) {
             return {
                 data: null,
                 error: rpcResult.error
                     ? sanitizeSupabaseError(rpcResult.error)
                     : APP_ERROR_MESSAGES.ORDER_CREATION_FAILED,
             };
+        }
 
         const responseObj = rpcResult.data;
 
@@ -153,7 +167,7 @@ export const executeCheckoutOrder = async (
                 success: true,
                 orderId: responseObj.order_id,
                 clientSecret: paymentIntentResult.clientSecret,
-                // TODO: Include paymentIntentId in returned data object for client-side Stripe Elements confirmation.
+                paymentIntentId: paymentIntentResult.paymentIntentId,
                 error: null,
             },
             error: null,
