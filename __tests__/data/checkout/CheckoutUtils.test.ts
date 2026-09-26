@@ -9,10 +9,9 @@ import {
     calculateTotals,
     formatCurrency,
     generateIdempotencyKey,
-    createPaymentIntentAction,
-    stripe,
 } from '@/data/checkout/CheckoutUtils';
 import { AppliedDiscountState, CartCheckoutItem } from '@/data/checkout/CheckoutTypes';
+import { createPaymentIntentAction, stripe } from '@/data/checkout/CheckoutStripeServer';
 
 jest.mock('@/data/checkout/CheckoutConstants', () => ({
     DEFAULT_CURRENCY: 'GBP',

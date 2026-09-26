@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState, useTransition } from 'react';
+import { useActionState, useState, useTransition, JSX } from 'react';
 import {
     OnboardingAction,
     type OnboardingFormState,
@@ -13,25 +13,30 @@ import { z } from 'zod';
 import { UserPersonalFields } from './UserPersonalFields';
 
 export interface OnboardingFormFields {
-    firstName: string;
-    lastName: string;
-    username: string;
-    dob: string;
-    streetAddress: string;
-    postcode: string;
-    city: string;
-    country: string;
-    phoneNumber: string;
-    message: string | null;
-    validationErrors: z.core.$ZodIssue[];
+    readonly firstName: string;
+    readonly lastName: string;
+    readonly username: string;
+    readonly dob: string;
+    readonly streetAddress: string;
+    readonly postcode: string;
+    readonly city: string;
+    readonly country: string;
+    readonly phoneNumber: string;
+    readonly message: string | null;
+    readonly validationErrors: readonly z.core.$ZodIssue[];
 }
 
 interface OnboardingFormProps {
-    mode: 'add' | 'update';
-    initialData?: Partial<Omit<OnboardingFormFields, 'message' | 'validationErrors'>>;
+    readonly mode: 'add' | 'update';
+    readonly initialData?: Partial<Omit<OnboardingFormFields, 'message' | 'validationErrors'>>;
+    readonly redirectTo?: string;
 }
 
-export const OnboardingForm = ({ mode, initialData }: OnboardingFormProps) => {
+export const OnboardingForm = ({
+    mode,
+    initialData,
+    redirectTo,
+}: OnboardingFormProps): JSX.Element => {
     const isAddMode = mode === 'add';
     const activeSchema = isAddMode ? fullUserSchema : addressSchema;
 
@@ -49,7 +54,7 @@ export const OnboardingForm = ({ mode, initialData }: OnboardingFormProps) => {
         validationErrors: [],
     });
 
-    const [formState, formAction] = useActionState(
+    const [, formAction] = useActionState(
         async (state: OnboardingFormState, payload: FormData) => {
             const result = await OnboardingAction(mode, state, payload);
             if (result) {
@@ -108,7 +113,7 @@ export const OnboardingForm = ({ mode, initialData }: OnboardingFormProps) => {
 
         const submitData = new FormData();
 
-        const dataKeys: (keyof OnboardingFormFields)[] = [
+        const dataKeys: (keyof Omit<OnboardingFormFields, 'message' | 'validationErrors'>)[] = [
             'firstName',
             'lastName',
             'username',
@@ -125,6 +130,10 @@ export const OnboardingForm = ({ mode, initialData }: OnboardingFormProps) => {
             if (value !== null && value !== undefined) submitData.append(key, value.toString());
         });
 
+        if (redirectTo) {
+            submitData.append('redirectTo', redirectTo);
+        }
+
         startTransitionSubmit(async () => {
             await formAction(submitData);
         });
@@ -134,6 +143,9 @@ export const OnboardingForm = ({ mode, initialData }: OnboardingFormProps) => {
         startTransitionReset(async () => {
             const resetData = new FormData();
             resetData.append('reset', 'yes');
+            if (redirectTo) {
+                resetData.append('redirectTo', redirectTo);
+            }
             await formAction(resetData);
 
             setFormData({
@@ -168,7 +180,9 @@ export const OnboardingForm = ({ mode, initialData }: OnboardingFormProps) => {
                 <FormErrors
                     formError={formData.message ?? undefined}
                     validationErrors={
-                        formData.validationErrors?.length ? formData.validationErrors : undefined
+                        formData.validationErrors?.length
+                            ? [...formData.validationErrors]
+                            : undefined
                     }
                 />
 

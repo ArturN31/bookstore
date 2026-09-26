@@ -3,9 +3,8 @@
  */
 
 import { POST } from '@/app/api/webhooks/stripe/route';
-import { stripe } from '@/data/checkout/CheckoutUtils';
+import { stripe } from '@/data/checkout/CheckoutStripeServer';
 import { createBackendClient } from '@/utils/db/server';
-import { NextResponse } from 'next/server';
 
 jest.mock('next/server', () => ({
     NextResponse: {

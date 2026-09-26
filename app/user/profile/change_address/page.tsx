@@ -17,7 +17,14 @@ const mapUserToAddressForm = (user: User) => ({
     phoneNumber: sanitize(user.phone_number),
 });
 
-export default async function ChangeAddressPage() {
+interface ChangeAddressPageProps {
+    readonly searchParams: Promise<{ readonly redirectTo?: string }>;
+}
+
+export default async function ChangeAddressPage({ searchParams }: ChangeAddressPageProps) {
+    const resolvedParams = await searchParams;
+    const redirectTo = resolvedParams.redirectTo;
+
     const { data: userData, error } = await getUserData();
 
     if (error || !userData) redirect('/');
@@ -29,6 +36,7 @@ export default async function ChangeAddressPage() {
             <OnboardingForm
                 mode="update"
                 initialData={formattedData}
+                redirectTo={redirectTo}
             />
         </div>
     );

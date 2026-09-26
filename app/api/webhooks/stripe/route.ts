@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { stripe } from '@/data/checkout/CheckoutUtils';
 import { createBackendClient } from '@/utils/db/server';
+import { stripe } from '@/data/checkout/CheckoutStripeServer';
 
 export async function POST(req: Request): Promise<Response> {
     const body = await req.text();

@@ -5,7 +5,7 @@ import { fetchUserAuthData, fetchUserProfileById } from '../repositories/Checkou
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { SafeQueryResult, safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
-import { stripe } from '../CheckoutUtils';
+import { stripe } from '../CheckoutStripeServer';
 
 type UserProfileRow = Database['public']['Tables']['users']['Row'];
 
@@ -39,17 +39,31 @@ export const getCurrentUserCheckoutData = async (): Promise<SafeQueryResult<User
         const profile = profileResult.data;
 
         if (profile) {
-            stripeCustomerId =
-                (profile as unknown as { stripe_customer_id?: string }).stripe_customer_id ?? null;
+            const profileRecord = profile as UserProfileRow & {
+                readonly stripe_customer_id?: string | null;
+            };
+            stripeCustomerId = profileRecord.stripe_customer_id ?? null;
 
             if (!stripeCustomerId && user.email) {
                 try {
-                    const customer = await stripe.customers.create({
+                    // 1. Check if a customer already exists in Stripe for this email to prevent duplicates
+                    const existingCustomers = await stripe.customers.list({
                         email: user.email,
-                        metadata: { supabaseUserId: user.id },
+                        limit: 1,
                     });
-                    stripeCustomerId = customer.id;
 
+                    if (existingCustomers.data.length > 0) {
+                        stripeCustomerId = existingCustomers.data[0].id;
+                    } else {
+                        // 2. Only create a new one if none exists in Stripe
+                        const customer = await stripe.customers.create({
+                            email: user.email,
+                            metadata: { supabaseUserId: user.id },
+                        });
+                        stripeCustomerId = customer.id;
+                    }
+
+                    // 3. Persist the resolved Stripe customer ID back to Supabase
                     await supabase
                         .from('users')
                         .update({
@@ -57,7 +71,7 @@ export const getCurrentUserCheckoutData = async (): Promise<SafeQueryResult<User
                         } as unknown as Partial<UserProfileRow>)
                         .eq('id', user.id);
                 } catch (stripeErr: unknown) {
-                    console.error('Failed to create Stripe customer', stripeErr);
+                    console.error('Failed to resolve or create Stripe customer', stripeErr);
                 }
             }
         }

@@ -30,6 +30,7 @@ describe('CheckoutOrderRepository', () => {
                         price: 49.99,
                     },
                 ],
+                payment_intent_id: 'intent-123',
             };
 
             const result = await processOrderTransaction(mockSupabase, payload);

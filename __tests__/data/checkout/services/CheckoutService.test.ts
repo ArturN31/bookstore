@@ -15,10 +15,11 @@ import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { withRetry } from '@/utils/network/retry';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
-import { calculateTotals, createPaymentIntentAction } from '@/data/checkout/CheckoutUtils';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/database.types';
 import { ProcessCheckoutParams } from '@/data/checkout/CheckoutTypes';
+import { createPaymentIntentAction } from '@/data/checkout/CheckoutStripeServer';
+import { calculateTotals } from '@/data/checkout/CheckoutUtils';
 
 jest.mock('@/utils/db/server');
 jest.mock('@/utils/db/safeSupabaseQuery');

@@ -30,6 +30,11 @@ export const CartSidebar = ({
 
     const isCartEmpty = !cartBooks || cartBooks.length === 0;
 
+    const handleCheckoutClick = () => {
+        handleCloseCart();
+        router.push('/checkout');
+    };
+
     if (!mounted) return null;
 
     return createPortal(
@@ -67,7 +72,7 @@ export const CartSidebar = ({
                         <div className="bg-gunmetal w-full p-4">
                             <button
                                 className="text-gunmetal w-full rounded-md bg-white py-3 font-semibold transition-colors duration-200 hover:cursor-pointer hover:bg-gray-100"
-                                onClick={() => router.push('/checkout')}
+                                onClick={handleCheckoutClick}
                             >
                                 Proceed to Checkout
                             </button>

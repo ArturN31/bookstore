@@ -670,7 +670,7 @@ The commands above reproduce the documented test, lint, and build verification s
 
 ### 1. Checkout and Commerce Completion
 
-- [ ] Add the `/checkout` route with unauthenticated session and empty cart access guards
+- [X] Add the `/checkout` route with unauthenticated session and empty cart access guards
 - [X] Implement layered data architecture using Zod validation schemas and `safeSupabaseQuery` error handling
 - [X] Integrate Stripe payment provider via server-side actions with idempotency key enforcement
 - [X] Add rate-limiting on discount application and checkout submissions to prevent fraud and brute-forcing

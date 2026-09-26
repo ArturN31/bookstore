@@ -13,9 +13,10 @@ import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { fetchOrderById, processOrderTransaction } from '../repositories/CheckoutOrderRepository';
 import { withRetry } from '@/utils/network/retry';
-import { calculateTotals, createPaymentIntentAction } from '../CheckoutUtils';
+import { calculateTotals } from '../CheckoutUtils';
 import { Database } from '@/database.types';
 import { DEFAULT_CURRENCY } from '../CheckoutConstants';
+import { createPaymentIntentAction } from '../CheckoutStripeServer';
 
 type BookRow = Database['public']['Tables']['books']['Row'];
 
@@ -25,9 +26,8 @@ export const executeCheckoutOrder = async (
     try {
         const supabase = await createBackendClient();
 
-        if (!params.items || params.items.length === 0) {
+        if (!params.items || params.items.length === 0)
             return { data: null, error: APP_ERROR_MESSAGES.EMPTY_CART_CHECKOUT };
-        }
 
         const bookIds = params.items.map((i) => i.bookId);
 
@@ -37,9 +37,9 @@ export const executeCheckoutOrder = async (
                 return res;
             }),
         );
-
         if (booksResult.error)
             return { data: null, error: sanitizeSupabaseError(booksResult.error) };
+
         const books = booksResult.data;
         if (!books || books.length !== params.items.length)
             return { data: null, error: APP_ERROR_MESSAGES.INSUFFICIENT_STOCK };
@@ -127,12 +127,11 @@ export const executeCheckoutOrder = async (
             !paymentIntentResult.success ||
             !paymentIntentResult.clientSecret ||
             !paymentIntentResult.paymentIntentId
-        ) {
+        )
             return {
                 data: null,
                 error: paymentIntentResult.error ?? APP_ERROR_MESSAGES.PAYMENT_PROCESSING_FAILED,
             };
-        }
 
         const rpcResult = await safeSupabaseQuery<{ readonly order_id: string }>(() =>
             withRetry(async () => {
@@ -151,14 +150,13 @@ export const executeCheckoutOrder = async (
             }),
         );
 
-        if (rpcResult.error || !rpcResult.data) {
+        if (rpcResult.error || !rpcResult.data)
             return {
                 data: null,
                 error: rpcResult.error
                     ? sanitizeSupabaseError(rpcResult.error)
                     : APP_ERROR_MESSAGES.ORDER_CREATION_FAILED,
             };
-        }
 
         const responseObj = rpcResult.data;
 

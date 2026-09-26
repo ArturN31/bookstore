@@ -8,9 +8,9 @@ import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { withRetry } from '@/utils/network/retry';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
-import { stripe } from '@/data/checkout/CheckoutUtils';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/database.types';
+import { stripe } from '@/data/checkout/CheckoutStripeServer';
 
 jest.mock('@/utils/db/server');
 jest.mock('@/utils/db/safeSupabaseQuery');

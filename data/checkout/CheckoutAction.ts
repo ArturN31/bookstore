@@ -72,12 +72,11 @@ export const processCheckoutAction = async (
     payload: ProcessCheckoutActionPayload,
 ): Promise<ActionResult<ProcessCheckoutResult>> => {
     try {
-        if (!process.env.STRIPE_SECRET_KEY) {
+        if (!process.env.STRIPE_SECRET_KEY)
             return {
                 success: false,
                 error: 'Stripe configuration is missing on the server.',
             };
-        }
 
         const userResult = await getCurrentUserCheckoutData();
 

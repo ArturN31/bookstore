@@ -2,26 +2,12 @@ import {
     DEFAULT_CURRENCY,
     FREE_SHIPPING_THRESHOLD,
     SHIPPING_COST,
-    STRIPE_API_VERSION,
 } from '@/data/checkout/CheckoutConstants';
 import {
     AppliedDiscountState,
     CartCheckoutItem,
     CheckoutSummaryTotals,
 } from '@/data/checkout/CheckoutTypes';
-import Stripe from 'stripe';
-
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-    apiVersion: STRIPE_API_VERSION as Stripe.LatestApiVersion,
-    httpClient: Stripe.createFetchHttpClient(),
-});
-
-export interface PaymentIntentResult {
-    readonly success: boolean;
-    readonly clientSecret: string | null;
-    readonly paymentIntentId: string | null;
-    readonly error: string | null;
-}
 
 export function calculateSubtotal(items: ReadonlyArray<CartCheckoutItem>): number {
     return items.reduce((accumulator: number, item: CartCheckoutItem): number => {
@@ -84,39 +70,4 @@ export function generateIdempotencyKey(): string {
         const value = character === 'x' ? randomValue : (randomValue & 0x3) | 0x8;
         return value.toString(16);
     });
-}
-
-export async function createPaymentIntentAction(
-    totalAmountInCents: number,
-    idempotencyKey: string,
-    currency: string = DEFAULT_CURRENCY,
-    metadata?: Record<string, string>,
-    customerId?: string | null,
-): Promise<PaymentIntentResult> {
-    try {
-        const paymentIntent = await stripe.paymentIntents.create(
-            {
-                amount: totalAmountInCents,
-                currency: currency.toLowerCase(),
-                customer: customerId ?? undefined,
-                automatic_payment_methods: { enabled: true },
-                metadata: metadata ?? {},
-            },
-            { idempotencyKey },
-        );
-
-        return {
-            success: true,
-            clientSecret: paymentIntent.client_secret,
-            paymentIntentId: paymentIntent.id,
-            error: null,
-        };
-    } catch (err: unknown) {
-        return {
-            success: false,
-            clientSecret: null,
-            paymentIntentId: null,
-            error: err instanceof Error ? err.message : 'Failed to initialize payment gateway.',
-        };
-    }
 }

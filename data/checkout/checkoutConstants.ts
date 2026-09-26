@@ -4,8 +4,6 @@ export const FREE_SHIPPING_THRESHOLD = 50.0;
 
 export const DEFAULT_CURRENCY = 'GBP';
 
-export const STRIPE_API_VERSION = '2025-08-27.acacia';
-
 export const PAYMENT_METHODS = {
     CARD: 'card',
     PAYPAL: 'paypal',
