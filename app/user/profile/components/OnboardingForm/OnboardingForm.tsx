@@ -130,9 +130,7 @@ export const OnboardingForm = ({
             if (value !== null && value !== undefined) submitData.append(key, value.toString());
         });
 
-        if (redirectTo) {
-            submitData.append('redirectTo', redirectTo);
-        }
+        if (redirectTo) submitData.append('redirectTo', redirectTo);
 
         startTransitionSubmit(async () => {
             await formAction(submitData);
@@ -143,9 +141,7 @@ export const OnboardingForm = ({
         startTransitionReset(async () => {
             const resetData = new FormData();
             resetData.append('reset', 'yes');
-            if (redirectTo) {
-                resetData.append('redirectTo', redirectTo);
-            }
+            if (redirectTo) resetData.append('redirectTo', redirectTo);
             await formAction(resetData);
 
             setFormData({

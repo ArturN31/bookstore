@@ -27,6 +27,7 @@ jest.mock('@/utils/network/retry');
 jest.mock('@/utils/errors/SupabaseErrorHandler');
 jest.mock('@/data/checkout/repositories/CheckoutOrderRepository');
 jest.mock('@/data/checkout/CheckoutUtils');
+jest.mock('@/data/checkout/CheckoutStripeServer');
 
 describe('CheckoutService', () => {
     let mockSupabase: SupabaseClient<Database>;

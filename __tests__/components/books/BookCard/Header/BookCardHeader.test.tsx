@@ -97,7 +97,6 @@ describe('APP - BookCard - Header', () => {
         const wishlistWrapper = screen.getByTestId('mock-wishlist').parentElement;
         expect(wishlistWrapper).toBeInTheDocument();
 
-        // Create a click event and verify stopPropagation is called
         const clickEvent = new MouseEvent('click', {
             bubbles: true,
             cancelable: true,

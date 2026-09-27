@@ -174,12 +174,8 @@ describe('DeleteReviewModal', () => {
         const confirmButton = screen.getByRole('button', { name: /delete review/i });
         fireEvent.click(confirmButton);
 
-        // Attempt to close via backdrop click while isDeleting is true
         const backdrop = document.querySelector('.MuiBackdrop-root');
-        if (backdrop) {
-            fireEvent.click(backdrop);
-        }
-
+        if (backdrop) fireEvent.click(backdrop);
         expect(mockOnClose).not.toHaveBeenCalled();
 
         resolveConfirm();

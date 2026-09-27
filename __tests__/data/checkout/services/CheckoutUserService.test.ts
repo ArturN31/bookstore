@@ -17,9 +17,10 @@ jest.mock('@/utils/db/safeSupabaseQuery');
 jest.mock('@/utils/network/retry');
 jest.mock('@/utils/errors/SupabaseErrorHandler');
 jest.mock('@/data/checkout/repositories/CheckoutUserRepository');
-jest.mock('@/data/checkout/CheckoutUtils', () => ({
+jest.mock('@/data/checkout/CheckoutStripeServer', () => ({
     stripe: {
         customers: {
+            list: jest.fn(),
             create: jest.fn(),
         },
     },
@@ -80,10 +81,11 @@ describe('CheckoutUserService', () => {
                 profile: mockProfile,
                 stripeCustomerId: 'cus_existing123',
             });
+            expect(stripe.customers.list).not.toHaveBeenCalled();
             expect(stripe.customers.create).not.toHaveBeenCalled();
         });
 
-        it('should create a new Stripe customer if profile has no stripe_customer_id and user has email', async () => {
+        it('should reuse an existing Stripe customer if found via email search', async () => {
             const mockUser = { id: 'user-uuid-123', email: 'user@example.com' };
             const mockProfile = {
                 id: 'user-uuid-123',
@@ -101,6 +103,51 @@ describe('CheckoutUserService', () => {
                 error: null,
             } as never);
 
+            jest.mocked(stripe.customers.list).mockResolvedValue({
+                data: [{ id: 'cus_stripe_found_123' }],
+            } as never);
+
+            const result = await getCurrentUserCheckoutData();
+
+            expect(result.error).toBeNull();
+            expect(result.data).toEqual({
+                id: 'user-uuid-123',
+                email: 'user@example.com',
+                profile: mockProfile,
+                stripeCustomerId: 'cus_stripe_found_123',
+            });
+            expect(stripe.customers.list).toHaveBeenCalledWith({
+                email: 'user@example.com',
+                limit: 1,
+            });
+            expect(stripe.customers.create).not.toHaveBeenCalled();
+            expect(mockSupabase.from).toHaveBeenCalledWith('users');
+            expect(mockUpdate).toHaveBeenCalledWith({ stripe_customer_id: 'cus_stripe_found_123' });
+            expect(mockEq).toHaveBeenCalledWith('id', 'user-uuid-123');
+        });
+
+        it('should create a new Stripe customer if profile has no stripe_customer_id and no Stripe customer exists', async () => {
+            const mockUser = { id: 'user-uuid-123', email: 'user@example.com' };
+            const mockProfile = {
+                id: 'user-uuid-123',
+                first_name: 'Jane',
+                last_name: 'Doe',
+            };
+
+            jest.mocked(fetchUserAuthData).mockResolvedValue({
+                data: { user: mockUser },
+                error: null,
+            } as never);
+
+            jest.mocked(fetchUserProfileById).mockResolvedValue({
+                data: mockProfile,
+                error: null,
+            } as never);
+
+            jest.mocked(stripe.customers.list).mockResolvedValue({
+                data: [],
+            } as never);
+
             jest.mocked(stripe.customers.create).mockResolvedValue({
                 id: 'cus_new123',
             } as never);
@@ -113,6 +160,10 @@ describe('CheckoutUserService', () => {
                 email: 'user@example.com',
                 profile: mockProfile,
                 stripeCustomerId: 'cus_new123',
+            });
+            expect(stripe.customers.list).toHaveBeenCalledWith({
+                email: 'user@example.com',
+                limit: 1,
             });
             expect(stripe.customers.create).toHaveBeenCalledWith({
                 email: 'user@example.com',
@@ -141,7 +192,7 @@ describe('CheckoutUserService', () => {
             } as never);
 
             const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-            jest.mocked(stripe.customers.create).mockRejectedValue(new Error('Stripe API error'));
+            jest.mocked(stripe.customers.list).mockRejectedValue(new Error('Stripe API error'));
 
             const result = await getCurrentUserCheckoutData();
 
@@ -153,7 +204,7 @@ describe('CheckoutUserService', () => {
                 stripeCustomerId: null,
             });
             expect(consoleSpy).toHaveBeenCalledWith(
-                'Failed to create Stripe customer',
+                'Failed to resolve or create Stripe customer',
                 expect.any(Error),
             );
             consoleSpy.mockRestore();

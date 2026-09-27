@@ -15,7 +15,7 @@ jest.mock('next/server', () => ({
     },
 }));
 
-jest.mock('@/data/checkout/CheckoutUtils', () => ({
+jest.mock('@/data/checkout/CheckoutStripeServer', () => ({
     stripe: {
         webhooks: {
             constructEvent: jest.fn(),
@@ -30,7 +30,7 @@ jest.mock('@/utils/db/server');
 
 describe('Stripe Webhook API Route', () => {
     const originalEnv = process.env;
-    let mockSupabase: any;
+    let mockSupabase: { from: jest.Mock; rpc: jest.Mock };
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -44,7 +44,9 @@ describe('Stripe Webhook API Route', () => {
             rpc: jest.fn(),
         };
 
-        jest.mocked(createBackendClient).mockResolvedValue(mockSupabase);
+        jest.mocked(createBackendClient).mockResolvedValue(
+            mockSupabase as unknown as Awaited<ReturnType<typeof createBackendClient>>,
+        );
     });
 
     afterEach(() => {

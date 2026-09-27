@@ -2,8 +2,23 @@ import 'server-only';
 import Stripe from 'stripe';
 import { DEFAULT_CURRENCY } from '@/data/checkout/CheckoutConstants';
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-    httpClient: Stripe.createFetchHttpClient(),
+let stripeClient: Stripe | null = null;
+
+export function getStripe(): Stripe {
+    if (!stripeClient) {
+        const secretKey = process.env.STRIPE_SECRET_KEY;
+        if (!secretKey) throw new Error('Missing STRIPE_SECRET_KEY environment variable.');
+        stripeClient = new Stripe(secretKey);
+    }
+    return stripeClient;
+}
+
+export const stripe = new Proxy({} as Stripe, {
+    get(_target, prop: keyof Stripe) {
+        const client = getStripe();
+        const value = client[prop];
+        return typeof value === 'function' ? value.bind(client) : value;
+    },
 });
 
 export interface PaymentIntentResult {
@@ -21,7 +36,7 @@ export async function createPaymentIntentAction(
     customerId?: string | null,
 ): Promise<PaymentIntentResult> {
     try {
-        const paymentIntent = await stripe.paymentIntents.create(
+        const paymentIntent = await getStripe().paymentIntents.create(
             {
                 amount: totalAmountInCents,
                 currency: currency.toLowerCase(),

@@ -1,4 +1,3 @@
-// src/app/user/profile/public/[username]/components/PrivacySettingsControl.tsx
 'use client';
 
 import React, { useState } from 'react';

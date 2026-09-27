@@ -43,7 +43,6 @@ try {
         r.paths[groupName].count++;
     });
 
-    // Calculate averages for each group path
     Object.keys(r.paths).forEach(k => {
         const group = r.paths[k];
 

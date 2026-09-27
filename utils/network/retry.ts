@@ -1,6 +1,3 @@
-/**
- * Utility to retry asynchronous operations with exponential backoff.
- */
 export const withRetry = async <T>(
     fn: () => Promise<T>,
     maxRetries = 3,
@@ -14,18 +11,14 @@ export const withRetry = async <T>(
         } catch (err) {
             attempt++;
 
-            // Identify transient network/fetch failures
             const errorMessage = err instanceof Error ? err.message : String(err);
             const isTransientError =
                 errorMessage.includes('fetch failed') ||
                 errorMessage.includes('timeout') ||
                 errorMessage.includes('UND_ERR_CONNECT_TIMEOUT');
 
-            if (attempt >= maxRetries || !isTransientError) {
-                throw err;
-            }
+            if (attempt >= maxRetries || !isTransientError) throw err;
 
-            // Exponential backoff: 1s, 2s, 4s...
             const delayTime = baseBackoff * Math.pow(2, attempt - 1);
             await new Promise((res) => setTimeout(res, delayTime));
 

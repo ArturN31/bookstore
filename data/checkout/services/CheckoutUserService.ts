@@ -46,7 +46,6 @@ export const getCurrentUserCheckoutData = async (): Promise<SafeQueryResult<User
 
             if (!stripeCustomerId && user.email) {
                 try {
-                    // 1. Check if a customer already exists in Stripe for this email to prevent duplicates
                     const existingCustomers = await stripe.customers.list({
                         email: user.email,
                         limit: 1,
@@ -55,7 +54,6 @@ export const getCurrentUserCheckoutData = async (): Promise<SafeQueryResult<User
                     if (existingCustomers.data.length > 0) {
                         stripeCustomerId = existingCustomers.data[0].id;
                     } else {
-                        // 2. Only create a new one if none exists in Stripe
                         const customer = await stripe.customers.create({
                             email: user.email,
                             metadata: { supabaseUserId: user.id },
@@ -63,7 +61,6 @@ export const getCurrentUserCheckoutData = async (): Promise<SafeQueryResult<User
                         stripeCustomerId = customer.id;
                     }
 
-                    // 3. Persist the resolved Stripe customer ID back to Supabase
                     await supabase
                         .from('users')
                         .update({

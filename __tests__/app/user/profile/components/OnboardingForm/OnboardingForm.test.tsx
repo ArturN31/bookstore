@@ -169,6 +169,60 @@ describe('APP - pages/user - OnboardingForm', () => {
         expect(sentData.get('reset')).toBe('yes');
     });
 
+    it('appends redirectTo to FormData on submit when redirectTo prop is provided', async () => {
+        mockAction.mockImplementation(async () => ({
+            message: 'Address Saved!',
+            validationErrors: [],
+        }));
+
+        render(
+            <OnboardingForm
+                mode="update"
+                redirectTo="/checkout"
+                initialData={{
+                    streetAddress: '123 Valid St',
+                    postcode: 'G1 1AA',
+                    city: 'Glasgow',
+                    country: 'UK',
+                }}
+            />,
+        );
+
+        const submitBtn = screen.getByRole('button', { name: /submit/i });
+
+        await act(async () => {
+            fireEvent.click(submitBtn);
+        });
+
+        expect(mockAction).toHaveBeenCalled();
+        const sentData = mockAction.mock.calls[0][2] as FormData;
+        expect(sentData.get('redirectTo')).toBe('/checkout');
+    });
+
+    it('appends redirectTo to FormData on reset when redirectTo prop is provided', async () => {
+        mockAction.mockImplementation(async () => ({
+            message: null,
+            validationErrors: [],
+        }));
+
+        render(
+            <OnboardingForm
+                mode="add"
+                redirectTo="/dashboard"
+            />,
+        );
+        const clearBtn = screen.getByRole('button', { name: /clear/i });
+
+        await act(async () => {
+            fireEvent.click(clearBtn);
+        });
+
+        expect(mockAction).toHaveBeenCalled();
+        const sentData = mockAction.mock.calls[0][2] as FormData;
+        expect(sentData.get('reset')).toBe('yes');
+        expect(sentData.get('redirectTo')).toBe('/dashboard');
+    });
+
     it('exhaustively covers lines by exercising every "add" mode field', async () => {
         render(<OnboardingForm mode="add" />);
 
