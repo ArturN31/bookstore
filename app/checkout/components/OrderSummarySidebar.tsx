@@ -40,8 +40,15 @@ export function OrderSummarySidebar({
                         more to qualify for <span className="font-bold">Free Shipping</span>!
                     </p>
                 ) : (
-                    <p className="mb-1.5 font-semibold text-green-700">
-                        🎉 You qualify for Free Shipping!
+                    <p className="mb-1.5 flex items-center gap-2 font-semibold text-green-700">
+                        <svg
+                            className="h-5 w-5 shrink-0 fill-current"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+                            <path d="M1 4.75C1 3.784 1.784 3 2.75 3H14.25C15.216 3 16 3.784 16 4.75V14H1.75C1.336 14 1 13.664 1 13.25V4.75ZM17.5 7H19.6c.48 0 .934.225 1.226.608l2.054 2.698a1.75 1.75 0 0 1 .37 1.094V16.25c0 .966-.784 1.75-1.75 1.75H20a2.5 2.5 0 0 1-4.9 0H8.9a2.5 2.5 0 0 1-4.8 0H2.75C1.784 18 1 17.216 1 16.25V15.5h15c.414 0 .75-.336.75-.75V7Zm-11 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm11 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" />
+                        </svg>
+                        <span>You qualify for Free Shipping!</span>
                     </p>
                 )}
                 <div className="h-2 w-full overflow-hidden rounded-full bg-amber-200/60">
