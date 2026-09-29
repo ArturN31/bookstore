@@ -1,5 +1,6 @@
 import { useState, useTransition, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
 import { CartItem } from '@/data/cart/CartMapper';
 import { AppliedDiscountState } from '@/data/checkout/CheckoutTypes';
 import { calculateTotals, generateIdempotencyKey } from '@/data/checkout/CheckoutUtils';
@@ -23,6 +24,8 @@ export function useCheckoutForm({
     initialItems,
 }: UseCheckoutFormProps) {
     const router = useRouter();
+    const stripe = useStripe();
+    const elements = useElements();
 
     const [firstName, setFirstName] = useState<string>(
         (initialProfile?.first_name as string) ?? '',
@@ -72,6 +75,17 @@ export function useCheckoutForm({
         e.preventDefault();
         if (isSubmitting) return;
 
+        if (!stripe || !elements) {
+            setCheckoutError('Payment system is initializing. Please try again in a moment.');
+            return;
+        }
+
+        const cardElement = elements.getElement(CardElement);
+        if (!cardElement) {
+            setCheckoutError('Please enter your credit or debit card details.');
+            return;
+        }
+
         setIsSubmitting(true);
         setCheckoutError(null);
 
@@ -97,12 +111,38 @@ export function useCheckoutForm({
             const result = await processCheckoutAction({
                 shippingDetails,
                 items: payloadItems,
-                discountId: appliedDiscount ? appliedDiscount.code : null,
+                discountId: appliedDiscount ? appliedDiscount.id : null,
                 idempotencyKey,
             });
 
-            if (!result.success || !result.data?.orderId) {
+            if (!result.success || !result.data?.orderId || !result.data?.clientSecret) {
                 setCheckoutError(result.error ?? 'Order placement failed. Please try again.');
+                setIsSubmitting(false);
+                return;
+            }
+
+            const confirmResult = await stripe.confirmCardPayment(result.data.clientSecret, {
+                payment_method: {
+                    card: cardElement,
+                    billing_details: {
+                        name: `${firstName} ${lastName}`.trim(),
+                        email: customerEmail,
+                        phone: phone,
+                        address: {
+                            line1: streetAddress,
+                            city: city,
+                            postal_code: postcode,
+                            country: 'GB',
+                        },
+                    },
+                },
+            });
+
+            if (confirmResult.error) {
+                setCheckoutError(
+                    confirmResult.error.message ??
+                        'Payment confirmation failed. Check card details.',
+                );
                 setIsSubmitting(false);
                 return;
             }

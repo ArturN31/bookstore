@@ -69,6 +69,7 @@ export const validateAndCalculateDiscount = async (
 
         return {
             data: {
+                id: discount.id,
                 code: discount.code,
                 discountPercent: discountPercent,
                 discountAmount: Number(calculatedDeduction.toFixed(2)),

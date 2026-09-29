@@ -3,6 +3,7 @@ import { getCartData } from '@/data/cart/CartService';
 import { redirect } from 'next/navigation';
 import { CheckoutEmptyCart } from './components/CheckoutEmptyCart';
 import { CheckoutForm } from './components/CheckoutForm';
+import { CheckoutStripeProvider } from './components/CheckoutStripeProvider';
 import { JSX } from 'react/jsx-runtime';
 
 export const dynamic = 'force-dynamic';
@@ -31,13 +32,15 @@ export default async function CheckoutPage(): Promise<JSX.Element> {
                     </p>
                 </header>
 
-                <CheckoutForm
-                    userId={userId}
-                    customerEmail={email}
-                    stripeCustomerId={stripeCustomerId}
-                    initialProfile={profile}
-                    initialItems={cartItems}
-                />
+                <CheckoutStripeProvider>
+                    <CheckoutForm
+                        userId={userId}
+                        customerEmail={email}
+                        stripeCustomerId={stripeCustomerId}
+                        initialProfile={profile}
+                        initialItems={cartItems}
+                    />
+                </CheckoutStripeProvider>
             </div>
         </main>
     );

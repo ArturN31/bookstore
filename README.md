@@ -678,8 +678,8 @@ The commands above reproduce the documented test, lint, and build verification s
 - [X] Create atomic RPC database transaction with pessimistic row-level locking (`FOR UPDATE`) on book stock
 - [X] Validate stock, record orders, write line items, decrement inventory, and clear cart in a single transaction
 - [X] Implement asynchronous Stripe webhook endpoint (`/api/webhooks/stripe`) for payment lifecycle handling
-- [ ] Add protected `/checkout/confirmation/[orderId]` route guarded by strict user ownership verification (`checkIsOwner`)
-- [ ] Add post-purchase receipt display and asynchronous transactional email workflows
+- [X] Add protected `/checkout/confirmation/[orderId]` route guarded by strict user ownership verification (`checkIsOwner`)
+- [X] Add post-purchase receipt display and asynchronous transactional email workflows
 - [ ] Write unit and component integration test suite using Jest and React Testing Library
 
 ### 2. Public Profiles and Community Features

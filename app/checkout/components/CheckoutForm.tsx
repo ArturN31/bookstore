@@ -16,20 +16,8 @@ export interface CheckoutFormProps {
     readonly initialItems: readonly CartItem[];
 }
 
-export function CheckoutForm({
-    userId,
-    customerEmail,
-    stripeCustomerId,
-    initialProfile,
-    initialItems,
-}: CheckoutFormProps): JSX.Element {
-    const { discount, submission, totals } = useCheckoutForm({
-        userId,
-        customerEmail,
-        stripeCustomerId,
-        initialProfile,
-        initialItems,
-    });
+export function CheckoutForm(props: CheckoutFormProps): JSX.Element {
+    const { discount, submission, totals } = useCheckoutForm(props);
 
     return (
         <form
@@ -38,8 +26,8 @@ export function CheckoutForm({
         >
             <div className="space-y-6 lg:col-span-7">
                 <ShippingAddressSection
-                    customerEmail={customerEmail}
-                    initialProfile={initialProfile}
+                    customerEmail={props.customerEmail}
+                    initialProfile={props.initialProfile}
                 />
 
                 <DiscountSection
@@ -57,7 +45,7 @@ export function CheckoutForm({
 
             <div className="lg:col-span-5">
                 <OrderSummarySidebar
-                    initialItems={initialItems}
+                    initialItems={props.initialItems}
                     totals={totals}
                     appliedDiscount={discount.appliedDiscount}
                     isSubmitting={submission.isSubmitting}

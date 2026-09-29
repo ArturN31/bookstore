@@ -5,7 +5,7 @@ import {
     AppliedDiscountState,
     ProcessCheckoutParams,
     DiscountRow,
-    OrderDetailsRow,
+    OrderWithRelations,
     ProcessOrderPayloadItem,
     CartCheckoutItem,
 } from '../CheckoutTypes';
@@ -101,6 +101,7 @@ export const executeCheckoutOrder = async (
                     };
 
                 discountState = {
+                    id: discount.id,
                     code: discount.code,
                     discountPercent: discount.type === 'percentage' ? rawValue : 0,
                     discountAmount: discount.type === 'fixed_amount' ? rawValue : 0,
@@ -180,13 +181,20 @@ export const executeCheckoutOrder = async (
 
 export const getOrderDetailsById = async (
     orderId: string,
-): Promise<SafeQueryResult<OrderDetailsRow>> => {
+): Promise<SafeQueryResult<OrderWithRelations>> => {
     try {
         const supabase = await createBackendClient();
 
-        const queryResult = await safeSupabaseQuery<OrderDetailsRow>(() =>
-            withRetry(() => fetchOrderById(supabase, orderId)),
+        const queryResult = await safeSupabaseQuery<OrderWithRelations>(() =>
+            withRetry(async () => {
+                const res = await fetchOrderById(supabase, orderId);
+                return {
+                    ...res,
+                    data: res.data as unknown as OrderWithRelations,
+                };
+            }),
         );
+
         if (queryResult.error || !queryResult.data)
             return {
                 data: null,

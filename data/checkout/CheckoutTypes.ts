@@ -4,6 +4,20 @@ import { PaymentMethod } from './CheckoutConstants';
 export type BookRow = Database['public']['Tables']['books']['Row'];
 export type OrderDetailsRow = Database['public']['Tables']['orders']['Row'];
 export type DiscountRow = Database['public']['Tables']['discounts']['Row'];
+export type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
+
+export interface OrderItemWithBook extends OrderItemRow {
+    readonly books: BookRow | null;
+}
+
+export interface OrderDiscountWithDiscount {
+    readonly discounts: DiscountRow | null;
+}
+
+export interface OrderWithRelations extends OrderDetailsRow {
+    readonly order_items: readonly OrderItemWithBook[];
+    readonly order_discounts: readonly OrderDiscountWithDiscount[];
+}
 
 export interface CartCheckoutItem extends BookRow {
     readonly quantity: number;
@@ -12,6 +26,7 @@ export interface CartCheckoutItem extends BookRow {
 export type CartItem = CartCheckoutItem;
 
 export interface AppliedDiscountState {
+    readonly id: string;
     readonly code: string;
     readonly discountPercent: number;
     readonly discountAmount: number;

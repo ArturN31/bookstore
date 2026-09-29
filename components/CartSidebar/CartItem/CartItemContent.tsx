@@ -44,7 +44,7 @@ export const CartItemContent = ({ book }: { book: Book }) => {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                        <h3 className="truncate text-sm font-semibold text-gray-800">
+                        <h3 className="break-after-auto text-sm font-semibold text-gray-800">
                             {book.title || 'Unknown Title'}
                         </h3>
                         <div className="mt-1 flex items-center gap-2">
