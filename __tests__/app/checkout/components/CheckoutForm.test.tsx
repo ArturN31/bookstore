@@ -2,9 +2,19 @@ import { CheckoutForm } from '@/app/checkout/components/CheckoutForm';
 import { useCheckoutForm } from '@/app/checkout/useCheckoutForm';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { CartItem } from '@/data/cart/CartMapper';
-import { FormEvent } from 'react';
+import { FormEvent, JSX } from 'react';
 
 jest.mock('@/app/checkout/useCheckoutForm');
+jest.mock('@/data/checkout/CheckoutAction', () => ({
+    validateAndApplyDiscountAction: jest.fn(),
+    processCheckoutAction: jest.fn(),
+}));
+
+jest.mock('@stripe/react-stripe-js', () => ({
+    useStripe: jest.fn(() => ({})),
+    useElements: jest.fn(() => ({})),
+    CardElement: (): JSX.Element => <div data-testid="mock-card-element" />,
+}));
 
 describe('CheckoutForm', () => {
     const mockUseCheckoutForm = jest.mocked(useCheckoutForm);

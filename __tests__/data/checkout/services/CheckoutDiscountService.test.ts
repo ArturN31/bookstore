@@ -49,6 +49,7 @@ describe('CheckoutDiscountService', () => {
 
             expect(result.error).toBeNull();
             expect(result.data).toEqual({
+                id: 'disc-1',
                 code: 'SUMMER20',
                 discountPercent: 20,
                 discountAmount: 20.0,
@@ -78,6 +79,7 @@ describe('CheckoutDiscountService', () => {
 
             expect(result.error).toBeNull();
             expect(result.data).toEqual({
+                id: 'disc-2',
                 code: 'FIXED15',
                 discountPercent: 0,
                 discountAmount: 15.0,

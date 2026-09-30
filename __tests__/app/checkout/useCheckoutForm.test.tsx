@@ -18,6 +18,22 @@ jest.mock('@/data/checkout/CheckoutAction', () => ({
     processCheckoutAction: jest.fn(),
 }));
 
+const mockConfirmCardPayment = jest
+    .fn()
+    .mockResolvedValue({ paymentIntent: { status: 'succeeded' } });
+const mockGetElement = jest.fn().mockReturnValue({});
+
+jest.mock('@stripe/react-stripe-js', () => ({
+    useStripe: () => ({
+        confirmCardPayment: mockConfirmCardPayment,
+        confirmPayment: jest.fn(),
+    }),
+    useElements: () => ({
+        getElement: mockGetElement,
+    }),
+    CardElement: () => null,
+}));
+
 describe('useCheckoutForm', () => {
     const mockPush = jest.fn();
     const mockValidateDiscount = jest.mocked(validateAndApplyDiscountAction);
@@ -63,6 +79,8 @@ describe('useCheckoutForm', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        mockConfirmCardPayment.mockResolvedValue({ paymentIntent: { status: 'succeeded' } });
+        mockGetElement.mockReturnValue({});
         jest.mocked(useRouter).mockReturnValue({
             push: mockPush,
             replace: jest.fn(),
@@ -123,6 +141,7 @@ describe('useCheckoutForm', () => {
         mockValidateDiscount.mockResolvedValueOnce({
             success: true,
             data: {
+                id: '123',
                 code: 'SAVE10',
                 discountAmount: 2.0,
                 discountPercent: 10,
@@ -229,6 +248,7 @@ describe('useCheckoutForm', () => {
         mockValidateDiscount.mockResolvedValueOnce({
             success: true,
             data: {
+                id: 'disc-123',
                 code: 'SAVE20',
                 discountAmount: 4.0,
                 discountPercent: 20,
@@ -267,7 +287,7 @@ describe('useCheckoutForm', () => {
 
         expect(mockProcessCheckout).toHaveBeenCalledWith(
             expect.objectContaining({
-                discountId: 'SAVE20',
+                discountId: 'disc-123',
             }),
         );
     });

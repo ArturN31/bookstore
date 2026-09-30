@@ -680,6 +680,8 @@ The commands above reproduce the documented test, lint, and build verification s
 - [X] Implement asynchronous Stripe webhook endpoint (`/api/webhooks/stripe`) for payment lifecycle handling
 - [X] Add protected `/checkout/confirmation/[orderId]` route guarded by strict user ownership verification (`checkIsOwner`)
 - [X] Add post-purchase receipt display and asynchronous transactional email workflows
+- [ ] Provide additional shipping methods
+- [ ] Add order cancellation workflow
 - [ ] Write unit and component integration test suite using Jest and React Testing Library
 
 ### 2. Public Profiles and Community Features
