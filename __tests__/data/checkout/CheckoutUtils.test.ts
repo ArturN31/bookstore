@@ -74,6 +74,7 @@ describe('CheckoutUtils', () => {
 
         it('should return 0 when subtotal is less than minimumSubtotal threshold', () => {
             const discountState: AppliedDiscountState = {
+                id: '123',
                 code: 'SAVE10',
                 discountPercent: 10,
                 discountAmount: 0,
@@ -86,6 +87,7 @@ describe('CheckoutUtils', () => {
 
         it('should calculate percentage discount correctly and round to 2 decimal places', () => {
             const discountState: AppliedDiscountState = {
+                id: '123',
                 code: 'SAVE15',
                 discountPercent: 15,
                 discountAmount: 0,
@@ -98,6 +100,7 @@ describe('CheckoutUtils', () => {
 
         it('should calculate fixed amount discount correctly when discountPercent is 0', () => {
             const discountState: AppliedDiscountState = {
+                id: '123',
                 code: 'FLAT10',
                 discountPercent: 0,
                 discountAmount: 10,
@@ -110,6 +113,7 @@ describe('CheckoutUtils', () => {
 
         it('should cap fixed amount discount at subtotal if discount exceeds subtotal', () => {
             const discountState: AppliedDiscountState = {
+                id: '123',
                 code: 'FLAT100',
                 discountPercent: 0,
                 discountAmount: 100,
@@ -160,6 +164,7 @@ describe('CheckoutUtils', () => {
             const items = [{ price: 50.0, quantity: 2 }] as unknown as CartCheckoutItem[];
 
             const discountState: AppliedDiscountState = {
+                id: '123',
                 code: 'PERCENT20',
                 discountPercent: 20,
                 discountAmount: 0,

@@ -112,6 +112,7 @@ describe('OrderSummarySidebar', () => {
         };
 
         const appliedDiscount: AppliedDiscountState = {
+            id: '123',
             code: 'SAVE10',
             discountAmount: 10.0,
             discountPercent: 10,

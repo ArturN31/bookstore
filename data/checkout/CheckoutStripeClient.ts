@@ -3,9 +3,7 @@ import { loadStripe, Stripe } from '@stripe/stripe-js';
 let stripePromise: Promise<Stripe | null> | null = null;
 
 export const getStripeHeader = (): Promise<Stripe | null> => {
-    if (typeof window === 'undefined') {
-        return Promise.resolve(null);
-    }
+    if (typeof window === 'undefined') return Promise.resolve(null);
 
     if (!stripePromise) {
         const rawKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;

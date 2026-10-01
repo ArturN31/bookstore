@@ -14,12 +14,15 @@ import { executeCheckoutOrder } from '@/data/checkout/services/CheckoutService';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { checkoutFormSchema, applyDiscountSchema } from '@/data/schemas/checkoutSchema';
+import { clearUsersCart, getUsersCartID } from '@/data/cart/CartService';
 
 jest.mock('@/utils/network/rateLimiter');
 jest.mock('@/utils/errors/SupabaseErrorHandler');
 jest.mock('@/data/checkout/services/CheckoutUserService');
 jest.mock('@/data/checkout/services/CheckoutDiscountService');
 jest.mock('@/data/checkout/services/CheckoutService');
+jest.mock('@/data/cart/CartService');
+
 jest.mock('@/data/checkout/CheckoutUtils', () => ({
     stripe: {
         paymentIntents: {
@@ -81,6 +84,7 @@ describe('CheckoutAction', () => {
             } as never);
 
             const mockAppliedDiscount = {
+                id: 'disc-1',
                 code: 'SAVE10',
                 discountPercent: 10,
                 discountAmount: 10,
@@ -117,6 +121,7 @@ describe('CheckoutAction', () => {
 
             jest.mocked(validateAndCalculateDiscount).mockResolvedValue({
                 data: {
+                    id: 'disc-1',
                     code: 'SAVE10',
                     discountPercent: 10,
                     discountAmount: 10,
@@ -305,7 +310,7 @@ describe('CheckoutAction', () => {
             });
         });
 
-        it('should successfully execute checkout order when payload is valid', async () => {
+        it('should successfully execute checkout order and clear cart when cart is found', async () => {
             jest.mocked(getCurrentUserCheckoutData).mockResolvedValue({
                 data: {
                     id: 'user-123',
@@ -336,6 +341,11 @@ describe('CheckoutAction', () => {
                 error: null,
             } as never);
 
+            jest.mocked(getUsersCartID).mockResolvedValue({
+                data: 'cart-123',
+                error: null,
+            } as never);
+
             const result = await processCheckoutAction(mockPayload);
 
             expect(result).toEqual({
@@ -352,6 +362,54 @@ describe('CheckoutAction', () => {
                 paymentMethod: 'card',
                 idempotencyKey: 'idemp-xyz-123',
             });
+            expect(getUsersCartID).toHaveBeenCalledWith('user-123');
+            expect(clearUsersCart).toHaveBeenCalledWith('cart-123');
+        });
+
+        it('should not clear cart when getUsersCartID returns null data', async () => {
+            jest.mocked(getCurrentUserCheckoutData).mockResolvedValue({
+                data: {
+                    id: 'user-123',
+                    email: 'jane@example.com',
+                    profile: null,
+                    stripeCustomerId: 'cus_777',
+                },
+                error: null,
+            } as never);
+
+            jest.mocked(checkRateLimit).mockReturnValue({ success: true } as never);
+
+            jest.mocked(checkoutFormSchema.safeParse).mockReturnValue({
+                success: true,
+                data: { paymentMethod: 'card' },
+            } as never);
+
+            const mockProcessResult = {
+                success: true,
+                orderId: 'order-777',
+                clientSecret: 'pi_secret_123',
+                paymentIntentId: 'pi_123',
+                error: null,
+            };
+
+            jest.mocked(executeCheckoutOrder).mockResolvedValue({
+                data: mockProcessResult,
+                error: null,
+            } as never);
+
+            jest.mocked(getUsersCartID).mockResolvedValue({
+                data: null,
+                error: null,
+            } as never);
+
+            const result = await processCheckoutAction(mockPayload);
+
+            expect(result).toEqual({
+                success: true,
+                data: mockProcessResult,
+            });
+            expect(getUsersCartID).toHaveBeenCalledWith('user-123');
+            expect(clearUsersCart).not.toHaveBeenCalled();
         });
 
         it('should return CHECKOUT_LOGIN_REQUIRED when user is not logged in', async () => {

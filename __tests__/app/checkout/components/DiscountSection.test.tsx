@@ -84,6 +84,7 @@ describe('DiscountSection', () => {
 
     it('renders applied discount badge and remove button when discount is applied', () => {
         const appliedDiscount: AppliedDiscountState = {
+            id: '123',
             code: 'SAVE10',
             discountAmount: 5.0,
             discountPercent: 10,

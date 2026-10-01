@@ -23,14 +23,18 @@ const mockConfirmCardPayment = jest
     .mockResolvedValue({ paymentIntent: { status: 'succeeded' } });
 const mockGetElement = jest.fn().mockReturnValue({});
 
+const mockUseStripe = jest.fn(() => ({
+    confirmCardPayment: mockConfirmCardPayment,
+    confirmPayment: jest.fn(),
+}));
+
+const mockUseElements = jest.fn(() => ({
+    getElement: mockGetElement,
+}));
+
 jest.mock('@stripe/react-stripe-js', () => ({
-    useStripe: () => ({
-        confirmCardPayment: mockConfirmCardPayment,
-        confirmPayment: jest.fn(),
-    }),
-    useElements: () => ({
-        getElement: mockGetElement,
-    }),
+    useStripe: () => mockUseStripe(),
+    useElements: () => mockUseElements(),
     CardElement: () => null,
 }));
 
@@ -81,6 +85,13 @@ describe('useCheckoutForm', () => {
         jest.clearAllMocks();
         mockConfirmCardPayment.mockResolvedValue({ paymentIntent: { status: 'succeeded' } });
         mockGetElement.mockReturnValue({});
+        mockUseStripe.mockReturnValue({
+            confirmCardPayment: mockConfirmCardPayment,
+            confirmPayment: jest.fn(),
+        } as never);
+        mockUseElements.mockReturnValue({
+            getElement: mockGetElement,
+        } as never);
         jest.mocked(useRouter).mockReturnValue({
             push: mockPush,
             replace: jest.fn(),
@@ -244,6 +255,39 @@ describe('useCheckoutForm', () => {
         expect(mockProcessCheckout).toHaveBeenCalledTimes(1);
     });
 
+    it('sets checkoutError when stripe or elements is null', async () => {
+        mockUseStripe.mockReturnValueOnce(null as never);
+
+        const { result } = renderHook(() => useCheckoutForm(defaultProps));
+        const mockEvent = { preventDefault: jest.fn() } as unknown as FormEvent;
+
+        await act(async () => {
+            await result.current.submission.handleSubmit(mockEvent);
+        });
+
+        expect(result.current.submission.checkoutError).toBe(
+            'Payment system is initializing. Please try again in a moment.',
+        );
+        expect(mockProcessCheckout).not.toHaveBeenCalled();
+    });
+
+    it('sets checkoutError when CardElement is not found in elements', async () => {
+        mockGetElement.mockReturnValueOnce(null);
+
+        const { result } = renderHook(() => useCheckoutForm(defaultProps));
+        const mockEvent = { preventDefault: jest.fn() } as unknown as FormEvent;
+
+        await act(async () => {
+            await result.current.submission.handleSubmit(mockEvent);
+        });
+
+        expect(result.current.submission.checkoutError).toBe(
+            'Please enter your credit or debit card details.',
+        );
+        expect(result.current.submission.isSubmitting).toBe(false);
+        expect(mockProcessCheckout).not.toHaveBeenCalled();
+    });
+
     it('passes applied discount code in checkout payload when discount is active', async () => {
         mockValidateDiscount.mockResolvedValueOnce({
             success: true,
@@ -314,6 +358,62 @@ describe('useCheckoutForm', () => {
         expect(mockEvent.preventDefault).toHaveBeenCalledTimes(1);
         expect(mockProcessCheckout).toHaveBeenCalledTimes(1);
         expect(mockPush).toHaveBeenCalledWith('/checkout/success?orderId=order-xyz');
+    });
+
+    it('sets checkoutError when stripe confirmCardPayment returns an error with message', async () => {
+        mockProcessCheckout.mockResolvedValueOnce({
+            success: true,
+            data: {
+                orderId: 'order-xyz',
+                success: true,
+                clientSecret: 'pi_secret_123',
+                paymentIntentId: 'pi_123',
+                error: null,
+            },
+        });
+        mockConfirmCardPayment.mockResolvedValueOnce({
+            error: { message: 'Your card was declined.' },
+        });
+
+        const { result } = renderHook(() => useCheckoutForm(defaultProps));
+        const mockEvent = { preventDefault: jest.fn() } as unknown as FormEvent;
+
+        await act(async () => {
+            await result.current.submission.handleSubmit(mockEvent);
+        });
+
+        expect(result.current.submission.checkoutError).toBe('Your card was declined.');
+        expect(result.current.submission.isSubmitting).toBe(false);
+        expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('sets fallback error when stripe confirmCardPayment returns an error without message', async () => {
+        mockProcessCheckout.mockResolvedValueOnce({
+            success: true,
+            data: {
+                orderId: 'order-xyz',
+                success: true,
+                clientSecret: 'pi_secret_123',
+                paymentIntentId: 'pi_123',
+                error: null,
+            },
+        });
+        mockConfirmCardPayment.mockResolvedValueOnce({
+            error: {},
+        });
+
+        const { result } = renderHook(() => useCheckoutForm(defaultProps));
+        const mockEvent = { preventDefault: jest.fn() } as unknown as FormEvent;
+
+        await act(async () => {
+            await result.current.submission.handleSubmit(mockEvent);
+        });
+
+        expect(result.current.submission.checkoutError).toBe(
+            'Payment confirmation failed. Check card details.',
+        );
+        expect(result.current.submission.isSubmitting).toBe(false);
+        expect(mockPush).not.toHaveBeenCalled();
     });
 
     it('handles checkout failure gracefully by setting checkoutError', async () => {
