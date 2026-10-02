@@ -28,6 +28,7 @@ const customJestConfig = {
     coveragePathIgnorePatterns: [
         '<rootDir>/app/globals.css',
         '<rootDir>/data/checkout/CheckoutTypes.ts',
+        '<rootDir>/app/checkout/success/OrderConfirmationTypes.ts',
     ],
     coverageThreshold: {
         global: {

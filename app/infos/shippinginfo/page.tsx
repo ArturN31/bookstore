@@ -1,48 +1,82 @@
 export default function ShippingInformation() {
-	return (
-		<div className='grid gap-3'>
-			<h1
-				className='font-bold'
-				data-testid='shipping-info-header'>
-				This is a sample Shipping Information generated for the purposes of this project.
-			</h1>
+    return (
+        <div className="mx-auto grid max-w-4xl gap-4 p-6 text-slate-800">
+            <h1
+                className="text-3xl font-bold tracking-tight"
+                data-testid="shipping-info-header"
+            >
+                Shipping Information & Simulated Delivery Disclaimer
+            </h1>
 
-			<h2 className='font-bold'>Shipping Methods</h2>
-			<ul>
-				<li>
-					<span className='font-semibold'>Standard Shipping:</span>
-					<ul>
-						<li>Estimated delivery: 2-5 business days</li>
-						<li>
-							Shipping cost: Based on the weight of the parcel (&#163;4.50 - &#163;20)
-							within United Kingdom.
-						</li>
-					</ul>
-				</li>
-			</ul>
+            <p className="text-sm text-slate-500">
+                <span className="font-semibold">Effective Date:</span> 02/10/2026
+            </p>
 
-			<h2 className='font-bold'>Shipping Destinations</h2>
-			<p>We currently ship within United Kingdom.</p>
+            <div className="my-2 rounded-r border-l-4 border-amber-500 bg-amber-50 p-4 shadow-sm">
+                <h2 className="mb-1 text-lg font-bold text-amber-900">
+                    IMPORTANT NOTICE: NON-COMMERCIAL DEMONSTRATION SITE
+                </h2>
+                <p className="text-sm text-amber-800">
+                    Welcome to Books 4 You, a hands-on personal project built to explore and master
+                    modern web development from the ground up. This platform serves as a living
+                    sandbox for experimenting with full-stack architecture, intuitive UI/UX design,
+                    LLM integration, automated testing, and modern developer workflows. Because this
+                    project is strictly an educational endeavor, it is not intended for commercial
+                    or production use—all catalog items, transactions, and account details exist
+                    solely to test features and refine software engineering techniques.
+                </p>
+            </div>
 
-			<h2 className='font-bold'>Order Processing Time</h2>
-			<p>Orders are typically processed within 1-3 business days.</p>
+            <h2 className="mt-4 text-xl font-bold">1. Non-Commercial Shipping Scope</h2>
+            <p>
+                Books 4 You is a web application created exclusively for software development and
+                UI/UX testing. No physical items, books, or merchandise are stocked, packaged,
+                dispatched, or delivered by this project. All shipping calculations, carrier
+                options, delivery time estimates, and fulfillment statuses are entirely simulated.
+            </p>
 
-			<h2 className='font-bold'>Tracking Your Order</h2>
-			<p>
-				Once your order has shipped, you will receive an email with your tracking
-				information.
-			</p>
+            <h2 className="mt-4 text-xl font-bold">2. Absolute Limitation of Liability</h2>
+            <p className="text-xs font-semibold tracking-wider text-slate-600 uppercase">
+                PLEASE READ THIS SECTION CAREFULLY.
+            </p>
+            <p>
+                UNDER NO CIRCUMSTANCES SHALL THE DEVELOPER(S), SITE OWNER(S), OR CONTRIBUTORS BE
+                HELD RESPONSIBLE OR LIABLE FOR ANY EXPECTATIONS, LOSSES, CLAIMS, OR DAMAGES ARISING
+                FROM MISUNDERSTANDINGS REGARDING PHYSICAL ITEM DELIVERY. NO PHYSICAL MAIL SHOULD
+                EVER BE SENT TO OR EXPECTED FROM THIS PLATFORM.
+            </p>
 
-			<h2 className='font-bold'>Contact Us</h2>
-			<p>
-				If you have any questions about shipping, please contact us at{' '}
-				<a
-					href='mailto:books4you.contact@b4u.com'
-					className='text-sky-500 hover:text-sky-700'>
-					books4you.contact@example.com
-				</a>{' '}
-				or +44 7911 123456.
-			</p>
-		</div>
-	);
+            <h2 className="mt-4 text-xl font-bold">3. Simulated Shipping Methods</h2>
+            <p>
+                For the purpose of testing user interface checkout calculations, database logic, and
+                delivery state changes, the application models the following sample parameters:
+            </p>
+            <ul className="list-disc space-y-2 pl-6">
+                <li>
+                    <span className="font-semibold">Standard Shipping (Simulated):</span>
+                    <ul className="list-circle mt-1 space-y-1 pl-6">
+                        <li>Estimated simulated delivery window: 2–5 business days.</li>
+                        <li>
+                            Simulated calculations: Variable mock rate algorithms based on item
+                            weight within the United Kingdom.
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h2 className="mt-4 text-xl font-bold">4. Simulated Order Processing & Tracking</h2>
+            <p>
+                Order status changes (such as &quot;Processing&quot;, &quot;Dispatched&quot;, or
+                &quot;Delivered&quot;) and mock tracking reference numbers exist strictly as virtual
+                state values within the application. They are generated to test real-time state
+                management, UI notification components, and automated testing suites.
+            </p>
+
+            <h2 className="mt-4 text-xl font-bold">5. Contact Information</h2>
+            <p>
+                As this application is a personal educational demonstration project, no direct
+                contact channels, support email addresses, or phone numbers are maintained.
+            </p>
+        </div>
+    );
 }

@@ -1,92 +1,94 @@
 export default function ReturnPolicy() {
-	return (
-		<div className='grid gap-3'>
-			<h1
-				className='font-bold'
-				data-testid='return-policy-header'>
-				This is a sample Return Policy generated for the purposes of this project.
-			</h1>
+    return (
+        <div className="mx-auto grid max-w-4xl gap-4 p-6 text-slate-800">
+            <h1
+                className="text-3xl font-bold tracking-tight"
+                data-testid="return-policy-header"
+            >
+                Return Policy & Simulated Refund Disclaimer
+            </h1>
 
-			<p>
-				We want you to be completely satisfied with your purchase. If for any reason you
-				are not satisfied with your order, you may return it within 30 days of the
-				original purchase date for a full refund or exchange.
-			</p>
+            <p className="text-sm text-slate-500">
+                <span className="font-semibold">Effective Date:</span> 02/10/2026
+            </p>
 
-			<h2 className='font-bold'>Eligibility for Return</h2>
-			<ul>
-				<li>
-					The item must be in its original condition, unused, and in the original
-					packaging.
-				</li>
-				<li>The item must not be marked down or on sale.</li>
-				<li>
-					Certain items may not be eligible for return, such as [List of ineligible items,
-					e.g., digital downloads, personalized items].
-				</li>
-			</ul>
+            <div className="my-2 rounded-r border-l-4 border-amber-500 bg-amber-50 p-4 shadow-sm">
+                <h2 className="mb-1 text-lg font-bold text-amber-900">
+                    IMPORTANT NOTICE: NON-COMMERCIAL DEMONSTRATION SITE
+                </h2>
+                <p className="text-sm text-amber-800">
+                    Welcome to Books 4 You, a hands-on personal project built to explore and master
+                    modern web development from the ground up. This platform serves as a living
+                    sandbox for experimenting with full-stack architecture, intuitive UI/UX design,
+                    LLM integration, automated testing, and modern developer workflows. Because this
+                    project is strictly an educational endeavor, it is not intended for commercial
+                    or production use—all catalog items, transactions, and account details exist
+                    solely to test features and refine software engineering techniques.
+                </p>
+            </div>
 
-			<h2 className='font-bold'>Initiating a Return</h2>
-			<ol>
-				<li>
-					Contact us at{' '}
-					<a
-						href='mailto:books4you.contact@b4u.com'
-						className='text-sky-500 hover:text-sky-700'>
-						books4you.contact@example.com
-					</a>{' '}
-					or +44 7911 123456 within 7 days of receiving your order to request a return
-					authorization.
-				</li>
-				<li>Include your order number and the reason for your return in your request.</li>
-				<li>
-					We will provide you with a Return Merchandise Authorization (RMA) number and
-					instructions for returning the item.
-				</li>
-			</ol>
+            <h2 className="mt-4 text-xl font-bold">1. Non-Commercial Policy Scope</h2>
+            <p>
+                Books 4 You is an educational software application designed to model modern
+                e-commerce user workflows. No physical products are stocked, sold, or shipped by
+                this website, and no real monetary transactions are processed. Consequently, no
+                actual physical returns, exchanges, or monetary refunds are offered or executed.
+            </p>
 
-			<h2 className='font-bold'>Shipping Costs</h2>
-			<ul>
-				<li>
-					<span className='font-semibold'>Return Shipping Costs:</span> You are
-					responsible for the cost of return shipping unless the return is due to our
-					error (e.g., incorrect item shipped, damaged item).
-				</li>
-				<li>
-					<span className='font-semibold'>Original Shipping Costs:</span> Original
-					shipping costs are non-refundable unless the return is due to our error.
-				</li>
-			</ul>
+            <h2 className="mt-4 text-xl font-bold">2. Absolute Limitation of Liability</h2>
+            <p className="text-xs font-semibold tracking-wider text-slate-600 uppercase">
+                PLEASE READ THIS SECTION CAREFULLY.
+            </p>
+            <p>
+                THE RETURN AND REFUND MECHANISMS PRESENTED ON THIS SITE ARE ENTIRELY SIMULATED FOR
+                FUNCTIONALITY DEMONSTRATION AND TESTING PURPOSES ONLY. UNDER NO CIRCUMSTANCES SHALL
+                THE DEVELOPER(S), SITE OWNER(S), OR CONTRIBUTORS BE LIABLE FOR ANY CLAIMS, LOSSES,
+                DEMANDS, OR DAMAGES ARISING FROM MISUNDERSTANDINGS REGARDING SIMULATED ORDERS,
+                PURCHASES, RETURNS, OR FINANCIAL REFUNDS.
+            </p>
 
-			<h2 className='font-bold'>Refunds</h2>
-			<ul>
-				<li>
-					Once we receive your returned item and verify that it meets the return
-					eligibility requirements, we will issue a refund to your original payment method
-					within 5 business days.
-				</li>
-				<li>
-					Refunds for credit card payments may take 5 business days to appear on your
-					statement.
-				</li>
-			</ul>
+            <h2 className="mt-4 text-xl font-bold">
+                3. Simulated Order & Refund Lifecycle Workflow
+            </h2>
+            <p>
+                In order to test full-stack e-commerce state management, transactional API
+                endpoints, database updates, and UI flows, the application simulates the following
+                return workflow:
+            </p>
+            <ul className="list-disc space-y-1 pl-6">
+                <li>
+                    <span className="font-semibold">Simulated Eligibility:</span> Test orders placed
+                    on the platform may be marked for simulated return within a demo window (e.g.,
+                    30 days of simulated purchase) solely to test order status transitions in the
+                    user interface.
+                </li>
+                <li>
+                    <span className="font-semibold">
+                        Simulated Order Cancellation & Status Updates:
+                    </span>{' '}
+                    Initiating a return or cancellation request in the demo interface updates mock
+                    database records and triggers automated UI state changes for testing purposes.
+                </li>
+                <li>
+                    <span className="font-semibold">Simulated Credits:</span> Any ledger or account
+                    updates reflecting &quot;refunded amounts&quot; or &quot;store credits&quot; are
+                    purely virtual mock values without monetary value or legal enforceability.
+                </li>
+            </ul>
 
-			<h2 className='font-bold'>Exchanges</h2>
-			<p>
-				If you would like to exchange an item, please contact us to arrange a return and a
-				new order for the desired item.
-			</p>
+            <h2 className="mt-4 text-xl font-bold">4. Shipping & Handling Disclaimer</h2>
+            <p>
+                Since no physical items are stocked or dispatched, users should never send physical
+                mail or packages to any addresses listed on or associated with this demonstration
+                site. The developer assumes no responsibility or liability for physical items sent
+                in error.
+            </p>
 
-			<h2 className='font-bold'>Contact Us</h2>
-			<p>
-				If you have any questions about our Return Policy, please contact us at{' '}
-				<a
-					href='mailto:books4you.contact@b4u.com'
-					className='text-sky-500 hover:text-sky-700'>
-					books4you.contact@example.com
-				</a>{' '}
-				or +44 7911 123456.
-			</p>
-		</div>
-	);
+            <h2 className="mt-4 text-xl font-bold">5. Contact Information</h2>
+            <p>
+                As this application is a personal educational project, no customer support service
+                or direct contact details are available.
+            </p>
+        </div>
+    );
 }
