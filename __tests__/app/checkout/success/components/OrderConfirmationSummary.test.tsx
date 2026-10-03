@@ -1,26 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { OrderConfirmationSummary } from '@/app/checkout/success/components/OrderConfirmationSummary';
 import { OrderWithRelations } from '@/data/checkout/CheckoutTypes';
+import { createMockBook } from '@/utils/testing/mockBook';
 
 describe('OrderConfirmationSummary', () => {
-    const mockBook = {
-        id: 'book-1',
-        title: 'Clean Code',
-        author: 'Robert C. Martin',
-        created_at: '2026-01-01T00:00:00Z',
-        description: 'A handbook of agile software craftsmanship.',
-        format: 'Paperback',
-        genre: 'Technology',
-        image_url: 'https://example.com/cleancode.jpg',
-        is_active: true,
-        page_count: 464,
-        price: '35.00',
-        publication_date: '2008-08-01',
-        publisher: 'Prentice Hall',
-        sales_count: 500,
-        stock_quantity: 40,
-        updated_at: '2026-01-01T00:00:00Z',
-    };
+    const mockBook = createMockBook();
 
     const mockOrder: OrderWithRelations = {
         id: 'ORD-12345',
@@ -41,6 +25,14 @@ describe('OrderConfirmationSummary', () => {
             },
         ],
         order_discounts: [],
+        discount_amount: 0,
+        shipping_cost: 0,
+        shipping_method_id: '',
+        shipping_method_name: '',
+        stripe_checkout_session_id: null,
+        stripe_payment_intent_id: null,
+        subtotal: 0,
+        tax_amount: 0,
     };
 
     it('renders main section and delegates correctly to all subcomponents with order data', () => {

@@ -1,8 +1,12 @@
 import { faker } from '@faker-js/faker/locale/en_GB';
+import { Database } from '@/database.types';
+
+type User = Database['public']['Tables']['users']['Row'];
 
 export interface MockUserSetup extends Omit<User, 'id' | 'created_at' | 'updated_at'> {
-    password: string;
-    role: string;
+    readonly email: string;
+    readonly password: string;
+    readonly role: string;
 }
 
 export const generateMockUsersArray = (count: number = 10): MockUserSetup[] => {
@@ -29,6 +33,7 @@ export const generateMockUsersArray = (count: number = 10): MockUserSetup[] => {
             wishlist_share_token: null,
             are_reviews_public: false,
             is_profile_public: false,
+            stripe_customer_id: null,
         };
     });
 };

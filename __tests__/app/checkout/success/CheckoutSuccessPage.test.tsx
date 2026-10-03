@@ -35,6 +35,14 @@ describe('CheckoutSuccessPage', () => {
         total_amount: 49.99,
         order_items: [],
         order_discounts: [],
+        discount_amount: 0,
+        shipping_cost: 0,
+        shipping_method_id: '',
+        shipping_method_name: '',
+        stripe_checkout_session_id: null,
+        stripe_payment_intent_id: null,
+        subtotal: 0,
+        tax_amount: 0,
     };
 
     beforeEach(() => {

@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { BookHeader } from '@/app/book/[slug]/components/Header/BookHeader';
+import { createMockBook } from '@/utils/testing/mockBook';
 
 jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
     BookAdvancedFilteringProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -27,26 +28,7 @@ jest.mock('@/app/book/[slug]/components/Header/BookCart', () => ({
 }));
 
 describe('BookHeader Component', () => {
-    const mockBook: Book = {
-        id: '1',
-        created_at: '2023-01-01',
-        updated_at: '2023-01-01',
-        title: 'Test Book Title',
-        author: 'Test Author',
-        genre: 'Fiction',
-        publisher: 'Test Publisher',
-        publication_date: '2023-01-01',
-        price: '19.99',
-        description: 'A mock description.',
-        format: 'Hardcover',
-        page_count: 300,
-        image_url: 'https://example.com/image.jpg',
-        stock_quantity: 10,
-        is_active: true,
-        reviews: [],
-        rating: 5,
-        sales_count: null,
-    };
+    const mockBook = createMockBook();
 
     it('should render the book cover image with correct alt text and src', () => {
         render(<BookHeader book={mockBook} />);

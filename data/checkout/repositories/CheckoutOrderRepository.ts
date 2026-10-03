@@ -25,7 +25,8 @@ export const fetchOrderById = async (supabase: SupabaseClient<Database>, orderId
             ),
             order_discounts (
                 discounts (*)
-            )
+            ),
+            order_addresses (*)
         `,
         )
         .eq('id', orderId)

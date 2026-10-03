@@ -15,7 +15,7 @@ import { fetchOrderById, processOrderTransaction } from '../repositories/Checkou
 import { withRetry } from '@/utils/network/retry';
 import { calculateTotals } from '../CheckoutUtils';
 import { Database } from '@/database.types';
-import { DEFAULT_CURRENCY } from '../CheckoutConstants';
+import { DEFAULT_CURRENCY, SHIPPING_METHODS } from '../CheckoutConstants';
 import { createPaymentIntentAction } from '../CheckoutStripeServer';
 
 type BookRow = Database['public']['Tables']['books']['Row'];
@@ -97,7 +97,7 @@ export const executeCheckoutOrder = async (
                 if (minimumSubtotal !== null && rawSubtotal < minimumSubtotal)
                     return {
                         data: null,
-                        error: `This discount requires a minimum subtotal of $${minimumSubtotal.toFixed(2)}.`,
+                        error: `This discount requires a minimum subtotal of £${minimumSubtotal.toFixed(2)}.`,
                     };
 
                 discountState = {
@@ -110,7 +110,16 @@ export const executeCheckoutOrder = async (
             }
         }
 
-        const totals = calculateTotals(cartItemsForTotals, discountState);
+        const totals = calculateTotals(
+            cartItemsForTotals,
+            discountState,
+            params.shippingAddress.postcode,
+            params.shippingMethodId,
+        );
+
+        const methodObj =
+            SHIPPING_METHODS.find((m) => m.id === params.shippingMethodId) ?? SHIPPING_METHODS[0];
+
         const totalAmountInCents = Math.round(totals.grandTotal * 100);
 
         const paymentIntentResult = await createPaymentIntentAction(
@@ -138,10 +147,17 @@ export const executeCheckoutOrder = async (
             withRetry(async () => {
                 const res = await processOrderTransaction(supabase, {
                     user_id: params.userId,
+                    subtotal: totals.subtotal,
+                    discount_amount: totals.discountAmount,
+                    shipping_cost: totals.shippingCost,
+                    tax_amount: totals.taxAmount,
                     total_amount: totals.grandTotal,
+                    shipping_method_id: methodObj.id,
+                    shipping_method_name: methodObj.name,
                     payment_method: params.paymentMethod,
                     discount_id: params.discountId,
                     payment_intent_id: paymentIntentResult.paymentIntentId,
+                    shipping_address: params.shippingAddress,
                     items: processItems,
                 });
                 return {

@@ -8,6 +8,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { FormEvent } from 'react';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import { createMockCartItemsArray } from '@/utils/testing/mockCartItem';
 
 jest.mock('next/navigation', () => ({
     useRouter: jest.fn(),
@@ -43,27 +44,7 @@ describe('useCheckoutForm', () => {
     const mockValidateDiscount = jest.mocked(validateAndApplyDiscountAction);
     const mockProcessCheckout = jest.mocked(processCheckoutAction);
 
-    const mockItems: readonly CartItem[] = [
-        {
-            id: 'book-1',
-            title: 'Test Book',
-            price: '20.00',
-            quantity: 1,
-            author: 'Test Author',
-            created_at: '2026-01-01',
-            description: 'Desc',
-            format: 'Paperback',
-            genre: 'Fiction',
-            image_url: 'https://example.com/img.jpg',
-            is_active: true,
-            page_count: 100,
-            publication_date: '2026-01-01',
-            publisher: 'Publisher',
-            sales_count: 0,
-            stock_quantity: 10,
-            updated_at: '2026-01-01',
-        },
-    ];
+    const mockItems = createMockCartItemsArray(1);
 
     const defaultProps = {
         userId: 'user-123',

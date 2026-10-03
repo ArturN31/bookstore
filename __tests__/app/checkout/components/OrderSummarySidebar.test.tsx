@@ -2,48 +2,10 @@ import { OrderSummarySidebar } from '@/app/checkout/components/OrderSummarySideb
 import { render, screen } from '@testing-library/react';
 import { CartItem } from '@/data/cart/CartMapper';
 import { AppliedDiscountState } from '@/data/checkout/CheckoutTypes';
+import { createMockCartItemsArray } from '@/utils/testing/mockCartItem';
 
 describe('OrderSummarySidebar', () => {
-    const mockItems: readonly CartItem[] = [
-        {
-            id: 'book-1',
-            title: 'The Great Gatsby',
-            price: '15.00',
-            quantity: 2,
-            author: 'F. Scott Fitzgerald',
-            created_at: '2026-01-01',
-            description: 'A classic novel',
-            format: 'Paperback',
-            genre: 'Fiction',
-            image_url: 'https://example.com/gatsby.jpg',
-            is_active: true,
-            page_count: 180,
-            publication_date: '1925-04-10',
-            publisher: 'Scribner',
-            sales_count: 100,
-            stock_quantity: 10,
-            updated_at: '2026-01-01',
-        },
-        {
-            id: 'book-2',
-            title: '1984',
-            price: '10.00',
-            quantity: 1,
-            author: 'George Orwell',
-            created_at: '2026-01-01',
-            description: 'Dystopian novel',
-            format: 'Paperback',
-            genre: 'Dystopian',
-            image_url: 'https://example.com/1984.jpg',
-            is_active: true,
-            page_count: 328,
-            publication_date: '1949-06-08',
-            publisher: 'Secker & Warburg',
-            sales_count: 200,
-            stock_quantity: 5,
-            updated_at: '2026-01-01',
-        },
-    ];
+    const mockItems = createMockCartItemsArray(2);
 
     const defaultTotals = {
         subtotal: 40.0,
@@ -174,6 +136,8 @@ describe('OrderSummarySidebar', () => {
                 sales_count: 0,
                 stock_quantity: 10,
                 updated_at: '2026-01-01',
+                stripe_price_id: null,
+                stripe_product_id: null,
             },
         ];
 

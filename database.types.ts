@@ -109,6 +109,8 @@ export type Database = {
           publisher: string
           sales_count: number | null
           stock_quantity: number
+          stripe_price_id: string | null
+          stripe_product_id: string | null
           title: string
           updated_at: string
         }
@@ -127,6 +129,8 @@ export type Database = {
           publisher: string
           sales_count?: number | null
           stock_quantity: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
           title: string
           updated_at?: string
         }
@@ -145,6 +149,8 @@ export type Database = {
           publisher?: string
           sales_count?: number | null
           stock_quantity?: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -159,6 +165,7 @@ export type Database = {
           is_active: boolean
           minimum_subtotal: number | null
           start_date: string
+          stripe_coupon_id: string | null
           type: string
           updated_at: string
           value: number
@@ -171,6 +178,7 @@ export type Database = {
           is_active: boolean
           minimum_subtotal?: number | null
           start_date?: string
+          stripe_coupon_id?: string | null
           type?: string
           updated_at?: string
           value: number
@@ -183,11 +191,62 @@ export type Database = {
           is_active?: boolean
           minimum_subtotal?: number | null
           start_date?: string
+          stripe_coupon_id?: string | null
           type?: string
           updated_at?: string
           value?: number
         }
         Relationships: []
+      }
+      order_addresses: {
+        Row: {
+          address_type: string
+          city: string
+          country: string
+          created_at: string
+          first_name: string
+          id: string
+          last_name: string
+          order_id: string
+          phone_number: string
+          postcode: string
+          street_address: string
+        }
+        Insert: {
+          address_type?: string
+          city: string
+          country: string
+          created_at?: string
+          first_name: string
+          id?: string
+          last_name: string
+          order_id: string
+          phone_number?: string
+          postcode: string
+          street_address: string
+        }
+        Update: {
+          address_type?: string
+          city?: string
+          country?: string
+          created_at?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          order_id?: string
+          phone_number?: string
+          postcode?: string
+          street_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_addresses_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_discounts: {
         Row: {
@@ -274,25 +333,49 @@ export type Database = {
       orders: {
         Row: {
           created_at: string
+          discount_amount: number
           id: string
           payment_method: string
+          shipping_cost: number
+          shipping_method_id: string
+          shipping_method_name: string
           status: string
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          subtotal: number
+          tax_amount: number
           total_amount: number
           user_id: string
         }
         Insert: {
           created_at?: string
+          discount_amount?: number
           id?: string
           payment_method: string
+          shipping_cost?: number
+          shipping_method_id?: string
+          shipping_method_name?: string
           status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          subtotal?: number
+          tax_amount?: number
           total_amount: number
           user_id?: string
         }
         Update: {
           created_at?: string
+          discount_amount?: number
           id?: string
           payment_method?: string
+          shipping_cost?: number
+          shipping_method_id?: string
+          shipping_method_name?: string
           status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          subtotal?: number
+          tax_amount?: number
           total_amount?: number
           user_id?: string
         }
@@ -391,6 +474,7 @@ export type Database = {
           phone_number: string
           postcode: string
           street_address: string
+          stripe_customer_id: string | null
           updated_at: string
           username: string
           wishlist_share_token: string | null
@@ -409,6 +493,7 @@ export type Database = {
           phone_number: string
           postcode: string
           street_address: string
+          stripe_customer_id?: string | null
           updated_at?: string
           username: string
           wishlist_share_token?: string | null
@@ -427,6 +512,7 @@ export type Database = {
           phone_number?: string
           postcode?: string
           street_address?: string
+          stripe_customer_id?: string | null
           updated_at?: string
           username?: string
           wishlist_share_token?: string | null
@@ -554,6 +640,10 @@ export type Database = {
           updated_at: string
           username: string
         }[]
+      }
+      increment_book_stock: {
+        Args: { p_book_id: string; p_quantity: number }
+        Returns: undefined
       }
       process_order_transaction: { Args: { p_payload: Json }; Returns: Json }
     }

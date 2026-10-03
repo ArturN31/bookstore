@@ -28,6 +28,7 @@ export const DEFAULT_USER: User = {
     wishlist_share_token: null,
     are_reviews_public: false,
     is_profile_public: false,
+    stripe_customer_id: null,
 };
 
 export const INITIAL_USER_STATE: UserState = {

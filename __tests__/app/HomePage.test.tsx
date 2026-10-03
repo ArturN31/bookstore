@@ -2,6 +2,7 @@ import HomePage from '@/app/page';
 import { render, screen, act } from '@testing-library/react';
 import { fetchBooksWithReviews, fetchBestsellers } from '@/data/books/BookService';
 import { Providers } from '@/providers/Providers';
+import { createMockBook } from '@/utils/testing/mockBook';
 
 interface PaginatedBookResult {
     data: Book[];
@@ -101,28 +102,6 @@ const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
         </Providers>
     );
 };
-
-const createMockBook = (overrides: Partial<Book>): Book => ({
-    id: '1',
-    title: 'Default',
-    author: 'Author',
-    genre: 'Fiction',
-    description: 'Desc',
-    price: '10',
-    stock_quantity: 5,
-    rating: 4,
-    review_count: 10,
-    image_url: '/test.jpg',
-    publisher: 'Pub',
-    publication_date: '2024',
-    format: 'Paperback',
-    page_count: 200,
-    created_at: '',
-    updated_at: '',
-    is_active: true,
-    sales_count: null,
-    ...overrides,
-});
 
 describe('APP - Homepage', () => {
     beforeEach(() => {

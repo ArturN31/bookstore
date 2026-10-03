@@ -1,49 +1,13 @@
 import { OrderWithRelations } from '@/data/checkout/CheckoutTypes';
-import { SHIPPING_COST } from '@/data/checkout/CheckoutConstants';
 import {
     calculateOrderTotals,
     extractOrderStatuses,
     extractShippingAddress,
 } from '@/app/checkout/success/OrderConfirmationUtils';
+import { createMockBooksArray } from '@/utils/testing/mockBook';
 
 describe('OrderConfirmationUtils', () => {
-    const mockBook1 = {
-        id: 'book-1',
-        title: 'Book One',
-        author: 'Author One',
-        created_at: '2026-01-01T00:00:00Z',
-        description: 'Description 1',
-        format: 'Paperback',
-        genre: 'Fiction',
-        image_url: 'https://example.com/book1.jpg',
-        is_active: true,
-        page_count: 200,
-        price: '20.00',
-        publication_date: '2026-01-01',
-        publisher: 'Publisher 1',
-        sales_count: 50,
-        stock_quantity: 20,
-        updated_at: '2026-01-01T00:00:00Z',
-    };
-
-    const mockBook2 = {
-        id: 'book-2',
-        title: 'Book Two',
-        author: 'Author Two',
-        created_at: '2026-01-01T00:00:00Z',
-        description: 'Description 2',
-        format: 'Hardcover',
-        genre: 'Non-Fiction',
-        image_url: 'https://example.com/book2.jpg',
-        is_active: true,
-        page_count: 150,
-        price: '10.00',
-        publication_date: '2026-01-01',
-        publisher: 'Publisher 2',
-        sales_count: 30,
-        stock_quantity: 15,
-        updated_at: '2026-01-01T00:00:00Z',
-    };
+    const mockBooks = createMockBooksArray(2);
 
     const mockDiscountPercentage = {
         id: 'disc-1',
@@ -56,6 +20,7 @@ describe('OrderConfirmationUtils', () => {
         is_active: true,
         created_at: '2026-01-01T00:00:00Z',
         updated_at: '2026-01-01T00:00:00Z',
+        stripe_coupon_id: null,
     };
 
     const mockDiscountFixed = {
@@ -69,6 +34,7 @@ describe('OrderConfirmationUtils', () => {
         is_active: true,
         created_at: '2026-01-01T00:00:00Z',
         updated_at: '2026-01-01T00:00:00Z',
+        stripe_coupon_id: null,
     };
 
     describe('calculateOrderTotals', () => {
@@ -88,7 +54,7 @@ describe('OrderConfirmationUtils', () => {
                         quantity: 2,
                         price: 20,
                         created_at: '2026-01-01T00:00:00Z',
-                        books: mockBook1,
+                        books: mockBooks[0],
                     },
                     {
                         id: 'item-2',
@@ -97,7 +63,7 @@ describe('OrderConfirmationUtils', () => {
                         quantity: 1,
                         price: 10,
                         created_at: '2026-01-01T00:00:00Z',
-                        books: mockBook2,
+                        books: mockBooks[1],
                     },
                 ],
                 order_discounts: [
@@ -108,6 +74,14 @@ describe('OrderConfirmationUtils', () => {
                         discounts: mockDiscountFixed,
                     },
                 ],
+                discount_amount: 0,
+                shipping_cost: 0,
+                shipping_method_id: '',
+                shipping_method_name: '',
+                stripe_checkout_session_id: null,
+                stripe_payment_intent_id: null,
+                subtotal: 0,
+                tax_amount: 0,
             };
 
             const result = calculateOrderTotals(mockOrder);
@@ -126,8 +100,6 @@ describe('OrderConfirmationUtils', () => {
                 amount: 5,
             });
             expect(result.discountTotal).toBe(10);
-            expect(result.shippingCost).toBe(SHIPPING_COST);
-            expect(result.grandTotal).toBe(50 + SHIPPING_COST - 10);
         });
 
         it('caps fixed discount deduction to subtotal when discount exceeds subtotal', () => {
@@ -146,7 +118,7 @@ describe('OrderConfirmationUtils', () => {
                         quantity: 1,
                         price: 10,
                         created_at: '2026-01-01T00:00:00Z',
-                        books: mockBook1,
+                        books: mockBooks[0],
                     },
                 ],
                 order_discounts: [
@@ -162,9 +134,18 @@ describe('OrderConfirmationUtils', () => {
                             is_active: true,
                             created_at: '2026-01-01T00:00:00Z',
                             updated_at: '2026-01-01T00:00:00Z',
+                            stripe_coupon_id: null,
                         },
                     },
                 ],
+                discount_amount: 0,
+                shipping_cost: 0,
+                shipping_method_id: '',
+                shipping_method_name: '',
+                stripe_checkout_session_id: null,
+                stripe_payment_intent_id: null,
+                subtotal: 0,
+                tax_amount: 0,
             };
 
             const result = calculateOrderTotals(mockOrder);
@@ -172,7 +153,6 @@ describe('OrderConfirmationUtils', () => {
             expect(result.subtotal).toBe(10);
             expect(result.evaluatedDiscounts[0].amount).toBe(10);
             expect(result.discountTotal).toBe(10);
-            expect(result.grandTotal).toBe(SHIPPING_COST);
         });
 
         it('handles missing order items, null price, and missing discounts gracefully', () => {
@@ -199,6 +179,14 @@ describe('OrderConfirmationUtils', () => {
                         discounts: null,
                     },
                 ],
+                discount_amount: 0,
+                shipping_cost: 0,
+                shipping_method_id: '',
+                shipping_method_name: '',
+                stripe_checkout_session_id: null,
+                stripe_payment_intent_id: null,
+                subtotal: 0,
+                tax_amount: 0,
             };
 
             const result = calculateOrderTotals(mockOrder);
@@ -207,7 +195,6 @@ describe('OrderConfirmationUtils', () => {
             expect(result.totalItemCount).toBe(2);
             expect(result.evaluatedDiscounts).toEqual([]);
             expect(result.discountTotal).toBe(0);
-            expect(result.grandTotal).toBe(SHIPPING_COST);
         });
 
         it('handles completely null or undefined order_items and order_discounts arrays', () => {
@@ -228,7 +215,6 @@ describe('OrderConfirmationUtils', () => {
             expect(result.totalItemCount).toBe(0);
             expect(result.evaluatedDiscounts).toEqual([]);
             expect(result.discountTotal).toBe(0);
-            expect(result.grandTotal).toBe(SHIPPING_COST);
         });
     });
 

@@ -3,6 +3,7 @@
 import { JSX } from 'react';
 import { CartItem } from '@/data/cart/CartMapper';
 import { ShippingAddressSection } from './ShippingAddressSection';
+import { ShippingMethodSection } from './ShippingMethodSection';
 import { DiscountSection } from './DiscountSection';
 import { PaymentMethodSection } from './PaymentMethodSection';
 import { OrderSummarySidebar } from './OrderSummarySidebar';
@@ -17,7 +18,8 @@ export interface CheckoutFormProps {
 }
 
 export function CheckoutForm(props: CheckoutFormProps): JSX.Element {
-    const { discount, submission, totals } = useCheckoutForm(props);
+    const { discount, shippingMethod, submission, totals, formData } = useCheckoutForm(props);
+    const subtotalAfterDiscount = Math.max(0, totals.subtotal - totals.discountAmount);
 
     return (
         <form
@@ -28,6 +30,13 @@ export function CheckoutForm(props: CheckoutFormProps): JSX.Element {
                 <ShippingAddressSection
                     customerEmail={props.customerEmail}
                     initialProfile={props.initialProfile}
+                />
+
+                <ShippingMethodSection
+                    selectedMethodId={shippingMethod.selectedMethodId}
+                    postcode={formData.postcode}
+                    subtotalAfterDiscount={subtotalAfterDiscount}
+                    onSelectMethod={shippingMethod.setSelectedMethodId}
                 />
 
                 <DiscountSection

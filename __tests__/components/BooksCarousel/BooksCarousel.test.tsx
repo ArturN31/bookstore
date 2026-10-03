@@ -38,7 +38,7 @@ jest.mock('@/components/books/BooksCarousel/BooksNavigationButtons', () => ({
     ),
 }));
 
-const mockBooks = [
+const mockBooks: Book[] = [
     {
         id: 'book-1',
         created_at: '2023-01-01',
@@ -57,6 +57,8 @@ const mockBooks = [
         is_active: true,
         rating: 4,
         sales_count: null,
+        stripe_price_id: null,
+        stripe_product_id: null,
     },
     {
         id: 'book-2',
@@ -76,6 +78,8 @@ const mockBooks = [
         is_active: true,
         rating: 5,
         sales_count: null,
+        stripe_price_id: null,
+        stripe_product_id: null,
     },
 ];
 

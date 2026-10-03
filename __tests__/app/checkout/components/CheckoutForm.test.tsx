@@ -1,8 +1,8 @@
 import { CheckoutForm } from '@/app/checkout/components/CheckoutForm';
 import { useCheckoutForm } from '@/app/checkout/useCheckoutForm';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { CartItem } from '@/data/cart/CartMapper';
 import { FormEvent, JSX } from 'react';
+import { createMockCartItemsArray } from '@/utils/testing/mockCartItem';
 
 jest.mock('@/app/checkout/useCheckoutForm');
 jest.mock('@/data/checkout/CheckoutAction', () => ({
@@ -19,27 +19,7 @@ jest.mock('@stripe/react-stripe-js', () => ({
 describe('CheckoutForm', () => {
     const mockUseCheckoutForm = jest.mocked(useCheckoutForm);
 
-    const mockItems: readonly CartItem[] = [
-        {
-            id: 'book-1',
-            title: 'Test Book',
-            price: '20.00',
-            quantity: 1,
-            author: 'Test Author',
-            created_at: '2026-01-01',
-            description: 'Test Description',
-            format: 'Paperback',
-            genre: 'Fiction',
-            image_url: 'https://example.com/cover.jpg',
-            is_active: true,
-            page_count: 200,
-            publication_date: '2026-01-01',
-            publisher: 'Test Publisher',
-            sales_count: 0,
-            stock_quantity: 5,
-            updated_at: '2026-01-01',
-        },
-    ];
+    const mockItems = createMockCartItemsArray(1);
 
     const mockHandleSubmit = jest.fn(async (e: FormEvent) => {
         e.preventDefault();
@@ -47,6 +27,7 @@ describe('CheckoutForm', () => {
     const mockSetCouponInput = jest.fn();
     const mockHandleApplyDiscount = jest.fn();
     const mockHandleRemoveDiscount = jest.fn();
+    const mockSetSelectedMethodId = jest.fn();
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -61,14 +42,9 @@ describe('CheckoutForm', () => {
                 postcode: 'postcode',
                 country: 'United Kingdom',
             },
-            setters: {
-                setFirstName: jest.fn(),
-                setLastName: jest.fn(),
-                setPhone: jest.fn(),
-                setStreetAddress: jest.fn(),
-                setCity: jest.fn(),
-                setPostcode: jest.fn(),
-                setCountry: jest.fn(),
+            shippingMethod: {
+                selectedMethodId: 'standard',
+                setSelectedMethodId: mockSetSelectedMethodId,
             },
             stripeCustomerId: 'cus_123',
             discount: {

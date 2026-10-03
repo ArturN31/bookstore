@@ -30,6 +30,8 @@ const mockBooks: Book[] = [
         reviews: [],
         rating: 5,
         sales_count: 100,
+        stripe_price_id: null,
+        stripe_product_id: null,
     },
     {
         id: 'mock-book-id-2',
@@ -50,6 +52,8 @@ const mockBooks: Book[] = [
         reviews: [],
         rating: 3,
         sales_count: 50,
+        stripe_price_id: null,
+        stripe_product_id: null,
     },
     {
         id: 'mock-book-id-3',
@@ -70,6 +74,8 @@ const mockBooks: Book[] = [
         reviews: [],
         rating: 4,
         sales_count: 75,
+        stripe_price_id: null,
+        stripe_product_id: null,
     },
 ];
 

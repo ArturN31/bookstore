@@ -63,7 +63,7 @@ export function SettlementSummaryCard({ totals }: SettlementSummaryCardProps): J
 
                 <div>
                     <Link
-                        href="/catalog"
+                        href="/"
                         className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-900 px-8 py-5 text-sm font-extrabold text-white shadow-xl shadow-slate-900/15 transition-all hover:bg-slate-800 active:scale-[0.98]"
                     >
                         Continue Shopping

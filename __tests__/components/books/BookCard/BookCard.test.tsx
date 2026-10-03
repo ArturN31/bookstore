@@ -22,6 +22,8 @@ const mockedBook: Book = {
     reviews: [],
     rating: 5,
     sales_count: 100,
+    stripe_price_id: null,
+    stripe_product_id: null,
 };
 
 jest.mock('@/utils/db/server', () => ({

@@ -66,6 +66,7 @@ export interface ProcessCheckoutActionPayload {
     readonly shippingDetails: unknown;
     readonly items: readonly { readonly bookId: string; readonly quantity: number }[];
     readonly discountId: string | null;
+    readonly shippingMethodId: string;
     readonly idempotencyKey: string;
 }
 
@@ -112,7 +113,17 @@ export const processCheckoutAction = async (
             items: payload.items,
             discountId: payload.discountId,
             paymentMethod: formParse.data.paymentMethod,
+            shippingMethodId: payload.shippingMethodId,
             idempotencyKey: payload.idempotencyKey,
+            shippingAddress: {
+                firstName: formParse.data.firstName,
+                lastName: formParse.data.lastName,
+                streetAddress: formParse.data.streetAddress,
+                city: formParse.data.city,
+                postcode: formParse.data.postcode,
+                country: formParse.data.country,
+                phoneNumber: formParse.data.phoneNumber ?? '',
+            },
         });
 
         if (checkoutResult.error || !checkoutResult.data)

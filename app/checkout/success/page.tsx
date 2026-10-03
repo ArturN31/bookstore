@@ -41,7 +41,7 @@ export default async function CheckoutSuccessPage({
                     <Box className="mt-6 text-center">
                         <Button
                             component={Link}
-                            href="/catalog"
+                            href="/"
                             variant="outlined"
                             className="rounded-xl border-gray-300 font-bold text-gray-700 normal-case"
                         >

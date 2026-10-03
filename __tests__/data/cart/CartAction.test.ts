@@ -6,6 +6,12 @@ import { cartSchema } from '@/data/schemas/cartSchema';
 import { ZodError } from 'zod';
 import { CART_SUCCESS_MESSAGES } from '@/data/cart/CartConstants';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { Database } from '@/database.types';
+
+type UserProfileRow = Database['public']['Tables']['users']['Row'];
+interface MockUser extends UserProfileRow {
+    readonly email: string;
+}
 
 type MockedSafeParseReturn = ReturnType<typeof cartSchema.safeParse>;
 
@@ -26,7 +32,7 @@ jest.mock('@/utils/errors/SupabaseErrorHandler', () => ({
     sanitizeSupabaseError: jest.fn((err: unknown): string => `Sanitized: ${String(err)}`),
 }));
 
-const mockUser: User = {
+const mockUser: MockUser = {
     id: 'user-123',
     email: 'test@example.com',
     city: 'Test City',
@@ -44,6 +50,7 @@ const mockUser: User = {
     wishlist_share_token: null,
     are_reviews_public: false,
     is_profile_public: false,
+    stripe_customer_id: null,
 };
 
 describe('CartAction', () => {

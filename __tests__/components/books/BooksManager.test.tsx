@@ -11,8 +11,8 @@ import { PaginatedBookResult } from '@/data/books/BookConstants';
 import React from 'react';
 
 interface ActionResponse<T> {
-    error: string | null;
-    data: T | null;
+    readonly error: string | null;
+    readonly data: T | null;
 }
 
 jest.mock('@/utils/security/securityAuditLogger', () => ({
@@ -41,27 +41,36 @@ jest.mock('@/components/books/bookCard/BookCard', () => ({
     BookCard: ({ book }: { book: Book }) => <div data-testid="mock-book-card">{book.title}</div>,
 }));
 
-const createMockBook = (overrides: Partial<Book>): Book => ({
-    id: '1',
-    title: 'Default',
-    author: 'Author',
-    genre: 'Genre',
-    description: 'Desc',
-    price: '10',
-    rating: 4,
-    review_count: 10,
-    sales_count: null,
-    stock_quantity: 0,
-    image_url: '',
-    publisher: 'Pub',
-    publication_date: '2024',
-    format: 'Paperback',
-    page_count: 200,
-    created_at: '',
-    updated_at: '',
-    is_active: true,
-    ...overrides,
-});
+const createMockBook = (overrides: Partial<Book>): Book => {
+    const stripe_price_id =
+        overrides.stripe_price_id !== undefined ? overrides.stripe_price_id : null;
+    const stripe_product_id =
+        overrides.stripe_product_id !== undefined ? overrides.stripe_product_id : null;
+
+    return {
+        id: '1',
+        title: 'Default',
+        author: 'Author',
+        genre: 'Genre',
+        description: 'Desc',
+        price: '10',
+        rating: 4,
+        review_count: 10,
+        sales_count: null,
+        stock_quantity: 0,
+        image_url: '',
+        publisher: 'Pub',
+        publication_date: '2024',
+        format: 'Paperback',
+        page_count: 200,
+        created_at: '',
+        updated_at: '',
+        is_active: true,
+        ...overrides,
+        stripe_price_id,
+        stripe_product_id,
+    };
+};
 
 const mockInitialData: ActionResponse<PaginatedBookResult> = {
     error: null,

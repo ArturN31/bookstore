@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUserCheckoutData } from '@/data/checkout/services/CheckoutUserService';
 import { getCartData } from '@/data/cart/CartService';
 import CheckoutPage from '@/app/checkout/page';
+import { createMockCartItemsArray } from '@/utils/testing/mockCartItem';
 
 jest.mock('next/cache', () => ({
     revalidateTag: jest.fn(),
@@ -112,6 +113,7 @@ describe('CheckoutPage', () => {
                     is_profile_public: true,
                     is_wishlist_public: true,
                     wishlist_share_token: null,
+                    stripe_customer_id: null,
                 },
                 stripeCustomerId: 'cus_123',
             },
@@ -121,27 +123,14 @@ describe('CheckoutPage', () => {
             error: null,
             data: {
                 cartID: 'cart-1',
-                books: [
-                    {
-                        id: 'book-1',
-                        title: 'Test Book',
-                        price: '15.00',
-                        quantity: 1,
-                        author: 'Author',
-                        created_at: '2026-01-01',
-                        description: 'Desc',
-                        format: 'Hardcover',
-                        genre: 'Fiction',
-                        image_url: 'url',
-                        is_active: true,
-                        page_count: 200,
-                        publication_date: '2026-01-01',
-                        publisher: 'Publisher',
-                        sales_count: 0,
-                        stock_quantity: 5,
-                        updated_at: '2026-01-01',
-                    },
-                ],
+                books: createMockCartItemsArray(1, {
+                    id: 'book-1',
+                    title: 'Test Book',
+                    price: '15.00',
+                    quantity: 1,
+                    image_url: 'url',
+                    stock_quantity: 5,
+                }),
             },
         });
 

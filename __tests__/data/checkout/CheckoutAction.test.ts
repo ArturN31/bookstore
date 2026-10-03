@@ -52,7 +52,7 @@ describe('CheckoutAction', () => {
         jest.clearAllMocks();
         process.env = { ...originalEnv, STRIPE_SECRET_KEY: 'sk_test_123' };
 
-        jest.mocked(sanitizeSupabaseError).mockImplementation((err) =>
+        jest.mocked(sanitizeSupabaseError).mockImplementation((err: unknown) =>
             typeof err === 'string' ? err : 'Sanitized error message',
         );
     });
@@ -291,11 +291,16 @@ describe('CheckoutAction', () => {
             shippingDetails: {
                 firstName: 'Jane',
                 lastName: 'Doe',
-                email: 'jane@example.com',
+                streetAddress: '123 Main St',
+                city: 'Glasgow',
+                postcode: 'G1 1AA',
+                country: 'United Kingdom',
+                phoneNumber: '01234567890',
                 paymentMethod: 'card',
             },
             items: [{ bookId: 'book-1', quantity: 2 }],
             discountId: 'disc-10',
+            shippingMethodId: 'royal_mail_standard',
             idempotencyKey: 'idemp-xyz-123',
         };
 
@@ -325,7 +330,16 @@ describe('CheckoutAction', () => {
 
             jest.mocked(checkoutFormSchema.safeParse).mockReturnValue({
                 success: true,
-                data: { paymentMethod: 'card' },
+                data: {
+                    firstName: 'Jane',
+                    lastName: 'Doe',
+                    streetAddress: '123 Main St',
+                    city: 'Glasgow',
+                    postcode: 'G1 1AA',
+                    country: 'United Kingdom',
+                    phoneNumber: '01234567890',
+                    paymentMethod: 'card',
+                },
             } as never);
 
             const mockProcessResult = {
@@ -360,7 +374,17 @@ describe('CheckoutAction', () => {
                 items: mockPayload.items,
                 discountId: 'disc-10',
                 paymentMethod: 'card',
+                shippingMethodId: 'royal_mail_standard',
                 idempotencyKey: 'idemp-xyz-123',
+                shippingAddress: {
+                    firstName: 'Jane',
+                    lastName: 'Doe',
+                    streetAddress: '123 Main St',
+                    city: 'Glasgow',
+                    postcode: 'G1 1AA',
+                    country: 'United Kingdom',
+                    phoneNumber: '01234567890',
+                },
             });
             expect(getUsersCartID).toHaveBeenCalledWith('user-123');
             expect(clearUsersCart).toHaveBeenCalledWith('cart-123');
@@ -381,7 +405,16 @@ describe('CheckoutAction', () => {
 
             jest.mocked(checkoutFormSchema.safeParse).mockReturnValue({
                 success: true,
-                data: { paymentMethod: 'card' },
+                data: {
+                    firstName: 'Jane',
+                    lastName: 'Doe',
+                    streetAddress: '123 Main St',
+                    city: 'Glasgow',
+                    postcode: 'G1 1AA',
+                    country: 'United Kingdom',
+                    phoneNumber: '01234567890',
+                    paymentMethod: 'card',
+                },
             } as never);
 
             const mockProcessResult = {

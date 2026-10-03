@@ -57,6 +57,7 @@ const mockedUserData: User = {
     wishlist_share_token: null,
     are_reviews_public: false,
     is_profile_public: false,
+    stripe_customer_id: null,
 };
 
 describe('APP - pages/user - UserDetails', () => {

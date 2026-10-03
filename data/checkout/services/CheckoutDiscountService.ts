@@ -52,7 +52,7 @@ export const validateAndCalculateDiscount = async (
         if (minimumSubtotal !== null && currentSubtotal < minimumSubtotal)
             return {
                 data: null,
-                error: `This discount code requires a minimum subtotal of $${minimumSubtotal.toFixed(2)}.`,
+                error: `This discount code requires a minimum subtotal of £${minimumSubtotal.toFixed(2)}.`,
             };
 
         const rawValue = Number(discount.value);

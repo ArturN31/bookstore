@@ -5,19 +5,54 @@
 import {
     calculateSubtotal,
     calculateDiscount,
-    calculateShipping,
+    determineZone,
+    calculateMethodShippingCost,
     calculateTotals,
     formatCurrency,
     generateIdempotencyKey,
 } from '@/data/checkout/CheckoutUtils';
 import { AppliedDiscountState, CartCheckoutItem } from '@/data/checkout/CheckoutTypes';
 import { createPaymentIntentAction, stripe } from '@/data/checkout/CheckoutStripeServer';
+import { SHIPPING_METHODS } from '@/data/checkout/CheckoutConstants';
 
 jest.mock('@/data/checkout/CheckoutConstants', () => ({
     DEFAULT_CURRENCY: 'GBP',
     FREE_SHIPPING_THRESHOLD: 50,
-    SHIPPING_COST: 5.99,
     STRIPE_API_VERSION: '2025-08-27.acacia',
+    SHIPPING_ZONES: {
+        ZONE_1: { id: 'zone_1', name: 'Glasgow', prefixes: ['G'] },
+        ZONE_2: { id: 'zone_2', name: 'Central Scotland', prefixes: ['EH'] },
+        ZONE_3: { id: 'zone_3', name: 'Rest of UK', prefixes: [] },
+    },
+    SHIPPING_METHODS: [
+        {
+            id: 'royal_mail_standard',
+            name: 'Royal Mail Standard',
+            description: 'Standard delivery',
+            estimatedDelivery: '2-3 Days',
+            isExpress: false,
+            isCollect: false,
+            baseCosts: { zone_1: 2.99, zone_2: 4.99, zone_3: 7.99 },
+        },
+        {
+            id: 'courier_express',
+            name: 'Courier Express',
+            description: 'Express delivery',
+            estimatedDelivery: 'Next Day',
+            isExpress: true,
+            isCollect: false,
+            baseCosts: { zone_1: 5.99, zone_2: 8.99, zone_3: 12.99 },
+        },
+        {
+            id: 'click_and_collect',
+            name: 'In-Store Collection',
+            description: 'Collect',
+            estimatedDelivery: '2 Hours',
+            isExpress: false,
+            isCollect: true,
+            baseCosts: { zone_1: 0, zone_2: 0, zone_3: 0 },
+        },
+    ],
 }));
 
 jest.mock('stripe', () => {
@@ -125,42 +160,55 @@ describe('CheckoutUtils', () => {
         });
     });
 
-    describe('calculateShipping', () => {
-        it('should return 0 when subtotal is 0', () => {
-            const shipping = calculateShipping(0);
-            expect(shipping).toBe(0);
+    describe('determineZone', () => {
+        it('should correctly determine shipping zone based on postcode prefix', () => {
+            expect(determineZone('G1 1AA')).toBe('zone_1');
+            expect(determineZone('EH1 1AA')).toBe('zone_2');
+            expect(determineZone('SW1A 1AA')).toBe('zone_3');
+        });
+    });
+
+    describe('calculateMethodShippingCost', () => {
+        it('should return 0 when subtotal is 0 or method is collect', () => {
+            const standardMethod = SHIPPING_METHODS[0];
+            const collectMethod = SHIPPING_METHODS[2];
+
+            expect(calculateMethodShippingCost(standardMethod, 0, 'G1 1AA')).toBe(0);
+            expect(calculateMethodShippingCost(collectMethod, 40, 'G1 1AA')).toBe(0);
         });
 
-        it('should return SHIPPING_COST when subtotal is less than FREE_SHIPPING_THRESHOLD', () => {
-            const shipping = calculateShipping(49.99);
-            expect(shipping).toBe(5.99);
+        it('should return correct base zone cost when below free shipping threshold', () => {
+            const standardMethod = SHIPPING_METHODS[0];
+            expect(calculateMethodShippingCost(standardMethod, 30, 'G1 1AA')).toBe(2.99);
         });
 
-        it('should return 0 when subtotal meets or exceeds FREE_SHIPPING_THRESHOLD', () => {
-            const shippingThreshold = calculateShipping(50.0);
-            expect(shippingThreshold).toBe(0);
+        it('should return 0 for standard shipping when spending meets or exceeds free shipping threshold', () => {
+            const standardMethod = SHIPPING_METHODS[0];
+            expect(calculateMethodShippingCost(standardMethod, 50.0, 'G1 1AA')).toBe(0);
+        });
 
-            const shippingAbove = calculateShipping(100.0);
-            expect(shippingAbove).toBe(0);
+        it('should discount express shipping by standard cost when spending meets or exceeds threshold', () => {
+            const expressMethod = SHIPPING_METHODS[1];
+            expect(calculateMethodShippingCost(expressMethod, 50.0, 'G1 1AA')).toBe(3.0);
         });
     });
 
     describe('calculateTotals', () => {
-        it('should calculate totals without discount and zero tax rate', () => {
+        it('should calculate totals with default shipping method and zone', () => {
             const items = [{ price: 20.0, quantity: 2 }] as unknown as CartCheckoutItem[];
 
-            const totals = calculateTotals(items, null);
+            const totals = calculateTotals(items, null, 'G1 1AA', 'royal_mail_standard', 0);
 
             expect(totals).toEqual({
                 subtotal: 40.0,
                 discountAmount: 0,
-                shippingCost: 5.99,
+                shippingCost: 2.99,
                 taxAmount: 0,
-                grandTotal: 45.99,
+                grandTotal: 42.99,
             });
         });
 
-        it('should calculate totals with percentage discount, shipping threshold met, and tax rate', () => {
+        it('should calculate totals with discount, threshold met, express shipping, and tax rate', () => {
             const items = [{ price: 50.0, quantity: 2 }] as unknown as CartCheckoutItem[];
 
             const discountState: AppliedDiscountState = {
@@ -171,14 +219,14 @@ describe('CheckoutUtils', () => {
                 minimumSubtotal: 50,
             };
 
-            const totals = calculateTotals(items, discountState, 0.2);
+            const totals = calculateTotals(items, discountState, 'G1 1AA', 'courier_express', 0.2);
 
             expect(totals).toEqual({
                 subtotal: 100.0,
                 discountAmount: 20.0,
-                shippingCost: 0,
+                shippingCost: 3.0,
                 taxAmount: 16.0,
-                grandTotal: 96.0,
+                grandTotal: 119.0,
             });
         });
     });

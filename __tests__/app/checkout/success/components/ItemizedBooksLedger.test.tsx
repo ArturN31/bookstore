@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { OrderWithRelations } from '@/data/checkout/CheckoutTypes';
 import { ItemizedBooksLedger } from '@/app/checkout/success/components/ItemizedBooksLedger';
+import { createMockBook } from '@/utils/testing/mockBook';
 
 describe('ItemizedBooksLedger', () => {
     const mockItems: OrderWithRelations['order_items'] = [
@@ -11,24 +12,7 @@ describe('ItemizedBooksLedger', () => {
             quantity: 2,
             price: 15.5,
             created_at: '2026-01-01T00:00:00Z',
-            books: {
-                id: 'book-1',
-                title: 'The Great Gatsby',
-                author: 'F. Scott Fitzgerald',
-                created_at: '2026-01-01T00:00:00Z',
-                description: 'A classic novel of the Roaring Twenties.',
-                format: 'Paperback',
-                genre: 'Fiction',
-                image_url: 'https://example.com/gatsby.jpg',
-                is_active: true,
-                page_count: 180,
-                price: '15.50',
-                publication_date: '1925-04-10',
-                publisher: 'Scribner',
-                sales_count: 100,
-                stock_quantity: 50,
-                updated_at: '2026-01-01T00:00:00Z',
-            },
+            books: createMockBook(),
         },
         {
             id: 'item-2',

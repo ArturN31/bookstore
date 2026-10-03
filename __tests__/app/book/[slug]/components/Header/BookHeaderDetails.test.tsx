@@ -1,27 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { BookHeaderDetails } from '@/app/book/[slug]/components/Header/BookHeaderDetails';
+import { createMockBook } from '@/utils/testing/mockBook';
 
 describe('BookHeaderDetails Component', () => {
-    const mockBook: Book = {
-        id: '1',
-        created_at: '2023-01-01',
-        updated_at: '2023-01-01',
-        title: 'Advanced Testing',
-        author: 'John Doe',
-        genre: 'Education',
-        publisher: 'Tech Books',
-        publication_date: '2024-05-10',
-        price: '19.99',
-        description: 'A mock description.',
-        format: 'Paperback',
-        page_count: 300,
-        image_url: 'https://example.com/image.jpg',
-        stock_quantity: 15,
-        is_active: true,
-        reviews: [],
-        rating: 5,
-        sales_count: null,
-    };
+    const mockBook = createMockBook();
 
     it('should render low stock badge when stock quantity is between 1 and 25', () => {
         render(<BookHeaderDetails book={mockBook} />);

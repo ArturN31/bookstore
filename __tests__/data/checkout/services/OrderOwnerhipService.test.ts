@@ -27,9 +27,18 @@ describe('verifyOrderOwnershipAndFetch', () => {
         status: 'PROCESSING',
         created_at: '2026-01-01T00:00:00Z',
         payment_method: 'card',
+        subtotal: 17.01,
+        discount_amount: 0.0,
+        shipping_cost: 2.99,
+        tax_amount: 0.0,
         total_amount: 20.0,
+        shipping_method_id: 'royal_mail_standard',
+        shipping_method_name: 'Royal Mail Standard',
+        stripe_checkout_session_id: null,
+        stripe_payment_intent_id: 'pi_mock_123',
         order_items: [],
         order_discounts: [],
+        order_addresses: [],
     };
 
     beforeEach(() => {

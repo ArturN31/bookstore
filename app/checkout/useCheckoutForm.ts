@@ -4,6 +4,7 @@ import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
 import { CartItem } from '@/data/cart/CartMapper';
 import { AppliedDiscountState } from '@/data/checkout/CheckoutTypes';
 import { calculateTotals, generateIdempotencyKey } from '@/data/checkout/CheckoutUtils';
+import { DEFAULT_SHIPPING_METHOD_ID } from '@/data/checkout/CheckoutConstants';
 import {
     validateAndApplyDiscountAction,
     processCheckoutAction,
@@ -41,6 +42,10 @@ export function useCheckoutForm({
         (initialProfile?.country as string) ?? 'United Kingdom',
     );
 
+    const [selectedShippingMethodId, setSelectedShippingMethodId] = useState<string>(
+        DEFAULT_SHIPPING_METHOD_ID,
+    );
+
     const [couponInput, setCouponInput] = useState<string>('');
     const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscountState | null>(null);
     const [discountError, setDiscountError] = useState<string | null>(null);
@@ -49,7 +54,12 @@ export function useCheckoutForm({
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
-    const totals = calculateTotals(initialItems, appliedDiscount, 0.0);
+    const totals = calculateTotals(
+        initialItems,
+        appliedDiscount,
+        postcode,
+        selectedShippingMethodId,
+    );
 
     const handleApplyDiscount = () => {
         if (!couponInput.trim()) return;
@@ -112,6 +122,7 @@ export function useCheckoutForm({
                 shippingDetails,
                 items: payloadItems,
                 discountId: appliedDiscount ? appliedDiscount.id : null,
+                shippingMethodId: selectedShippingMethodId,
                 idempotencyKey,
             });
 
@@ -139,10 +150,7 @@ export function useCheckoutForm({
             });
 
             if (confirmResult.error) {
-                setCheckoutError(
-                    confirmResult.error.message ??
-                        'Payment confirmation failed. Check card details.',
-                );
+                setCheckoutError(confirmResult.error.message ?? 'Payment confirmation failed.');
                 setIsSubmitting(false);
                 return;
             }
@@ -156,14 +164,9 @@ export function useCheckoutForm({
 
     return {
         formData: { firstName, lastName, phone, streetAddress, city, postcode, country },
-        setters: {
-            setFirstName,
-            setLastName,
-            setPhone,
-            setStreetAddress,
-            setCity,
-            setPostcode,
-            setCountry,
+        shippingMethod: {
+            selectedMethodId: selectedShippingMethodId,
+            setSelectedMethodId: setSelectedShippingMethodId,
         },
         discount: {
             couponInput,

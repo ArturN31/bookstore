@@ -202,7 +202,7 @@ describe('CheckoutDiscountService', () => {
             const result = await validateAndCalculateDiscount('MIN50', 30);
 
             expect(result.data).toBeNull();
-            expect(result.error).toBe('This discount code requires a minimum subtotal of $50.00.');
+            expect(result.error).toBe('This discount code requires a minimum subtotal of £50.00.');
         });
 
         it('should handle thrown exceptions and return sanitized error', async () => {

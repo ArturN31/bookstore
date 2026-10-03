@@ -1,7 +1,9 @@
 import {
     DEFAULT_CURRENCY,
     FREE_SHIPPING_THRESHOLD,
-    SHIPPING_COST,
+    SHIPPING_METHODS,
+    SHIPPING_ZONES,
+    ShippingMethodOption,
 } from '@/data/checkout/CheckoutConstants';
 import {
     AppliedDiscountState,
@@ -27,27 +29,53 @@ export function calculateDiscount(subtotal: number, discount: AppliedDiscountSta
     return Math.min(discount.discountAmount, subtotal);
 }
 
-export function calculateShipping(subtotal: number): number {
-    if (subtotal === 0) return 0;
-    return subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+export function determineZone(postcode: string): 'zone_1' | 'zone_2' | 'zone_3' {
+    const clean = postcode.trim().toUpperCase();
+    if (SHIPPING_ZONES.ZONE_1.prefixes.some((prefix) => clean.startsWith(prefix))) return 'zone_1';
+    if (SHIPPING_ZONES.ZONE_2.prefixes.some((prefix) => clean.startsWith(prefix))) return 'zone_2';
+    return 'zone_3';
+}
+
+export function calculateMethodShippingCost(
+    method: ShippingMethodOption,
+    subtotalAfterDiscount: number,
+    postcode: string,
+): number {
+    if (subtotalAfterDiscount === 0 || method.isCollect) return 0.0;
+
+    const zone = determineZone(postcode);
+    const baseCost = method.baseCosts[zone];
+
+    if (subtotalAfterDiscount >= FREE_SHIPPING_THRESHOLD) {
+        if (!method.isExpress) return 0.0;
+        const standardCost =
+            SHIPPING_METHODS.find((m) => !m.isExpress && !m.isCollect)?.baseCosts[zone] ?? 0;
+        return Math.max(0, baseCost - standardCost);
+    }
+
+    return baseCost;
 }
 
 export function calculateTotals(
     items: ReadonlyArray<CartCheckoutItem>,
     discount: AppliedDiscountState | null,
+    postcode: string = '',
+    selectedMethodId: string = 'royal_mail_standard',
     taxRate: number = 0,
 ): CheckoutSummaryTotals {
     const subtotal = calculateSubtotal(items);
     const discountAmount = calculateDiscount(subtotal, discount);
     const subtotalAfterDiscount = Math.max(0, subtotal - discountAmount);
-    const shippingCost = calculateShipping(subtotalAfterDiscount);
+
+    const method = SHIPPING_METHODS.find((m) => m.id === selectedMethodId) ?? SHIPPING_METHODS[0];
+    const shippingCost = calculateMethodShippingCost(method, subtotalAfterDiscount, postcode);
     const taxAmount = Math.round(subtotalAfterDiscount * taxRate * 100) / 100;
     const grandTotal = Math.round((subtotalAfterDiscount + shippingCost + taxAmount) * 100) / 100;
 
     return {
         subtotal: Math.round(subtotal * 100) / 100,
         discountAmount,
-        shippingCost,
+        shippingCost: Math.round(shippingCost * 100) / 100,
         taxAmount,
         grandTotal,
     };

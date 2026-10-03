@@ -17,7 +17,7 @@ import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/database.types';
-import { ProcessCheckoutParams } from '@/data/checkout/CheckoutTypes';
+import { ProcessCheckoutParams, OrderWithRelations } from '@/data/checkout/CheckoutTypes';
 import { createPaymentIntentAction } from '@/data/checkout/CheckoutStripeServer';
 import { calculateTotals } from '@/data/checkout/CheckoutUtils';
 
@@ -39,7 +39,17 @@ describe('CheckoutService', () => {
         items: [{ bookId: 'book-1', quantity: 2 }],
         discountId: null,
         paymentMethod: 'card',
+        shippingMethodId: 'royal_mail_standard',
         idempotencyKey: 'idemp-key-999',
+        shippingAddress: {
+            firstName: 'John',
+            lastName: 'Doe',
+            streetAddress: '123 Main St',
+            city: 'Glasgow',
+            postcode: 'G1 1AA',
+            country: 'United Kingdom',
+            phoneNumber: '01234567890',
+        },
     };
 
     beforeEach(() => {
@@ -56,7 +66,7 @@ describe('CheckoutService', () => {
         jest.mocked(createBackendClient).mockResolvedValue(mockSupabase);
         jest.mocked(safeSupabaseQuery).mockImplementation(async (fn) => (await fn()) as never);
         jest.mocked(withRetry).mockImplementation(async (fn) => (await fn()) as never);
-        jest.mocked(sanitizeSupabaseError).mockImplementation((err) =>
+        jest.mocked(sanitizeSupabaseError).mockImplementation((err: unknown) =>
             typeof err === 'string' ? err : 'Sanitized error',
         );
         jest.mocked(calculateTotals).mockReturnValue({
@@ -255,7 +265,7 @@ describe('CheckoutService', () => {
             });
 
             expect(result.data).toBeNull();
-            expect(result.error).toBe('This discount requires a minimum subtotal of $100.00.');
+            expect(result.error).toBe('This discount requires a minimum subtotal of £100.00.');
         });
 
         it('should return sanitized error when discount query fails with database error', async () => {
@@ -513,10 +523,24 @@ describe('CheckoutService', () => {
 
     describe('getOrderDetailsById', () => {
         it('should return order details on successful query', async () => {
-            const mockOrderDetails = {
+            const mockOrderDetails: OrderWithRelations = {
                 id: 'order-123',
+                user_id: 'user-uuid-123',
+                subtotal: 40.0,
+                discount_amount: 0,
+                shipping_cost: 5.99,
+                tax_amount: 0,
                 total_amount: 45.99,
+                shipping_method_id: 'royal_mail_standard',
+                shipping_method_name: 'Royal Mail Standard',
                 status: 'paid',
+                payment_method: 'card',
+                created_at: '2026-01-01T00:00:00Z',
+                stripe_checkout_session_id: null,
+                stripe_payment_intent_id: 'pi_123',
+                order_items: [],
+                order_discounts: [],
+                order_addresses: [],
             };
 
             jest.mocked(fetchOrderById).mockResolvedValue({

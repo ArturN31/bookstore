@@ -20,17 +20,32 @@ describe('CheckoutOrderRepository', () => {
 
             const payload: ProcessOrderPayload = {
                 user_id: 'user-123',
+                subtotal: 47.0,
+                discount_amount: 0.0,
+                shipping_cost: 2.99,
+                tax_amount: 0.0,
                 total_amount: 49.99,
+                shipping_method_id: 'royal_mail_standard',
+                shipping_method_name: 'Royal Mail Standard',
                 payment_method: 'card',
                 discount_id: 'disc-123',
+                payment_intent_id: 'intent-123',
+                shipping_address: {
+                    firstName: 'John',
+                    lastName: 'Doe',
+                    streetAddress: '123 Main St',
+                    city: 'Glasgow',
+                    postcode: 'G1 1AA',
+                    country: 'United Kingdom',
+                    phoneNumber: '01234567890',
+                },
                 items: [
                     {
                         book_id: 'book-1',
                         quantity: 1,
-                        price: 49.99,
+                        price: 47.0,
                     },
                 ],
-                payment_intent_id: 'intent-123',
             };
 
             const result = await processOrderTransaction(mockSupabase, payload);
