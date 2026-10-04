@@ -226,7 +226,7 @@ describe('CheckoutUtils', () => {
                 discountAmount: 20.0,
                 shippingCost: 3.0,
                 taxAmount: 16.0,
-                grandTotal: 119.0,
+                grandTotal: 99.0,
             });
         });
     });

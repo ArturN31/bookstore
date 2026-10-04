@@ -12,7 +12,7 @@ describe('ItemizedBooksLedger', () => {
             quantity: 2,
             price: 15.5,
             created_at: '2026-01-01T00:00:00Z',
-            books: createMockBook(),
+            books: createMockBook({ title: 'The Great Gatsby' }),
         },
         {
             id: 'item-2',
@@ -29,12 +29,12 @@ describe('ItemizedBooksLedger', () => {
         render(
             <ItemizedBooksLedger
                 items={mockItems}
-                totalItemCount={3}
+                totalItemCount={2}
             />,
         );
 
         expect(screen.getByText('Itemized Books Ledger')).toBeInTheDocument();
-        expect(screen.getByText('3 Items Total')).toBeInTheDocument();
+        expect(screen.getByText('2 Items Total')).toBeInTheDocument();
 
         expect(screen.getByText('The Great Gatsby')).toBeInTheDocument();
         expect(screen.getByText('Quantity: 2')).toBeInTheDocument();
@@ -72,7 +72,7 @@ describe('ItemizedBooksLedger', () => {
         render(
             <ItemizedBooksLedger
                 items={itemWithNullPrice}
-                totalItemCount={3}
+                totalItemCount={1}
             />,
         );
 

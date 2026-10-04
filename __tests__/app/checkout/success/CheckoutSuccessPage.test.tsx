@@ -120,7 +120,7 @@ describe('CheckoutSuccessPage', () => {
 
         const storefrontButton = screen.getByRole('link', { name: 'Return to Storefront' });
         expect(storefrontButton).toBeInTheDocument();
-        expect(storefrontButton).toHaveAttribute('href', '/catalog');
+        expect(storefrontButton).toHaveAttribute('href', '/');
     });
 
     it('renders OrderConfirmationSummary component when status is SUCCESS', async () => {

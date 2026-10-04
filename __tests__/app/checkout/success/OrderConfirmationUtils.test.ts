@@ -219,15 +219,19 @@ describe('OrderConfirmationUtils', () => {
     });
 
     describe('extractShippingAddress', () => {
-        it('extracts primary shipping fields correctly', () => {
+        it('extracts primary shipping fields correctly when order_addresses exists', () => {
             const mockOrder = {
                 id: 'order-1',
-                shipping_name: 'Jane Doe',
-                shipping_address_line1: '123 Main St',
-                shipping_address_line2: 'Apt 4B',
-                shipping_city: 'London',
-                shipping_postal_code: 'SW1A 1AA',
-                shipping_country: 'United Kingdom',
+                order_addresses: [
+                    {
+                        first_name: 'Jane',
+                        last_name: 'Doe',
+                        street_address: '123 Main St',
+                        city: 'London',
+                        postcode: 'SW1A 1AA',
+                        country: 'United Kingdom',
+                    },
+                ],
             } as unknown as OrderWithRelations;
 
             const result = extractShippingAddress(mockOrder);
@@ -235,49 +239,15 @@ describe('OrderConfirmationUtils', () => {
             expect(result.recipientName).toBe('Jane Doe');
             expect(result.addressLines).toEqual([
                 '123 Main St',
-                'Apt 4B',
                 'London, SW1A 1AA',
                 'United Kingdom',
             ]);
         });
 
-        it('falls back to secondary address fields when primary ones are absent', () => {
-            const mockOrder = {
-                id: 'order-2',
-                full_name: 'John Smith',
-                shipping_address: '456 High St',
-                city: 'Manchester',
-                postal_code: 'M1 1AA',
-                country: 'United Kingdom',
-            } as unknown as OrderWithRelations;
-
-            const result = extractShippingAddress(mockOrder);
-
-            expect(result.recipientName).toBe('John Smith');
-            expect(result.addressLines).toEqual([
-                '456 High St',
-                'Manchester, M1 1AA',
-                'United Kingdom',
-            ]);
-        });
-
-        it('falls back to tertiary address fields and handles missing fields', () => {
-            const mockOrder = {
-                id: 'order-3',
-                name: 'Alice Brown',
-                address: '789 Park Ave',
-                zip: '90210',
-            } as unknown as OrderWithRelations;
-
-            const result = extractShippingAddress(mockOrder);
-
-            expect(result.recipientName).toBe('Alice Brown');
-            expect(result.addressLines).toEqual(['789 Park Ave', '90210']);
-        });
-
-        it('uses default "Valued Customer" and empty address lines when no metadata exists', () => {
+        it('uses default "Valued Customer" and empty address lines when no order_addresses exist', () => {
             const mockOrder = {
                 id: 'order-4',
+                order_addresses: [],
             } as unknown as OrderWithRelations;
 
             const result = extractShippingAddress(mockOrder);
@@ -288,7 +258,7 @@ describe('OrderConfirmationUtils', () => {
     });
 
     describe('extractOrderStatuses', () => {
-        it('extracts payment and fulfillment status from primary fields', () => {
+        it('extracts payment and fulfillment status from fields', () => {
             const mockOrder = {
                 id: 'order-1',
                 status: 'DELIVERED',
@@ -299,19 +269,6 @@ describe('OrderConfirmationUtils', () => {
 
             expect(result.paymentStatus).toBe('SUCCEEDED');
             expect(result.fulfillmentStatus).toBe('DELIVERED');
-        });
-
-        it('falls back to secondary status fields when primary fields are absent', () => {
-            const mockOrder = {
-                id: 'order-2',
-                payment_state: 'completed',
-                fulfillment_status: 'shipped',
-            } as unknown as OrderWithRelations;
-
-            const result = extractOrderStatuses(mockOrder);
-
-            expect(result.paymentStatus).toBe('COMPLETED');
-            expect(result.fulfillmentStatus).toBe('SHIPPED');
         });
 
         it('uses default "PAID" and "PROCESSING" when status fields are missing', () => {

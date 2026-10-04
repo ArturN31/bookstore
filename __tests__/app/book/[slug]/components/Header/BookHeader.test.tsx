@@ -28,7 +28,7 @@ jest.mock('@/app/book/[slug]/components/Header/BookCart', () => ({
 }));
 
 describe('BookHeader Component', () => {
-    const mockBook = createMockBook();
+    const mockBook = createMockBook({ title: 'Test Book Title' });
 
     it('should render the book cover image with correct alt text and src', () => {
         render(<BookHeader book={mockBook} />);

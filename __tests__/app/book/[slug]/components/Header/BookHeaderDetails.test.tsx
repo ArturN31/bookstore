@@ -3,7 +3,8 @@ import { BookHeaderDetails } from '@/app/book/[slug]/components/Header/BookHeade
 import { createMockBook } from '@/utils/testing/mockBook';
 
 describe('BookHeaderDetails Component', () => {
-    const mockBook = createMockBook();
+    // Only override what the low-stock test needs; the rest uses global defaults
+    const mockBook = createMockBook({ stock_quantity: 15 });
 
     it('should render low stock badge when stock quantity is between 1 and 25', () => {
         render(<BookHeaderDetails book={mockBook} />);
@@ -31,20 +32,20 @@ describe('BookHeaderDetails Component', () => {
     it('should render all book metadata accurately with proper links', () => {
         render(<BookHeaderDetails book={mockBook} />);
 
-        expect(screen.getByText('Advanced Testing')).toBeInTheDocument();
+        expect(screen.getByText('Default Book Title')).toBeInTheDocument();
 
-        const authorLink = screen.getByRole('link', { name: 'John Doe' });
-        expect(authorLink).toHaveAttribute('href', '/books/author/John%20Doe');
+        const authorLink = screen.getByRole('link', { name: 'Default Author' });
+        expect(authorLink).toHaveAttribute('href', '/books/author/Default%20Author');
 
-        expect(screen.getByText('2024-05-10')).toBeInTheDocument();
+        expect(screen.getByText('2024-01-01')).toBeInTheDocument();
 
-        const publisherLink = screen.getByRole('link', { name: 'Tech Books' });
-        expect(publisherLink).toHaveAttribute('href', '/books/publisher/Tech%20Books');
+        const publisherLink = screen.getByRole('link', { name: 'Default Publisher' });
+        expect(publisherLink).toHaveAttribute('href', '/books/publisher/Default%20Publisher');
 
         const formatLink = screen.getByRole('link', { name: 'Paperback' });
         expect(formatLink).toHaveAttribute('href', '/books/format/Paperback');
 
-        const genreLink = screen.getByRole('link', { name: 'Education' });
-        expect(genreLink).toHaveAttribute('href', '/books/genre/Education');
+        const genreLink = screen.getByRole('link', { name: 'Fiction' });
+        expect(genreLink).toHaveAttribute('href', '/books/genre/Fiction');
     });
 });

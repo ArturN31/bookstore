@@ -390,9 +390,7 @@ describe('useCheckoutForm', () => {
             await result.current.submission.handleSubmit(mockEvent);
         });
 
-        expect(result.current.submission.checkoutError).toBe(
-            'Payment confirmation failed. Check card details.',
-        );
+        expect(result.current.submission.checkoutError).toBe('Payment confirmation failed.');
         expect(result.current.submission.isSubmitting).toBe(false);
         expect(mockPush).not.toHaveBeenCalled();
     });

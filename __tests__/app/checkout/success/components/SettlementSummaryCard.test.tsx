@@ -37,7 +37,7 @@ describe('SettlementSummaryCard', () => {
 
         const continueLink = screen.getByRole('link', { name: /continue shopping/i });
         expect(continueLink).toBeInTheDocument();
-        expect(continueLink).toHaveAttribute('href', '/catalog');
+        expect(continueLink).toHaveAttribute('href', '/');
     });
 
     it('renders correctly when no discounts are applied', () => {

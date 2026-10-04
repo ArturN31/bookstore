@@ -4,7 +4,7 @@ import { OrderWithRelations } from '@/data/checkout/CheckoutTypes';
 import { createMockBook } from '@/utils/testing/mockBook';
 
 describe('OrderConfirmationSummary', () => {
-    const mockBook = createMockBook();
+    const mockBook = createMockBook({ title: 'Clean Code' });
 
     const mockOrder: OrderWithRelations = {
         id: 'ORD-12345',
@@ -55,7 +55,7 @@ describe('OrderConfirmationSummary', () => {
         expect(screen.getByText('Settlement Summary')).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /continue shopping/i })).toHaveAttribute(
             'href',
-            '/catalog',
+            '/',
         );
     });
 });

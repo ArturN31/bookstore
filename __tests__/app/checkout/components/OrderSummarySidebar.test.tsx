@@ -27,8 +27,7 @@ describe('OrderSummarySidebar', () => {
         render(<OrderSummarySidebar {...defaultProps} />);
 
         expect(screen.getByText('Order Summary')).toBeInTheDocument();
-        expect(screen.getByText('The Great Gatsby')).toBeInTheDocument();
-        expect(screen.getByText('1984')).toBeInTheDocument();
+        expect(screen.getByText('Test Book 1')).toBeInTheDocument();
 
         expect(screen.getByText('Subtotal')).toBeInTheDocument();
         expect(screen.getByText('Grand Total')).toBeInTheDocument();
