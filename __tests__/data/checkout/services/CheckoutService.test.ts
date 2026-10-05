@@ -123,6 +123,31 @@ describe('CheckoutService', () => {
             );
         });
 
+        it('should fallback to default SHIPPING_METHODS[0] when shippingMethodId is invalid or not found', async () => {
+            const mockBooks = [
+                { id: 'book-1', title: 'Book 1', price: 20.0, stock_quantity: 10, is_active: true },
+            ];
+
+            (mockSupabase.from as jest.Mock).mockReturnValue({
+                select: jest.fn().mockReturnValue({
+                    in: jest.fn().mockResolvedValue({ data: mockBooks, error: null }),
+                }),
+            });
+
+            jest.mocked(processOrderTransaction).mockResolvedValue({
+                data: { order_id: 'order-uuid-fallback' },
+                error: null,
+            } as never);
+
+            const result = await executeCheckoutOrder({
+                ...mockCheckoutParams,
+                shippingMethodId: 'non_existent_method_id',
+            });
+
+            expect(result.error).toBeNull();
+            expect(result.data?.orderId).toBe('order-uuid-fallback');
+        });
+
         it('should successfully execute checkout order flow with a valid active percentage discount', async () => {
             const mockBooks = [
                 { id: 'book-1', title: 'Book 1', price: 20.0, stock_quantity: 10, is_active: true },

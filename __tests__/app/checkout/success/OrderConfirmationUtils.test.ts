@@ -100,6 +100,31 @@ describe('OrderConfirmationUtils', () => {
                 amount: 5,
             });
             expect(result.discountTotal).toBe(10);
+            expect(result.grandTotal).toBe(100);
+        });
+
+        it('handles null or undefined total_amount by defaulting to 0', () => {
+            const mockOrder: OrderWithRelations = {
+                id: 'order-null-total',
+                user_id: 'user-1',
+                status: 'PROCESSING',
+                created_at: '2026-01-01T00:00:00Z',
+                payment_method: 'card',
+                total_amount: null as unknown as number,
+                order_items: [],
+                order_discounts: [],
+                discount_amount: 0,
+                shipping_cost: 0,
+                shipping_method_id: '',
+                shipping_method_name: '',
+                stripe_checkout_session_id: null,
+                stripe_payment_intent_id: null,
+                subtotal: 0,
+                tax_amount: 0,
+            };
+
+            const result = calculateOrderTotals(mockOrder);
+            expect(result.grandTotal).toBe(0);
         });
 
         it('caps fixed discount deduction to subtotal when discount exceeds subtotal', () => {
@@ -244,6 +269,25 @@ describe('OrderConfirmationUtils', () => {
             ]);
         });
 
+        it('falls back to "Valued Customer" when first_name and last_name are empty', () => {
+            const mockOrder = {
+                id: 'order-address-empty',
+                order_addresses: [
+                    {
+                        first_name: '',
+                        last_name: '',
+                        street_address: '123 Main St',
+                        city: 'London',
+                        postcode: 'SW1A 1AA',
+                        country: 'United Kingdom',
+                    },
+                ],
+            } as unknown as OrderWithRelations;
+
+            const result = extractShippingAddress(mockOrder);
+            expect(result.recipientName).toBe('Valued Customer');
+        });
+
         it('uses default "Valued Customer" and empty address lines when no order_addresses exist', () => {
             const mockOrder = {
                 id: 'order-4',
@@ -269,6 +313,30 @@ describe('OrderConfirmationUtils', () => {
 
             expect(result.paymentStatus).toBe('SUCCEEDED');
             expect(result.fulfillmentStatus).toBe('DELIVERED');
+        });
+
+        it('falls back to fulfillment_status when order.status is missing', () => {
+            const mockOrder = {
+                id: 'order-fulfillment-1',
+                status: null,
+                fulfillment_status: 'shipped',
+            } as unknown as OrderWithRelations;
+
+            const result = extractOrderStatuses(mockOrder);
+
+            expect(result.fulfillmentStatus).toBe('SHIPPED');
+        });
+
+        it('falls back to "PROCESSING" when both status and fulfillment_status are missing', () => {
+            const mockOrder = {
+                id: 'order-fulfillment-2',
+                status: null,
+                fulfillment_status: null,
+            } as unknown as OrderWithRelations;
+
+            const result = extractOrderStatuses(mockOrder);
+
+            expect(result.fulfillmentStatus).toBe('PROCESSING');
         });
 
         it('uses default "PAID" and "PROCESSING" when status fields are missing', () => {

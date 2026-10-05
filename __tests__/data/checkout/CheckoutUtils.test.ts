@@ -13,7 +13,7 @@ import {
 } from '@/data/checkout/CheckoutUtils';
 import { AppliedDiscountState, CartCheckoutItem } from '@/data/checkout/CheckoutTypes';
 import { createPaymentIntentAction, stripe } from '@/data/checkout/CheckoutStripeServer';
-import { SHIPPING_METHODS } from '@/data/checkout/CheckoutConstants';
+import { SHIPPING_METHODS, ShippingMethodOption } from '@/data/checkout/CheckoutConstants';
 
 jest.mock('@/data/checkout/CheckoutConstants', () => ({
     DEFAULT_CURRENCY: 'GBP',
@@ -191,6 +191,28 @@ describe('CheckoutUtils', () => {
             const expressMethod = SHIPPING_METHODS[1];
             expect(calculateMethodShippingCost(expressMethod, 50.0, 'G1 1AA')).toBe(3.0);
         });
+
+        it('should fallback to 0 standard cost when no standard method exists', () => {
+            const originalMethods = [...SHIPPING_METHODS];
+            const shippingMethodsMutable = SHIPPING_METHODS as unknown as ShippingMethodOption[];
+            shippingMethodsMutable.length = 0;
+            shippingMethodsMutable.push({
+                id: 'courier_express',
+                name: 'Courier Express',
+                description: 'Express delivery',
+                estimatedDelivery: 'Next Day',
+                isExpress: true,
+                isCollect: false,
+                baseCosts: { zone_1: 5.99, zone_2: 8.99, zone_3: 12.99 },
+            });
+
+            const expressMethod = SHIPPING_METHODS[0];
+            const cost = calculateMethodShippingCost(expressMethod, 60, 'G1 1AA');
+            expect(cost).toBe(5.99);
+
+            shippingMethodsMutable.length = 0;
+            shippingMethodsMutable.push(...originalMethods);
+        });
     });
 
     describe('calculateTotals', () => {
@@ -206,6 +228,14 @@ describe('CheckoutUtils', () => {
                 taxAmount: 0,
                 grandTotal: 42.99,
             });
+        });
+
+        it('should fallback to default shipping method when selectedMethodId is invalid', () => {
+            const items = [{ price: 20.0, quantity: 2 }] as unknown as CartCheckoutItem[];
+
+            const totals = calculateTotals(items, null, 'G1 1AA', 'invalid_method_id', 0);
+
+            expect(totals.shippingCost).toBe(2.99);
         });
 
         it('should calculate totals with discount, threshold met, express shipping, and tax rate', () => {
