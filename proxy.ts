@@ -11,9 +11,12 @@ export const config = {
         //match following request paths
         '/user/profile',
         '/user/profile/change_address',
-        '/user/profile/change_username',
         '/user/auth/change_password',
         '/user/wishlist',
+        '/user/orders',
+        '/user/order/:orderId',
         '/checkout',
+        '/checkout/success',
+        '/dev-tools',
     ],
 };

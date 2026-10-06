@@ -681,8 +681,6 @@ The commands above reproduce the documented test, lint, and build verification s
 - [X] Add protected `/checkout/confirmation/[orderId]` route guarded by strict user ownership verification (`checkIsOwner`)
 - [X] Add post-purchase receipt display and asynchronous transactional email workflows
 - [X] Provide additional shipping methods
-- [ ] Add order cancellation workflow
-- [ ] Write unit and component integration test suite using Jest and React Testing Library
 
 ### 2. Public Profiles and Community Features
 
@@ -729,7 +727,9 @@ The commands above reproduce the documented test, lint, and build verification s
 
 ## 6. Profile
 
-- [ ] Add view orders page to the private profile area
+- [X] Add view orders page to the private profile area
+  - [X] Add view order details page with line items, shipping, and payment information
+- [ ] Add order cancellation workflow
 
 ## Engineering Decisions and Tradeoffs
 
