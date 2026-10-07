@@ -2,7 +2,7 @@ import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
 import { TextDecoder, TextEncoder } from 'util';
 
-// 1. Node.js / Web Standards Polyfills
+// 1. Node.js / Web Standards Polyfills & Environment Variables
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder as unknown as typeof global.TextDecoder;
 
@@ -11,6 +11,11 @@ process.env.NEXT_PUBLIC_SUPABASE_DB_URL =
 process.env.NEXT_PUBLIC_SUPABASE_PUBLIC_KEY =
     process.env.NEXT_PUBLIC_SUPABASE_PUBLIC_KEY || 'mock-key';
 process.env.SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY || 'mock-secret';
+
+process.env.STRIPE_SECRET_KEY =
+    process.env.STRIPE_SECRET_KEY || 'sk_test_mock_key_for_jest_testing';
+process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY =
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_mock_key_for_jest_testing';
 
 // 2. Global Framework Noise & Expected Test Error Suppressor
 const originalConsoleError = console.error;
