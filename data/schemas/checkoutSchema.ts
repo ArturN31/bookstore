@@ -8,7 +8,7 @@ export const checkoutFormSchema = z.object({
     firstName: z
         .string()
         .trim()
-        .transform((val) => val.replace(/<[^>]*>?/gm, '').trim())
+        .transform((val) => val.replace(/[<>]/g, '').trim())
         .pipe(
             z
                 .string()
@@ -19,7 +19,7 @@ export const checkoutFormSchema = z.object({
     lastName: z
         .string()
         .trim()
-        .transform((val) => val.replace(/<[^>]*>?/gm, '').trim())
+        .transform((val) => val.replace(/[<>]/g, '').trim())
         .pipe(
             z
                 .string()
