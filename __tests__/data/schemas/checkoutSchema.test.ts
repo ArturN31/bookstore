@@ -7,7 +7,13 @@ import {
 import { sanitizeText } from '@/data/schemas/schemaUtils';
 
 jest.mock('@/data/schemas/schemaUtils', () => ({
-    sanitizeText: jest.fn((text: string) => text.replace(/<[^>]*>/g, '')),
+    sanitizeText: jest.fn((text: string) =>
+        (
+            jest.requireActual('@/data/schemas/schemaUtils') as {
+                sanitizeText: (str: string) => string;
+            }
+        ).sanitizeText(text),
+    ),
 }));
 
 jest.mock('@/data/schemas/onboardingSchema', () => ({

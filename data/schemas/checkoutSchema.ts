@@ -9,7 +9,7 @@ export const checkoutFormSchema = z.object({
     firstName: z
         .string()
         .trim()
-        .transform((val: string) => sanitizeText(val).trim())
+        .transform((val: string) => sanitizeText(val))
         .pipe(
             z
                 .string()
@@ -20,7 +20,7 @@ export const checkoutFormSchema = z.object({
     lastName: z
         .string()
         .trim()
-        .transform((val: string) => sanitizeText(val).trim())
+        .transform((val: string) => sanitizeText(val))
         .pipe(
             z
                 .string()
