@@ -12,7 +12,7 @@ This README documents both what is implemented and what is intentionally still i
 
 **Current Phase**: Core bookstore paths implemented; checkout and payment remain the next product milestone
 **Last Verified**: October 04, 2026
-**Test Run**: 230 suites passed, 1,689 tests passed, 1 snapshot passed
+**Test Run**: 234 suites passed, 1,704 tests passed, 1 snapshot passed
 **Coverage**: 100.00% statements, branches, functions, lines, and average
 **Quality Checks**: `npm run lint` and `npm run build` pass
 
@@ -20,8 +20,8 @@ This README documents both what is implemented and what is intentionally still i
 
 | Check | Result |
 | :---- | :----- |
-| Jest suites | 230 passed / 230 total |
-| Jest tests | 1,689 passed / 1,689 total |
+| Jest suites | 234 passed / 234 total |
+| Jest tests | 1,704 passed / 1,704 total |
 | Snapshots | 1 passed / 1 total |
 | Statements | 100.00% |
 | Branches | 100.00% |
@@ -681,6 +681,7 @@ The commands above reproduce the documented test, lint, and build verification s
 - [X] Add protected `/checkout/confirmation/[orderId]` route guarded by strict user ownership verification (`checkIsOwner`)
 - [X] Add post-purchase receipt display and asynchronous transactional email workflows
 - [X] Provide additional shipping methods
+- [ ] Provide additional payment methods
 
 ### 2. Public Profiles and Community Features
 
