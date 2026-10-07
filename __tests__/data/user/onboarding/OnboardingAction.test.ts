@@ -240,6 +240,54 @@ describe('APP - data - actions - OnboardingForm - OnboardingAction', () => {
         expect(redirect).toHaveBeenCalledWith('/user/profile');
     });
 
+    it('successfully redirects to custom route when valid relative redirectTo is provided', async () => {
+        const formData = new FormData();
+        formData.append('city', 'Glasgow');
+        formData.append('country', 'UK');
+        formData.append('postcode', 'G1 1AA');
+        formData.append('streetAddress', '123 St');
+        formData.append('redirectTo', '/checkout');
+
+        mockSupabase.auth.getUser.mockResolvedValue({
+            data: { user: { id: '123' } },
+            error: null,
+        });
+
+        jest.mocked(updateOnboardingRecord).mockResolvedValue({
+            data: [],
+            error: null,
+        });
+
+        await OnboardingAction('update', {}, formData);
+
+        expect(revalidatePath).toHaveBeenCalledWith('/checkout');
+        expect(redirect).toHaveBeenCalledWith('/checkout');
+    });
+
+    it('falls back to default USER_ROUTES.PROFILE when redirectTo does not start with /', async () => {
+        const formData = new FormData();
+        formData.append('city', 'Glasgow');
+        formData.append('country', 'UK');
+        formData.append('postcode', 'G1 1AA');
+        formData.append('streetAddress', '123 St');
+        formData.append('redirectTo', 'https://malicious-domain.com');
+
+        mockSupabase.auth.getUser.mockResolvedValue({
+            data: { user: { id: '123' } },
+            error: null,
+        });
+
+        jest.mocked(updateOnboardingRecord).mockResolvedValue({
+            data: [],
+            error: null,
+        });
+
+        await OnboardingAction('update', {}, formData);
+
+        expect(revalidatePath).toHaveBeenCalledWith('/user/profile');
+        expect(redirect).toHaveBeenCalledWith('/user/profile');
+    });
+
     it('successfully inserts new user address in add mode', async () => {
         const formData = new FormData();
         const fields: Record<string, string> = {

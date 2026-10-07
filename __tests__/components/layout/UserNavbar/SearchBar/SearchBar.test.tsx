@@ -3,7 +3,6 @@ import { SearchBar } from '@/components/layout/UserNavbar/SearchBar/SearchBar';
 import { useBookSearch } from '@/hooks/SearchBar/useBookSearch';
 import { useSearchNavigation } from '@/hooks/SearchBar/useSearchNavigation';
 
-// Hoisted mock polyfills global.Request before Next.js cache modules evaluate in Node/Jest
 jest.mock('next/cache', () => {
     if (typeof global.Request === 'undefined') {
         class MockRequest {

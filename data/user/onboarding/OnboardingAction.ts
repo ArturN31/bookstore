@@ -33,6 +33,7 @@ export async function OnboardingAction(
     formData: FormData,
 ): Promise<OnboardingFormState> {
     const rawData = Object.fromEntries(formData.entries());
+    const redirectTo = formData.get('redirectTo') as string | null;
 
     if (rawData.reset) return INITIAL_EMPTY_STATE;
 
@@ -85,6 +86,8 @@ export async function OnboardingAction(
         };
     }
 
-    revalidatePath(USER_ROUTES.PROFILE);
-    redirect(USER_ROUTES.PROFILE);
+    const targetRoute = redirectTo && redirectTo.startsWith('/') ? redirectTo : USER_ROUTES.PROFILE;
+
+    revalidatePath(targetRoute);
+    redirect(targetRoute);
 }

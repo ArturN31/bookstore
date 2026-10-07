@@ -1,28 +1,10 @@
 import { BookCart } from '@/app/book/[slug]/components/Header/BookCart';
 import { useCartState } from '@/providers/cart/utils/useCart';
 import { useUserState } from '@/providers/user/utils/useUser';
+import { createMockBook } from '@/utils/testing/mockBook';
 import { render, screen } from '@testing-library/react';
 
-const mockedBook: Book = {
-    id: 'mock-book-id-123',
-    created_at: new Date().getUTCDate().toString(),
-    updated_at: new Date().getUTCDate().toString(),
-    title: 'The Mock Book',
-    author: 'A. Test Author',
-    genre: 'Fiction',
-    publisher: 'Mock Publisher',
-    publication_date: '2023-01-01',
-    price: '19.99',
-    description: 'A mock description.',
-    format: 'Hardcover',
-    page_count: 300,
-    image_url: 'http://example.com/mock.jpg',
-    stock_quantity: 30,
-    sales_count: 100,
-    is_active: true,
-    reviews: [],
-    rating: 5,
-};
+const mockedBook = createMockBook();
 
 jest.mock('@/providers/user/utils/useUser', () => ({
     useUserState: jest.fn(),

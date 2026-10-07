@@ -1,27 +1,9 @@
 import { BookCardHeader } from '@/components/books/bookCard/BookCardHeader';
 import { useUserState } from '@/providers/user/utils/useUser';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { createMockBook } from '@/utils/testing/mockBook';
+import { render, screen } from '@testing-library/react';
 
-const mockedBook: Book = {
-    id: 'mock-book-id-123',
-    created_at: new Date().getUTCDate().toString(),
-    updated_at: new Date().getUTCDate().toString(),
-    title: 'The Mock Book',
-    author: 'A. Test Author',
-    genre: 'Fiction',
-    publisher: 'Mock Publisher',
-    publication_date: '2023-01-01',
-    price: '19.99',
-    description: 'A mock description.',
-    format: 'Hardcover',
-    page_count: 300,
-    image_url: 'http://example.com/mock.jpg',
-    stock_quantity: 10,
-    is_active: true,
-    reviews: [],
-    rating: 5,
-    sales_count: 100,
-};
+const mockedBook = createMockBook();
 
 jest.mock('@/utils/db/server', () => ({
     createBackendClient: jest.fn(),
@@ -56,7 +38,10 @@ describe('APP - BookCard - Header', () => {
     });
 
     it('should render wishlist and rating when logged in and profile exists', () => {
-        mockUseUserState.mockReturnValue({ loggedIn: true, profileExists: true } as any);
+        mockUseUserState.mockReturnValue({
+            loggedIn: true,
+            profileExists: true,
+        } as unknown as ReturnType<typeof useUserState>);
 
         render(<BookCardHeader book={mockedBook} />);
 
@@ -64,8 +49,27 @@ describe('APP - BookCard - Header', () => {
         expect(screen.getByTestId('mock-rating')).toBeInTheDocument();
     });
 
+    it('should fallback to empty reviews array when book.reviews is undefined', () => {
+        mockUseUserState.mockReturnValue({
+            loggedIn: true,
+            profileExists: true,
+        } as unknown as ReturnType<typeof useUserState>);
+
+        const bookWithoutReviews: Book = {
+            ...mockedBook,
+            reviews: undefined as unknown as Book['reviews'],
+        };
+
+        render(<BookCardHeader book={bookWithoutReviews} />);
+
+        expect(screen.getByTestId('mock-rating')).toBeInTheDocument();
+    });
+
     it('should not render wishlist when not logged in', () => {
-        mockUseUserState.mockReturnValue({ loggedIn: false, profileExists: false } as any);
+        mockUseUserState.mockReturnValue({
+            loggedIn: false,
+            profileExists: false,
+        } as unknown as ReturnType<typeof useUserState>);
 
         render(<BookCardHeader book={mockedBook} />);
 
@@ -74,7 +78,10 @@ describe('APP - BookCard - Header', () => {
     });
 
     it('should hide wishlist if profileExists is false even if loggedIn', () => {
-        mockUseUserState.mockReturnValue({ loggedIn: true, profileExists: false } as any);
+        mockUseUserState.mockReturnValue({
+            loggedIn: true,
+            profileExists: false,
+        } as unknown as ReturnType<typeof useUserState>);
 
         render(<BookCardHeader book={mockedBook} />);
 
@@ -82,7 +89,10 @@ describe('APP - BookCard - Header', () => {
     });
 
     it('should hide wishlist if loggedIn is false even if profileExists', () => {
-        mockUseUserState.mockReturnValue({ loggedIn: false, profileExists: true } as any);
+        mockUseUserState.mockReturnValue({
+            loggedIn: false,
+            profileExists: true,
+        } as unknown as ReturnType<typeof useUserState>);
 
         render(<BookCardHeader book={mockedBook} />);
 
@@ -90,14 +100,16 @@ describe('APP - BookCard - Header', () => {
     });
 
     it('should call stopPropagation on wishlist wrapper click (covers line 15 onClick)', () => {
-        mockUseUserState.mockReturnValue({ loggedIn: true, profileExists: true } as any);
+        mockUseUserState.mockReturnValue({
+            loggedIn: true,
+            profileExists: true,
+        } as unknown as ReturnType<typeof useUserState>);
 
         render(<BookCardHeader book={mockedBook} />);
 
         const wishlistWrapper = screen.getByTestId('mock-wishlist').parentElement;
         expect(wishlistWrapper).toBeInTheDocument();
 
-        // Create a click event and verify stopPropagation is called
         const clickEvent = new MouseEvent('click', {
             bubbles: true,
             cancelable: true,

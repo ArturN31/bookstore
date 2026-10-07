@@ -2,6 +2,7 @@ import UsersWishlist from '@/app/user/wishlist/page';
 import { BookQueryParams } from '@/data/books/BookRepository';
 import { fetchBooksWithReviews } from '@/data/books/BookService';
 import { UserStateContext } from '@/providers/user/UserContext';
+import { createMockBooksArray } from '@/utils/testing/mockBook';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { act } from 'react';
 
@@ -97,68 +98,7 @@ const renderWithContext = (
     };
 };
 
-const mockBooksData: Book[] = [
-    {
-        id: 'mock-book-id-1',
-        created_at: new Date().getUTCDate().toString(),
-        updated_at: new Date().getUTCDate().toString(),
-        title: 'The Mock Book 1',
-        author: 'A. Test Author',
-        genre: 'Fiction',
-        publisher: 'Mock Publisher',
-        publication_date: '2023-01-01',
-        price: '19.99',
-        description: 'A mock description.',
-        format: 'Hardcover',
-        page_count: 300,
-        image_url: 'http://example.com/mock.jpg',
-        stock_quantity: 10,
-        sales_count: 50,
-        is_active: true,
-        reviews: [],
-        rating: 5,
-    },
-    {
-        id: 'mock-book-id-2',
-        created_at: new Date().getUTCDate().toString(),
-        updated_at: new Date().getUTCDate().toString(),
-        title: 'The Mock Book 2',
-        author: 'B. Test Author',
-        genre: 'Thriller',
-        publisher: 'Mock Publisher',
-        publication_date: '2022-01-01',
-        price: '14.99',
-        description: 'A mock description.',
-        format: 'Hardcover',
-        page_count: 400,
-        image_url: 'http://example.com/mock.jpg',
-        stock_quantity: 30,
-        sales_count: 50,
-        is_active: true,
-        reviews: [],
-        rating: 3,
-    },
-    {
-        id: 'mock-book-id-3',
-        created_at: new Date().getUTCDate().toString(),
-        updated_at: new Date().getUTCDate().toString(),
-        title: 'The Mock Book 3',
-        author: 'C. Test Author',
-        genre: 'Novel',
-        publisher: 'Mock Publisher',
-        publication_date: '2021-01-01',
-        price: '12.99',
-        description: 'A mock description.',
-        format: 'Hardcover',
-        page_count: 500,
-        image_url: 'http://example.com/mock.jpg',
-        stock_quantity: 30,
-        sales_count: 50,
-        is_active: true,
-        reviews: [],
-        rating: 4,
-    },
-];
+const mockBooksData = createMockBooksArray(3);
 
 describe('APP - User - wishlist', () => {
     beforeEach(() => {

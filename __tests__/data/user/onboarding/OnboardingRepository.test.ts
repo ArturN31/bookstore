@@ -59,6 +59,7 @@ describe('UserRepository - Address Operations', () => {
                     wishlist_share_token: null,
                     are_reviews_public: false,
                     is_profile_public: false,
+                    stripe_customer_id: null,
                 },
             ];
 
@@ -134,6 +135,7 @@ describe('UserRepository - Address Operations', () => {
                     wishlist_share_token: null,
                     are_reviews_public: false,
                     is_profile_public: false,
+                    stripe_customer_id: null,
                 },
             ];
 

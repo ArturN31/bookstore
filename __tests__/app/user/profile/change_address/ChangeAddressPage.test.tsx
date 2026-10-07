@@ -43,7 +43,7 @@ describe('APP - Auth - ChangeAddressPage', () => {
         (getUserData as jest.Mock).mockResolvedValue({ data: null, error: null });
 
         try {
-            await ChangeAddressPage();
+            await ChangeAddressPage({ searchParams: Promise.resolve({}) });
         } catch (e) {
             // Redirect throws in test environment
         }
@@ -55,7 +55,7 @@ describe('APP - Auth - ChangeAddressPage', () => {
         (getUserData as jest.Mock).mockResolvedValue({ data: null, error: 'Error' });
 
         try {
-            await ChangeAddressPage();
+            await ChangeAddressPage({ searchParams: Promise.resolve({}) });
         } catch (e) {
             // Redirect throws in test environment
         }
@@ -78,7 +78,9 @@ describe('APP - Auth - ChangeAddressPage', () => {
             error: null,
         });
 
-        const Page = await ChangeAddressPage();
+        const Page = await ChangeAddressPage({
+            searchParams: Promise.resolve({ redirectTo: '/checkout' }),
+        });
         render(Page);
 
         expect(screen.getByTestId('update-address-form')).toHaveTextContent('123 Test St');

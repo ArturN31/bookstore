@@ -1,0 +1,229 @@
+import { createBackendClient } from '@/utils/db/server';
+import { SafeQueryResult, safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
+import {
+    ProcessCheckoutResult,
+    AppliedDiscountState,
+    ProcessCheckoutParams,
+    DiscountRow,
+    OrderWithRelations,
+    ProcessOrderPayloadItem,
+    CartCheckoutItem,
+} from '../CheckoutTypes';
+import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
+import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { fetchOrderById, processOrderTransaction } from '../repositories/CheckoutOrderRepository';
+import { withRetry } from '@/utils/network/retry';
+import { calculateTotals } from '../CheckoutUtils';
+import { Database } from '@/database.types';
+import { DEFAULT_CURRENCY, SHIPPING_METHODS } from '../CheckoutConstants';
+import { createPaymentIntentAction } from '../CheckoutStripeServer';
+
+type BookRow = Database['public']['Tables']['books']['Row'];
+
+export const executeCheckoutOrder = async (
+    params: ProcessCheckoutParams,
+): Promise<SafeQueryResult<ProcessCheckoutResult>> => {
+    try {
+        const supabase = await createBackendClient();
+
+        if (!params.items || params.items.length === 0)
+            return { data: null, error: APP_ERROR_MESSAGES.EMPTY_CART_CHECKOUT };
+
+        const bookIds = params.items.map((i) => i.bookId);
+
+        const booksResult = await safeSupabaseQuery<BookRow[]>(() =>
+            withRetry(async () => {
+                const res = await supabase.from('books').select('*').in('id', bookIds);
+                return res;
+            }),
+        );
+        if (booksResult.error)
+            return { data: null, error: sanitizeSupabaseError(booksResult.error) };
+
+        const books = booksResult.data;
+        if (!books || books.length !== params.items.length)
+            return { data: null, error: APP_ERROR_MESSAGES.INSUFFICIENT_STOCK };
+
+        const processItems: ProcessOrderPayloadItem[] = [];
+        const cartItemsForTotals: CartCheckoutItem[] = [];
+
+        for (const itemParam of params.items) {
+            const book = books.find((b) => b.id === itemParam.bookId);
+            if (!book) return { data: null, error: APP_ERROR_MESSAGES.INSUFFICIENT_STOCK };
+            if (!book.is_active || book.stock_quantity < itemParam.quantity)
+                return { data: null, error: APP_ERROR_MESSAGES.INSUFFICIENT_STOCK };
+
+            const bookPrice = Number(book.price);
+
+            processItems.push({
+                book_id: book.id,
+                quantity: itemParam.quantity,
+                price: bookPrice,
+            });
+
+            cartItemsForTotals.push({
+                ...book,
+                quantity: itemParam.quantity,
+            } as unknown as CartCheckoutItem);
+        }
+
+        const rawSubtotal = cartItemsForTotals.reduce(
+            (acc, item) => acc + Number(item.price) * item.quantity,
+            0,
+        );
+
+        let discountState: AppliedDiscountState | null = null;
+        if (params.discountId) {
+            const discountResult = await safeSupabaseQuery<DiscountRow>(() =>
+                withRetry(async () => {
+                    const res = await supabase
+                        .from('discounts')
+                        .select('*')
+                        .eq('id', params.discountId!)
+                        .maybeSingle();
+                    return res;
+                }),
+            );
+
+            if (discountResult.error)
+                return { data: null, error: sanitizeSupabaseError(discountResult.error) };
+
+            const discount = discountResult.data;
+            if (discount && discount.is_active) {
+                const rawValue = Number(discount.value);
+                const minimumSubtotal =
+                    discount.minimum_subtotal !== null ? Number(discount.minimum_subtotal) : null;
+
+                if (minimumSubtotal !== null && rawSubtotal < minimumSubtotal)
+                    return {
+                        data: null,
+                        error: `This discount requires a minimum subtotal of £${minimumSubtotal.toFixed(2)}.`,
+                    };
+
+                discountState = {
+                    id: discount.id,
+                    code: discount.code,
+                    discountPercent: discount.type === 'percentage' ? rawValue : 0,
+                    discountAmount: discount.type === 'fixed_amount' ? rawValue : 0,
+                    minimumSubtotal: minimumSubtotal,
+                };
+            }
+        }
+
+        const totals = calculateTotals(
+            cartItemsForTotals,
+            discountState,
+            params.shippingAddress.postcode,
+            params.shippingMethodId,
+        );
+
+        const methodObj =
+            SHIPPING_METHODS.find((m) => m.id === params.shippingMethodId) ?? SHIPPING_METHODS[0];
+
+        const totalAmountInCents = Math.round(totals.grandTotal * 100);
+
+        const paymentIntentResult = await createPaymentIntentAction(
+            totalAmountInCents,
+            params.idempotencyKey,
+            DEFAULT_CURRENCY,
+            {
+                userId: params.userId,
+                customerEmail: params.customerEmail,
+            },
+            params.stripeCustomerId,
+        );
+
+        if (
+            !paymentIntentResult.success ||
+            !paymentIntentResult.clientSecret ||
+            !paymentIntentResult.paymentIntentId
+        )
+            return {
+                data: null,
+                error: paymentIntentResult.error ?? APP_ERROR_MESSAGES.PAYMENT_PROCESSING_FAILED,
+            };
+
+        const rpcResult = await safeSupabaseQuery<{ readonly order_id: string }>(() =>
+            withRetry(async () => {
+                const res = await processOrderTransaction(supabase, {
+                    user_id: params.userId,
+                    subtotal: totals.subtotal,
+                    discount_amount: totals.discountAmount,
+                    shipping_cost: totals.shippingCost,
+                    tax_amount: totals.taxAmount,
+                    total_amount: totals.grandTotal,
+                    shipping_method_id: methodObj.id,
+                    shipping_method_name: methodObj.name,
+                    payment_method: params.paymentMethod,
+                    discount_id: params.discountId,
+                    payment_intent_id: paymentIntentResult.paymentIntentId,
+                    shipping_address: params.shippingAddress,
+                    items: processItems,
+                });
+                return {
+                    ...res,
+                    data: res.data as unknown as { readonly order_id: string },
+                };
+            }),
+        );
+
+        if (rpcResult.error || !rpcResult.data)
+            return {
+                data: null,
+                error: rpcResult.error
+                    ? sanitizeSupabaseError(rpcResult.error)
+                    : APP_ERROR_MESSAGES.ORDER_CREATION_FAILED,
+            };
+
+        const responseObj = rpcResult.data;
+
+        return {
+            data: {
+                success: true,
+                orderId: responseObj.order_id,
+                clientSecret: paymentIntentResult.clientSecret,
+                paymentIntentId: paymentIntentResult.paymentIntentId,
+                error: null,
+            },
+            error: null,
+        };
+    } catch (err: unknown) {
+        return {
+            data: null,
+            error: sanitizeSupabaseError(err),
+        };
+    }
+};
+
+export const getOrderDetailsById = async (
+    orderId: string,
+): Promise<SafeQueryResult<OrderWithRelations>> => {
+    try {
+        const supabase = await createBackendClient();
+
+        const queryResult = await safeSupabaseQuery<OrderWithRelations>(() =>
+            withRetry(async () => {
+                const res = await fetchOrderById(supabase, orderId);
+                return {
+                    ...res,
+                    data: res.data as unknown as OrderWithRelations,
+                };
+            }),
+        );
+
+        if (queryResult.error || !queryResult.data)
+            return {
+                data: null,
+                error: queryResult.error
+                    ? sanitizeSupabaseError(queryResult.error)
+                    : APP_ERROR_MESSAGES.ORDER_NOT_FOUND,
+            };
+
+        return queryResult;
+    } catch (err: unknown) {
+        return {
+            data: null,
+            error: sanitizeSupabaseError(err),
+        };
+    }
+};

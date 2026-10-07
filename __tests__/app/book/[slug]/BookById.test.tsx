@@ -117,7 +117,6 @@ describe('App - Book[slug]', () => {
     beforeEach(() => {
         jest.clearAllMocks();
 
-        // Suppress expected security audit warnings outside request context during tests
         jest.spyOn(console, 'warn').mockImplementation(
             (message: unknown, ...optionalParams: unknown[]) => {
                 if (typeof message === 'string' && message.includes('[SecurityAudit]')) {

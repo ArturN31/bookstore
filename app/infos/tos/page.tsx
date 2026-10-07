@@ -1,177 +1,180 @@
 export default function TOS() {
     return (
-        <div className="grid gap-2">
+        <div className="mx-auto grid max-w-4xl gap-4 p-6 text-slate-800">
             <h1
-                className="font-bold"
+                className="text-3xl font-bold tracking-tight"
                 data-testid="tos-header"
             >
-                This is a sample Terms of Service generated for the purposes of this project.
+                Terms of Service & Non-Commercial Project Disclaimer
             </h1>
 
-            <p>
-                <span className="font-semibold">Effective Date:</span> [Insert Date]
+            <p className="text-sm text-slate-500">
+                <span className="font-semibold">Effective Date:</span> 02/10/2026
             </p>
 
-            <h2 className="font-bold">1. Agreement to Terms</h2>
+            <div className="my-2 rounded-r border-l-4 border-amber-500 bg-amber-50 p-4 shadow-sm">
+                <h2 className="mb-1 text-lg font-bold text-amber-900">
+                    IMPORTANT NOTICE: DEMONSTRATION & EDUCATIONAL SITE ONLY
+                </h2>
+                <p className="text-sm text-amber-800">
+                    Welcome to Books 4 You, a hands-on personal project built to explore and master
+                    modern web development from the ground up. This platform serves as a living
+                    sandbox for experimenting with full-stack architecture, intuitive UI/UX design,
+                    LLM integration, automated testing, and modern developer workflows. Because this
+                    project is strictly an educational endeavor, it is not intended for commercial
+                    or production use—all catalog items, transactions, and account details exist
+                    solely to test features and refine software engineering techniques.
+                </p>
+            </div>
+
+            <h2 className="mt-4 text-xl font-bold">1. Agreement to Terms & Non-Commercial Scope</h2>
             <p>
-                By accessing or using this website, Books 4 You (the &quot;Website&quot;), or any of
-                our services (collectively, the &quot;Services&quot;), you agree to be bound by
-                these Terms of Service (&quot;Terms&quot;). If you do not agree to these Terms,
-                please do not use the Website or Services.
+                By accessing or using Books 4 You (&quot;the Website&quot; or &quot;the
+                Service&quot;), you acknowledge that this site is an educational coding project. You
+                agree to be bound by these Terms of Service (&quot;Terms&quot;). If you do not agree
+                to these Terms, please immediately discontinue use of the Website.
             </p>
 
-            <h2 className="font-bold">2. Use of the Website</h2>
-            <h3 className="font-bold">Eligibility:</h3>
-            <p>You must be at least 18 years old to use the Website and Services.</p>
-
-            <h3 className="font-bold">Account Registration:</h3>
-            <p>
-                If you choose to create an account on the Website, you are responsible for
-                maintaining the confidentiality of your account information and for restricting
-                access to your computer. You agree to accept responsibility for all activities that
-                occur under your account.
-            </p>
-
-            <h3 className="font-bold">Prohibited Conduct:</h3>
-            <p className="font-semibold">You agree not to:</p>
-            <ul>
-                <li className="ml-5 list-disc">
-                    Use the Website or Services for any unlawful purpose.
+            <h2 className="mt-4 text-xl font-bold">
+                2. Simulated Nature of Services & Transactions
+            </h2>
+            <p>You explicitly understand and agree that:</p>
+            <ul className="list-disc space-y-1 pl-6">
+                <li>
+                    No real commercial transactions, sales, or order fulfillments occur on this
+                    site.
                 </li>
-                <li className="ml-5 list-disc">
-                    Use the Website or Services to transmit any viruses, worms, defects, or other
-                    items of a destructive nature.
+                <li>
+                    All book catalogs, stock levels, pricing, invoices, and cart functionalities are
+                    simulated test data.
                 </li>
-                <li className="ml-5 list-disc">
-                    Interfere with the security or proper functioning of the Website or Services.
+                <li>
+                    No actual goods, physical books, or services will be shipped, delivered, or
+                    transferred.
                 </li>
-                <li className="ml-5 list-disc">
-                    Impersonate any person or entity or falsely claim an affiliation with any person
-                    or entity.
-                </li>
-                <li className="ml-5 list-disc">
-                    Collect or use any personal information about other users of the Website.
-                </li>
-                <li className="ml-5 list-disc">
-                    Use any automated means, including scripts, robots, crawlers, or data mining
-                    tools, to access, collect, or use information from the Website.
+                <li>
+                    Any simulated payment details or checkouts carry zero monetary value and
+                    represent no legal contract of sale.
                 </li>
             </ul>
 
-            <h2 className="font-bold">3. Product Information</h2>
-            <p>
-                <span className="font-semibold">Accuracy:</span> We strive to provide accurate and
-                up-to-date information about our products on the Website. However, we do not
-                guarantee the accuracy, completeness, or reliability of any product information.
+            <h2 className="mt-4 text-xl font-bold">
+                3. Absolute Limitation of Liability & &quot;AS IS&quot; Provision
+            </h2>
+            <p className="text-xs font-semibold tracking-wider text-slate-600 uppercase">
+                PLEASE READ THIS SECTION CAREFULLY.
             </p>
             <p>
-                <span className="font-semibold">Availability:</span> Product availability may change
-                without notice. We reserve the right to limit or cancel orders due to product
-                availability or other reasons.
+                THE WEBSITE AND ALL ASSOCIATED SERVICES, FEATURES, AND CONTENT ARE PROVIDED ON AN
+                &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; BASIS WITHOUT WARRANTY OF ANY KIND,
+                EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF
+                MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, ACCURACY, SECURITY, OR
+                NON-INFRINGEMENT.
+            </p>
+            <p>
+                TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE DEVELOPER(S), OWNER(S), AND
+                CONTRIBUTORS SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+                CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS, DATA, USE,
+                GOODWILL, OR OTHER INTANGIBLE LOSSES RESULTING FROM:
+            </p>
+            <ul className="list-disc space-y-1 pl-6">
+                <li>YOUR ACCESS TO, USE OF, OR INABILITY TO ACCESS OR USE THE WEBSITE;</li>
+                <li>ANY SECURITY VULNERABILITIES, BUGS, ERRORS, OR SERVICE INTERRUPTIONS;</li>
+                <li>UNAUTHORIZED ACCESS TO, ALTERATION OF, OR LOSS OF USER ACCOUNTS OR DATA;</li>
+                <li>
+                    ANY ACTIONS TAKEN IN RELIANCE UPON CONTENT PRESENTED ON THIS DEMONSTRATION
+                    PLATFORM.
+                </li>
+            </ul>
+
+            <h2 className="mt-4 text-xl font-bold">4. User Account & Security Responsibilities</h2>
+            <p>
+                If you create a test account on the Website, you are entirely responsible for
+                maintaining account confidentiality. You explicitly agree:
+            </p>
+            <ul className="list-disc space-y-1 pl-6">
+                <li>
+                    <span className="font-semibold">DO NOT USE REAL PASSWORDS:</span> Never use
+                    passwords or credentials that you utilize on legitimate personal or commercial
+                    accounts.
+                </li>
+                <li>
+                    <span className="font-semibold">NO SENSITIVE DATA:</span> You will not submit
+                    sensitive, real financial, or personally identifiable information.
+                </li>
+                <li>
+                    <span className="font-semibold">ACCOUNT RESET:</span> Test accounts and
+                    associated data may be modified, disabled, or wiped at any time without warning
+                    or backup guarantee.
+                </li>
+            </ul>
+
+            <h2 className="mt-4 text-xl font-bold">5. Prohibited Conduct</h2>
+            <p>You agree not to engage in any of the following activities on the Website:</p>
+            <ul className="list-disc space-y-1 pl-6">
+                <li>
+                    Attempting to compromise, reverse-engineer, exploit, or disrupt server
+                    operations or security mechanisms.
+                </li>
+                <li>Injecting malicious software, scripts, bots, or destructive code.</li>
+                <li>
+                    Using automated tools or scrapers to extract data in a manner that degrades site
+                    performance.
+                </li>
+                <li>
+                    Misrepresenting yourself or attempting to impersonate other users or
+                    administrators.
+                </li>
+                <li>
+                    Submitting unlawful, abusive, threatening, or harmful content in feedback or
+                    review fields.
+                </li>
+            </ul>
+
+            <h2 className="mt-4 text-xl font-bold">6. Intellectual Property & Fair Use</h2>
+            <p>
+                This website is built purely for educational and portfolio demonstration purposes.
+                All code, design elements, and original features are the property of the developer.
+                Any trademarks, book titles, cover imagery, or third-party brands referenced exist
+                solely under descriptive fair use principles to simulate a realistic e-commerce
+                environment.
             </p>
 
-            <h2 className="font-bold">4. Ordering and Payment</h2>
+            <h2 className="mt-4 text-xl font-bold">7. Third-Party Links & AI Integrations</h2>
             <p>
-                <span className="font-semibold">Order Acceptance:</span> All orders are subject to
-                acceptance by us. We may, in our sole discretion, refuse or cancel any order for any
-                reason.
-            </p>
-            <p>
-                <span className="font-semibold">Payment:</span> You agree to pay all charges
-                incurred by you or any users of your account at the rates in effect when the charges
-                are incurred. We accept various payment methods, as indicated on the Website.
-            </p>
-            <p>
-                <span className="font-semibold">Taxes:</span> You are responsible for any applicable
-                taxes, including sales tax, on your orders.
+                The Website may contain links to external sites or integrate with third-party Large
+                Language Model (LLM) APIs and infrastructure providers. The developer assumes no
+                responsibility for external content, privacy policies, or the output produced by AI
+                integrations.
             </p>
 
-            <h2 className="font-bold">5. Shipping and Delivery</h2>
+            <h2 className="mt-4 text-xl font-bold">8. Indemnification</h2>
             <p>
-                <span className="font-semibold">Shipping Costs:</span> Shipping costs are calculated
-                based on the shipping method selected and the destination address.
-            </p>
-            <p>
-                <span className="font-semibold">Delivery Times:</span> Estimated delivery times are
-                provided for your convenience and are not guaranteed.
-            </p>
-            <p>
-                <span className="font-semibold">Risk of Loss:</span> The risk of loss for products
-                purchased from us passes to you upon delivery to the carrier.
+                You agree to defend, indemnify, and hold harmless the developer, site owner, and
+                contributors from and against any claims, damages, obligations, losses, liabilities,
+                costs, or debt (including legal fees) arising from your use of or access to the
+                Website, or your violation of these Terms.
             </p>
 
-            <h2 className="font-bold">6. Returns and Refunds</h2>
+            <h2 className="mt-4 text-xl font-bold">9. Governing Law & Dispute Resolution</h2>
             <p>
-                <span className="font-semibold">Return Policy:</span> Please refer to our Return
-                Policy for details on returns and refunds.
+                These Terms shall be governed by and construed in accordance with the laws of the
+                United Kingdom, without regard to conflict of law principles. Any legal action or
+                dispute arising out of or relating to these Terms shall be subject to the exclusive
+                jurisdiction of the courts of the United Kingdom.
             </p>
 
-            <h2 className="font-bold">7. Intellectual Property</h2>
+            <h2 className="mt-4 text-xl font-bold">10. Modifications & Termination</h2>
             <p>
-                <span className="font-semibold">Copyright:</span> All content on the Website,
-                including text, images, logos, and trademarks, is protected by copyright and other
-                intellectual property laws.
-            </p>
-            <p>
-                <span className="font-semibold">Trademarks:</span> The trademarks and logos
-                displayed on the Website are the property of Books 4 You or their respective owners.
+                The developer reserves the right to modify these Terms, suspend features, or
+                terminate the Website at any time without notice. Continued use of the platform
+                after updates are posted constitutes binding acceptance of the updated Terms.
             </p>
 
-            <h2 className="font-bold">8. Disclaimer of Warranties</h2>
+            <h2 className="mt-4 text-xl font-bold">11. Contact Information</h2>
             <p>
-                THE WEBSITE AND SERVICES ARE PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot;
-                WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE
-                IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
-                NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE WEBSITE OR SERVICES WILL BE
-                UNINTERRUPTED OR ERROR-FREE.
-            </p>
-
-            <h2 className="font-bold">9. Limitation of Liability</h2>
-            <p>
-                IN NO EVENT SHALL BOOKS 4 YOU BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-                SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING OUT OF OR RELATING TO THE USE OF
-                THE WEBSITE OR SERVICES, INCLUDING, BUT NOT LIMITED TO, LOSS OF PROFITS, DATA LOSS,
-                OR LOSS OF GOODWILL.
-            </p>
-
-            <h2 className="font-bold">10. Indemnification</h2>
-            <p>
-                You agree to indemnify and hold Books 4 You and its affiliates, officers, directors,
-                employees, and agents harmless from any and all claims, liabilities, damages, and
-                expenses (including attorneys&apos; fees) arising out of your use of the Website or
-                Services, your violation of these Terms, or your violation of any rights of another.
-            </p>
-
-            <h2 className="font-bold">11. Governing Law</h2>
-            <p>
-                These Terms shall be governed by and construed in accordance with the laws of United
-                Kingdom.
-            </p>
-
-            <h2 className="font-bold">12. Dispute Resolution</h2>
-            <p>
-                Any dispute arising out of or relating to these Terms shall be resolved through
-                arbitration.
-            </p>
-
-            <h2 className="font-bold">13. Changes to these Terms</h2>
-            <p>
-                We may update these Terms from time to time. We will notify you of any material
-                changes by posting the updated Terms on the Website. Your continued use of the
-                Website or Services after the effective date of any changes constitutes your
-                acceptance of the revised Terms.
-            </p>
-
-            <h2 className="font-bold">14. Contact Us</h2>
-            <p>
-                If you have any questions about these Terms, please contact us at{' '}
-                <a
-                    href="mailto:books4you.contact@b4u.com"
-                    className="text-sky-500 hover:text-sky-700"
-                >
-                    books4you.contact@example.com
-                </a>
-                .
+                As this application is a personal educational demonstration project, no direct
+                contact channels, support email addresses, or phone numbers are maintained.
             </p>
         </div>
     );

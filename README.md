@@ -11,8 +11,8 @@ This README documents both what is implemented and what is intentionally still i
 ## Project Status
 
 **Current Phase**: Core bookstore paths implemented; checkout and payment remain the next product milestone
-**Last Verified**: September 21, 2026
-**Test Run**: 198 suites passed, 1,454 tests passed, 1 snapshot passed
+**Last Verified**: October 04, 2026
+**Test Run**: 234 suites passed, 1,704 tests passed, 1 snapshot passed
 **Coverage**: 100.00% statements, branches, functions, lines, and average
 **Quality Checks**: `npm run lint` and `npm run build` pass
 
@@ -20,8 +20,8 @@ This README documents both what is implemented and what is intentionally still i
 
 | Check | Result |
 | :---- | :----- |
-| Jest suites | 198 passed / 198 total |
-| Jest tests | 1,454 passed / 1,454 total |
+| Jest suites | 234 passed / 234 total |
+| Jest tests | 1,704 passed / 1,704 total |
 | Snapshots | 1 passed / 1 total |
 | Statements | 100.00% |
 | Branches | 100.00% |
@@ -670,13 +670,18 @@ The commands above reproduce the documented test, lint, and build verification s
 
 ### 1. Checkout and Commerce Completion
 
-- [ ] Add the `/checkout` route
-- [ ] Integrate a payment provider through server-side actions
-- [ ] Validate stock and create orders atomically after payment confirmation
-- [ ] Add order-success, receipt, and email-confirmation workflows
-- [ ] Decrement inventory after successful purchase
-- [ ] Add protected customer order history
-- [ ] Add server-validated discount and promotion application
+- [X] Add the `/checkout` route with unauthenticated session and empty cart access guards
+- [X] Implement layered data architecture using Zod validation schemas and `safeSupabaseQuery` error handling
+- [X] Integrate Stripe payment provider via server-side actions with idempotency key enforcement
+- [X] Add rate-limiting on discount application and checkout submissions to prevent fraud and brute-forcing
+- [X] Add server-validated discount and promotion system enforcing active dates and subtotal thresholds
+- [X] Create atomic RPC database transaction with pessimistic row-level locking (`FOR UPDATE`) on book stock
+- [X] Validate stock, record orders, write line items, decrement inventory, and clear cart in a single transaction
+- [X] Implement asynchronous Stripe webhook endpoint (`/api/webhooks/stripe`) for payment lifecycle handling
+- [X] Add protected `/checkout/confirmation/[orderId]` route guarded by strict user ownership verification (`checkIsOwner`)
+- [X] Add post-purchase receipt display and asynchronous transactional email workflows
+- [X] Provide additional shipping methods
+- [ ] Provide additional payment methods
 
 ### 2. Public Profiles and Community Features
 
@@ -711,6 +716,7 @@ The commands above reproduce the documented test, lint, and build verification s
 - [ ] Generate reproducible desktop and mobile performance benchmarks
 - [X] Add Lighthouse benchmarks to the verified build output
 - [ ] Improve Lighthouse scores
+- [ ] Add banner for data-privacy, cookie consent, and GDPR compliance
 
 ### 5. Security and Reliability
 
@@ -719,6 +725,12 @@ The commands above reproduce the documented test, lint, and build verification s
 - [ ] Add centralized server, client, and database exception logging
 - [ ] Preserve sanitized query/authentication context in operational logs
 - [ ] Keep generated metrics and documentation synchronized after meaningful changes
+
+## 6. Profile
+
+- [X] Add view orders page to the private profile area
+  - [X] Add view order details page with line items, shipping, and payment information
+- [ ] Add order cancellation workflow
 
 ## Engineering Decisions and Tradeoffs
 

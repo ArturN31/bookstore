@@ -4,6 +4,12 @@ import { generateReviewsArray } from '@/utils/db/dbSeed/generateReview';
 import { generateOrdersAndItems } from '@/utils/db/dbSeed/generateOrders';
 import { generateDiscounts } from '@/utils/db/dbSeed/generateDiscounts';
 import { generateMockUsersArray, MockUserSetup } from '@/utils/db/dbSeed/generateUsers';
+import { Database } from '@/database.types';
+
+type BookDB = Database['public']['Tables']['books']['Row'];
+type DiscountDB = Database['public']['Tables']['discounts']['Row'];
+type UserDB = Database['public']['Tables']['users']['Row'];
+type UserInsert = Database['public']['Tables']['users']['Insert'];
 
 const DEV_CONFIG = {
     BOOK_COUNT: 100,
@@ -58,11 +64,14 @@ export async function clearDatabase(supabase: SupabaseClient) {
 /**
  * Step 1: Identity Injection
  */
-export async function seedIdentities(supabase: SupabaseClient, count: number) {
+export async function seedIdentities(
+    supabase: SupabaseClient,
+    count: number,
+): Promise<readonly UserDB[]> {
     console.log(`Seeding ${count} identities...`);
 
-    const mockUsers: MockUserSetup[] = generateMockUsersArray(count);
-    const profileBatch: any[] = [];
+    const mockUsers: readonly MockUserSetup[] = generateMockUsersArray(count);
+    const profileBatch: UserInsert[] = [];
 
     for (const mock of mockUsers) {
         const { data, error: authError } = await supabase.auth.admin.createUser({
@@ -89,6 +98,11 @@ export async function seedIdentities(supabase: SupabaseClient, count: number) {
                 country: mock.country,
                 phone_number: mock.phone_number,
                 username: mock.username,
+                is_wishlist_public: mock.is_wishlist_public,
+                wishlist_share_token: mock.wishlist_share_token,
+                are_reviews_public: mock.are_reviews_public,
+                is_profile_public: mock.is_profile_public,
+                stripe_customer_id: mock.stripe_customer_id,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
             });
@@ -101,7 +115,7 @@ export async function seedIdentities(supabase: SupabaseClient, count: number) {
             .select();
 
         if (profileError) throw profileError;
-        return seededProfiles;
+        return (seededProfiles ?? []) as UserDB[];
     }
 
     return [];
@@ -125,7 +139,10 @@ export async function seedCatalog(
     if (bookRes.error) throw bookRes.error;
     if (discRes.error) throw discRes.error;
 
-    return { books: bookRes.data as BookDB[], discounts: discRes.data as DiscountDB[] };
+    return {
+        books: (bookRes.data ?? []) as BookDB[],
+        discounts: (discRes.data ?? []) as DiscountDB[],
+    };
 }
 
 /**
@@ -133,9 +150,9 @@ export async function seedCatalog(
  */
 export async function seedMarketActivity(
     supabase: SupabaseClient,
-    books: BookDB[],
-    users: UserDB[],
-    discounts: DiscountDB[],
+    books: readonly BookDB[],
+    users: readonly UserDB[],
+    discounts: readonly DiscountDB[],
 ) {
     const activeBooks = books.filter((b) => b.is_active);
     console.log(`Relational Seeding: Using ${activeBooks.length} active books.`);
@@ -144,7 +161,7 @@ export async function seedMarketActivity(
         activeBooks,
         DEV_CONFIG.ORDERS_COUNT,
         DEV_CONFIG.ORDER_ITEM_COUNT,
-        discounts,
+        discounts as DiscountDB[],
         DEV_CONFIG.ORDER_DISCOUNT_COUNT,
     );
 
@@ -217,7 +234,7 @@ export async function runFullDatabaseSeed() {
         console.log(`Reset Complete. Total_Seed_Duration: ${duration}s`);
 
         return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('\nSEEDING FAILED');
         console.error('Reason:', JSON.stringify(error, null, 2));
         throw error;

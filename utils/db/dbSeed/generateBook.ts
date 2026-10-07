@@ -1,4 +1,7 @@
 import { faker } from '@faker-js/faker/locale/en_GB';
+import { Database } from '@/database.types';
+
+type BookDB = Database['public']['Tables']['books']['Row'];
 
 const generateBook = (): BookDB => {
     const title = faker.book.title();
@@ -22,6 +25,8 @@ const generateBook = (): BookDB => {
         stock_quantity: faker.number.int({ min: 10, max: 1000 }),
         is_active: Math.random() < 0.8,
         sales_count: 0,
+        stripe_product_id: null,
+        stripe_price_id: null,
     };
 };
 

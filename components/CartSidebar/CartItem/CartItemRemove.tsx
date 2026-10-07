@@ -67,9 +67,9 @@ export const CartItemRemove = ({ book }: { book: Book }) => {
                     {isPending ? (
                         <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
                     ) : hover ? (
-                        <DeleteForeverIcon />
+                        <DeleteForeverIcon color="action" />
                     ) : (
-                        <DeleteIcon />
+                        <DeleteIcon color="action" />
                     )}
                 </button>
             </form>

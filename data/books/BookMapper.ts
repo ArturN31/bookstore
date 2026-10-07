@@ -4,10 +4,10 @@ import { PaginatedBookResult, BOOK_DEFAULTS } from './BookConstants';
 type BookViewRow = Database['public']['Views']['books_with_stats']['Row'];
 
 interface BookRowWithReviews extends BookViewRow {
-    book_reviews: { rating: number }[] | null;
+    readonly book_reviews: readonly { readonly rating: number }[] | null;
 }
 
-const getReviews = (reviews: { rating: number }[] | null): Review[] => {
+const getReviews = (reviews: readonly { readonly rating: number }[] | null): Review[] => {
     if (!reviews) return [];
     return reviews as unknown as Review[];
 };
@@ -18,7 +18,6 @@ const calculateRating = (avgRating: number | null | undefined): number => {
 };
 
 const getAverageRating = (avgRating: number | null | undefined): number => Number(avgRating ?? 0);
-
 const getReviewCount = (reviewCount: number | null | undefined): number => Number(reviewCount ?? 0);
 
 export const mapRowToBook = (row: BookRowWithReviews): Book => {
@@ -61,6 +60,8 @@ export const mapRowToBook = (row: BookRowWithReviews): Book => {
         stock_quantity: stock_quantity ?? BOOK_DEFAULTS.stock_quantity,
         is_active: is_active ?? BOOK_DEFAULTS.is_active,
         sales_count: sales_count ?? BOOK_DEFAULTS.sales_count,
+        stripe_product_id: null,
+        stripe_price_id: null,
         reviews: getReviews(book_reviews),
         rating: calculateRating(avg_rating),
         avg_rating: getAverageRating(avg_rating),
@@ -69,7 +70,7 @@ export const mapRowToBook = (row: BookRowWithReviews): Book => {
 };
 
 export const mapToPaginatedBookResponse = (
-    data: BookRowWithReviews[],
+    data: readonly BookRowWithReviews[],
     count: number,
     page: number,
     limit: number,

@@ -5,6 +5,7 @@ import LockPersonOutlinedIcon from '@mui/icons-material/LockPersonOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import ReceiptIcon from '@mui/icons-material/Receipt';
 import { ActionSection } from './ActionSection';
 import { ActionLink } from './ActionLink';
 import { getUserData } from '@/data/user/UserService';
@@ -47,6 +48,12 @@ export const QuickActions = async () => {
                         color="blue"
                     />
                 )}
+                <ActionLink
+                    href={`/user/orders`}
+                    icon={ReceiptIcon}
+                    label="My Orders"
+                    color="blue"
+                />
                 <ActionLink
                     href={`/user/wishlist`}
                     icon={BookmarkBorderIcon}

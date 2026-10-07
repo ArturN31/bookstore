@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { BookDetails } from '@/app/book/[slug]/components/BookDetails';
+import { createMockBook } from '@/utils/testing/mockBook';
 
 jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
     BookAdvancedFilteringProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -24,27 +25,7 @@ jest.mock('@/utils/security/securityAuditLogger', () => ({
     recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
 }));
 
-const mockBook: Book = {
-    id: 'book-1',
-    title: 'Clean Code',
-    author: 'Robert C. Martin',
-    description:
-        'Even bad code can function. But if code isn’t clean, it can bring a development organization to its knees.',
-    publisher: 'Prentice Hall',
-    publication_date: '2008-08-01',
-    format: 'Paperback',
-    page_count: 464,
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
-    genre: 'Technology',
-    image_url: '/images/clean-code.jpg',
-    is_active: true,
-    price: '29.99',
-    sales_count: 1500,
-    stock_quantity: 100,
-    reviews: [],
-    rating: 5,
-};
+const mockBook = createMockBook();
 
 describe('BookDetails', () => {
     it('renders the description section correctly', () => {
