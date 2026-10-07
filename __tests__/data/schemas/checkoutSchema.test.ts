@@ -7,7 +7,7 @@ import {
 import { sanitizeText } from '@/data/schemas/schemaUtils';
 
 jest.mock('@/data/schemas/schemaUtils', () => ({
-    sanitizeText: jest.fn((text: string) => text.replace(/[<>]/g, '')),
+    sanitizeText: jest.fn((text: string) => text.replace(/<[^>]*>/g, '')),
 }));
 
 jest.mock('@/data/schemas/onboardingSchema', () => ({
@@ -59,7 +59,7 @@ describe('checkoutSchema', () => {
                 if (result.success) {
                     expect(result.data.firstName).toBe('John');
                 }
-                expect(sanitizeText).toHaveBeenNthCalledWith(1, '<b>John</b>', expect.anything());
+                expect(sanitizeText).toHaveBeenNthCalledWith(1, '<b>John</b>');
             });
 
             it('should fail when firstName is less than 2 characters after sanitization', () => {
