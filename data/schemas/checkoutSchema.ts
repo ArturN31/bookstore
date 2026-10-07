@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { PAYMENT_METHODS } from '../checkout/CheckoutConstants';
 import { addressFields } from './onboardingSchema';
-import { sanitizeText } from './schemaUtils';
 
 const paymentMethodValues = [PAYMENT_METHODS.CARD, PAYMENT_METHODS.PAYPAL] as const;
 
@@ -9,7 +8,7 @@ export const checkoutFormSchema = z.object({
     firstName: z
         .string()
         .trim()
-        .transform(sanitizeText)
+        .transform((val) => val.replace(/<[^>]*>?/gm, '').trim())
         .pipe(
             z
                 .string()
@@ -20,7 +19,7 @@ export const checkoutFormSchema = z.object({
     lastName: z
         .string()
         .trim()
-        .transform(sanitizeText)
+        .transform((val) => val.replace(/<[^>]*>?/gm, '').trim())
         .pipe(
             z
                 .string()

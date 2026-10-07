@@ -6,7 +6,8 @@ let stripeClient: Stripe | null = null;
 
 export function getStripe(): Stripe {
     if (!stripeClient) {
-        const secretKey = process.env.STRIPE_SECRET_KEY;
+        const rawKey = process.env.STRIPE_SECRET_KEY;
+        const secretKey = rawKey ? rawKey.trim().replace(/^["']|["']$/g, '') : '';
         if (!secretKey) throw new Error('Missing STRIPE_SECRET_KEY environment variable.');
         stripeClient = new Stripe(secretKey);
     }
