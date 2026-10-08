@@ -1,352 +1,232 @@
-# Bookstore Project - Comprehensive Codebase Analysis
+# Bookstore Codebase Analysis
 
-**Analysis Date**: September 6, 2026 (Deep Codebase Review)
-**Project**: Next.js Bookstore Engine  
-**Stack**: Next.js 16.3.4 (App Router), React 19, Tailwind CSS 4, Supabase (PostgreSQL), Jest 30.1.3
+**Audit date:** October 7, 2026
+**Repository:** `ArturN31/bookstore`
+**Scope:** Maintained application source, configuration, test suite, workflow files, generated database type declarations, and checked-in reports. The local environment file was not inspected.
+**Verification performed:** `npm test -- --watchAll=false --ci`, `npm run lint`, and `npm run build`.
 
-**Deep analysis conducted through the current application, data, provider, utility, and test trees, followed by the repository's test report, lint check, and production build. This document reflects the current implementation and the verified limitations of the codebase.**
+## Executive Assessment
 
----
+This is a feature-rich, server-rendered online bookstore built with Next.js App Router, React 19, TypeScript, Supabase/PostgreSQL, and Stripe. The implementation separates route/UI code from data access through schemas, server actions, services, repositories, and mappers. It includes catalog discovery, authentication, reviews, cart and wishlist workflows, sharing, checkout, order views, development seed tools, and broad automated tests.
 
-## 1. IMPLEMENTED FEATURES WITH EVIDENCE
+The latest local verification passed: **234 Jest suites, 1,704 tests, and one snapshot**, with the configured coverage collection reporting **100% statements, branches, functions, and lines**; ESLint passed; the production build completed and listed 22 application routes plus the not-found route. These results establish that the configured tests and build pass in this environment. They do not establish production readiness, integration correctness against a live Supabase project or Stripe account, complete source-wide coverage, or WCAG compliance.
 
-### ✅ Core Bookstore Functionality
+**Overall assessment:** good feature-level modularity and unusually thorough mocked unit/component test coverage; **not production-ready for real commerce until the security and payment integrity findings below are remediated**. Highest-priority findings are an admin-privileged developer Server Action without its own production/authentication guard, a non-distributed in-memory rate limiter, and a Stripe webhook fulfillment path that is not event-idempotent. Checkout also clears the cart before the card payment is confirmed, and checkout sign-in redirects target a route that does not exist.
 
-#### **Book Browsing & Display**
+## 1. Architecture and Features
 
-- **Homepage**: [app/page.tsx](app/page.tsx) - Server-rendered book listing with pagination and bestseller content
-- **Book Details Page**: [app/book/[slug]/page.tsx](app/book/[slug]/page.tsx) - Metadata, cover image, stock information, ratings, related books, and dynamic metadata
-- **Filtering**: [components/FilteringSidebar/](components/FilteringSidebar/) and [data/advancedFiltering/](data/advancedFiltering/) - Genre, format, author, price, rating, and other book-data filters
-- **Sorting**: [data/books/BookConstants.ts](data/books/BookConstants.ts) and [data/books/BookRepository.ts](data/books/BookRepository.ts) - Title, price, release date, rating, and best-seller ordering through `sales_count`
-- **Book Data Layer**: [data/books/](data/books/) - Repository, service, mapper, constants, and review modules
+### Current design
 
-#### **Search Functionality**
+- **Routing and rendering:** Next.js App Router route modules live in [app/](app/). The homepage and book-detail pages load catalog data on the server; client components provide interactive search, filtering, cart, wishlist, reviews, and payment inputs.
+- **Shared UI:** [components/](components/) contains reusable layout, catalog, cart, form, filtering, and feedback components. Route-specific composition stays beside route implementations.
+- **Data access:** [data/](data/) is organized by domain (`books`, `auth`, `cart`, `checkout`, `user`), generally separating input schemas, server actions, services, repositories, and mappers.
+- **Database boundary:** [utils/db/server.ts](utils/db/server.ts) creates a cookie-aware Supabase SSR client using the public project key; [utils/db/client.ts](utils/db/client.ts) creates the browser client. [utils/db/admin.ts](utils/db/admin.ts) creates a service-role client that bypasses RLS.
+- **Persistence model:** [database.types.ts](database.types.ts) declares generated types for catalog, identity, reviews, carts, wishlist, orders, discounts, and RPC functions. The repository does not contain SQL migrations or definitions for the declared transactional RPCs, so their constraints and atomicity cannot be verified from this checkout.
+- **Core implemented paths:** browse and filter books, book detail and reviews, Supabase email/password authentication and profile onboarding, own-review management, cart mutation, public/private wishlist sharing, card checkout, order confirmation and history routes, informational pages, and local development seed tooling.
+- **Runtime routes:** the verified build lists `/`, `/book/[slug]`, `/checkout`, `/checkout/success`, `/api/webhooks/stripe`, `/user/orders`, `/user/order/[orderId]`, profile/auth/review/wishlist routes, `/dev-tools`, and four `/infos/*` routes. Route availability does not imply production hardening of each route.
 
-- **SearchBar**: [components/layout/UserNavbar/SearchBar/](components/layout/UserNavbar/SearchBar/) - Debounced, case-insensitive partial title search with keyboard navigation, loading/error states, and a ten-result suggestion limit
-- **Search Hook**: [hooks/SearchBar/](hooks/SearchBar/) - Abortable search requests and input state handling
+### Strengths
 
-#### **Book Reviews**
+1. Domain-oriented organization reduces the amount of database logic embedded directly in UI components.
+2. Catalog reads are server-rendered and SEO metadata is supplied for key content pages.
+3. Checkout and order confirmation have dedicated services and repositories rather than being folded into a single page module.
+4. Typed database access and shared Zod schemas improve the consistency of values crossing form/server boundaries.
+5. The implementation has explicit empty, loading, error, and restricted-access UI states across several key journeys.
 
-- **Read Reviews**: [app/book/[slug]/components/Reviews/](app/book/[slug]/components/Reviews/) - Paginated reviews with ratings and reviewer information
-- **Create Reviews**: [app/book/[slug]/components/Reviews/ReviewForm/](app/book/[slug]/components/Reviews/ReviewForm/) - Authenticated, profile-complete users can submit a rating and comment
-- **Manage Own Reviews**: [app/user/reviews/[username]](app/user/reviews/[username]) - View, edit, and delete user reviews
-- **Review Data Operations**: [data/books/reviews/](data/books/reviews/) - Validated server actions, service, repository, and mapper
+### Bottlenecks and recommendations
 
-### ✅ Authentication & User Management
+- **Database deployment is not reproducible from the repository.** Types declare procedures such as `process_order_transaction` and `increment_book_stock`, but `supabase/` has no committed migration/schema SQL in the audited tree. Commit versioned migrations, constraints, indexes, and RLS policies; run them in CI against a disposable Supabase/PostgreSQL instance.
+- **The application relies on broad server actions and environment-dependent behavior.** Keep mutations in their domain modules, but make every exported Server Action authenticate and authorize the actor independently; a hidden or redirected page is not an access-control boundary.
+- **Service boundaries do not yet guarantee transactional commerce semantics.** Define an explicit order/payment state machine, inventory reservation/release rules, and idempotent transitions in database transactions/RPCs and webhook processing. Verify these against database migrations.
+- **Development tooling is part of the deployed source surface.** Remove privileged test-only actions from production bundles where possible, and enforce server-side environment, role, and authorization checks even in local tooling.
 
-- **Supabase Auth**: Email/password registration, sign-in, and password changes through [data/auth/](data/auth/)
-- **Validation**: Zod schemas enforce an 8-50 character password with uppercase, lowercase, number, and special character requirements
-- **Session Handling**: Server and browser Supabase clients in [utils/db/](utils/db/) with middleware session refresh
-- **Private Profile**: [app/user/profile/](app/user/profile/) - Profile details, username, address, password, and quick actions
-- **Onboarding**: Address completion is validated before protected cart, wishlist, and review actions
-- **Public Profile**: [app/user/[username]/](app/user/[username]/) - Username-based profile route with unavailable-state handling
-- **Security**: RLS policies, server-side mutations, Zod input validation, audit logging in [utils/security/securityAuditLogger.ts](utils/security/securityAuditLogger.ts), and security headers in [next.config.ts](next.config.ts)
+## 2. State Management and Server Actions
 
-### ✅ Shopping Cart Functionality
+### Data flow
 
-- **Cart Provider**: [providers/cart/](providers/cart/) - Seeded initial state, reducer-driven updates, and Supabase synchronization
-- **Cart Operations**: [data/cart/](data/cart/) - Create cart, add item, update quantity, remove item, and clear cart operations
-- **Cart UI**: [components/CartSidebar/](components/CartSidebar/) and [components/CartForms/](components/CartForms/) - Drawer, summary, item removal, and quantity controls
-- **Optimistic Feedback**: Cart actions use React 19 action and optimistic state patterns
-- **Checkout Boundary**: The cart navigates to `/checkout`, but the production build reports no `/checkout` route. Payment processing, order completion, inventory decrement after payment, and customer order history are not implemented as customer-facing flows
+[components/layout/SessionProviderWrapper.tsx](components/layout/SessionProviderWrapper.tsx) reads the Supabase session server-side and fetches a signed-in user's profile, wishlist, and cart before hydrating [providers/Providers.tsx](providers/Providers.tsx). The provider tree owns separate book-sort, advanced-filter, user, and cart state. User and cart use reducers with distinct state/action contexts; listeners in [providers/user/utils/useUserListeners.ts](providers/user/utils/useUserListeners.ts) and [providers/cart/utils/useCartListeners.ts](providers/cart/utils/useCartListeners.ts) synchronize browser state with authentication and Supabase Realtime events.
 
-### ✅ Wishlist & Sharing
+The server remains authoritative for persisted data. Providers support view state and refresh; actions use repositories/services to mutate persistent state. Search and form-local input are appropriately held in hooks/components rather than global state. Checkout totals are calculated both in the browser for presentation and on the server for order/payment creation.
 
-- **Wishlist Actions**: [data/user/wishlist/](data/user/wishlist/) supports authenticated add/remove operations with a ten-item limit
-- **Wishlist Page**: [app/user/wishlist/](app/user/wishlist/) displays saved books
-- **Sharing**: [app/user/wishlist/components/WishlistSharing/](app/user/wishlist/components/WishlistSharing/) supports public username links and private token links
-- **Visibility Controls**: Users can switch public/private sharing and regenerate private links
-- **Restricted Views**: Invalid, revoked, disabled, or unavailable shared wishlists render an unavailable state
-- **Real-Time State**: User provider listeners synchronize wishlist changes with Supabase
+### Strengths
 
-### ✅ Layout, Navigation & Information Pages
+- Server-seeded identity/cart state avoids an unnecessary anonymous-to-authenticated hydration transition.
+- Reducers make state transitions explicit and testable; separate action contexts reduce unnecessary subscriptions.
+- User-owned mutations generally resolve the current user from the server session rather than accepting a user ID from the browser.
+- Zod validation is applied across authentication, onboarding, cart, review, wishlist, and checkout form data.
+- `process_order_transaction` is invoked as a database RPC from [data/checkout/services/CheckoutService.ts](data/checkout/services/CheckoutService.ts), which is an appropriate place to enforce atomic order persistence if the database function is correctly implemented.
 
-- **Root Layout**: [app/layout.tsx](app/layout.tsx) and [components/layout/](components/layout/) provide header, footer, providers, session state, and navigation
-- **Navigation**: User navbar integrates search, authentication controls, cart access, profile actions, and filtering controls
-- **Information Routes**: Privacy policy, return policy, shipping information, and terms of service are implemented under [app/infos/](app/infos/)
-- **Responsive UI**: MUI and Tailwind components provide storefront, form, drawer, loading, error, and breadcrumb states
+### Findings and recommendations
 
-### ✅ Development Tools
+1. **[High] Checkout action input is incompletely validated.** [data/checkout/CheckoutAction.ts](data/checkout/CheckoutAction.ts) parses `shippingDetails`, but does not runtime-validate the complete payload (`items`, each item ID/positive integer quantity, `discountId`, shipping method, or idempotency key). [data/checkout/services/CheckoutService.ts](data/checkout/services/CheckoutService.ts) re-reads book prices and stock, which is good, but validate all payload fields server-side and bind purchased items to the current server-side cart. Do not trust a client-provided list as the cart source of truth.
+2. **[High] Cart is cleared before payment confirmation.** `processCheckoutAction` clears the user's cart after creating the payment intent and order, but before the browser calls `stripe.confirmCardPayment`. A declined/abandoned payment therefore loses the cart. Clear only after a verified successful payment transition, or preserve/reconstruct the cart until that transition.
+3. **[High] Rate limiting is per-process memory only.** [utils/network/rateLimiter.ts](utils/network/rateLimiter.ts) stores counters in a `Map`. It resets on restart, is not shared among serverless instances/regions, has unbounded key retention, and cannot reliably impose a production-wide limit. Replace it with an atomic shared store (for example Redis or a database-backed limiter) and apply it to login/signup and sensitive actions, not only checkout/discount attempts.
+4. **[High] Discounts are validated inconsistently.** [data/checkout/services/CheckoutDiscountService.ts](data/checkout/services/CheckoutDiscountService.ts) checks activation, start/end dates, and minimum subtotal for preview; final checkout in `CheckoutService.ts` looks up a client-supplied discount ID and checks active/minimum subtotal but does not repeat date, eligibility, redemption-count, or usage-limit validation. Recompute and validate every promotion against authoritative server state in the final transaction.
+5. **[High] Stripe webhook transitions are not deduplicated.** [app/api/webhooks/stripe/route.ts](app/api/webhooks/stripe/route.ts) verifies the Stripe signature, but does not persist/check the Stripe event ID or condition stock restoration on a one-time order status transition. Replayed `payment_failed`/`canceled` events can run inventory restoration repeatedly. Several database errors in those paths are ignored and can still result in a `200` response. Implement a durable event ledger, conditional state transitions, atomic inventory handling, and explicit retry/error responses.
+6. **[High] Login redirects are inconsistent with actual routes.** [app/checkout/page.tsx](app/checkout/page.tsx) and [app/checkout/success/page.tsx](app/checkout/success/page.tsx) redirect unauthenticated users to `/login?redirect=...`; the implemented sign-in route is `/user/auth/signin`, and [data/auth/SignInAction.ts](data/auth/SignInAction.ts) consumes a `returnTo` value rather than `redirect`. Use one centralized, validated sign-in redirect contract and test the complete unauthenticated return flow.
+7. **[Medium] Checkout side effects span multiple systems.** Stripe PaymentIntent creation occurs before the database order RPC; failures in later writes can leave an orphan intent. Introduce a persisted checkout attempt/state machine and reconciliation for payment intents and orders. Use stable, user/session-bound idempotency keys and verify retry behavior across both systems.
+8. **[Medium] Realtime is refresh-oriented.** Refreshing authoritative state is safer than applying speculative browser mutations, but high event volume may trigger duplicate full reads. Add event coalescing, cleanup/reconnect tests, and telemetry before scaling.
+9. **[Medium] Broad catch/fallback patterns can obscure failures.** Several service/action paths normalize exceptions, while webhook and developer reset paths suppress or ignore underlying errors. Return explicit operation status, log structured diagnostics, and do not report successful completion if a persistence step failed.
 
-- **Development Console**: [app/dev-tools/](app/dev-tools/) redirects away in production and provides telemetry, logs, database actions, and user registry views
-- **Database Seeding**: [utils/db/dbSeed/](utils/db/dbSeed/) generates books, users, reviews, orders, discounts, carts, and wishlist data with Faker
-- **Scope Limitation**: These are development utilities, not a production administration dashboard or RBAC console
+## 3. Utility, Reuse, and Type Safety
 
----
+### Strengths
 
-## 2. TESTING SETUP & COVERAGE STATUS
+- [data/schemas/](data/schemas/) centralizes runtime schemas and inferred application types.
+- Domain mappers isolate Supabase row shapes from UI models (for example [data/books/BookMapper.ts](data/books/BookMapper.ts) and [data/cart/CartMapper.ts](data/cart/CartMapper.ts)).
+- [utils/db/safeSupabaseQuery.ts](utils/db/safeSupabaseQuery.ts), [utils/errors/](utils/errors/), and [utils/network/retry.ts](utils/network/retry.ts) provide reusable boundary behavior.
+- Strict TypeScript is enabled in [tsconfig.json](tsconfig.json), with an `@/*` path alias and generated `Database` declarations.
+- Search and sharing have focused custom hooks and utilities rather than routing all interaction state through one global provider.
 
-### **Jest Configuration**
+### Bottlenecks and recommendations
 
-- **Jest Version**: v30.1.3
-- **Config File**: [jest.config.ts](jest.config.ts)
-- **Test Environment**: `jest-environment-jsdom`
-- **Coverage Provider**: V8
-- **Collected Areas**: `app/`, `components/`, `data/`, `providers/`, `hooks/`, `utils/errors/`, `utils/security/`, and `utils/db/safeSupabaseQuery.ts`
-- **Excluded from collection**: `app/layout.tsx` and global CSS files
+- **Unsafe casts at model boundaries:** checkout/book paths include casts such as `as unknown as CartCheckoutItem` and JSON/RPC result casts. Replace with explicit parsing/refinement functions and typed RPC return shapes; generated database types do not validate runtime payloads.
+- **Generic retry semantics:** [utils/network/retry.ts](utils/network/retry.ts) classifies transient errors by message fragments and retries an arbitrary callback. Restrict retries to known transient Supabase/network failures and safe/idempotent operations; never automatically retry non-idempotent writes without durable idempotency.
+- **Shared utilities suppress distinctions:** safe-query/error helpers should preserve structured error codes and retryability internally while exposing safe user-facing messages at the UI boundary.
+- **Current rate limiter is not a production utility:** replace its implementation, not just its call sites, with distributed atomic storage and expiry.
+- **Missing schema artifacts:** generated types are not a substitute for DDL, constraints, or authorization policy definitions. Generate them from migrations and fail CI if they drift.
+- **Data layer conventions vary by domain:** maintain consistent action/service/repository return types and remove duplicate validation/business logic where checkout currently has preview-vs-final mismatch.
 
-### **Verified Test Run**
+## 4. Testing Strategy
 
-Command: `npm run test:report`
+### Verified status
 
-- **Test Suites**: 182 passed, 182 total
-- **Tests**: 1,334 passed, 1,334 total
-- **Snapshots**: 1 passed, 1 total
-- **Result**: ✅ Passing
+The current run of `npm test -- --watchAll=false --ci` passed:
 
-### **Coverage Reports**
+| Measure | Result |
+| --- | ---: |
+| Jest suites | 234 / 234 |
+| Tests | 1,704 / 1,704 |
+| Snapshots | 1 / 1 |
+| Statements, branches, functions, lines | 100% each within the configured collection |
+
+[jest.config.ts](jest.config.ts) uses Jest 30, jsdom, React Testing Library setup, V8 coverage, and global thresholds of 99% branches, 95% functions, and 90% statements/lines. Tests are colocated under [__tests__/](__tests__/) by app, component, data, hook, provider, and utility concerns. [__mocks__/](__mocks__/) contains framework mocks. The suite includes checkout actions/services and Stripe webhook tests as well as catalog, authentication, reviews, cart, sharing, and provider behavior.
+
+### Assessment
+
+- The suite is broad and checks many error, pending, authorization, reducer, schema, and UI states.
+- Coverage is collected for `app`, `components`, `data`, `providers`, `hooks`, selected error/security utilities, and `safeSupabaseQuery`. Root layout/global CSS are explicitly excluded; top-level `proxy.ts`, Next configuration, dependency configuration, and real infrastructure are outside the declared collection.
+- Tests primarily provide deterministic unit/component coverage with mocked Supabase, Next, and payment boundaries. They do not prove live PostgreSQL/RLS behavior, SQL RPC atomicity, Stripe event retries, or deployment integration.
+- No dedicated browser E2E runner or live-database integration-test job is declared in the inspected package/workflow configuration.
+- The single GitHub Actions workflow ([.github/workflows/test.yml](.github/workflows/test.yml)) runs Jest for PRs to `master`; it does not run the linter, production build, migration checks, dependency security audit, or E2E tests.
+- A 100% figure within the collection is not a risk or quality score and does not show whether critical production behaviors are exercised end-to-end.
+
+### Recommendations
+
+1. Add integration tests against a disposable PostgreSQL/Supabase schema, including actual RLS and both commerce RPCs.
+2. Add Stripe test-mode integration tests for duplicate/out-of-order events, failed payment, abandoned checkout, partial database failure, and recovery/reconciliation.
+3. Add Playwright (or equivalent) E2E coverage for unauthenticated checkout redirect/return, sign-in, successful/failed payment, order ownership, review lifecycle, and share links.
+4. Extend CI to run lint, type/build checks, SQL migration validation, security/dependency checks, and the necessary focused integration tests.
+5. Keep coverage thresholds, but publish the collection/exclusion scope and supplement coverage with mutation testing or risk-weighted critical-path assertions.
+
+## 5. Security
+
+### Existing safeguards
 
-**Overall Project Coverage** (from [test-summary.json](test-summary.json), generated by `npm run test:report`):
+- Supabase SSR session handling is used in [utils/db/server.ts](utils/db/server.ts), and [proxy.ts](proxy.ts) invokes session refresh for selected protected paths.
+- Many domain actions resolve authenticated users server-side and validate input with Zod.
+- Order reads check ownership in [data/checkout/services/OrderOwnershipService.ts](data/checkout/services/OrderOwnershipService.ts).
+- Stripe webhooks verify the raw request body against the signature before processing events.
+- [next.config.ts](next.config.ts) adds CSP, HSTS, frame/content-type/referrer/permissions headers and disables the `X-Powered-By` header.
+- [utils/security/securityAuditLogger.ts](utils/security/securityAuditLogger.ts) redacts keys with sensitive names and records audit events using the service-role client.
+- Authentication forms require a CAPTCHA token and pass it to Supabase Auth; production effectiveness depends on correct Supabase CAPTCHA configuration.
 
-| Metric | Coverage | Status |
-| :----- | :------: | :----- |
-| **Statements** | 100.00% | ✅ Complete |
-| **Branches** | 100.00% | ✅ Complete |
-| **Functions** | 100.00% | ✅ Complete |
-| **Lines** | 100.00% | ✅ Complete |
-| **Average** | 100.00% | ✅ Complete |
+### Critical and high-priority findings
 
-| Area | Statements | Branches | Functions | Lines | Status |
-| :--- | :--------: | :------: | :-------: | :---: | :----- |
-| **App routes** | 100.00% | 100.00% | 100.00% | 100.00% | ✅ Complete |
-| **Components** | 100.00% | 100.00% | 100.00% | 100.00% | ✅ Complete |
-| **Data and server actions** | 100.00% | 100.00% | 100.00% | 100.00% | ✅ Complete |
-| **Providers** | 100.00% | 100.00% | 100.00% | 100.00% | ✅ Complete |
-| **Hooks** | 100.00% | 100.00% | 100.00% | 100.00% | ✅ Complete |
-| **Utilities** | 100.00% | 100.00% | 100.00% | 100.00% | ✅ Complete |
+1. **[Critical] Privileged `impulseLogin` Server Action has no production or caller authorization guard.** [app/dev-tools/actions/DevToolsActions.ts](app/dev-tools/actions/DevToolsActions.ts) guards `systemCommandAction` and `fullResetAction` against production, but exported `impulseLogin(email)` has neither such a guard nor a role/session check. It uses the service-role client to find an arbitrary user, sets their password to a known fixed developer password, then signs in as that user. Redirecting the `/dev-tools` page in production is not authorization for a Server Action. Remove this action from deployable builds or require an explicit development-only control and authenticated admin authorization; rotate/review any credentials/accounts that may have been exposed to a deployed environment.
+2. **[High] Replayed Stripe failure/cancel webhooks can restore stock more than once.** The webhook has no event-ID ledger or conditional one-time transition; errors during restoration are ignored. Make event processing durable and idempotent before accepting real payments.
+3. **[High] Checkout mutation input validation and promotion checks are incomplete.** Validate item quantities and all IDs/options at the server boundary; derive lines from the signed-in user's cart; repeat promotion dates/eligibility/redemption checks in the final transaction.
+4. **[High] The in-memory limiter does not enforce distributed production limits.** Use shared atomic storage; also rate-limit authentication and other abuse-sensitive endpoints.
+5. **[High] Cart is removed before payment confirmation.** This is primarily a correctness/data-loss issue, but also undermines reliable order reconciliation. Clear it only after durable confirmed fulfillment.
+6. **[Medium] The database security posture is not auditable from this repository.** No schema/migration or policy SQL is present under `supabase/`; prior documentation's broad assertion that RLS is configured cannot be independently verified here. Treat RLS as unverified until policies are versioned, reviewed, and exercised with integration tests. Service-role access bypasses RLS by design and must remain server-only.
+7. **[Medium] CSP permits `'unsafe-inline'` and `'unsafe-eval'` for scripts.** This weakens XSS defense. Assess Next/MUI/Stripe runtime needs and move toward nonce/hash-based script policies; avoid broadening host allowlists without need.
+8. **[Medium] Audit logging is best-effort.** The logger schedules background writes and catches/logs failures. This may be appropriate for non-blocking telemetry, but security-critical audit obligations need durable delivery/monitoring and alerting.
+9. **[Medium] Secrets/setup documentation is incomplete.** `.env*` is gitignored, but there is no checked-in example template. Document variable names and public-vs-secret classification without committing real credentials; add startup validation for mandatory settings.
 
-### **Coverage Thresholds**
+## 6. Usability and Accessibility
 
-Configured in [jest.config.ts](jest.config.ts):
+### Strengths
 
-```
-global: {
-  branches: 99,
-  functions: 95,
-  lines: 90,
-  statements: 90,
-}
-```
+- Shared layout, responsive Tailwind/MUI components, breadcrumbs, feedback notifications, skeletons, and explicit empty/error states provide consistent interaction patterns.
+- Search supports debouncing, cancellation, bounded suggestions, and keyboard movement/escape handling in [hooks/SearchBar/](hooks/SearchBar/) and [components/layout/UserNavbar/SearchBar/](components/layout/UserNavbar/SearchBar/).
+- Forms expose validation and pending feedback; cart and wishlist actions expose optimistic feedback.
+- Dialogs, drawers, and mobile layouts are built from established UI components rather than entirely bespoke primitives.
+- Checked-in Lighthouse JSON reports show desktop scores of performance 99, accessibility 90, best practices 96, SEO 100; mobile scores of performance 71, accessibility 90, best practices 96, SEO 100. These are report artifacts, not a fresh browser run during this audit and not WCAG certification.
 
-**Status**: ✅ The current report exceeds every configured global threshold.
+### Gaps and recommendations
 
-### **Test Scripts**
+- There is no automated axe/WCAG test suite or documented manual screen-reader/keyboard audit.
+- Review accessible names and state announcements for icon-only cart/wishlist/filter controls, search suggestions, async errors, and form validation; use consistent `aria-live`/described-by behavior where appropriate.
+- Verify focus trapping/restoration for MUI modals/drawers, visible focus styles, heading hierarchy, contrast, reduced-motion preferences, and zoom/reflow at narrow viewport sizes.
+- Retest mobile performance: the recorded 71 score is substantially below desktop's 99. Investigate client JavaScript, hydration, image payloads, and render-blocking assets with current production measurements.
+- Add accessibility tests to checkout/review/share workflows and perform manual assistive-technology checks before release.
 
-- `npm run test:report`: Run coverage tests and regenerate `test-summary.json`
-- `npm test`: Run Jest with coverage
-- `npm run test:watch`: Run Jest in watch mode
+## 7. Scalability and Maintainability
 
----
+### Positive foundations
 
-## 3. STATE MANAGEMENT ARCHITECTURE OVERVIEW
+- Server-rendered catalog reads, indexed relational access patterns (where configured), domain modules, generated types, and isolated state reducers form a sound starting point.
+- Image formats/cache TTL and response compression are configured in [next.config.ts](next.config.ts).
+- Retry/query helpers, mappings, and schemas provide seams that can support incremental refactoring.
+- Test coverage supports safe local changes to the modeled behavior.
 
-### **Pattern: Dual Context + Reducer**
+### Current constraints
 
-Cart, user, book sorting, and advanced filtering state are separated into focused providers. Cart and user state use reducer logic with distinct state and actions contexts so action-only consumers do not subscribe to unrelated state updates.
+- **Process-local limiter:** not suitable for horizontally scaled/serverless deployment and stores keys in an unbounded `Map`.
+- **Database source of truth absent:** migrations, indexes, RLS and RPC bodies are not checked in; schema updates and test environments are not reproducible.
+- **Commerce consistency across services:** order persistence, inventory and payment are coordinated across Stripe and Supabase without an in-repository event ledger/outbox or complete compensation strategy.
+- **Refresh-heavy realtime:** repeated full-state reads can multiply under load; measure event rate, query latency and subscription churn.
+- **Quality gates incomplete:** CI only runs Jest. No required lint/build/type/dependency/migration checks are defined in the workflow.
+- **Operational visibility:** console-based logging and best-effort audit writes are not a complete structured logging, tracing, metrics, or alerting solution.
+- **No documented E2E/performance release gate:** existing Lighthouse artifacts are not generated by the PR workflow.
+- **Project setup ambiguity:** there is no `.env.example`; database configuration and local bootstrap steps are not fully captured in version control.
 
-### **Server-Seeded Initial State**
+### Recommendations
 
-[components/layout/RootLayoutContent.tsx](components/layout/RootLayoutContent.tsx) loads session, user, and cart data server-side and passes initial state into the provider tree, avoiding an initial loading flicker.
+1. Establish schema-as-code and deterministic local/test Supabase environments first.
+2. Make order, stock, discount usage, webhook receipt, and fulfillment transitions durable and transactional/idempotent.
+3. Add distributed rate limiting, structured telemetry, tracing, error reporting, and operational dashboards.
+4. Define release checks for lint/type/build, migration/RLS tests, payment/webhook integration, E2E flows, and accessible Lighthouse/axe baselines.
+5. Profile actual production routes and database query plans before adding caching or broad architectural complexity.
 
-### **Real-Time Synchronization**
+## 8. Tooling and Setup
 
-- [providers/cart/utils/useCartListeners.ts](providers/cart/utils/useCartListeners.ts) refreshes cart state after Supabase changes
-- [providers/user/utils/useUserListeners.ts](providers/user/utils/useUserListeners.ts) tracks auth, profile, and wishlist changes
-- Server actions and listeners dispatch through the same provider reducers
+- Package manager: npm with committed [package-lock.json](package-lock.json).
+- Framework/compiler: Next.js App Router, React 19, strict TypeScript configuration.
+- Styling: Tailwind CSS 4 and Material UI.
+- Validation: Zod.
+- Automated checks: Jest 30, jsdom, React Testing Library, V8 coverage, ESLint 9.
+- CI: GitHub Actions on PRs targeting `master`, using Node 25 and `npm ci`; workflow currently executes Jest only.
+- Current package scripts include `dev`, `build`, `start`, `lint`, `test`, `test:coverage`, `test:report`, Lighthouse scripts, security/audit install scripts, and generated Supabase type refresh.
+- No committed environment template or SQL migration set was found. Local execution therefore requires separately provisioned Supabase schema/auth configuration and Stripe/hCaptcha setup.
 
-### **Validation and Error Handling**
+## 9. Priority Recommendations
 
-Zod schemas validate mutation inputs before database operations. Shared Supabase error handling and safe query wrappers normalize errors before they reach UI state.
+### P0 — Resolve before any production commerce deployment
 
----
+1. Remove/guard `impulseLogin`; require server-side administrator authorization for every privileged action.
+2. Implement webhook idempotency and atomic, conditional payment/order/inventory transitions; test duplicate and out-of-order Stripe events.
+3. Move rate limiting to shared durable storage and apply it to auth and sensitive endpoints.
+4. Validate the full checkout payload, derive items from the signed-in user's cart, and revalidate discount validity/limits server-side.
+5. Preserve the cart until Stripe confirms payment and durable order state is settled.
+6. Commit/review migrations, RLS policies, transaction functions, constraints, and indexes; test them in CI.
 
-## 4. AUTHENTICATION & SECURITY FEATURES
+### P1 — Correct customer-facing flows and delivery confidence
 
-### **Authentication Layer**
+1. Fix checkout/sign-in redirect route and query parameter mismatches.
+2. Add payment/order reconciliation and explicit `pending`, `paid`, `failed`, `canceled`, and fulfillment semantics; review when a success screen may claim payment completion.
+3. Add end-to-end tests for checkout, failed payments, order history/ownership, profile, review management, and public/private wishlist sharing.
+4. Expand CI to run lint, production build/type verification, migration checks, dependency/security scanning, and integration tests.
+5. Clarify production shipping/tax behavior: checkout currently defaults tax calculation to zero and shipping rules are hard-coded for UK postcode zones; confirm business/legal requirements before launch.
 
-- Supabase SSR client: [utils/db/server.ts](utils/db/server.ts)
-- Browser client: [utils/db/client.ts](utils/db/client.ts)
-- Session refresh and route handling: [utils/db/middleware.ts](utils/db/middleware.ts)
-- Auth actions: [data/auth/](data/auth/)
+### P2 — Improve maintainability and user experience
 
-### **Data Protection**
+1. Add `.env.example` with placeholders, startup validation, and reproducible database setup instructions.
+2. Replace unchecked model/RPC casts with runtime parsers and typed results.
+3. Add structured observability, operational alerts, and durable security audit delivery where required.
+4. Complete WCAG-focused manual and automated accessibility testing and improve the mobile performance baseline.
+5. Add repository-level performance and mutation-test baselines after critical transaction semantics are stable.
 
-- RLS policies are used for user-owned profiles, carts, wishlists, and related records
-- Server actions perform authentication and authorization checks before mutations
-- Security audit events sanitize metadata and capture request context when available
-- Security response headers are configured centrally in [next.config.ts](next.config.ts)
+## 10. Conclusion
 
-### **Remaining Security Work**
-
-- Distributed rate limiting is not present in the current application tree
-- A production admin audit-log dashboard and granular RBAC are not implemented
-- A full WCAG audit is not evidenced by the repository's automated checks
-
----
-
-## 5. IDENTIFIED TODOs & KNOWN LIMITATIONS
-
-### **Current Product Limitations**
-
-1. **Checkout and Payment**: The cart targets `/checkout`, but no checkout route appears in the verified production build; payment, order completion, receipts, and post-payment inventory updates are not exposed.
-2. **Customer Order History**: Order and order-item data exist in seeding and database service code, but no customer-facing order history route is in the verified route list.
-3. **Discount Application**: Discount records and seed generation exist, but no customer-facing discount entry and checkout calculation flow is implemented.
-4. **Administration**: Development tools support seeding and inspection, but production admin, RBAC, inventory management, and review moderation remain future work.
-5. **Public Profile Expansion**: The public profile route and banner are implemented; visibility controls and public content sections remain future work.
-6. **Performance Evidence**: No current Lighthouse report is present in the verified test/build outputs, so previous Lighthouse numbers are not treated as current metrics.
-
----
-
-## 6. PERFORMANCE & BUILD VERIFICATION
-
-### **Production Build**
-
-Command: `npm run build`
-
-- ✅ Next.js 16.3.4 production build completed successfully
-- ✅ TypeScript completed successfully
-- ✅ Static page generation completed successfully
-- ✅ 18 application routes plus the not-found route were reported
-- ✅ Middleware proxy was included
-- All reported application routes are dynamic server-rendered routes (`ƒ`)
-
-### **Linting**
-
-Command: `npm run lint`
-
-- ✅ ESLint completed successfully with no reported errors
-
-### **Performance Notes**
-
-- Next Image is configured for AVIF and WebP with a 60-second minimum cache TTL
-- Compression and security headers are enabled in [next.config.ts](next.config.ts)
-- No benchmark or Lighthouse values are asserted without a current generated report
-
----
-
-## 7. TECHNOLOGY STACK VERIFICATION
-
-### **Frontend**
-
-- ✅ Next.js `^16.3.4` with App Router
-- ✅ React `^19.0.0` and React DOM `^19.0.0`
-- ✅ Tailwind CSS `^4.0.0` with PostCSS
-- ✅ Material UI `^9.0.0` and MUI icons `^9.0.1`
-
-### **Backend/Database**
-
-- ✅ Supabase SSR `^0.12.0`
-- ✅ Supabase JavaScript client `^2.97.0`
-- ✅ PostgreSQL through Supabase
-
-### **State and Validation**
-
-- ✅ React Context and reducers
-- ✅ Zod `^4.0.0`
-- ✅ Notistack `^3.0.2`
-
-### **Testing and Tooling**
-
-- ✅ Jest `^30.1.3`
-- ✅ React Testing Library `^16.3.0`
-- ✅ TypeScript 6 package alias with TypeScript 7 development alias
-- ✅ ESLint 9 with Next.js configuration
-- ✅ Faker 10 for seed data generation
-
----
-
-## 8. FILE STRUCTURE & KEY FILES
-
-```
-Store Project Root
-├── app/                 Next.js App Router routes, layouts, actions, and route components
-│   ├── book/[slug]/     Book details, related books, and review submission
-│   ├── dev-tools/       Development-only telemetry, seeding, and registry console
-│   ├── infos/           Privacy, return, shipping, and terms pages
-│   └── user/            Auth, profile, public profile, reviews, wishlist, and sharing routes
-├── components/          Shared storefront, cart, filtering, layout, form, and UI components
-├── data/                Repositories, services, server actions, schemas, and constants
-├── hooks/               Custom hooks, including book search
-├── providers/           Book sorting, advanced filtering, cart, user, and root providers
-├── utils/               Database clients, safe queries, security, errors, and seed utilities
-├── public/              Static assets
-├── supabase/            Supabase project configuration
-├── __tests__/            App, component, data, hook, provider, and utility tests
-├── __mocks__/            Jest mocks
-├── database.types.ts    Generated database TypeScript types
-├── jest.config.ts       Jest and coverage configuration
-├── next.config.ts       Next.js images, compression, and security headers
-├── package.json         Scripts and dependency declarations
-└── test-summary.json    Generated coverage summary
-```
-
----
-
-## 9. DEVELOPMENT & TESTING COMMANDS
-
-```bash
-# Development
-npm run dev              # Start the Next.js development server
-
-# Verification
-npm run test:report      # Run tests and regenerate test-summary.json
-npm run lint             # Run ESLint
-npm run build            # Create the production build
-
-# Other test modes
-npm test                 # Run Jest with coverage
-npm run test:watch       # Run Jest in watch mode
-
-# Production
-npm start                # Start the production server after npm run build
-```
-
----
-
-## 10. RECOMMENDATIONS & NEXT STEPS
-
-### **High Priority (Blocking User Experience)**
-
-1. **Implement the Checkout Boundary**: Add `/checkout`, integrate a payment provider through server-side actions, and validate stock while creating orders atomically after payment confirmation.
-2. **Add Customer Order History**: Expose authenticated order and order-item data through a protected route with status, totals, items, and receipt details.
-3. **Complete Discount Application**: Validate expiry, usage limits, eligibility, and totals on the server and expose discount entry in checkout.
-
-### **Medium Priority (Store Operations)**
-
-4. **Build Production Administration**: Add protected admin routing, RBAC, inventory, user, order, discount, and review moderation workflows.
-5. **Expand Public Profiles**: Add profile visibility controls and explicitly scoped public content sections.
-6. **Add Rate Limiting and Accessibility Verification**: Protect authentication and sensitive mutations with distributed rate limiting and document a WCAG-focused audit.
-
-### **Lower Priority (Evidence & Maintenance)**
-
-7. **Add Performance Benchmarks**: Generate reproducible Lighthouse or equivalent reports for desktop and mobile.
-8. **Keep Generated Metrics Synchronized**: Run `npm run test:report` whenever coverage claims change and keep README metrics derived from this analysis and `test-summary.json`.
-
----
-
-## SUMMARY
-
-This is a well-structured Next.js bookstore with implemented browsing, search, filtering, reviews, authentication, profiles, cart, wishlist sharing, development tooling, and Supabase-backed state synchronization.
-
-### ✅ **Verified Implementation Status**
-
-- ✅ 182 test suites and 1,334 tests passing
-- ✅ 100% statements, branches, functions, lines, and average coverage in the generated report
-- ✅ Lint passes with no reported errors
-- ✅ Production build and TypeScript verification pass
-- ✅ Review create, edit, and delete flows are implemented
-- ✅ Public profile and public/private wishlist sharing routes are implemented
-- ✅ Security audit logging and response security headers are implemented
-
-### ⚠️ **Known Limitations**
-
-- ❌ Checkout route and payment processing are not implemented
-- ❌ Customer-facing order history and post-payment inventory workflow are not implemented
-- 🔶 Discount data and seeding exist, but customer-facing discount application is not implemented
-- 🔶 Development tools exist, but a production admin/RBAC console is not implemented
-- 🔶 Public profile route exists, but visibility controls and public content sections are incomplete
-- ⚠️ No current Lighthouse report is available for verified performance claims
-
-### 🎯 **Conclusion**
-
-The implemented application paths are strongly tested and pass linting and production build verification. The next product milestone is completing checkout and payment, followed by order history, discount application, and production administration. Coverage is not evidence that the missing customer workflows are complete, so those boundaries should remain explicit in release planning.
+The codebase has a coherent domain-oriented architecture and a substantial implemented bookstore experience. Automated test, lint, and build checks currently pass, and the mocked test suite reports 100% coverage within its configured set. The principal risks lie at production boundaries not demonstrated by those tests: privileged Server Action authorization, distributed abuse controls, database policy/schema reproducibility, and correctness under payment/webhook retries. Address the P0 items and add live database/payment integration verification before treating the system as ready for real customer orders.
