@@ -1,14 +1,24 @@
 import {
-    getFilteringConstants,
     DEFAULT_FILTERING_CONSTANTS,
     CATEGORY_LABELS,
     NUMERIC_CATEGORIES,
 } from '@/data/advancedFiltering/FilteringConstants';
-import { createFrontendClient } from '@/utils/db/client';
+import { getFilteringConstants } from '@/data/advancedFiltering/FilteringConstantsAction';
+import { createBackendClient } from '@/utils/db/server';
+import { limiters, verifyRateLimit } from '@/utils/network/rateLimiter';
 import { act } from '@testing-library/react';
 
-jest.mock('@/utils/db/client', () => ({
-    createFrontendClient: jest.fn(),
+jest.mock('@/utils/db/server', () => ({
+    createBackendClient: jest.fn(),
+}));
+
+jest.mock('@/utils/network/getAppClientIp', () => ({
+    getAppClientIp: jest.fn().mockResolvedValue('203.0.113.1'),
+}));
+
+jest.mock('@/utils/network/rateLimiter', () => ({
+    limiters: { search: {} },
+    verifyRateLimit: jest.fn(),
 }));
 
 const originalWarn = console.warn;
@@ -42,17 +52,43 @@ afterAll(() => {
 });
 
 describe('FilteringConstants', () => {
-    type FrontendClientType = Awaited<ReturnType<typeof createFrontendClient>>;
-    const mockCreateFrontendClient = createFrontendClient as unknown as jest.Mock<
-        Promise<FrontendClientType>,
+    const mockVerifyRateLimit = jest.mocked(verifyRateLimit);
+    type BackendClientType = Awaited<ReturnType<typeof createBackendClient>>;
+    const mockCreateBackendClient = createBackendClient as unknown as jest.Mock<
+        Promise<BackendClientType>,
         []
     >;
 
     beforeEach(() => {
         jest.clearAllMocks();
+        mockVerifyRateLimit.mockResolvedValue({
+            success: true,
+            limit: 60,
+            remaining: 59,
+            reset: Date.now() + 60000,
+        });
     });
 
     describe('getFilteringConstants', () => {
+        it('should fail closed before reading book filters when rate limited', async () => {
+            mockVerifyRateLimit.mockResolvedValueOnce({
+                success: false,
+                limit: 60,
+                remaining: 0,
+                reset: Date.now() + 60000,
+            });
+
+            await expect(getFilteringConstants()).rejects.toThrow(
+                'Too many filter requests. Please try again later.',
+            );
+            expect(mockCreateBackendClient).not.toHaveBeenCalled();
+            expect(mockVerifyRateLimit).toHaveBeenCalledWith({
+                identifier: 'ip:203.0.113.1',
+                limiter: limiters.search,
+                failClosed: true,
+            });
+        });
+
         it('should fetch and process unique filter values correctly from Supabase', async () => {
             const mockData = [
                 {
@@ -97,9 +133,9 @@ describe('FilteringConstants', () => {
 
             const mockFrom = jest.fn().mockReturnValue(mockQueryBuilder);
 
-            mockCreateFrontendClient.mockResolvedValue({
+            mockCreateBackendClient.mockResolvedValue({
                 from: mockFrom,
-            } as unknown as FrontendClientType);
+            } as unknown as BackendClientType);
 
             let result!: Awaited<ReturnType<typeof getFilteringConstants>>;
             await act(async () => {
@@ -132,9 +168,9 @@ describe('FilteringConstants', () => {
 
             const mockFrom = jest.fn().mockReturnValue(mockQueryBuilder);
 
-            mockCreateFrontendClient.mockResolvedValue({
+            mockCreateBackendClient.mockResolvedValue({
                 from: mockFrom,
-            } as unknown as FrontendClientType);
+            } as unknown as BackendClientType);
 
             let result!: Awaited<ReturnType<typeof getFilteringConstants>>;
             await act(async () => {
@@ -159,9 +195,9 @@ describe('FilteringConstants', () => {
 
             const mockFrom = jest.fn().mockReturnValue(mockQueryBuilder);
 
-            mockCreateFrontendClient.mockResolvedValue({
+            mockCreateBackendClient.mockResolvedValue({
                 from: mockFrom,
-            } as unknown as FrontendClientType);
+            } as unknown as BackendClientType);
 
             let result!: Awaited<ReturnType<typeof getFilteringConstants>>;
             await act(async () => {

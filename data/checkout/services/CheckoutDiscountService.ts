@@ -15,6 +15,7 @@ export const validateAndCalculateDiscount = async (
 ): Promise<SafeQueryResult<AppliedDiscountState>> => {
     try {
         const supabase = await createBackendClient();
+
         const sanitizedCode = code.trim().toUpperCase();
 
         const discountQueryResult = await safeSupabaseQuery<DiscountRow>(() =>

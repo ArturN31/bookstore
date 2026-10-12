@@ -12,8 +12,8 @@ import {
 import {
     DEFAULT_FILTERING_CONSTANTS,
     FilteringTypes,
-    getFilteringConstants,
 } from '@/data/advancedFiltering/FilteringConstants';
+import { getFilteringConstants } from '@/data/advancedFiltering/FilteringConstantsAction';
 
 export type BookAdvancedFilteringContextType = {
     advancedFilters: FilteringTypes;

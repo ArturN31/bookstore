@@ -9,12 +9,22 @@ import {
 import { checkIsOwner } from '@/utils/auth/checkOwnership';
 import { PrivacySettingsControl } from './components/Settings/PrivacySettingsControl';
 import { PublicWishlistCard } from './components/Cards/PublicWishlistCard';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
+import { limiters, verifyRateLimit } from '@/utils/network/rateLimiter';
 
 export default async function PublicProfilePage({
     params,
 }: {
     params: Promise<{ username: string }>;
 }) {
+    const ip = await getAppClientIp();
+    const rateLimit = await verifyRateLimit({
+        identifier: `ip:${ip}`,
+        limiter: limiters.search,
+        failClosed: true,
+    });
+    if (!rateLimit.success) return <PublicProfileUnavailable />;
+
     const resolvedParams = await params;
     const { username } = resolvedParams;
 

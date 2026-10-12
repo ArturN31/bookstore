@@ -93,9 +93,8 @@ export const updateUserPrivacySettings = async (
         };
 
         if (payload.is_wishlist_public !== undefined) {
-            if (payload.is_wishlist_public) {
-                updatePayload.wishlist_share_token = null;
-            } else if (payload.wishlist_share_token === undefined) {
+            if (payload.is_wishlist_public) updatePayload.wishlist_share_token = null;
+            else if (payload.wishlist_share_token === undefined) {
                 const { data: currentSettings } = await fetchUserPrivacySettingsById(
                     supabase,
                     userId,

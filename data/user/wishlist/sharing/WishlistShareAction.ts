@@ -6,6 +6,8 @@ import { updateWishlistVisibilityAndToken } from './WishlistShareRepository';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
+import { buildRateLimitIdentifiers, limiters, verifyRateLimit } from '@/utils/network/rateLimiter';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
 
 export async function updateWishlistVisibilityAction(
     userId: string,
@@ -36,6 +38,17 @@ export async function updateWishlistVisibilityAction(
             });
             return { error: APP_ERROR_MESSAGES.UNAUTHORIZED_ACCESS };
         }
+
+        const rateLimit = await verifyRateLimit({
+            identifiers: buildRateLimitIdentifiers(await getAppClientIp(), user.id),
+            limiter: limiters.userMutation,
+            failClosed: true,
+        });
+
+        if (!rateLimit.success)
+            return {
+                error: rateLimit.error ?? 'Too many wishlist visibility updates. Please slow down.',
+            };
 
         const result = await updateWishlistVisibilityAndToken(
             userId,

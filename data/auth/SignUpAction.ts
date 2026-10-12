@@ -9,6 +9,8 @@ import { registerUser } from './AuthRepository';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { AUTH_ROUTES, AUTH_MESSAGES } from './AuthConstants';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
+import { verifyRateLimit, limiters } from '@/utils/network/rateLimiter';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
 
 export type SignUpFormState = {
     validationErrors?: z.core.$ZodIssue[];
@@ -37,6 +39,27 @@ export async function SignUpAction(
 
     const captchaToken = rawData.captchaToken as string | undefined;
     const { email } = validated.data;
+
+    const clientIp = await getAppClientIp();
+
+    const rateLimit = await verifyRateLimit({
+        identifiers: [`ip:${clientIp}`, `email:${email.toLowerCase()}`],
+        limiter: limiters.auth,
+        failClosed: true,
+    });
+
+    if (!rateLimit.success) {
+        void recordSecurityAuditLog('FAILED_REGISTRATION', null, {
+            operation: 'SignUpAction_rate_limited',
+            email,
+        });
+
+        return {
+            message:
+                rateLimit.error ??
+                'Too many account registration attempts. Please try again later.',
+        };
+    }
 
     if (!captchaToken) {
         void recordSecurityAuditLog('FAILED_REGISTRATION', null, {

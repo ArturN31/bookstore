@@ -176,7 +176,7 @@ The delivered implementation should be treated as **prototype-level commerce unt
 
 - `/dev-tools` UI for local seed/reset controls, telemetry/log views, and user registry.
 - Faker-based data generators for books, users, reviews, carts, wishlists, orders, and discounts.
-- Development tools use service-role privileges and are not a production administration/RBAC system. Do not expose this tooling to untrusted users. One exported privileged action currently lacks its own production and caller authorization guard; see [Known Issues and Limitations](#known-issues--limitations).
+- Development tools use service-role privileges and are not a production administration/RBAC system. Their actions are rate-limited and reject production execution, but caller authorization is not implemented; do not expose this tooling to untrusted users.
 - Relevant code: [app/dev-tools/](app/dev-tools/), [utils/db/dbSeed/](utils/db/dbSeed/).
 
 ## Architecture
@@ -254,7 +254,7 @@ Before launch, audit accessible names/state for icon controls and search, focus 
 - Many server actions fetch the current actor and enforce ownership in domain services.
 - Order detail access checks that the order belongs to the current user.
 - Stripe webhook signature is verified before handling event contents.
-- **Critical limitation:** the exported `impulseLogin` action in [app/dev-tools/actions/DevToolsActions.ts](app/dev-tools/actions/DevToolsActions.ts) uses a service-role client to reset an arbitrary user's password and sign in as that user, but unlike neighboring dev actions it has no production guard or caller authorization check. Page redirects are not an adequate Server Action security boundary. Disable/remove it from production and authorize all privileged actions server-side.
+- **Critical limitation:** the exported `impulseLogin` action in [app/dev-tools/actions/DevToolsActions.ts](app/dev-tools/actions/DevToolsActions.ts) uses a service-role client to reset an arbitrary user's password and sign in as that user. It has a production guard and rate limit, but no caller authorization check; page redirects are not an adequate Server Action security boundary. Do not expose development environments to untrusted callers and authorize privileged actions server-side.
 - RLS cannot be verified because policy/migration SQL is not present in the repository. Treat it as unverified; service-role access bypasses RLS.
 
 ### Input and Error Safety
@@ -267,7 +267,7 @@ Zod and shared Supabase error utilities are used broadly. Remaining concerns inc
 
 ### Security Gaps
 
-- The rate limiter is process-local memory and cannot enforce shared limits in horizontally scaled/serverless deployments.
+- Rate limits depend on Upstash Redis and trusted edge-proxy client-IP headers; validate both in each deployment environment.
 - Stripe webhook event processing does not durably deduplicate event IDs; repeated failure/cancel events may repeat stock restoration, and some database errors are ignored.
 - Checkout clears the cart before client-side card confirmation is completed.
 - Server-side checkout validation/revalidation is incomplete for items, quantities, shipping/payment choices, discount date windows, and usage limits.
@@ -389,6 +389,9 @@ NEXT_PUBLIC_SUPABASE_DB_URL=https://<project-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLIC_KEY=<supabase-publishable-or-anon-key>
 SUPABASE_SECRET_KEY=<server-only-supabase-secret-key>
 
+UPSTASH_REDIS_REST_URL=https://<redis-database>.upstash.io
+UPSTASH_REDIS_REST_TOKEN=<server-only-upstash-rest-token>
+
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_<value>
 STRIPE_SECRET_KEY=sk_test_<value>
 STRIPE_WEBHOOK_SECRET=whsec_<value>
@@ -396,7 +399,9 @@ STRIPE_WEBHOOK_SECRET=whsec_<value>
 NEXT_PUBLIC_HCAPTCHA_SITE_KEY=<hcaptcha-site-key>
 ```
 
-`SUPABASE_SECRET_KEY` and `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` are server-only secrets; do not prefix them with `NEXT_PUBLIC_` or expose them to the browser. The public Supabase key and Stripe publishable key are intended for browser use. Configure the matching hCaptcha secret with Supabase Auth in the Supabase project dashboard; it is not consumed directly by this application's source.
+`SUPABASE_SECRET_KEY`, `UPSTASH_REDIS_REST_TOKEN`, and `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` are server-only secrets; do not prefix them with `NEXT_PUBLIC_` or expose them to the browser. The public Supabase key and Stripe publishable key are intended for browser use. Configure the matching hCaptcha secret with Supabase Auth in the Supabase project dashboard; it is not consumed directly by this application's source.
+
+Rate limits use Upstash Redis REST with atomic sliding windows shared across application instances. Configure both Upstash variables in every deployed environment. Sensitive actions fail closed if Redis is unavailable or credentials are missing. Client IP limiting trusts only `cf-connecting-ip` or `x-real-ip`; production deployments must ensure the trusted edge proxy overwrites these headers and must not expose the application directly to untrusted traffic.
 
 For the optional database type refresh script, set `NEXT_PUBLIC_SUPABASE_PROJECT_ID` in the environment file the script reads (`.env`). The script writes generated types from the configured remote Supabase project.
 
@@ -472,7 +477,7 @@ Public profile and wishlist routes exist, but public profile content is limited.
 - [X] Implement the checkout UI and layered Zod/service/repository data flow.
 - [X] Integrate Stripe PaymentIntents through server-side code and pass an idempotency key to Stripe.
 - [X] Add discount-attempt and checkout-submission rate-limit checks.
-- [ ] Replace the process-local rate-limit `Map` with a shared, atomic production store.
+- [X] Replace the process-local rate-limit `Map` with atomic, shared Upstash Redis sliding-window limits.
 - [ ] Validate every checkout payload field on the server, including item IDs, positive integer quantities, shipping method, discount ID, and idempotency key.
 - [ ] Derive checkout line items from the current authenticated user's server-side cart instead of trusting a client-supplied item list.
 - [ ] Revalidate discount activation dates, eligibility, minimum spend, and redemption/usage limits at final order creation, atomically with discount redemption.
@@ -535,7 +540,7 @@ Public profile and wishlist routes exist, but public profile content is limited.
 
 ### 5. Security and Reliability
 
-- [ ] Add distributed rate limiting to authentication and sensitive mutation paths.
+- [X] Add distributed rate limiting to authentication, checkout/order reads, public catalog/filter/profile/review/wishlist lookups, privileged development-console reads/actions, and sensitive mutation paths.
 - [ ] Extend security audit coverage to production administration actions.
 - [ ] Add centralized server, client, and database exception logging.
 - [ ] Preserve sanitized query/authentication context in operational logs.

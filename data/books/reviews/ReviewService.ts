@@ -5,6 +5,8 @@ import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 import { verifyReviewForDeletion, revalidateServiceCaches } from './ReviewServiceUtils';
+import { buildRateLimitIdentifiers, limiters, verifyRateLimit } from '@/utils/network/rateLimiter';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
 
 const PAGE_SIZE = 5;
 
@@ -34,6 +36,19 @@ export async function fetchUserReviewsAction(page: number): Promise<FetchUserRev
             error: 'Session expired',
         };
     }
+
+    const rateLimit = await verifyRateLimit({
+        identifiers: buildRateLimitIdentifiers(await getAppClientIp(), user.id),
+        limiter: limiters.search,
+        failClosed: true,
+    });
+    if (!rateLimit.success)
+        return {
+            reviews: [],
+            booksMap: {},
+            hasMore: false,
+            error: rateLimit.error ?? 'Too many requests. Please try again later.',
+        };
 
     const from = (page - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE;
@@ -112,6 +127,18 @@ export async function deleteReviewAction(
         });
         return { success: false, message: 'Session expired' };
     }
+
+    const rateLimit = await verifyRateLimit({
+        identifiers: buildRateLimitIdentifiers(await getAppClientIp(), user.id),
+        limiter: limiters.userMutation,
+        failClosed: true,
+    });
+
+    if (!rateLimit.success)
+        return {
+            success: false,
+            message: rateLimit.error ?? 'Please wait before deleting another review.',
+        };
 
     const verification = await verifyReviewForDeletion(supabase, reviewId, user.id);
     if (!verification.isValid) return { success: false, message: 'Unauthorized operation.' };

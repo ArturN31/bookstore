@@ -5,6 +5,9 @@ import { createBackendClient } from '@/utils/db/server';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { UserReviewsInteractive } from '../components/UserReviewsInteractive';
 import { checkIsOwner } from '@/utils/auth/checkOwnership';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
+import { limiters, verifyRateLimit } from '@/utils/network/rateLimiter';
 
 const PAGE_SIZE = 5;
 
@@ -15,6 +18,19 @@ export default async function UserReviewsPage({
 }) {
     const resolvedParams = await params;
     const { username } = resolvedParams;
+
+    const rateLimit = await verifyRateLimit({
+        identifier: `ip:${await getAppClientIp()}`,
+        limiter: limiters.search,
+        failClosed: true,
+    });
+    if (!rateLimit.success)
+        return (
+            <ErrorState
+                title="Please Try Again Later"
+                message={rateLimit.error ?? 'Too many review requests. Please try again later.'}
+            />
+        );
 
     const supabase = await createBackendClient();
     const isOwner = await checkIsOwner(username);

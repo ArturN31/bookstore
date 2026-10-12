@@ -9,6 +9,8 @@ import { updateAccountPassword, terminateSession } from './AuthRepository';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { AUTH_ROUTES, AUTH_MESSAGES } from './AuthConstants';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
+import { verifyRateLimit, limiters } from '@/utils/network/rateLimiter';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
 
 export type ChangePasswordFormState = {
     validationErrors?: z.core.$ZodIssue[];
@@ -49,6 +51,19 @@ export async function ChangePasswordAction(
                 error: authError ? sanitizeSupabaseError(authError) : 'No active user session',
             });
             return { message: AUTH_MESSAGES.SESSION_EXPIRED };
+        }
+
+        const rateLimit = await verifyRateLimit({
+            identifiers: [`ip:${await getAppClientIp()}`, `user:${user.id}`],
+            limiter: limiters.auth,
+            failClosed: true,
+        });
+
+        if (!rateLimit.success) {
+            void recordSecurityAuditLog('PASSWORD_CHANGE', user.id, {
+                operation: 'ChangePasswordAction_rate_limited',
+            });
+            return { message: rateLimit.error ?? 'Too many password reset requests.' };
         }
 
         const { error: updateError } = await updateAccountPassword(

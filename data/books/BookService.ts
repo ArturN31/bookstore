@@ -21,6 +21,13 @@ import { unstable_cache } from 'next/cache';
 import { createPublicServerClient } from '@/utils/db/publicServer';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { verifyRateLimit, limiters } from '@/utils/network/rateLimiter';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
+
+export interface ActionResponse<T> {
+    data: T | null;
+    error: string | null;
+}
 
 const getCachedBooksData = unstable_cache(
     async (page: number, limit: number, paramsSerialized: string) => {
@@ -77,6 +84,21 @@ export const fetchBooksWithReviews = async (
     }
 
     try {
+        const clientIp = await getAppClientIp();
+
+        const rateLimit = await verifyRateLimit({
+            identifier: `ip:${clientIp}`,
+            limiter: limiters.search,
+            failClosed: true,
+        });
+
+        if (!rateLimit.success) {
+            return {
+                data: mapToPaginatedBookResponse([], 0, rawPage, rawLimit),
+                error: rateLimit.error ?? 'Too many search requests. Please slow down.',
+            };
+        }
+
         const paramsSerialized = JSON.stringify(params);
         const result = await getCachedBooksData(rawPage, rawLimit, paramsSerialized);
         if (result.error)
@@ -109,7 +131,7 @@ export const fetchBooksWithReviews = async (
     }
 };
 
-export const getCachedRelatedBooksData = unstable_cache(
+const getCachedRelatedBooksData = unstable_cache(
     async (bookId: string, limit: number) => {
         const supabase = await createPublicServerClient();
 
@@ -141,6 +163,17 @@ export const fetchRelatedBooks = async (
         };
 
     try {
+        const rateLimit = await verifyRateLimit({
+            identifier: `ip:${await getAppClientIp()}`,
+            limiter: limiters.search,
+            failClosed: true,
+        });
+        if (!rateLimit.success)
+            return {
+                data: null,
+                error: rateLimit.error ?? 'Too many related-book requests. Please slow down.',
+            };
+
         const result = await getCachedRelatedBooksData(bookId, limit);
         if (result.error)
             return {
@@ -162,7 +195,7 @@ export const fetchRelatedBooks = async (
     }
 };
 
-export const getCachedBestsellersData = unstable_cache(
+const getCachedBestsellersData = unstable_cache(
     async (limit: number) => {
         const supabase = await createPublicServerClient();
 
@@ -187,6 +220,17 @@ export const fetchBestsellers = async (
     limit: number = 10,
 ): Promise<ActionResponse<Tables<'books_with_stats'>[]>> => {
     try {
+        const rateLimit = await verifyRateLimit({
+            identifier: `ip:${await getAppClientIp()}`,
+            limiter: limiters.search,
+            failClosed: true,
+        });
+        if (!rateLimit.success)
+            return {
+                data: null,
+                error: rateLimit.error ?? 'Too many catalog requests. Please slow down.',
+            };
+
         const result = await getCachedBestsellersData(limit);
         if (result.error)
             return {

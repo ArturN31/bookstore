@@ -2,6 +2,8 @@
 
 import { createBackendClient } from '@/utils/db/server';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { buildRateLimitIdentifiers, verifyRateLimit, limiters } from '@/utils/network/rateLimiter';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
 import { PRIVACY_SETTINGS_ACTIONS } from './PrivacySettingsConstants';
 import { UpdatePrivacySettingsPayload } from './PrivacySettingsRepository';
 import {
@@ -30,6 +32,18 @@ export const updatePrivacySettingsAction = async (
             return {
                 success: false,
                 error: authResult.error ?? 'Unauthorized',
+            };
+
+        const rateLimit = await verifyRateLimit({
+            identifiers: buildRateLimitIdentifiers(await getAppClientIp(), authResult.user.id),
+            limiter: limiters.userMutation,
+            failClosed: true,
+        });
+
+        if (!rateLimit.success)
+            return {
+                success: false,
+                error: rateLimit.error ?? 'Too many privacy update requests. Please slow down.',
             };
 
         const { error: updateError } = await updateUserPrivacySettings(authResult.user.id, payload);
@@ -65,6 +79,18 @@ export const regenerateWishlistShareTokenAction = async (
             return {
                 success: false,
                 error: authResult.error ?? 'Unauthorized',
+            };
+
+        const rateLimit = await verifyRateLimit({
+            identifiers: buildRateLimitIdentifiers(await getAppClientIp(), authResult.user.id),
+            limiter: limiters.userMutation,
+            failClosed: true,
+        });
+
+        if (!rateLimit.success)
+            return {
+                success: false,
+                error: rateLimit.error ?? 'Too many token generation requests. Please slow down.',
             };
 
         const { token, error: generateError } = await generateOrResetWishlistShareToken(

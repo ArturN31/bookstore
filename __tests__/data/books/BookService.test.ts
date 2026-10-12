@@ -1,9 +1,7 @@
 import {
     fetchBooksWithReviews,
     fetchRelatedBooks,
-    getCachedRelatedBooksData,
     fetchBestsellers,
-    getCachedBestsellersData,
 } from '@/data/books/BookService';
 import { BOOK_SORT_OPTIONS } from '@/data/books/BookConstants';
 import { getRelatedBooksQuery, getBestsellersQuery } from '@/data/books/BookRepository';
@@ -517,40 +515,6 @@ describe('fetchRelatedBooks', () => {
     });
 });
 
-describe('getCachedRelatedBooksData', () => {
-    type SupabaseClientType = Awaited<ReturnType<typeof createPublicServerClient>>;
-    const mockedCreatePublicServerClient = createPublicServerClient as unknown as jest.Mock<
-        Promise<SupabaseClientType>,
-        []
-    >;
-    const mockedGetRelatedBooksQuery = getRelatedBooksQuery as unknown as jest.Mock<
-        Promise<{
-            data: Tables<'books_with_stats'>[] | null;
-            error: { code: string; message: string } | null;
-        }>,
-        [SupabaseClientType, string, number]
-    >;
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
-    it('should call createPublicServerClient and getRelatedBooksQuery with parameters', async () => {
-        const mockSupabase = {} as SupabaseClientType;
-        mockedCreatePublicServerClient.mockResolvedValue(mockSupabase);
-        mockedGetRelatedBooksQuery.mockResolvedValue({
-            data: [],
-            error: null,
-        });
-
-        const result = await getCachedRelatedBooksData('book-123', 5);
-
-        expect(mockedCreatePublicServerClient).toHaveBeenCalled();
-        expect(mockedGetRelatedBooksQuery).toHaveBeenCalledWith(mockSupabase, 'book-123', 5);
-        expect(result).toEqual({ data: [], error: null });
-    });
-});
-
 describe('fetchBestsellers', () => {
     type SupabaseClientType = Awaited<ReturnType<typeof createPublicServerClient>>;
     const mockedCreatePublicServerClient = createPublicServerClient as unknown as jest.Mock<
@@ -678,39 +642,5 @@ describe('fetchBestsellers', () => {
             data: null,
             error: sanitizeSupabaseError(thrownError),
         });
-    });
-});
-
-describe('getCachedBestsellersData', () => {
-    type SupabaseClientType = Awaited<ReturnType<typeof createPublicServerClient>>;
-    const mockedCreatePublicServerClient = createPublicServerClient as unknown as jest.Mock<
-        Promise<SupabaseClientType>,
-        []
-    >;
-    const mockedGetBestsellersQuery = getBestsellersQuery as unknown as jest.Mock<
-        Promise<{
-            data: Tables<'books_with_stats'>[] | null;
-            error: { code: string; message: string } | null;
-        }>,
-        [SupabaseClientType, number]
-    >;
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
-    it('should call createPublicServerClient and getBestsellersQuery with parameters', async () => {
-        const mockSupabase = {} as SupabaseClientType;
-        mockedCreatePublicServerClient.mockResolvedValue(mockSupabase);
-        mockedGetBestsellersQuery.mockResolvedValue({
-            data: [],
-            error: null,
-        });
-
-        const result = await getCachedBestsellersData(5);
-
-        expect(mockedCreatePublicServerClient).toHaveBeenCalled();
-        expect(mockedGetBestsellersQuery).toHaveBeenCalledWith(mockSupabase, 5);
-        expect(result).toEqual({ data: [], error: null });
     });
 });

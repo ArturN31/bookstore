@@ -21,7 +21,6 @@ export async function CartAction(
     formData: FormData,
 ): Promise<CartFormState> {
     const actionType = formData.get('action-type');
-    let userId: string | null = null;
 
     try {
         const { data: user, error: authError } = await getUserData();
@@ -41,7 +40,7 @@ export async function CartAction(
             };
         }
 
-        userId = user.id;
+        const userId = user.id;
 
         const cartContext = await ensureCartExists(userId);
         if (cartContext.error || !cartContext.data) {
@@ -57,12 +56,11 @@ export async function CartAction(
 
         if (actionType === 'CLEAR') {
             const result = await clearUsersCart(cartContext.data);
-            if (result.error) {
+            if (result.error)
                 return {
                     success: false,
                     message: sanitizeSupabaseError(result.error),
                 };
-            }
 
             revalidatePath('/', 'layout');
 

@@ -8,6 +8,8 @@ import { RestrictedAccessView } from '../../[username]/components/RestrictedAcce
 import { SharedWishlistHeader } from '../../[username]/components/SharedWishlistHeader';
 import { SharedWishlistHero } from '../../[username]/components/SharedWishlistHero';
 import { EmptyWishlistView } from '../../[username]/components/EmptyWishlistView';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
+import { limiters, verifyRateLimit } from '@/utils/network/rateLimiter';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -19,7 +21,22 @@ interface SharedTokenWishlistPageProps {
 }
 
 export default async function SharedTokenWishlistPage({ params }: SharedTokenWishlistPageProps) {
+    const ip = await getAppClientIp();
+    const rateLimit = await verifyRateLimit({
+        identifier: `ip:${ip}`,
+        limiter: limiters.search,
+        failClosed: true,
+    });
+
     const { token } = await params;
+
+    if (!rateLimit.success)
+        return (
+            <RestrictedAccessView
+                username={token}
+                isPublicMode={false}
+            />
+        );
 
     let tokenWishlistData: TokenWishlistProfile | null = null;
     let fetchError: unknown = null;
