@@ -78,9 +78,7 @@ describe('FilteringConstants', () => {
                 reset: Date.now() + 60000,
             });
 
-            await expect(getFilteringConstants()).rejects.toThrow(
-                'Too many filter requests. Please try again later.',
-            );
+            await expect(getFilteringConstants()).resolves.toBe(DEFAULT_FILTERING_CONSTANTS);
             expect(mockCreateBackendClient).not.toHaveBeenCalled();
             expect(mockVerifyRateLimit).toHaveBeenCalledWith({
                 identifier: 'ip:203.0.113.1',

@@ -5,10 +5,7 @@ import { createBackendClient } from '@/utils/db/server';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { getAppClientIp } from '@/utils/network/getAppClientIp';
 import { limiters, verifyRateLimit } from '@/utils/network/rateLimiter';
-import {
-    DEFAULT_FILTERING_CONSTANTS,
-    FilteringTypes,
-} from './FilteringConstants';
+import { DEFAULT_FILTERING_CONSTANTS, FilteringTypes } from './FilteringConstants';
 
 type BookRow = Database['public']['Tables']['books']['Row'];
 type BookFilterRow = Pick<
@@ -22,8 +19,7 @@ export async function getFilteringConstants(): Promise<FilteringTypes> {
         limiter: limiters.search,
         failClosed: true,
     });
-    if (!rateLimit.success)
-        throw new Error(rateLimit.error ?? 'Too many filter requests. Please try again later.');
+    if (!rateLimit.success) return DEFAULT_FILTERING_CONSTANTS;
 
     const supabase = await createBackendClient();
     const query = supabase

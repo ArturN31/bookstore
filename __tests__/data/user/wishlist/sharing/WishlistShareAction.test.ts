@@ -3,6 +3,7 @@ import { updateWishlistVisibilityAndToken } from '@/data/user/wishlist/sharing/W
 import { revalidatePath } from 'next/cache';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
+import { verifyRateLimit } from '@/utils/network/rateLimiter';
 
 const mockGetUser = jest.fn();
 
@@ -34,6 +35,16 @@ jest.mock('@/data/user/wishlist/sharing/WishlistShareRepository', () => ({
     updateWishlistVisibilityAndToken: jest.fn(),
 }));
 
+jest.mock('@/utils/network/getAppClientIp', () => ({
+    getAppClientIp: jest.fn().mockResolvedValue('203.0.113.1'),
+}));
+
+jest.mock('@/utils/network/rateLimiter', () => ({
+    buildRateLimitIdentifiers: jest.fn(() => ['ip:203.0.113.1', 'user:user-123']),
+    limiters: { userMutation: {} },
+    verifyRateLimit: jest.fn(),
+}));
+
 describe('WishlistShareAction', () => {
     const mockUpdateWishlistVisibilityAndToken =
         updateWishlistVisibilityAndToken as jest.MockedFunction<
@@ -43,12 +54,19 @@ describe('WishlistShareAction', () => {
     const mockRecordSecurityAuditLog = recordSecurityAuditLog as jest.MockedFunction<
         typeof recordSecurityAuditLog
     >;
+    const mockVerifyRateLimit = jest.mocked(verifyRateLimit);
 
     beforeEach(() => {
         jest.clearAllMocks();
         mockGetUser.mockResolvedValue({
             data: { user: { id: 'user-123' } },
             error: null,
+        });
+        mockVerifyRateLimit.mockResolvedValue({
+            success: true,
+            limit: 20,
+            remaining: 19,
+            reset: Date.now() + 60000,
         });
     });
 
@@ -112,6 +130,38 @@ describe('WishlistShareAction', () => {
                 reason: 'Authenticated user ID does not match target user ID',
             },
         );
+        expect(mockUpdateWishlistVisibilityAndToken).not.toHaveBeenCalled();
+    });
+
+    it('should return rate limit error when user exceeds rate limit with a custom error', async () => {
+        mockVerifyRateLimit.mockResolvedValueOnce({
+            success: false,
+            limit: 20,
+            remaining: 0,
+            reset: Date.now() + 60000,
+            error: 'Too many wishlist updates. Please slow down.',
+        });
+
+        const result = await updateWishlistVisibilityAction('user-123', true);
+
+        expect(result).toEqual({ error: 'Too many wishlist updates. Please slow down.' });
+        expect(mockUpdateWishlistVisibilityAndToken).not.toHaveBeenCalled();
+    });
+
+    it('should fallback to default message when rate limit error is undefined', async () => {
+        mockVerifyRateLimit.mockResolvedValueOnce({
+            success: false,
+            limit: 20,
+            remaining: 0,
+            reset: Date.now() + 60000,
+            error: undefined,
+        });
+
+        const result = await updateWishlistVisibilityAction('user-123', true);
+
+        expect(result).toEqual({
+            error: 'Too many wishlist visibility updates. Please slow down.',
+        });
         expect(mockUpdateWishlistVisibilityAndToken).not.toHaveBeenCalled();
     });
 

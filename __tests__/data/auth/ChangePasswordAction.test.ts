@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { User } from '@supabase/supabase-js';
 import { ChangePasswordAction } from '@/data/auth/ChangePasswordAction';
+import { verifyRateLimit } from '@/utils/network/rateLimiter';
 
 jest.mock('@/utils/db/server');
 jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }));
@@ -12,6 +13,14 @@ jest.mock('next/navigation', () => ({ redirect: jest.fn() }));
 jest.mock('@/data/auth/AuthRepository', () => ({
     updateAccountPassword: jest.fn(),
     terminateSession: jest.fn(),
+}));
+jest.mock('@/utils/network/getAppClientIp', () => ({
+    getAppClientIp: jest.fn().mockResolvedValue('203.0.113.1'),
+}));
+jest.mock('@/utils/network/rateLimiter', () => ({
+    buildRateLimitIdentifiers: jest.fn(() => ['ip:203.0.113.1', 'user:123']),
+    limiters: { auth: {} },
+    verifyRateLimit: jest.fn(),
 }));
 
 type MockSupabaseClient = {
@@ -57,6 +66,7 @@ afterAll(() => {
 
 describe('ChangePasswordAction', () => {
     let mockSupabase: MockSupabaseClient;
+    const mockedVerifyRateLimit = verifyRateLimit as jest.Mock;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -82,6 +92,12 @@ describe('ChangePasswordAction', () => {
             error: null,
         });
         jest.mocked(terminateSession).mockResolvedValue({ data: {}, error: null });
+        mockedVerifyRateLimit.mockResolvedValue({
+            success: true,
+            limit: 5,
+            remaining: 4,
+            reset: Date.now() + 60000,
+        });
     });
 
     it('should return default state when reset is present', async () => {
@@ -120,6 +136,46 @@ describe('ChangePasswordAction', () => {
         const result = await ChangePasswordAction(undefined, formData);
 
         expect(result.message).toBe('Session expired. Please log in again.');
+    });
+
+    it('should return error when rate limit is exceeded', async () => {
+        mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: '123' } }, error: null });
+        mockedVerifyRateLimit.mockResolvedValueOnce({
+            success: false,
+            limit: 5,
+            remaining: 0,
+            reset: Date.now() + 60000,
+            error: 'Too many password reset requests.',
+        });
+
+        const formData = new FormData();
+        formData.append('password', 'ValidPass123!');
+        formData.append('cnfPassword', 'ValidPass123!');
+
+        const result = await ChangePasswordAction(undefined, formData);
+
+        expect(result.message).toBe('Too many password reset requests.');
+        expect(updateAccountPassword).not.toHaveBeenCalled();
+    });
+
+    it('should fallback to default rate limit message when error is undefined', async () => {
+        mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: '123' } }, error: null });
+        mockedVerifyRateLimit.mockResolvedValueOnce({
+            success: false,
+            limit: 5,
+            remaining: 0,
+            reset: Date.now() + 60000,
+            error: undefined,
+        });
+
+        const formData = new FormData();
+        formData.append('password', 'ValidPass123!');
+        formData.append('cnfPassword', 'ValidPass123!');
+
+        const result = await ChangePasswordAction(undefined, formData);
+
+        expect(result.message).toBe('Too many password reset requests.');
+        expect(updateAccountPassword).not.toHaveBeenCalled();
     });
 
     it('should handle update password error', async () => {

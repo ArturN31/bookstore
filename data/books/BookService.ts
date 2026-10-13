@@ -91,13 +91,11 @@ export const fetchBooksWithReviews = async (
             limiter: limiters.search,
             failClosed: true,
         });
-
-        if (!rateLimit.success) {
+        if (!rateLimit.success)
             return {
                 data: mapToPaginatedBookResponse([], 0, rawPage, rawLimit),
                 error: rateLimit.error ?? 'Too many search requests. Please slow down.',
             };
-        }
 
         const paramsSerialized = JSON.stringify(params);
         const result = await getCachedBooksData(rawPage, rawLimit, paramsSerialized);

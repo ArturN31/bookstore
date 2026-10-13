@@ -15,6 +15,7 @@ import {
     verifyAuthorizedUser,
 } from '@/data/user/profile/PrivacySettingsUtils';
 import { PRIVACY_SETTINGS_ACTIONS } from '@/data/user/profile/PrivacySettingsConstants';
+import { verifyRateLimit } from '@/utils/network/rateLimiter';
 
 jest.mock('@/utils/db/server', () => ({
     createBackendClient: jest.fn(),
@@ -32,6 +33,16 @@ jest.mock('@/data/user/profile/PrivacySettingsService', () => ({
 jest.mock('@/data/user/profile/PrivacySettingsUtils', () => ({
     revalidateUserPrivacyPaths: jest.fn(),
     verifyAuthorizedUser: jest.fn(),
+}));
+
+jest.mock('@/utils/network/getAppClientIp', () => ({
+    getAppClientIp: jest.fn().mockResolvedValue('203.0.113.1'),
+}));
+
+jest.mock('@/utils/network/rateLimiter', () => ({
+    buildRateLimitIdentifiers: jest.fn(() => ['ip:203.0.113.1', 'user:user-123']),
+    limiters: { userMutation: {} },
+    verifyRateLimit: jest.fn(),
 }));
 
 describe('PrivacySettingsAction', () => {
@@ -54,12 +65,19 @@ describe('PrivacySettingsAction', () => {
     const mockVerifyAuthorizedUser = verifyAuthorizedUser as jest.MockedFunction<
         typeof verifyAuthorizedUser
     >;
+    const mockVerifyRateLimit = verifyRateLimit as jest.MockedFunction<typeof verifyRateLimit>;
 
     const dummyUser = { id: 'user-123' } as User;
     const dummySupabase = {} as SupabaseClient<Database>;
 
     beforeEach(() => {
         jest.clearAllMocks();
+        mockVerifyRateLimit.mockResolvedValue({
+            success: true,
+            limit: 30,
+            remaining: 29,
+            reset: Date.now() + 60000,
+        });
     });
 
     describe('updatePrivacySettingsAction', () => {
@@ -98,6 +116,54 @@ describe('PrivacySettingsAction', () => {
                 success: false,
                 error: 'Unauthorized',
             });
+        });
+
+        it('returns error when rate limit is exceeded', async () => {
+            mockVerifyAuthorizedUser.mockResolvedValueOnce({
+                user: dummyUser,
+                error: null,
+            });
+            mockVerifyRateLimit.mockResolvedValueOnce({
+                success: false,
+                limit: 30,
+                remaining: 0,
+                reset: Date.now() + 60000,
+                error: 'Too many privacy update requests. Please slow down.',
+            });
+
+            const result = await updatePrivacySettingsAction('user-123', {
+                is_profile_public: true,
+            });
+
+            expect(result).toEqual({
+                success: false,
+                error: 'Too many privacy update requests. Please slow down.',
+            });
+            expect(mockUpdateUserPrivacySettings).not.toHaveBeenCalled();
+        });
+
+        it('fallback to default rate limit error message when error is undefined', async () => {
+            mockVerifyAuthorizedUser.mockResolvedValueOnce({
+                user: dummyUser,
+                error: null,
+            });
+            mockVerifyRateLimit.mockResolvedValueOnce({
+                success: false,
+                limit: 30,
+                remaining: 0,
+                reset: Date.now() + 60000,
+                error: undefined,
+            });
+
+            const result = await updatePrivacySettingsAction('user-123', {
+                is_profile_public: true,
+            });
+
+            expect(result).toEqual({
+                success: false,
+                error: 'Too many privacy update requests. Please slow down.',
+            });
+            expect(mockUpdateUserPrivacySettings).not.toHaveBeenCalled();
         });
 
         it('returns error when updateUserPrivacySettings fails', async () => {
@@ -191,6 +257,50 @@ describe('PrivacySettingsAction', () => {
                 success: false,
                 error: 'Unauthorized',
             });
+        });
+
+        it('returns error when rate limit is exceeded', async () => {
+            mockVerifyAuthorizedUser.mockResolvedValueOnce({
+                user: dummyUser,
+                error: null,
+            });
+            mockVerifyRateLimit.mockResolvedValueOnce({
+                success: false,
+                limit: 30,
+                remaining: 0,
+                reset: Date.now() + 60000,
+                error: 'Too many token generation requests. Please slow down.',
+            });
+
+            const result = await regenerateWishlistShareTokenAction('user-123');
+
+            expect(result).toEqual({
+                success: false,
+                error: 'Too many token generation requests. Please slow down.',
+            });
+            expect(mockGenerateOrResetWishlistShareToken).not.toHaveBeenCalled();
+        });
+
+        it('fallback to default rate limit error message when error is undefined', async () => {
+            mockVerifyAuthorizedUser.mockResolvedValueOnce({
+                user: dummyUser,
+                error: null,
+            });
+            mockVerifyRateLimit.mockResolvedValueOnce({
+                success: false,
+                limit: 30,
+                remaining: 0,
+                reset: Date.now() + 60000,
+                error: undefined,
+            });
+
+            const result = await regenerateWishlistShareTokenAction('user-123');
+
+            expect(result).toEqual({
+                success: false,
+                error: 'Too many token generation requests. Please slow down.',
+            });
+            expect(mockGenerateOrResetWishlistShareToken).not.toHaveBeenCalled();
         });
 
         it('returns error when generateOrResetWishlistShareToken fails or returns no token', async () => {

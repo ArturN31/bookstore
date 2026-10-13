@@ -64,10 +64,8 @@ export async function UserReviewAction(
             limiter: limiters.userMutation,
             failClosed: true,
         });
-
-        if (!rateLimit.success) {
+        if (!rateLimit.success)
             return { message: rateLimit.error ?? 'Please wait before submitting another review.' };
-        }
 
         const rawUsername = typeof rawData.username === 'string' ? rawData.username : undefined;
         const username = await resolveUsername(supabase, user, rawUsername);

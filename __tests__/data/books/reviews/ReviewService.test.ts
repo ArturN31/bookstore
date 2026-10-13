@@ -6,6 +6,7 @@ import {
 import { createBackendClient } from '@/utils/db/server';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
+import { verifyRateLimit } from '@/utils/network/rateLimiter';
 
 jest.mock('@/utils/db/server', () => ({
     createBackendClient: jest.fn(),
@@ -30,6 +31,16 @@ jest.mock('@/data/books/reviews/ReviewServiceUtils', () => ({
     revalidateServiceCaches: jest.fn(),
 }));
 
+jest.mock('@/utils/network/getAppClientIp', () => ({
+    getAppClientIp: jest.fn().mockResolvedValue('203.0.113.1'),
+}));
+
+jest.mock('@/utils/network/rateLimiter', () => ({
+    buildRateLimitIdentifiers: jest.fn(() => ['ip:203.0.113.1', 'user:user-123']),
+    limiters: { search: {}, userMutation: {} },
+    verifyRateLimit: jest.fn(),
+}));
+
 describe('UserReviewsActions', () => {
     const mockCreateBackendClient = createBackendClient as jest.MockedFunction<
         typeof createBackendClient
@@ -46,6 +57,7 @@ describe('UserReviewsActions', () => {
     const mockRevalidateServiceCaches = revalidateServiceCaches as jest.MockedFunction<
         typeof revalidateServiceCaches
     >;
+    const mockVerifyRateLimit = verifyRateLimit as jest.MockedFunction<typeof verifyRateLimit>;
 
     let mockSupabase: {
         auth: {
@@ -120,6 +132,12 @@ describe('UserReviewsActions', () => {
             mockSupabase as unknown as Awaited<ReturnType<typeof createBackendClient>>,
         );
         mockVerifyReviewForDeletion.mockResolvedValue({ isValid: true, bookId: 'book-1' });
+        mockVerifyRateLimit.mockResolvedValue({
+            success: true,
+            limit: 30,
+            remaining: 29,
+            reset: Date.now() + 60000,
+        });
     });
 
     afterEach(() => {
@@ -174,6 +192,46 @@ describe('UserReviewsActions', () => {
                 hasMore: false,
                 error: 'Session expired',
             });
+        });
+
+        it('should return error when rate limit is exceeded', async () => {
+            mockVerifyRateLimit.mockResolvedValueOnce({
+                success: false,
+                limit: 30,
+                remaining: 0,
+                reset: Date.now() + 60000,
+                error: 'Too many requests. Please try again later.',
+            });
+
+            const result = await fetchUserReviewsAction(1);
+
+            expect(result).toEqual({
+                reviews: [],
+                booksMap: {},
+                hasMore: false,
+                error: 'Too many requests. Please try again later.',
+            });
+            expect(mockRange).not.toHaveBeenCalled();
+        });
+
+        it('should fallback to default rate limit error message when error is undefined', async () => {
+            mockVerifyRateLimit.mockResolvedValueOnce({
+                success: false,
+                limit: 30,
+                remaining: 0,
+                reset: Date.now() + 60000,
+                error: undefined,
+            });
+
+            const result = await fetchUserReviewsAction(1);
+
+            expect(result).toEqual({
+                reviews: [],
+                booksMap: {},
+                hasMore: false,
+                error: 'Too many requests. Please try again later.',
+            });
+            expect(mockRange).not.toHaveBeenCalled();
         });
 
         it('should handle database query error during fetch', async () => {
@@ -376,6 +434,42 @@ describe('UserReviewsActions', () => {
                 }),
             );
             expect(result).toEqual({ success: false, message: 'Session expired' });
+        });
+
+        it('should return error when rate limit is exceeded', async () => {
+            mockVerifyRateLimit.mockResolvedValueOnce({
+                success: false,
+                limit: 30,
+                remaining: 0,
+                reset: Date.now() + 60000,
+                error: 'Please wait before deleting another review.',
+            });
+
+            const result = await deleteReviewAction('rev-1');
+
+            expect(result).toEqual({
+                success: false,
+                message: 'Please wait before deleting another review.',
+            });
+            expect(mockVerifyReviewForDeletion).not.toHaveBeenCalled();
+        });
+
+        it('should fallback to default rate limit message when error is undefined', async () => {
+            mockVerifyRateLimit.mockResolvedValueOnce({
+                success: false,
+                limit: 30,
+                remaining: 0,
+                reset: Date.now() + 60000,
+                error: undefined,
+            });
+
+            const result = await deleteReviewAction('rev-1');
+
+            expect(result).toEqual({
+                success: false,
+                message: 'Please wait before deleting another review.',
+            });
+            expect(mockVerifyReviewForDeletion).not.toHaveBeenCalled();
         });
 
         it('should return success false when review verification fails', async () => {

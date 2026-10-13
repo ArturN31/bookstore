@@ -5,6 +5,7 @@ import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
+import { verifyRateLimit } from '@/utils/network/rateLimiter';
 
 jest.mock('@/utils/db/server');
 jest.mock('@/data/user/UserService');
@@ -12,6 +13,14 @@ jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }));
 jest.mock('next/navigation', () => ({ redirect: jest.fn() }));
 jest.mock('next/headers', () => ({
     headers: jest.fn().mockReturnValue(new Headers({ 'user-agent': 'jest-test-agent' })),
+}));
+jest.mock('@/utils/network/getAppClientIp', () => ({
+    getAppClientIp: jest.fn().mockResolvedValue('203.0.113.1'),
+}));
+jest.mock('@/utils/network/rateLimiter', () => ({
+    buildRateLimitIdentifiers: jest.fn(() => ['ip:203.0.113.1', 'email:test@example.com']),
+    limiters: { auth: {} },
+    verifyRateLimit: jest.fn(),
 }));
 
 type MockSupabaseClient = {
@@ -28,6 +37,7 @@ interface SignInActionResult {
 
 describe('APP - Auth - SignInAction', () => {
     let mockSupabase: MockSupabaseClient;
+    const mockedVerifyRateLimit = verifyRateLimit as jest.Mock;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -48,6 +58,12 @@ describe('APP - Auth - SignInAction', () => {
         jest.mocked(createBackendClient).mockResolvedValue(
             mockSupabase as unknown as Awaited<ReturnType<typeof createBackendClient>>,
         );
+        mockedVerifyRateLimit.mockResolvedValue({
+            success: true,
+            limit: 5,
+            remaining: 4,
+            reset: Date.now() + 60000,
+        });
     });
 
     afterEach(() => {
@@ -76,6 +92,46 @@ describe('APP - Auth - SignInAction', () => {
 
         expect(result.validationErrors).toBeDefined();
         expect(result.message).toBe('Please correct the highlighted errors.');
+    });
+
+    it('should return error message when rate limit is exceeded', async () => {
+        mockedVerifyRateLimit.mockResolvedValueOnce({
+            success: false,
+            limit: 5,
+            remaining: 0,
+            reset: Date.now() + 60000,
+            error: 'Too many login attempts. Please try again in 15 minutes.',
+        });
+
+        const formData = new FormData();
+        formData.append('email', 'test@example.com');
+        formData.append('password', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
+
+        const result = (await SignInAction(undefined, formData)) as SignInActionResult;
+
+        expect(result.message).toBe('Too many login attempts. Please try again in 15 minutes.');
+        expect(mockSupabase.auth.signInWithPassword).not.toHaveBeenCalled();
+    });
+
+    it('should fallback to default rate limit error message when error is undefined', async () => {
+        mockedVerifyRateLimit.mockResolvedValueOnce({
+            success: false,
+            limit: 5,
+            remaining: 0,
+            reset: Date.now() + 60000,
+            error: undefined,
+        });
+
+        const formData = new FormData();
+        formData.append('email', 'test@example.com');
+        formData.append('password', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
+
+        const result = (await SignInAction(undefined, formData)) as SignInActionResult;
+
+        expect(result.message).toBe('Too many login attempts. Please try again in 15 minutes.');
+        expect(mockSupabase.auth.signInWithPassword).not.toHaveBeenCalled();
     });
 
     it('should return null for email and password if they are missing from formData', async () => {

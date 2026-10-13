@@ -133,7 +133,6 @@ export async function deleteReviewAction(
         limiter: limiters.userMutation,
         failClosed: true,
     });
-
     if (!rateLimit.success)
         return {
             success: false,
