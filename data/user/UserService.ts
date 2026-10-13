@@ -9,6 +9,8 @@ import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { ActionResponse, getAuthenticatedUserId } from './UserServiceUtils';
+import { buildRateLimitIdentifiers, limiters, verifyRateLimit } from '@/utils/network/rateLimiter';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
 
 type UserRow = Database['public']['Tables']['users']['Row'];
 type WishlistRow = Database['public']['Tables']['wishlist']['Row'];
@@ -23,6 +25,17 @@ export const getUserData = async (): Promise<ActionResponse<UserRow & { email: s
         if (authCheck.error || !authCheck.data) return { data: null, error: authCheck.error };
 
         const userID = authCheck.data;
+
+        const rateLimit = await verifyRateLimit({
+            identifiers: buildRateLimitIdentifiers(await getAppClientIp(), userID),
+            limiter: limiters.search,
+            failClosed: true,
+        });
+        if (!rateLimit.success)
+            return {
+                data: null,
+                error: rateLimit.error ?? 'Too many requests. Please try again later.',
+            };
 
         const authResult = await Repo.fetchUserAuthData(supabase);
         const email = authResult.data?.user?.email ?? '';
@@ -75,6 +88,17 @@ export const getUserWishlist = async (): Promise<ActionResponse<WishlistRow[]>> 
         if (authCheck.error || !authCheck.data) return { data: null, error: authCheck.error };
 
         const userID = authCheck.data;
+
+        const rateLimit = await verifyRateLimit({
+            identifiers: buildRateLimitIdentifiers(await getAppClientIp(), userID),
+            limiter: limiters.search,
+            failClosed: true,
+        });
+        if (!rateLimit.success)
+            return {
+                data: null,
+                error: rateLimit.error ?? 'Too many requests. Please try again later.',
+            };
 
         const wishlistResult = await withRetry<{
             data: WishlistRow[] | null;

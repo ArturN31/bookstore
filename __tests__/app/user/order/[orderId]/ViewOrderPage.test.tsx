@@ -126,6 +126,25 @@ describe('ViewOrderPage', () => {
         expect(storefrontButton).toHaveAttribute('href', '/');
     });
 
+    it('renders a retry-later state when order access is rate limited', async () => {
+        mockVerifyOrderOwnershipAndFetch.mockResolvedValueOnce({
+            status: 'RATE_LIMITED',
+            order: null,
+            message: 'Too many order requests. Please try again later.',
+        });
+
+        const pageComponent = await ViewOrderPage({
+            params: Promise.resolve({ orderId: 'order-123' }),
+        });
+
+        render(pageComponent);
+
+        expect(screen.getByText('Please Try Again Later')).toBeInTheDocument();
+        expect(
+            screen.getByText('Too many order requests. Please try again later.'),
+        ).toBeInTheDocument();
+    });
+
     it('renders OrderDetails component when status is SUCCESS', async () => {
         mockVerifyOrderOwnershipAndFetch.mockResolvedValueOnce({
             status: 'SUCCESS',

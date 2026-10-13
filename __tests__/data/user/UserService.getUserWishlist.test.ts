@@ -4,6 +4,7 @@ import { fetchWishlistByUserId, fetchUserAuthData } from '@/data/user/UserReposi
 import { UserServiceLogPrefix } from '@/data/user/UserConstants';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { withRetry } from '@/utils/network/retry';
+import { verifyRateLimit } from '@/utils/network/rateLimiter';
 import { OTHER_UUID, mockGetUser, setupUserServiceTestDefaults } from './UserServiceTestHelpers';
 
 jest.mock('@/utils/db/server');
@@ -13,6 +14,14 @@ jest.mock('@/utils/network/retry', () => ({
 }));
 jest.mock('@/utils/db/safeSupabaseQuery', () => ({
     safeSupabaseQuery: jest.fn(<T>(fn: () => Promise<T>) => fn()),
+}));
+jest.mock('@/utils/network/getAppClientIp', () => ({
+    getAppClientIp: jest.fn().mockResolvedValue('203.0.113.1'),
+}));
+jest.mock('@/utils/network/rateLimiter', () => ({
+    buildRateLimitIdentifiers: jest.fn(() => ['ip:203.0.113.1', 'user:valid-uuid']),
+    limiters: { search: {} },
+    verifyRateLimit: jest.fn(),
 }));
 jest.mock('@/utils/errors/SupabaseErrorHandler', () => ({
     sanitizeSupabaseError: jest.fn((err: unknown): string => {
@@ -68,6 +77,12 @@ describe('UserService - getUserWishlist', () => {
     beforeEach(() => {
         setupUserServiceTestDefaults();
         (withRetry as jest.Mock).mockImplementation(<T>(fn: () => Promise<T>) => fn());
+        (verifyRateLimit as jest.Mock).mockResolvedValue({
+            success: true,
+            limit: 60,
+            remaining: 59,
+            reset: Date.now() + 60000,
+        });
     });
 
     afterEach(() => {
@@ -108,6 +123,38 @@ describe('UserService - getUserWishlist', () => {
 
         expect(result.data).toBeNull();
         expect(result.error).toBe(APP_ERROR_MESSAGES.ERROR_AUTH_FAILED);
+    });
+
+    it('should return error when rate limit is exceeded', async () => {
+        (verifyRateLimit as jest.Mock).mockResolvedValueOnce({
+            success: false,
+            limit: 60,
+            remaining: 0,
+            reset: Date.now() + 60000,
+            error: 'Too many requests. Please try again later.',
+        });
+
+        const result = await getUserWishlist();
+
+        expect(result.data).toBeNull();
+        expect(result.error).toBe('Too many requests. Please try again later.');
+        expect(fetchWishlistByUserId).not.toHaveBeenCalled();
+    });
+
+    it('should fallback to default error message when rate limit error is undefined', async () => {
+        (verifyRateLimit as jest.Mock).mockResolvedValueOnce({
+            success: false,
+            limit: 60,
+            remaining: 0,
+            reset: Date.now() + 60000,
+            error: undefined,
+        });
+
+        const result = await getUserWishlist();
+
+        expect(result.data).toBeNull();
+        expect(result.error).toBe('Too many requests. Please try again later.');
+        expect(fetchWishlistByUserId).not.toHaveBeenCalled();
     });
 
     it('should return sanitized error when wishlist fetch returns error via exception', async () => {

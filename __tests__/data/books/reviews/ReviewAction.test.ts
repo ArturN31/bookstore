@@ -10,6 +10,7 @@ import {
     verifyReviewOwnership,
     revalidateReviewCaches,
 } from '@/data/books/reviews/ReviewActionUtils';
+import { verifyRateLimit } from '@/utils/network/rateLimiter';
 
 jest.mock('@/providers/advancedFiltering/BookAdvancedFilteringProvider', () => ({
     BookAdvancedFilteringProvider: ({ children }: { children: React.ReactNode }) => children,
@@ -42,6 +43,16 @@ jest.mock('@/data/books/reviews/ReviewActionUtils', () => ({
     isDuplicateReviewError: jest.fn(),
     verifyReviewOwnership: jest.fn(),
     revalidateReviewCaches: jest.fn(),
+}));
+
+jest.mock('@/utils/network/getAppClientIp', () => ({
+    getAppClientIp: jest.fn().mockResolvedValue('203.0.113.1'),
+}));
+
+jest.mock('@/utils/network/rateLimiter', () => ({
+    buildRateLimitIdentifiers: jest.fn(() => ['ip:203.0.113.1', 'user:user-123']),
+    limiters: { userMutation: {} },
+    verifyRateLimit: jest.fn(),
 }));
 
 jest.mock('@/utils/errors/SupabaseErrorHandler', () => ({
@@ -77,6 +88,7 @@ describe('UserReviewAction', () => {
     const mockRevalidateReviewCaches = revalidateReviewCaches as jest.Mock;
     const mockRevalidatePath = revalidatePath as jest.Mock;
     const mockRevalidateTag = revalidateTag as jest.Mock;
+    const mockVerifyRateLimit = verifyRateLimit as jest.Mock;
 
     let mockSupabase: {
         auth: { getUser: jest.Mock };
@@ -136,6 +148,12 @@ describe('UserReviewAction', () => {
         mockResolveUsername.mockResolvedValue('dbuser');
         mockIsDuplicateReviewError.mockReturnValue(false);
         mockVerifyReviewOwnership.mockResolvedValue(true);
+        mockVerifyRateLimit.mockResolvedValue({
+            success: true,
+            limit: 30,
+            remaining: 29,
+            reset: Date.now() + 60000,
+        });
     });
 
     afterEach(() => {
@@ -212,6 +230,44 @@ describe('UserReviewAction', () => {
             }),
         );
         expect(result.message).toBeDefined();
+    });
+
+    it('should return error when rate limit is exceeded', async () => {
+        mockVerifyRateLimit.mockResolvedValueOnce({
+            success: false,
+            limit: 30,
+            remaining: 0,
+            reset: Date.now() + 60000,
+            error: 'Please wait before submitting another review.',
+        });
+
+        const formData = new FormData();
+        formData.append('bookId', 'book-123');
+        formData.append('rating', '5');
+        formData.append('review', 'Great book!');
+
+        const result = await UserReviewAction(undefined, formData);
+        expect(result.message).toBe('Please wait before submitting another review.');
+        expect(mockResolveUsername).not.toHaveBeenCalled();
+    });
+
+    it('should fallback to default rate limit message when error is undefined', async () => {
+        mockVerifyRateLimit.mockResolvedValueOnce({
+            success: false,
+            limit: 30,
+            remaining: 0,
+            reset: Date.now() + 60000,
+            error: undefined,
+        });
+
+        const formData = new FormData();
+        formData.append('bookId', 'book-123');
+        formData.append('rating', '5');
+        formData.append('review', 'Great book!');
+
+        const result = await UserReviewAction(undefined, formData);
+        expect(result.message).toBe('Please wait before submitting another review.');
+        expect(mockResolveUsername).not.toHaveBeenCalled();
     });
 
     it('should successfully insert a new review', async () => {

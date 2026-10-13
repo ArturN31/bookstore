@@ -11,11 +11,36 @@ process.env.NEXT_PUBLIC_SUPABASE_DB_URL =
 process.env.NEXT_PUBLIC_SUPABASE_PUBLIC_KEY =
     process.env.NEXT_PUBLIC_SUPABASE_PUBLIC_KEY || 'mock-key';
 process.env.SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY || 'mock-secret';
+process.env.UPSTASH_REDIS_REST_URL =
+    process.env.UPSTASH_REDIS_REST_URL || 'https://mock.upstash.io';
+process.env.UPSTASH_REDIS_REST_TOKEN =
+    process.env.UPSTASH_REDIS_REST_TOKEN || 'mock-upstash-token';
 
 process.env.STRIPE_SECRET_KEY =
     process.env.STRIPE_SECRET_KEY || 'sk_test_mock_key_for_jest_testing';
 process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY =
     process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_mock_key_for_jest_testing';
+
+jest.mock('@upstash/redis', () => ({
+    Redis: jest.fn().mockImplementation((options: unknown) => ({ options })),
+}));
+
+jest.mock('@upstash/ratelimit', () => {
+    const Ratelimit = Object.assign(
+        jest.fn().mockImplementation(() => ({
+            limit: jest.fn().mockResolvedValue({
+                success: true,
+                limit: 100,
+                remaining: 99,
+                reset: Date.now() + 60000,
+            }),
+        })),
+        {
+            slidingWindow: jest.fn((requests: number, window: string) => ({ requests, window })),
+        },
+    );
+    return { Ratelimit };
+});
 
 // 2. Global Framework Noise & Expected Test Error Suppressor
 const originalConsoleError = console.error;
@@ -88,6 +113,9 @@ jest.mock('next/navigation', () => ({
     useSearchParams: () => new URLSearchParams(),
     useParams: () => ({}),
     useServerInsertedHTML: jest.fn((callback: () => unknown) => callback?.()),
+}));
+jest.mock('next/headers', () => ({
+    headers: jest.fn().mockResolvedValue(new Headers()),
 }));
 
 // 6. JSDOM Polyfills (Guarded)

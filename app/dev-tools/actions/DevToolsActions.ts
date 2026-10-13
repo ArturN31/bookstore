@@ -5,6 +5,8 @@ import { runFullDatabaseSeed } from '@/utils/db/dbSeed/seedDatabase';
 import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import * as service from './DevToolsService';
+import { verifyRateLimit, limiters } from '@/utils/network/rateLimiter';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
 
 const COMMAND_REGISTRY: Record<string, service.CommandHandler> = {
     add_sales: service.addSales,
@@ -16,6 +18,34 @@ const COMMAND_REGISTRY: Record<string, service.CommandHandler> = {
     add_books: service.addBooks,
 };
 
+async function checkDevToolsRateLimit(): Promise<service.CommandResponse | null> {
+    const clientIp = await getAppClientIp();
+    let identifiers: [string, ...string[]] = [`ip:${clientIp}`];
+
+    try {
+        const supabase = await createBackendClient();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+        if (user?.id) identifiers = [`ip:${clientIp}`, `user:${user.id}`];
+    } catch {
+        // Fall back to clientIp if session verification fails
+    }
+
+    const rateLimit = await verifyRateLimit({
+        identifiers,
+        limiter: limiters.privileged,
+        failClosed: true,
+    });
+
+    if (!rateLimit.success)
+        return {
+            message: rateLimit.error ?? 'Unauthorized: Dev tools execution rate limit exceeded.',
+            success: false,
+        };
+    return null;
+}
+
 /**
  * CORE COMMAND SYSTEM
  */
@@ -25,6 +55,9 @@ export async function systemCommandAction(
 ): Promise<service.CommandResponse> {
     if (process.env.NODE_ENV === 'production' || process.env.FORCE_PRODUCTION === 'true')
         return { message: 'Unauthorized: Command rejected in production.', success: false };
+
+    const rateLimitError = await checkDevToolsRateLimit();
+    if (rateLimitError) return rateLimitError;
 
     const command = formData.get('command') as string;
     const handler = COMMAND_REGISTRY[command];
@@ -53,6 +86,10 @@ export async function fullResetAction(
 ): Promise<service.CommandResponse> {
     if (process.env.NODE_ENV === 'production' || process.env.FORCE_PRODUCTION === 'true')
         return { message: 'Unauthorized', success: false };
+
+    const rateLimitError = await checkDevToolsRateLimit();
+    if (rateLimitError) return rateLimitError;
+
     try {
         await runFullDatabaseSeed();
         revalidatePath('/');
@@ -66,6 +103,22 @@ export async function fullResetAction(
  * AUTH TOOLS
  */
 export async function impulseLogin(email: string): Promise<{ success: boolean }> {
+    if (process.env.NODE_ENV === 'production' || process.env.FORCE_PRODUCTION === 'true')
+        throw new Error('Unauthorized: Dev tools are unavailable in production.');
+
+    const clientIp = await getAppClientIp();
+
+    const rateLimit = await verifyRateLimit({
+        identifiers: [`ip:${clientIp}`, `email:${email.trim().toLowerCase()}`],
+        limiter: limiters.privileged,
+        failClosed: true,
+    });
+
+    if (!rateLimit.success)
+        throw new Error(
+            rateLimit.error ?? 'Unauthorized: Dev tools impulse login rate limit exceeded.',
+        );
+
     const adminClient = await createAdminClient();
     const supabase = await createBackendClient();
 
@@ -80,7 +133,6 @@ export async function impulseLogin(email: string): Promise<{ success: boolean }>
     const { error: updateError } = await adminClient.auth.admin.updateUserById(userId, {
         password: 'DevTempPassword123!',
     });
-
     if (updateError) throw new Error('ADMIN_UPDATE_FAILED: ' + updateError.message);
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -89,6 +141,5 @@ export async function impulseLogin(email: string): Promise<{ success: boolean }>
     });
 
     if (signInError) throw new Error('SIGN_IN_FAILED: ' + signInError.message);
-
     return { success: true };
 }

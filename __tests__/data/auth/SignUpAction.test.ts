@@ -3,13 +3,24 @@ import { SignUpAction } from '@/data/auth/SignUpAction';
 import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { verifyRateLimit } from '@/utils/network/rateLimiter';
 
 jest.mock('@/utils/db/server');
 jest.mock('@/data/auth/AuthRepository');
 jest.mock('next/cache', () => ({ revalidatePath: jest.fn() }));
 jest.mock('next/navigation', () => ({ redirect: jest.fn() }));
+jest.mock('@/utils/network/getAppClientIp', () => ({
+    getAppClientIp: jest.fn().mockResolvedValue('203.0.113.1'),
+}));
+jest.mock('@/utils/network/rateLimiter', () => ({
+    buildRateLimitIdentifiers: jest.fn(() => ['ip:203.0.113.1', 'email:test@example.com']),
+    limiters: { auth: {} },
+    verifyRateLimit: jest.fn(),
+}));
 
 describe('APP - Auth - SignUpAction', () => {
+    const mockedVerifyRateLimit = verifyRateLimit as jest.Mock;
+
     beforeAll(() => {
         jest.spyOn(console, 'warn').mockImplementation(() => {});
         jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -24,6 +35,12 @@ describe('APP - Auth - SignUpAction', () => {
         jest.mocked(createBackendClient).mockResolvedValue(
             {} as unknown as Awaited<ReturnType<typeof createBackendClient>>,
         );
+        mockedVerifyRateLimit.mockResolvedValue({
+            success: true,
+            limit: 5,
+            remaining: 4,
+            reset: Date.now() + 60000,
+        });
     });
 
     it('should return reset state when rawData.reset is present', async () => {
@@ -47,6 +64,52 @@ describe('APP - Auth - SignUpAction', () => {
 
         expect(result.validationErrors).toBeDefined();
         expect(result.message).toBe('Please resolve the validation errors.');
+    });
+
+    it('should return error message when rate limit is exceeded', async () => {
+        mockedVerifyRateLimit.mockResolvedValueOnce({
+            success: false,
+            limit: 5,
+            remaining: 0,
+            reset: Date.now() + 60000,
+            error: 'Too many account registration attempts. Please try again later.',
+        });
+
+        const formData = new FormData();
+        formData.append('email', 'test@example.com');
+        formData.append('password', 'Password123!');
+        formData.append('cnfPassword', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
+
+        const result = await SignUpAction(undefined, formData);
+
+        expect(result.message).toBe(
+            'Too many account registration attempts. Please try again later.',
+        );
+        expect(registerUser).not.toHaveBeenCalled();
+    });
+
+    it('should fallback to default rate limit error message when error is undefined', async () => {
+        mockedVerifyRateLimit.mockResolvedValueOnce({
+            success: false,
+            limit: 5,
+            remaining: 0,
+            reset: Date.now() + 60000,
+            error: undefined,
+        });
+
+        const formData = new FormData();
+        formData.append('email', 'test@example.com');
+        formData.append('password', 'Password123!');
+        formData.append('cnfPassword', 'Password123!');
+        formData.append('captchaToken', 'mocked-test-token');
+
+        const result = await SignUpAction(undefined, formData);
+
+        expect(result.message).toBe(
+            'Too many account registration attempts. Please try again later.',
+        );
+        expect(registerUser).not.toHaveBeenCalled();
     });
 
     it('should return security token error message if captchaToken is missing', async () => {

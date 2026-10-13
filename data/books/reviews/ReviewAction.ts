@@ -14,6 +14,8 @@ import {
 } from './ReviewActionUtils';
 import { mapToReviewPayload } from './ReviewMapper';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
+import { buildRateLimitIdentifiers, verifyRateLimit, limiters } from '@/utils/network/rateLimiter';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
 
 export async function UserReviewAction(
     prevState: ReviewFormState | undefined,
@@ -56,6 +58,14 @@ export async function UserReviewAction(
             });
             return { message: APP_ERROR_MESSAGES.SESSION_EXPIRED };
         }
+
+        const rateLimit = await verifyRateLimit({
+            identifiers: buildRateLimitIdentifiers(await getAppClientIp(), user.id),
+            limiter: limiters.userMutation,
+            failClosed: true,
+        });
+        if (!rateLimit.success)
+            return { message: rateLimit.error ?? 'Please wait before submitting another review.' };
 
         const rawUsername = typeof rawData.username === 'string' ? rawData.username : undefined;
         const username = await resolveUsername(supabase, user, rawUsername);

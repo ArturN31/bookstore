@@ -6,6 +6,7 @@ import { stripe } from '@/data/checkout/CheckoutStripeServer';
 export async function POST(req: Request): Promise<Response> {
     const body = await req.text();
     const signature = req.headers.get('stripe-signature');
+
     if (!signature || !process.env.STRIPE_WEBHOOK_SECRET)
         return NextResponse.json(
             { error: 'Webhook signature or secret missing.' },
@@ -46,9 +47,7 @@ export async function POST(req: Request): Promise<Response> {
                 .eq('user_id', order.user_id)
                 .single();
 
-            if (cart) {
-                await supabase.from('shopping_cart_items').delete().eq('cart_id', cart.id);
-            }
+            if (cart) await supabase.from('shopping_cart_items').delete().eq('cart_id', cart.id);
 
             break;
         }
@@ -86,7 +85,7 @@ export async function POST(req: Request): Promise<Response> {
                                 .eq('id', item.book_id)
                                 .single();
 
-                            if (book)
+                            if (book) {
                                 await supabase
                                     .from('books')
                                     .update({
@@ -97,6 +96,7 @@ export async function POST(req: Request): Promise<Response> {
                                         ),
                                     })
                                     .eq('id', item.book_id);
+                            }
                         }
                     }
                 }

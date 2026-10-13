@@ -13,6 +13,7 @@ import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 import { withRetry } from '@/utils/network/retry';
 import { SafeQueryResult, safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { revalidateTag } from 'next/cache';
+import { verifyRateLimit } from '@/utils/network/rateLimiter';
 
 jest.mock('next/cache', () => ({
     revalidateTag: jest.fn(),
@@ -25,6 +26,14 @@ jest.mock('@/utils/security/securityAuditLogger', () => ({
 }));
 jest.mock('@/utils/network/retry', () => ({
     withRetry: jest.fn(<T>(fn: () => Promise<T>) => fn()),
+}));
+jest.mock('@/utils/network/getAppClientIp', () => ({
+    getAppClientIp: jest.fn().mockResolvedValue('203.0.113.1'),
+}));
+jest.mock('@/utils/network/rateLimiter', () => ({
+    buildRateLimitIdentifiers: jest.fn(() => ['ip:203.0.113.1', 'user:valid-uuid']),
+    limiters: { userMutation: {}, search: {} },
+    verifyRateLimit: jest.fn(),
 }));
 jest.mock('@/utils/db/safeSupabaseQuery', () => ({
     safeSupabaseQuery: jest.fn(
@@ -98,6 +107,12 @@ describe('CartServiceUtils', () => {
             data: { user: { id: validUUID } },
             error: null,
         } as unknown as Awaited<ReturnType<typeof mockSupabase.auth.getUser>>);
+        (verifyRateLimit as jest.Mock).mockResolvedValue({
+            success: true,
+            limit: 30,
+            remaining: 29,
+            reset: Date.now() + 60000,
+        });
     });
 
     describe('isValidUUID', () => {
@@ -210,6 +225,44 @@ describe('CartServiceUtils', () => {
             expect(result).toEqual({
                 data: null,
                 error: APP_ERROR_MESSAGES.UNAUTHENTICATED_USER,
+            });
+            expect(actionFn).not.toHaveBeenCalled();
+        });
+
+        it('should return error when rate limit is exceeded', async () => {
+            (verifyRateLimit as jest.Mock).mockResolvedValueOnce({
+                success: false,
+                limit: 30,
+                remaining: 0,
+                reset: Date.now() + 60000,
+                error: 'Too many cart requests. Please try again later.',
+            });
+
+            const actionFn = jest.fn();
+            const result = await executeCartAction('addItemToUsersCart', validUUID, actionFn);
+
+            expect(result).toEqual({
+                data: null,
+                error: 'Too many cart requests. Please try again later.',
+            });
+            expect(actionFn).not.toHaveBeenCalled();
+        });
+
+        it('should fallback to default rate limit error message when error is undefined', async () => {
+            (verifyRateLimit as jest.Mock).mockResolvedValueOnce({
+                success: false,
+                limit: 30,
+                remaining: 0,
+                reset: Date.now() + 60000,
+                error: undefined,
+            });
+
+            const actionFn = jest.fn();
+            const result = await executeCartAction('fetchCart', validUUID, actionFn);
+
+            expect(result).toEqual({
+                data: null,
+                error: 'Too many cart requests. Please try again later.',
             });
             expect(actionFn).not.toHaveBeenCalled();
         });

@@ -8,6 +8,8 @@ import { executeWishlistOperation } from './WishlistService';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
+import { buildRateLimitIdentifiers, verifyRateLimit, limiters } from '@/utils/network/rateLimiter';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
 
 export type WishlistFormState = {
     success: boolean;
@@ -48,6 +50,18 @@ export async function WishlistAction(
                     sanitizeSupabaseError(authError) || APP_ERROR_MESSAGES.WISHLIST_LOGIN_REQUIRED,
             };
         }
+
+        const rateLimit = await verifyRateLimit({
+            identifiers: buildRateLimitIdentifiers(await getAppClientIp(), user.id),
+            limiter: limiters.userMutation,
+            failClosed: true,
+        });
+
+        if (!rateLimit.success)
+            return {
+                success: false,
+                message: rateLimit.error ?? 'Wishlist update rate limit reached.',
+            };
 
         const result = await executeWishlistOperation(actionType, user.id, bookId);
         if (result.error)

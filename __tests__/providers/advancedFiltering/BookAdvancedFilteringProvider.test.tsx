@@ -24,15 +24,18 @@ jest.mock('@/data/advancedFiltering/FilteringConstants', () => {
             PUBLICATIONS: ['2020', '2021'],
             PUBLISHERS: [],
         },
-        getFilteringConstants: jest.fn(),
     };
 });
+
+jest.mock('@/data/advancedFiltering/FilteringConstantsAction', () => ({
+    getFilteringConstants: jest.fn(),
+}));
 
 import {
     DEFAULT_FILTERING_CONSTANTS,
     FilteringTypes,
-    getFilteringConstants,
 } from '@/data/advancedFiltering/FilteringConstants';
+import { getFilteringConstants } from '@/data/advancedFiltering/FilteringConstantsAction';
 
 import {
     BookAdvancedFilteringProvider,

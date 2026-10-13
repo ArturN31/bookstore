@@ -1,6 +1,7 @@
 'use server';
 
-import { checkRateLimit } from '@/utils/network/rateLimiter';
+import { verifyRateLimit, limiters } from '@/utils/network/rateLimiter';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { getCurrentUserCheckoutData } from './services/CheckoutUserService';
@@ -21,16 +22,6 @@ export const validateAndApplyDiscountAction = async (
     currentSubtotal: number,
 ): Promise<ActionResult<AppliedDiscountState>> => {
     try {
-        const userResult = await getCurrentUserCheckoutData();
-        const limitKey = userResult.data?.id ?? 'anonymous-discount';
-
-        const rateLimit = checkRateLimit(`discount:${limitKey}`, 5, 60000);
-        if (!rateLimit.success)
-            return {
-                success: false,
-                error: 'Too many discount code attempts. Please wait a minute before trying again.',
-            };
-
         const parseResult = applyDiscountSchema.safeParse({ code, subtotal: currentSubtotal });
         if (!parseResult.success)
             return {
@@ -38,6 +29,18 @@ export const validateAndApplyDiscountAction = async (
                 error:
                     parseResult.error.issues[0]?.message ??
                     APP_ERROR_MESSAGES.INVALID_DISCOUNT_CODE,
+            };
+
+        const clientIp = await getAppClientIp();
+        const rateLimit = await verifyRateLimit({
+            identifier: `ip:${clientIp}`,
+            limiter: limiters.discount,
+            failClosed: true,
+        });
+        if (!rateLimit.success)
+            return {
+                success: false,
+                error: rateLimit.error ?? 'Too many discount verification attempts.',
             };
 
         const discountResult = await validateAndCalculateDiscount(
@@ -80,6 +83,20 @@ export const processCheckoutAction = async (
                 error: 'Stripe configuration is missing on the server.',
             };
 
+        const clientIp = await getAppClientIp();
+        const ipRateLimit = await verifyRateLimit({
+            identifier: `ip:${clientIp}`,
+            limiter: limiters.checkout,
+            failClosed: true,
+        });
+        if (!ipRateLimit.success)
+            return {
+                success: false,
+                error:
+                    ipRateLimit.error ??
+                    'Too many checkout attempts. Please wait a moment.',
+            };
+
         const userResult = await getCurrentUserCheckoutData();
 
         if (userResult.error || !userResult.data?.id)
@@ -92,11 +109,18 @@ export const processCheckoutAction = async (
         const customerEmail = userResult.data.email;
         const stripeCustomerId = userResult.data.stripeCustomerId;
 
-        const rateLimit = checkRateLimit(`checkout:${userId}`, 3, 300000);
-        if (!rateLimit.success)
+        const userRateLimit = await verifyRateLimit({
+            identifier: `user:${userId}`,
+            limiter: limiters.checkout,
+            failClosed: true,
+        });
+
+        if (!userRateLimit.success)
             return {
                 success: false,
-                error: 'Too many checkout attempts. Please wait a few minutes before trying again.',
+                error:
+                    userRateLimit.error ??
+                    'Too many checkout attempts. Please wait a moment.',
             };
 
         const formParse = checkoutFormSchema.safeParse(payload.shippingDetails);

@@ -7,6 +7,8 @@ import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import * as Repo from './CartRepository';
 import { UUID_REGEX } from './CartConstants';
 import { revalidateTag } from 'next/cache';
+import { buildRateLimitIdentifiers, limiters, verifyRateLimit } from '@/utils/network/rateLimiter';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
 
 type BackendClient = Awaited<ReturnType<typeof createBackendClient>>;
 
@@ -66,6 +68,23 @@ export async function executeCartAction<T>(
 
     if (!requireUserMatch && !authenticatedId)
         return { data: null, error: APP_ERROR_MESSAGES.UNAUTHENTICATED_USER };
+
+    const isMutation =
+        operation === 'createUsersCart' ||
+        operation === 'addItemToUsersCart' ||
+        operation === 'updateItemInUsersCart' ||
+        operation === 'removeItemFromUsersCart' ||
+        operation === 'clearUsersCart';
+    const rateLimit = await verifyRateLimit({
+        identifiers: buildRateLimitIdentifiers(await getAppClientIp(), authenticatedId),
+        limiter: isMutation ? limiters.userMutation : limiters.search,
+        failClosed: true,
+    });
+    if (!rateLimit.success)
+        return {
+            data: null,
+            error: rateLimit.error ?? 'Too many cart requests. Please try again later.',
+        };
 
     try {
         return await withRetry(async () => {

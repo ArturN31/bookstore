@@ -4,6 +4,7 @@ import { wishlistSchema } from '@/data/schemas/wishlistSchema';
 import { revalidatePath } from 'next/cache';
 import { executeWishlistOperation } from '@/data/user/wishlist/WishlistService';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
+import { verifyRateLimit } from '@/utils/network/rateLimiter';
 
 jest.mock('@/data/user/UserService');
 jest.mock('@/data/schemas/wishlistSchema');
@@ -26,11 +27,20 @@ jest.mock('@/utils/errors/SupabaseErrorHandler', () => {
 jest.mock('next/cache', () => ({
     revalidatePath: jest.fn(),
 }));
+jest.mock('@/utils/network/getAppClientIp', () => ({
+    getAppClientIp: jest.fn().mockResolvedValue('203.0.113.1'),
+}));
+jest.mock('@/utils/network/rateLimiter', () => ({
+    buildRateLimitIdentifiers: jest.fn(() => ['ip:203.0.113.1', 'user:user-123']),
+    limiters: { userMutation: {} },
+    verifyRateLimit: jest.fn(),
+}));
 
 describe('WishlistAction', () => {
     const mockedGetUserData = jest.mocked(getUserData);
     const mockedExecuteWishlistOperation = jest.mocked(executeWishlistOperation);
     const mockedWishlistSchema = jest.mocked(wishlistSchema);
+    const mockedVerifyRateLimit = jest.mocked(verifyRateLimit);
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -44,6 +54,13 @@ describe('WishlistAction', () => {
                 Awaited<ReturnType<typeof getUserData>>['data']
             >,
             error: null,
+        });
+
+        mockedVerifyRateLimit.mockResolvedValue({
+            success: true,
+            limit: 30,
+            remaining: 29,
+            reset: Date.now() + 60000,
         });
 
         mockedWishlistSchema.safeParse.mockImplementation(
@@ -98,6 +115,34 @@ describe('WishlistAction', () => {
             operation: 'WishlistAction_auth_failed',
             error: 'Database Auth Error',
         });
+    });
+
+    it('should return failure if rate limit is exceeded', async () => {
+        mockedVerifyRateLimit.mockResolvedValueOnce({
+            success: false,
+            limit: 30,
+            remaining: 0,
+            reset: Date.now() + 60000,
+            error: 'Wishlist update rate limit reached.',
+        });
+        const result = await WishlistAction(undefined, createFormData('b1', 'INSERT'));
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Wishlist update rate limit reached.');
+        expect(mockedExecuteWishlistOperation).not.toHaveBeenCalled();
+    });
+
+    it('should fallback to default message if rate limit error is undefined', async () => {
+        mockedVerifyRateLimit.mockResolvedValueOnce({
+            success: false,
+            limit: 30,
+            remaining: 0,
+            reset: Date.now() + 60000,
+            error: undefined,
+        });
+        const result = await WishlistAction(undefined, createFormData('b1', 'INSERT'));
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Wishlist update rate limit reached.');
+        expect(mockedExecuteWishlistOperation).not.toHaveBeenCalled();
     });
 
     it('should successfully add item to wishlist and revalidate path', async () => {

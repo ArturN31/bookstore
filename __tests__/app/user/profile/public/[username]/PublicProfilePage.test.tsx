@@ -6,6 +6,7 @@ import {
     getUserPrivacySettings,
 } from '@/data/user/profile/PrivacySettingsService';
 import { checkIsOwner } from '@/utils/auth/checkOwnership';
+import { verifyRateLimit } from '@/utils/network/rateLimiter';
 
 jest.mock('next/cache', () => ({
     revalidatePath: jest.fn(),
@@ -19,6 +20,15 @@ jest.mock('@/data/user/profile/PrivacySettingsService', () => ({
 
 jest.mock('@/utils/auth/checkOwnership', () => ({
     checkIsOwner: jest.fn(),
+}));
+
+jest.mock('@/utils/network/getAppClientIp', () => ({
+    getAppClientIp: jest.fn().mockResolvedValue('203.0.113.1'),
+}));
+
+jest.mock('@/utils/network/rateLimiter', () => ({
+    limiters: { search: {} },
+    verifyRateLimit: jest.fn(),
 }));
 
 jest.mock('@/app/user/profile/public/[username]/components/PublicProfileUnavailable', () => ({
@@ -64,10 +74,34 @@ describe('PublicProfilePage', () => {
         typeof getUserPrivacySettings
     >;
     const mockCheckIsOwner = checkIsOwner as jest.MockedFunction<typeof checkIsOwner>;
+    const mockVerifyRateLimit = verifyRateLimit as jest.Mock;
 
     beforeEach(() => {
         jest.clearAllMocks();
         mockCheckIsOwner.mockResolvedValue(false);
+        mockVerifyRateLimit.mockResolvedValue({
+            success: true,
+            limit: 30,
+            remaining: 29,
+            reset: Date.now() + 60000,
+        });
+    });
+
+    it('should render PublicProfileUnavailable when rate limit is exceeded', async () => {
+        mockVerifyRateLimit.mockResolvedValueOnce({
+            success: false,
+            limit: 30,
+            remaining: 0,
+            reset: Date.now() + 60000,
+            error: 'Too many requests.',
+        });
+
+        const params = Promise.resolve({ username: 'johndoe' });
+        const ui = await PublicProfilePage({ params });
+        render(ui);
+
+        expect(screen.getByTestId('public-profile-unavailable')).toBeInTheDocument();
+        expect(mockGetPublicProfile).not.toHaveBeenCalled();
     });
 
     it('should render PublicProfileUnavailable when profile is not found error occurs', async () => {

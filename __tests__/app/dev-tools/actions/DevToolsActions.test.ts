@@ -9,6 +9,7 @@ import { runFullDatabaseSeed } from '@/utils/db/dbSeed/seedDatabase';
 import { createBackendClient } from '@/utils/db/server';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
+import { verifyRateLimit } from '@/utils/network/rateLimiter';
 
 jest.mock('@/utils/db/admin', () => ({
     createAdminClient: jest.fn(),
@@ -30,10 +31,20 @@ jest.mock('@/app/dev-tools/actions/DevToolsService', () => ({
     addSales: jest.fn(),
 }));
 
+jest.mock('@/utils/network/getAppClientIp', () => ({
+    getAppClientIp: jest.fn().mockResolvedValue('203.0.113.1'),
+}));
+
+jest.mock('@/utils/network/rateLimiter', () => ({
+    limiters: { privileged: {} },
+    verifyRateLimit: jest.fn(),
+}));
+
 describe('DevToolsActions', () => {
     const originalNodeEnv = process.env.NODE_ENV;
     const originalForceProduction = process.env.FORCE_PRODUCTION;
     const env = process.env as Record<string, string | undefined>;
+    const mockedVerifyRateLimit = verifyRateLimit as jest.Mock;
 
     const initialCommandResponse: service.CommandResponse = { message: '', success: false };
 
@@ -41,6 +52,25 @@ describe('DevToolsActions', () => {
         jest.clearAllMocks();
         env.NODE_ENV = 'development';
         delete env.FORCE_PRODUCTION;
+
+        mockedVerifyRateLimit.mockResolvedValue({
+            success: true,
+            limit: 10,
+            remaining: 9,
+            reset: Date.now() + 60000,
+        });
+
+        const mockSupabase = {
+            auth: {
+                getUser: jest.fn().mockResolvedValue({
+                    data: { user: { id: 'user-1' } },
+                    error: null,
+                }),
+            },
+        };
+        jest.mocked(createBackendClient).mockResolvedValue(
+            mockSupabase as unknown as SupabaseClient,
+        );
     });
 
     afterAll(() => {
@@ -75,6 +105,69 @@ describe('DevToolsActions', () => {
             });
         });
 
+        it('should fall back to IP identifier when session verification throws an error', async () => {
+            jest.mocked(createBackendClient).mockRejectedValueOnce(new Error('Session error'));
+            jest.mocked(service.addSales).mockResolvedValueOnce({
+                message: 'Success',
+                success: true,
+            });
+            const mockAdminSupabase = {} as unknown as SupabaseClient;
+            jest.mocked(createAdminClient).mockResolvedValueOnce(mockAdminSupabase);
+
+            const formData = new FormData();
+            formData.append('command', 'add_sales');
+
+            const result = await systemCommandAction(initialCommandResponse, formData);
+
+            expect(result).toEqual({ message: 'Success', success: true });
+            expect(mockedVerifyRateLimit).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    identifiers: ['ip:203.0.113.1'],
+                }),
+            );
+        });
+
+        it('should return rate limit error if rate limit is exceeded', async () => {
+            mockedVerifyRateLimit.mockResolvedValueOnce({
+                success: false,
+                limit: 10,
+                remaining: 0,
+                reset: Date.now() + 60000,
+                error: 'Unauthorized: Dev tools execution rate limit exceeded.',
+            });
+
+            const formData = new FormData();
+            formData.append('command', 'add_sales');
+
+            const result = await systemCommandAction(initialCommandResponse, formData);
+
+            expect(result).toEqual({
+                message: 'Unauthorized: Dev tools execution rate limit exceeded.',
+                success: false,
+            });
+            expect(service.addSales).not.toHaveBeenCalled();
+        });
+
+        it('should fallback to default rate limit message when error is undefined', async () => {
+            mockedVerifyRateLimit.mockResolvedValueOnce({
+                success: false,
+                limit: 10,
+                remaining: 0,
+                reset: Date.now() + 60000,
+                error: undefined,
+            });
+
+            const formData = new FormData();
+            formData.append('command', 'add_sales');
+
+            const result = await systemCommandAction(initialCommandResponse, formData);
+
+            expect(result).toEqual({
+                message: 'Unauthorized: Dev tools execution rate limit exceeded.',
+                success: false,
+            });
+        });
+
         it('should return unknown command error if command is not in registry', async () => {
             const formData = new FormData();
             formData.append('command', 'unknown_cmd');
@@ -92,8 +185,8 @@ describe('DevToolsActions', () => {
                 message: 'Success',
                 success: true,
             });
-            const mockSupabase = {} as unknown as SupabaseClient;
-            jest.mocked(createAdminClient).mockResolvedValueOnce(mockSupabase);
+            const mockAdminSupabase = {} as unknown as SupabaseClient;
+            jest.mocked(createAdminClient).mockResolvedValueOnce(mockAdminSupabase);
 
             const formData = new FormData();
             formData.append('command', 'add_sales');
@@ -106,8 +199,8 @@ describe('DevToolsActions', () => {
 
         it('should catch Error and return its message', async () => {
             jest.mocked(service.addSales).mockRejectedValueOnce(new Error('Custom service error'));
-            const mockSupabase = {} as unknown as SupabaseClient;
-            jest.mocked(createAdminClient).mockResolvedValueOnce(mockSupabase);
+            const mockAdminSupabase = {} as unknown as SupabaseClient;
+            jest.mocked(createAdminClient).mockResolvedValueOnce(mockAdminSupabase);
 
             const formData = new FormData();
             formData.append('command', 'add_sales');
@@ -119,8 +212,8 @@ describe('DevToolsActions', () => {
 
         it('should catch non-Error and fallback to Operation Failed message', async () => {
             jest.mocked(service.addSales).mockRejectedValueOnce('string error');
-            const mockSupabase = {} as unknown as SupabaseClient;
-            jest.mocked(createAdminClient).mockResolvedValueOnce(mockSupabase);
+            const mockAdminSupabase = {} as unknown as SupabaseClient;
+            jest.mocked(createAdminClient).mockResolvedValueOnce(mockAdminSupabase);
 
             const formData = new FormData();
             formData.append('command', 'add_sales');
@@ -152,6 +245,26 @@ describe('DevToolsActions', () => {
             expect(result).toEqual({ message: 'Unauthorized', success: false });
         });
 
+        it('should return rate limit error if rate limit is exceeded', async () => {
+            mockedVerifyRateLimit.mockResolvedValueOnce({
+                success: false,
+                limit: 10,
+                remaining: 0,
+                reset: Date.now() + 60000,
+                error: 'Unauthorized: Dev tools execution rate limit exceeded.',
+            });
+
+            const formData = new FormData();
+
+            const result = await fullResetAction(initialResetResponse, formData);
+
+            expect(result).toEqual({
+                message: 'Unauthorized: Dev tools execution rate limit exceeded.',
+                success: false,
+            });
+            expect(runFullDatabaseSeed).not.toHaveBeenCalled();
+        });
+
         it('should successfully run full reset and revalidate path', async () => {
             jest.mocked(runFullDatabaseSeed).mockResolvedValueOnce({ success: true });
             const formData = new FormData();
@@ -174,6 +287,51 @@ describe('DevToolsActions', () => {
     });
 
     describe('impulseLogin', () => {
+        it('should throw an error if NODE_ENV is production', async () => {
+            env.NODE_ENV = 'production';
+
+            await expect(impulseLogin('test@example.com')).rejects.toThrow(
+                'Unauthorized: Dev tools are unavailable in production.',
+            );
+        });
+
+        it('should throw an error if FORCE_PRODUCTION is true', async () => {
+            env.FORCE_PRODUCTION = 'true';
+
+            await expect(impulseLogin('test@example.com')).rejects.toThrow(
+                'Unauthorized: Dev tools are unavailable in production.',
+            );
+        });
+
+        it('should throw an error if rate limit is exceeded', async () => {
+            mockedVerifyRateLimit.mockResolvedValueOnce({
+                success: false,
+                limit: 10,
+                remaining: 0,
+                reset: Date.now() + 60000,
+                error: 'Unauthorized: Dev tools impulse login rate limit exceeded.',
+            });
+
+            await expect(impulseLogin('test@example.com')).rejects.toThrow(
+                'Unauthorized: Dev tools impulse login rate limit exceeded.',
+            );
+            expect(createAdminClient).not.toHaveBeenCalled();
+        });
+
+        it('should fallback to default rate limit message when error is undefined', async () => {
+            mockedVerifyRateLimit.mockResolvedValueOnce({
+                success: false,
+                limit: 10,
+                remaining: 0,
+                reset: Date.now() + 60000,
+                error: undefined,
+            });
+
+            await expect(impulseLogin('test@example.com')).rejects.toThrow(
+                'Unauthorized: Dev tools impulse login rate limit exceeded.',
+            );
+        });
+
         it('should successfully login user', async () => {
             const mockAdminClient = {
                 auth: {

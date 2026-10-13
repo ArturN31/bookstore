@@ -4,9 +4,26 @@ import { SystemLog } from './components/SystemLog/SystemLog';
 import { DatabaseActions } from './components/DatabaseActions/DatabaseActions';
 import { redirect } from 'next/navigation';
 import { UserRegistry } from './components/UserRegistry/UserRegistry';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
+import { limiters, verifyRateLimit } from '@/utils/network/rateLimiter';
 
 export default async function DevToolsPage() {
-    if (process.env.NODE_ENV === 'production') redirect('/');
+    if (process.env.NODE_ENV === 'production' || process.env.FORCE_PRODUCTION === 'true')
+        return redirect('/');
+
+    const rateLimit = await verifyRateLimit({
+        identifier: `ip:${await getAppClientIp()}`,
+        limiter: limiters.search,
+        failClosed: true,
+    });
+    if (!rateLimit.success)
+        return (
+            <ErrorState
+                title="Please Try Again Later"
+                message={rateLimit.error ?? 'Too many development console requests.'}
+            />
+        );
 
     return (
         <div className="text-gunmetal selection:bg-gunmetal selection:text-yellow min-h-screen bg-[#f1f5f9]">

@@ -8,6 +8,8 @@ import { RestrictedAccessView } from './components/RestrictedAccessView';
 import { SharedWishlistHeader } from './components/SharedWishlistHeader';
 import { SharedWishlistHero } from './components/SharedWishlistHero';
 import { EmptyWishlistView } from './components/EmptyWishlistView';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
+import { limiters, verifyRateLimit } from '@/utils/network/rateLimiter';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -19,7 +21,22 @@ interface SharedWishlistPageProps {
 }
 
 export default async function SharedWishlistPage({ params }: SharedWishlistPageProps) {
+    const ip = await getAppClientIp();
+    const rateLimit = await verifyRateLimit({
+        identifier: `ip:${ip}`,
+        limiter: limiters.search,
+        failClosed: true,
+    });
+
     const { username } = await params;
+
+    if (!rateLimit.success)
+        return (
+            <RestrictedAccessView
+                username={username}
+                isPublicMode={true}
+            />
+        );
 
     let publicWishlistData: PublicWishlistProfile | null = null;
     let fetchError: unknown = null;

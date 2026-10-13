@@ -5,10 +5,17 @@ import { Database } from '@/database.types';
 import { getOrderDetailsById } from '@/data/checkout/services/CheckoutService';
 import { OrderWithRelations } from '@/data/checkout/CheckoutTypes';
 import { verifyOrderOwnershipAndFetch } from '@/data/checkout/services/OrderOwnershipService';
+import { limiters, verifyRateLimit } from '@/utils/network/rateLimiter';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
 
 jest.mock('@/utils/db/server');
 jest.mock('@/utils/security/securityAuditLogger');
 jest.mock('@/data/checkout/services/CheckoutService');
+jest.mock('@/utils/network/getAppClientIp');
+jest.mock('@/utils/network/rateLimiter', () => ({
+    limiters: { search: {} },
+    verifyRateLimit: jest.fn(),
+}));
 
 describe('verifyOrderOwnershipAndFetch', () => {
     const mockSupabase = {
@@ -20,6 +27,8 @@ describe('verifyOrderOwnershipAndFetch', () => {
     const mockCreateBackendClient = jest.mocked(createBackendClient);
     const mockRecordSecurityAuditLog = jest.mocked(recordSecurityAuditLog);
     const mockGetOrderDetailsById = jest.mocked(getOrderDetailsById);
+    const mockVerifyRateLimit = jest.mocked(verifyRateLimit);
+    const mockGetAppClientIp = jest.mocked(getAppClientIp);
 
     const mockOrder: OrderWithRelations = {
         id: 'order-123',
@@ -44,6 +53,13 @@ describe('verifyOrderOwnershipAndFetch', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockCreateBackendClient.mockResolvedValue(mockSupabase);
+        mockGetAppClientIp.mockResolvedValue('203.0.113.1');
+        mockVerifyRateLimit.mockResolvedValue({
+            success: true,
+            limit: 60,
+            remaining: 59,
+            reset: Date.now() + 60000,
+        });
     });
 
     it('should return NOT_FOUND when orderId is empty or not a string', async () => {
@@ -71,6 +87,61 @@ describe('verifyOrderOwnershipAndFetch', () => {
 
         expect(result).toEqual({ status: 'UNAUTHENTICATED', order: null });
         expect(mockGetOrderDetailsById).not.toHaveBeenCalled();
+    });
+
+    it('should rate limit the client IP before creating a backend client', async () => {
+        mockVerifyRateLimit.mockResolvedValueOnce({
+            success: false,
+            limit: 60,
+            remaining: 0,
+            reset: Date.now() + 60000,
+        });
+
+        const result = await verifyOrderOwnershipAndFetch('order-123');
+
+        expect(result).toEqual({
+            status: 'RATE_LIMITED',
+            order: null,
+            message: 'Too many order requests. Please try again later.',
+        });
+        expect(mockCreateBackendClient).not.toHaveBeenCalled();
+        expect(mockVerifyRateLimit).toHaveBeenCalledWith({
+            identifier: 'ip:203.0.113.1',
+            limiter: limiters.search,
+            failClosed: true,
+        });
+    });
+
+    it('should rate limit the authenticated user before fetching order details', async () => {
+        jest.mocked(mockSupabase.auth.getUser).mockResolvedValueOnce({
+            data: { user: { id: 'user-auth-123' } as never },
+            error: null,
+        });
+        mockVerifyRateLimit.mockResolvedValueOnce({
+            success: true,
+            limit: 60,
+            remaining: 59,
+            reset: Date.now() + 60000,
+        }).mockResolvedValueOnce({
+            success: false,
+            limit: 60,
+            remaining: 0,
+            reset: Date.now() + 60000,
+        });
+
+        const result = await verifyOrderOwnershipAndFetch('order-123');
+
+        expect(result).toEqual({
+            status: 'RATE_LIMITED',
+            order: null,
+            message: 'Too many order requests. Please try again later.',
+        });
+        expect(mockGetOrderDetailsById).not.toHaveBeenCalled();
+        expect(mockVerifyRateLimit).toHaveBeenNthCalledWith(2, {
+            identifier: 'user:user-auth-123',
+            limiter: limiters.search,
+            failClosed: true,
+        });
     });
 
     it('should return NOT_FOUND when order fetch fails persistently across retries', async () => {

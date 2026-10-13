@@ -12,6 +12,8 @@ import { USER_ROUTES } from '../UserConstants';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
+import { limiters, verifyRateLimit } from '@/utils/network/rateLimiter';
 
 type UserInsert = Database['public']['Tables']['users']['Insert'];
 
@@ -32,6 +34,18 @@ export async function OnboardingAction(
     prevState: OnboardingFormState,
     formData: FormData,
 ): Promise<OnboardingFormState> {
+    const ip = await getAppClientIp();
+    const rateLimit = await verifyRateLimit({
+        identifier: `ip:${ip}`,
+        limiter: limiters.userMutation,
+        failClosed: true,
+    });
+    if (!rateLimit.success)
+        return {
+            message: 'Too many requests. Please try again in a moment.',
+            error: 'Too many requests. Please try again in a moment.',
+        };
+
     const rawData = Object.fromEntries(formData.entries());
     const redirectTo = formData.get('redirectTo') as string | null;
 
@@ -61,6 +75,19 @@ export async function OnboardingAction(
             });
             return { message: APP_ERROR_MESSAGES.SESSION_EXPIRED };
         }
+
+        const userRateLimit = await verifyRateLimit({
+            identifier: `user:${user.id}`,
+            limiter: limiters.userMutation,
+            failClosed: true,
+        });
+        if (!userRateLimit.success)
+            return {
+                message:
+                    userRateLimit.error ??
+                    'Too many onboarding requests. Please try again in a moment.',
+                error: userRateLimit.error,
+            };
 
         const payload = mapToUserPayload(validated.data);
 

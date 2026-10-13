@@ -10,6 +10,8 @@ import { authenticateUser } from './AuthRepository';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { AUTH_ROUTES, AUTH_MESSAGES } from './AuthConstants';
 import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
+import { verifyRateLimit, limiters } from '@/utils/network/rateLimiter';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
 
 export type SignInFormState = {
     validationErrors?: z.core.$ZodIssue[];
@@ -30,15 +32,32 @@ export async function SignInAction(
     if (rawData.reset) return INITIAL_STATE;
 
     const validated = signInSchema.safeParse(rawData);
-    if (!validated.success) {
+    if (!validated.success)
         return {
             validationErrors: validated.error.issues,
             message: AUTH_MESSAGES.SIGN_IN_VALIDATION,
         };
-    }
 
     const captchaToken = rawData.captchaToken as string | undefined;
     const { email } = validated.data;
+
+    const clientIp = await getAppClientIp();
+    const rateLimit = await verifyRateLimit({
+        identifiers: [`ip:${clientIp}`, `email:${email.toLowerCase()}`],
+        limiter: limiters.auth,
+        failClosed: true,
+    });
+
+    if (!rateLimit.success) {
+        void recordSecurityAuditLog('FAILED_LOGIN', null, {
+            operation: 'SignInAction_rate_limited',
+            email,
+        });
+
+        return {
+            message: rateLimit.error ?? 'Too many login attempts. Please try again in 15 minutes.',
+        };
+    }
 
     if (!captchaToken) {
         void recordSecurityAuditLog('FAILED_LOGIN', null, {

@@ -3,6 +3,7 @@ import { createBackendClient } from '@/utils/db/server';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import UserReviewsPage from '@/app/user/reviews/[username]/page';
 import { UserReviewsInteractive } from '@/app/user/reviews/components/UserReviewsInteractive';
+import { verifyRateLimit } from '@/utils/network/rateLimiter';
 
 jest.mock('@/utils/db/server', () => ({
     createBackendClient: jest.fn(),
@@ -16,6 +17,15 @@ jest.mock('@/app/user/reviews/components/UserReviewsInteractive', () => ({
     UserReviewsInteractive: jest.fn(() => <div data-testid="user-reviews-interactive" />),
 }));
 
+jest.mock('@/utils/network/getAppClientIp', () => ({
+    getAppClientIp: jest.fn().mockResolvedValue('203.0.113.1'),
+}));
+
+jest.mock('@/utils/network/rateLimiter', () => ({
+    limiters: { search: {} },
+    verifyRateLimit: jest.fn(),
+}));
+
 jest.mock('@mui/icons-material/ArrowBack', () => ({
     __esModule: true,
     default: () => <span data-testid="arrow-back-icon" />,
@@ -27,6 +37,7 @@ jest.mock('@mui/icons-material/RateReviewOutlined', () => ({
 }));
 
 describe('UserReviewsPage', () => {
+    const mockVerifyRateLimit = jest.mocked(verifyRateLimit);
     const mockGetUser = jest.fn<
         Promise<{
             data: { user: { id: string } | null };
@@ -43,6 +54,12 @@ describe('UserReviewsPage', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        mockVerifyRateLimit.mockResolvedValue({
+            success: true,
+            limit: 60,
+            remaining: 59,
+            reset: Date.now() + 60000,
+        });
 
         mockSingle.mockResolvedValue({
             data: { username: 'testuser' },
@@ -75,6 +92,30 @@ describe('UserReviewsPage', () => {
             const queryData = await queryFn();
             return { data: queryData.data, error: queryData.error };
         });
+    });
+
+    it('rate limits public review reads before accessing the database', async () => {
+        mockVerifyRateLimit.mockResolvedValueOnce({
+            success: false,
+            limit: 60,
+            remaining: 0,
+            reset: Date.now() + 60000,
+        });
+
+        const ui = await UserReviewsPage({ params: Promise.resolve({ username: 'testuser' }) });
+        render(ui);
+
+        expect(screen.getByText('Please Try Again Later')).toBeInTheDocument();
+        expect(
+            screen.getByText('Too many review requests. Please try again later.'),
+        ).toBeInTheDocument();
+        expect(createBackendClient).not.toHaveBeenCalled();
+        expect(mockVerifyRateLimit).toHaveBeenCalledWith(
+            expect.objectContaining({
+                identifier: 'ip:203.0.113.1',
+                failClosed: true,
+            }),
+        );
     });
 
     it('should render reviews page successfully when user is not authenticated', async () => {

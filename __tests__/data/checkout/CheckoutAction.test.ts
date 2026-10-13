@@ -7,7 +7,7 @@ import {
     processCheckoutAction,
     ProcessCheckoutActionPayload,
 } from '@/data/checkout/CheckoutAction';
-import { checkRateLimit } from '@/utils/network/rateLimiter';
+import { limiters, verifyRateLimit } from '@/utils/network/rateLimiter';
 import { getCurrentUserCheckoutData } from '@/data/checkout/services/CheckoutUserService';
 import { validateAndCalculateDiscount } from '@/data/checkout/services/CheckoutDiscountService';
 import { executeCheckoutOrder } from '@/data/checkout/services/CheckoutService';
@@ -15,8 +15,20 @@ import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { checkoutFormSchema, applyDiscountSchema } from '@/data/schemas/checkoutSchema';
 import { clearUsersCart, getUsersCartID } from '@/data/cart/CartService';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
 
-jest.mock('@/utils/network/rateLimiter');
+jest.mock('@/utils/network/rateLimiter', () => ({
+    buildRateLimitIdentifiers: (ip: string, userId?: string | null) =>
+        userId ? [`user:${userId}`, `ip:${ip}`] : [`ip:${ip}`],
+    limiters: {
+        discount: {},
+        checkout: {},
+    },
+    verifyRateLimit: jest.fn(),
+}));
+jest.mock('@/utils/network/getAppClientIp', () => ({
+    getAppClientIp: jest.fn().mockResolvedValue('203.0.113.1'),
+}));
 jest.mock('@/utils/errors/SupabaseErrorHandler');
 jest.mock('@/data/checkout/services/CheckoutUserService');
 jest.mock('@/data/checkout/services/CheckoutDiscountService');
@@ -51,6 +63,13 @@ describe('CheckoutAction', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         process.env = { ...originalEnv, STRIPE_SECRET_KEY: 'sk_test_123' };
+        jest.mocked(getAppClientIp).mockResolvedValue('203.0.113.1');
+        jest.mocked(verifyRateLimit).mockResolvedValue({
+            success: true,
+            limit: 10,
+            remaining: 9,
+            reset: Date.now() + 60000,
+        });
 
         jest.mocked(sanitizeSupabaseError).mockImplementation((err: unknown) =>
             typeof err === 'string' ? err : 'Sanitized error message',
@@ -76,7 +95,7 @@ describe('CheckoutAction', () => {
                 error: null,
             } as never);
 
-            jest.mocked(checkRateLimit).mockReturnValue({ success: true } as never);
+            jest.mocked(verifyRateLimit).mockReturnValue({ success: true } as never);
 
             jest.mocked(applyDiscountSchema.safeParse).mockReturnValue({
                 success: true,
@@ -102,17 +121,21 @@ describe('CheckoutAction', () => {
                 success: true,
                 data: mockAppliedDiscount,
             });
-            expect(checkRateLimit).toHaveBeenCalledWith('discount:user-123', 5, 60000);
+            expect(verifyRateLimit).toHaveBeenCalledWith({
+                identifier: 'ip:203.0.113.1',
+                limiter: limiters.discount,
+                failClosed: true,
+            });
             expect(validateAndCalculateDiscount).toHaveBeenCalledWith('SAVE10', 100);
         });
 
-        it('should fallback to anonymous limitKey when user data is null', async () => {
+        it('should apply the discount limit to the client IP', async () => {
             jest.mocked(getCurrentUserCheckoutData).mockResolvedValue({
                 data: null,
                 error: null,
             } as never);
 
-            jest.mocked(checkRateLimit).mockReturnValue({ success: true } as never);
+            jest.mocked(verifyRateLimit).mockReturnValue({ success: true } as never);
 
             jest.mocked(applyDiscountSchema.safeParse).mockReturnValue({
                 success: true,
@@ -132,7 +155,11 @@ describe('CheckoutAction', () => {
 
             await validateAndApplyDiscountAction(mockCode, mockSubtotal);
 
-            expect(checkRateLimit).toHaveBeenCalledWith('discount:anonymous-discount', 5, 60000);
+            expect(verifyRateLimit).toHaveBeenCalledWith({
+                identifier: 'ip:203.0.113.1',
+                limiter: limiters.discount,
+                failClosed: true,
+            });
         });
 
         it('should return rate limit error when user exceeds rate limit', async () => {
@@ -146,13 +173,13 @@ describe('CheckoutAction', () => {
                 error: null,
             } as never);
 
-            jest.mocked(checkRateLimit).mockReturnValue({ success: false } as never);
+            jest.mocked(verifyRateLimit).mockReturnValue({ success: false } as never);
 
             const result = await validateAndApplyDiscountAction(mockCode, mockSubtotal);
 
             expect(result).toEqual({
                 success: false,
-                error: 'Too many discount code attempts. Please wait a minute before trying again.',
+                error: 'Too many discount verification attempts.',
             });
         });
 
@@ -167,7 +194,7 @@ describe('CheckoutAction', () => {
                 error: null,
             } as never);
 
-            jest.mocked(checkRateLimit).mockReturnValue({ success: true } as never);
+            jest.mocked(verifyRateLimit).mockReturnValue({ success: true } as never);
 
             jest.mocked(applyDiscountSchema.safeParse).mockReturnValue({
                 success: false,
@@ -195,7 +222,7 @@ describe('CheckoutAction', () => {
                 error: null,
             } as never);
 
-            jest.mocked(checkRateLimit).mockReturnValue({ success: true } as never);
+            jest.mocked(verifyRateLimit).mockReturnValue({ success: true } as never);
 
             jest.mocked(applyDiscountSchema.safeParse).mockReturnValue({
                 success: false,
@@ -221,7 +248,7 @@ describe('CheckoutAction', () => {
                 error: null,
             } as never);
 
-            jest.mocked(checkRateLimit).mockReturnValue({ success: true } as never);
+            jest.mocked(verifyRateLimit).mockReturnValue({ success: true } as never);
 
             jest.mocked(applyDiscountSchema.safeParse).mockReturnValue({
                 success: true,
@@ -252,7 +279,7 @@ describe('CheckoutAction', () => {
                 error: null,
             } as never);
 
-            jest.mocked(checkRateLimit).mockReturnValue({ success: true } as never);
+            jest.mocked(verifyRateLimit).mockReturnValue({ success: true } as never);
 
             jest.mocked(applyDiscountSchema.safeParse).mockReturnValue({
                 success: true,
@@ -274,7 +301,7 @@ describe('CheckoutAction', () => {
 
         it('should catch thrown exception and return sanitized error', async () => {
             const thrownError = new Error('Database connection failed');
-            jest.mocked(getCurrentUserCheckoutData).mockRejectedValueOnce(thrownError);
+            jest.mocked(verifyRateLimit).mockRejectedValueOnce(thrownError);
 
             const result = await validateAndApplyDiscountAction(mockCode, mockSubtotal);
 
@@ -326,7 +353,7 @@ describe('CheckoutAction', () => {
                 error: null,
             } as never);
 
-            jest.mocked(checkRateLimit).mockReturnValue({ success: true } as never);
+            jest.mocked(verifyRateLimit).mockReturnValue({ success: true } as never);
 
             jest.mocked(checkoutFormSchema.safeParse).mockReturnValue({
                 success: true,
@@ -366,7 +393,16 @@ describe('CheckoutAction', () => {
                 success: true,
                 data: mockProcessResult,
             });
-            expect(checkRateLimit).toHaveBeenCalledWith('checkout:user-123', 3, 300000);
+            expect(verifyRateLimit).toHaveBeenNthCalledWith(1, {
+                identifier: 'ip:203.0.113.1',
+                limiter: limiters.checkout,
+                failClosed: true,
+            });
+            expect(verifyRateLimit).toHaveBeenNthCalledWith(2, {
+                identifier: 'user:user-123',
+                limiter: limiters.checkout,
+                failClosed: true,
+            });
             expect(executeCheckoutOrder).toHaveBeenCalledWith({
                 userId: 'user-123',
                 customerEmail: 'jane@example.com',
@@ -401,7 +437,7 @@ describe('CheckoutAction', () => {
                 error: null,
             } as never);
 
-            jest.mocked(checkRateLimit).mockReturnValue({ success: true } as never);
+            jest.mocked(verifyRateLimit).mockReturnValue({ success: true } as never);
 
             jest.mocked(checkoutFormSchema.safeParse).mockReturnValue({
                 success: true,
@@ -484,13 +520,32 @@ describe('CheckoutAction', () => {
                 error: null,
             } as never);
 
-            jest.mocked(checkRateLimit).mockReturnValue({ success: false } as never);
+            jest.mocked(verifyRateLimit)
+                .mockReturnValueOnce({ success: true } as never)
+                .mockReturnValueOnce({ success: false } as never);
 
             const result = await processCheckoutAction(mockPayload);
 
             expect(result).toEqual({
                 success: false,
-                error: 'Too many checkout attempts. Please wait a few minutes before trying again.',
+                error: 'Too many checkout attempts. Please wait a moment.',
+            });
+        });
+
+        it('should rate limit the client IP before looking up the checkout user', async () => {
+            jest.mocked(verifyRateLimit).mockReturnValue({ success: false } as never);
+
+            const result = await processCheckoutAction(mockPayload);
+
+            expect(result).toEqual({
+                success: false,
+                error: 'Too many checkout attempts. Please wait a moment.',
+            });
+            expect(getCurrentUserCheckoutData).not.toHaveBeenCalled();
+            expect(verifyRateLimit).toHaveBeenCalledWith({
+                identifier: 'ip:203.0.113.1',
+                limiter: limiters.checkout,
+                failClosed: true,
             });
         });
 
@@ -505,7 +560,7 @@ describe('CheckoutAction', () => {
                 error: null,
             } as never);
 
-            jest.mocked(checkRateLimit).mockReturnValue({ success: true } as never);
+            jest.mocked(verifyRateLimit).mockReturnValue({ success: true } as never);
 
             jest.mocked(checkoutFormSchema.safeParse).mockReturnValue({
                 success: false,
@@ -536,7 +591,7 @@ describe('CheckoutAction', () => {
                 error: null,
             } as never);
 
-            jest.mocked(checkRateLimit).mockReturnValue({ success: true } as never);
+            jest.mocked(verifyRateLimit).mockReturnValue({ success: true } as never);
 
             jest.mocked(checkoutFormSchema.safeParse).mockReturnValue({
                 success: false,
@@ -562,7 +617,7 @@ describe('CheckoutAction', () => {
                 error: null,
             } as never);
 
-            jest.mocked(checkRateLimit).mockReturnValue({ success: true } as never);
+            jest.mocked(verifyRateLimit).mockReturnValue({ success: true } as never);
 
             jest.mocked(checkoutFormSchema.safeParse).mockReturnValue({
                 success: true,
@@ -593,7 +648,7 @@ describe('CheckoutAction', () => {
                 error: null,
             } as never);
 
-            jest.mocked(checkRateLimit).mockReturnValue({ success: true } as never);
+            jest.mocked(verifyRateLimit).mockReturnValue({ success: true } as never);
 
             jest.mocked(checkoutFormSchema.safeParse).mockReturnValue({
                 success: true,

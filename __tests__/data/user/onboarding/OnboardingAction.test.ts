@@ -7,6 +7,8 @@ import { createBackendClient } from '@/utils/db/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
+import { getAppClientIp } from '@/utils/network/getAppClientIp';
+import { verifyRateLimit } from '@/utils/network/rateLimiter';
 
 jest.mock('@/data/advancedFiltering/FilteringConstants', () => ({
     DEFAULT_FILTERING_CONSTANTS: {
@@ -58,6 +60,13 @@ jest.mock('@/utils/errors/SupabaseErrorHandler', () => ({
         err instanceof Error ? err.message : String(err),
     ),
 }));
+jest.mock('@/utils/network/getAppClientIp', () => ({
+    getAppClientIp: jest.fn().mockResolvedValue('203.0.113.1'),
+}));
+jest.mock('@/utils/network/rateLimiter', () => ({
+    limiters: { userMutation: {} },
+    verifyRateLimit: jest.fn(),
+}));
 
 type MockSupabaseClient = {
     auth: {
@@ -69,12 +78,22 @@ describe('APP - data - actions - OnboardingForm - OnboardingAction', () => {
     let mockSupabase: MockSupabaseClient;
     let consoleErrorSpy: jest.SpyInstance;
     let consoleWarnSpy: jest.SpyInstance;
+    const mockVerifyRateLimit = verifyRateLimit as jest.MockedFunction<typeof verifyRateLimit>;
+    const mockGetAppClientIp = getAppClientIp as jest.MockedFunction<typeof getAppClientIp>;
 
     beforeEach(() => {
         jest.clearAllMocks();
 
         consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+        mockGetAppClientIp.mockResolvedValue('203.0.113.1');
+        mockVerifyRateLimit.mockResolvedValue({
+            success: true,
+            limit: 30,
+            remaining: 29,
+            reset: Date.now() + 60000,
+        });
 
         mockSupabase = {
             auth: {
@@ -98,6 +117,24 @@ describe('APP - data - actions - OnboardingForm - OnboardingAction', () => {
 
         const result = await OnboardingAction('add', {}, formData);
         expect(result.message).toBeNull();
+    });
+
+    it('returns error when IP rate limit is exceeded', async () => {
+        mockVerifyRateLimit.mockResolvedValueOnce({
+            success: false,
+            limit: 30,
+            remaining: 0,
+            reset: Date.now() + 60000,
+        });
+
+        const formData = new FormData();
+        formData.append('city', 'Glasgow');
+        formData.append('postcode', 'G1 1AA');
+
+        const result = await OnboardingAction('update', {}, formData);
+        expect(result.message).toBe('Too many requests. Please try again in a moment.');
+        expect(result.error).toBe('Too many requests. Please try again in a moment.');
+        expect(createBackendClient).not.toHaveBeenCalled();
     });
 
     it('returns validation errors and raw data when Zod validation fails', async () => {
@@ -142,6 +179,73 @@ describe('APP - data - actions - OnboardingForm - OnboardingAction', () => {
 
         const result = await OnboardingAction('update', {}, formData);
         expect(result.message).toBe('Session expired. Please log in again.');
+    });
+
+    it('returns error when user rate limit is exceeded', async () => {
+        const formData = new FormData();
+        formData.append('city', 'Glasgow');
+        formData.append('country', 'UK');
+        formData.append('postcode', 'G1 1AA');
+        formData.append('streetAddress', '123 St');
+
+        mockSupabase.auth.getUser.mockResolvedValue({
+            data: { user: { id: '123' } },
+            error: null,
+        });
+
+        // First call (IP) succeeds, second call (user ID) fails
+        mockVerifyRateLimit
+            .mockResolvedValueOnce({
+                success: true,
+                limit: 30,
+                remaining: 29,
+                reset: Date.now() + 60000,
+            })
+            .mockResolvedValueOnce({
+                success: false,
+                limit: 30,
+                remaining: 0,
+                reset: Date.now() + 60000,
+                error: 'Too many onboarding requests. Please try again in a moment.',
+            });
+
+        const result = await OnboardingAction('update', {}, formData);
+        expect(result.message).toBe('Too many onboarding requests. Please try again in a moment.');
+        expect(result.error).toBe('Too many onboarding requests. Please try again in a moment.');
+        expect(updateOnboardingRecord).not.toHaveBeenCalled();
+    });
+
+    it('falls back to default user rate limit message when userRateLimit.error is undefined', async () => {
+        const formData = new FormData();
+        formData.append('city', 'Glasgow');
+        formData.append('country', 'UK');
+        formData.append('postcode', 'G1 1AA');
+        formData.append('streetAddress', '123 St');
+
+        mockSupabase.auth.getUser.mockResolvedValue({
+            data: { user: { id: '123' } },
+            error: null,
+        });
+
+        mockVerifyRateLimit
+            .mockResolvedValueOnce({
+                success: true,
+                limit: 30,
+                remaining: 29,
+                reset: Date.now() + 60000,
+            })
+            .mockResolvedValueOnce({
+                success: false,
+                limit: 30,
+                remaining: 0,
+                reset: Date.now() + 60000,
+                error: undefined,
+            });
+
+        const result = await OnboardingAction('update', {}, formData);
+        expect(result.message).toBe('Too many onboarding requests. Please try again in a moment.');
+        expect(result.error).toBeUndefined();
+        expect(updateOnboardingRecord).not.toHaveBeenCalled();
     });
 
     it('handles database error during update', async () => {
