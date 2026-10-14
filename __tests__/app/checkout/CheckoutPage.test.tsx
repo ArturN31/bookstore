@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import { redirect } from 'next/navigation';
 import { getCurrentUserCheckoutData } from '@/data/checkout/services/CheckoutUserService';
 import { getCartData } from '@/data/cart/CartService';
 import CheckoutPage from '@/app/checkout/page';
@@ -12,35 +11,22 @@ jest.mock('next/cache', () => ({
 
 jest.mock('@/data/checkout/services/CheckoutUserService');
 jest.mock('@/data/cart/CartService');
-jest.mock('next/navigation', () => ({
-    redirect: jest.fn().mockImplementation(() => {
-        throw new Error('NEXT_REDIRECT');
-    }),
-    useRouter: jest.fn(() => ({
-        push: jest.fn(),
-        replace: jest.fn(),
-        refresh: jest.fn(),
-        back: jest.fn(),
-        forward: jest.fn(),
-        prefetch: jest.fn(),
-    })),
-}));
 
 describe('CheckoutPage', () => {
     const mockGetUser = jest.mocked(getCurrentUserCheckoutData);
     const mockGetCart = jest.mocked(getCartData);
-    const mockRedirect = jest.mocked(redirect);
 
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    it('redirects to login when user session/data is missing', async () => {
+    it('renders the empty cart state when user session/data is missing', async () => {
         mockGetUser.mockResolvedValueOnce({ error: 'Unauthorized', data: null });
 
-        await expect(CheckoutPage()).rejects.toThrow('NEXT_REDIRECT');
+        const ui = await CheckoutPage();
+        render(ui);
 
-        expect(mockRedirect).toHaveBeenCalledWith('/login?redirect=/checkout');
+        expect(screen.getByText('Your Bookshelf is Empty')).toBeInTheDocument();
     });
 
     it('renders CheckoutEmptyCart when cart items are empty', async () => {
