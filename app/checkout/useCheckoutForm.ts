@@ -112,15 +112,9 @@ export function useCheckoutForm({
             paymentMethod: 'card',
         };
 
-        const payloadItems = initialItems.map((item) => ({
-            bookId: item.id,
-            quantity: item.quantity,
-        }));
-
         try {
             const result = await processCheckoutAction({
                 shippingDetails,
-                items: payloadItems,
                 discountId: appliedDiscount ? appliedDiscount.id : null,
                 shippingMethodId: selectedShippingMethodId,
                 idempotencyKey,

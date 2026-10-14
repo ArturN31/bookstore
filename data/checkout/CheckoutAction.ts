@@ -7,6 +7,7 @@ import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { getCurrentUserCheckoutData } from './services/CheckoutUserService';
 import { validateAndCalculateDiscount } from './services/CheckoutDiscountService';
 import { executeCheckoutOrder } from './services/CheckoutService';
+import { getActiveCartCheckoutItems } from './services/CheckoutCartService';
 import { AppliedDiscountState, ProcessCheckoutResult } from './CheckoutTypes';
 import { applyDiscountSchema, serverCheckoutPayloadSchema } from '@/data/schemas/checkoutSchema';
 import { clearUsersCart, getUsersCartID } from '../cart/CartService';
@@ -67,7 +68,6 @@ export const validateAndApplyDiscountAction = async (
 
 export interface ProcessCheckoutActionPayload {
     readonly shippingDetails: unknown;
-    readonly items: readonly { readonly bookId: string; readonly quantity: number }[];
     readonly discountId: string | null;
     readonly shippingMethodId: string;
     readonly idempotencyKey: string;
@@ -128,11 +128,23 @@ export const processCheckoutAction = async (
                 error: userRateLimit.error ?? 'Too many checkout attempts. Please wait a moment.',
             };
 
+        const serverCartResult = await getActiveCartCheckoutItems(userId);
+        if (serverCartResult.error || !serverCartResult.data || serverCartResult.data.length === 0)
+            return {
+                success: false,
+                error: serverCartResult.error ?? APP_ERROR_MESSAGES.EMPTY_CART_CHECKOUT,
+            };
+
+        const authoritativeItems = serverCartResult.data.map((item) => ({
+            bookId: item.id,
+            quantity: item.quantity,
+        }));
+
         const checkoutResult = await executeCheckoutOrder({
             userId,
             customerEmail,
             stripeCustomerId,
-            items: validatedPayload.items,
+            items: authoritativeItems,
             discountId: validatedPayload.discountId,
             paymentMethod: validatedPayload.shippingDetails.paymentMethod,
             shippingMethodId: validatedPayload.shippingMethodId,
