@@ -10,7 +10,6 @@ import { executeCheckoutOrder } from './services/CheckoutService';
 import { getActiveCartCheckoutItems } from './services/CheckoutCartService';
 import { AppliedDiscountState, ProcessCheckoutResult } from './CheckoutTypes';
 import { applyDiscountSchema, serverCheckoutPayloadSchema } from '@/data/schemas/checkoutSchema';
-import { clearUsersCart, getUsersCartID } from '../cart/CartService';
 
 export interface ActionResult<T> {
     readonly success: boolean;
@@ -165,9 +164,6 @@ export const processCheckoutAction = async (
                 success: false,
                 error: checkoutResult.error ?? APP_ERROR_MESSAGES.ORDER_CREATION_FAILED,
             };
-
-        const cartLookup = await getUsersCartID(userId);
-        if (cartLookup.data) await clearUsersCart(cartLookup.data);
 
         return {
             success: true,

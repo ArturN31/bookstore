@@ -482,7 +482,7 @@ Public profile and wishlist routes exist, but public profile content is limited.
 - [X] Derive checkout line items from the current authenticated user's server-side cart instead of trusting a client-supplied item list.
 - [X] Revalidate discount activation dates, eligibility, minimum spend, and redemption/usage limits at final order creation, atomically with discount redemption.
 - [ ] Commit and verify the SQL implementation of `process_order_transaction`, including stock reservation/decrement, order and line-item writes, constraints, and transaction rollback behavior. The application calls this RPC, but its SQL definition is not in this repository.
-- [ ] Keep the cart intact until payment succeeds; currently the cart is cleared after order/payment-intent creation and before client-side card confirmation.
+- [X] Keep the cart intact until payment succeeds; currently the cart is cleared after order/payment-intent creation and before client-side card confirmation.
 - [X] Implement the Stripe webhook route and verify Stripe signatures.
 - [ ] Persist Stripe event IDs and make webhook handling idempotent, including conditional order-state transitions and one-time inventory restoration.
 - [ ] Surface database failures from webhook fulfillment so Stripe retries can safely recover; do not acknowledge incomplete state changes as successful.
@@ -516,8 +516,9 @@ Public profile and wishlist routes exist, but public profile content is limited.
 - [ ] Build protected production administration separately from the local `/dev-tools` console.
 - [ ] Add Supabase Custom Claims or equivalent server-enforced role authorization.
 - [ ] Remove or strictly guard the exported `impulseLogin` Server Action; it currently uses service-role access to reset an arbitrary user's password and has no production or caller-authorization guard.
-- [ ] Add inventory management.
+- [ ] Add inventory management
 - [ ] Add order and discount management.
+  - [ ] Add discount activation, eligibility, and redemption management.
 - [ ] Add review moderation workflows.
 - [ ] Add audit-log browsing and filtering.
 - [ ] Add sales analytics.
