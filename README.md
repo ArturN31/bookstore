@@ -478,7 +478,7 @@ Public profile and wishlist routes exist, but public profile content is limited.
 - [X] Integrate Stripe PaymentIntents through server-side code and pass an idempotency key to Stripe.
 - [X] Add discount-attempt and checkout-submission rate-limit checks.
 - [X] Replace the process-local rate-limit `Map` with atomic, shared Upstash Redis sliding-window limits.
-- [ ] Validate every checkout payload field on the server, including item IDs, positive integer quantities, shipping method, discount ID, and idempotency key.
+- [X] Validate every checkout payload field on the server, including item IDs, positive integer quantities, shipping method, discount ID, and idempotency key.
 - [ ] Derive checkout line items from the current authenticated user's server-side cart instead of trusting a client-supplied item list.
 - [ ] Revalidate discount activation dates, eligibility, minimum spend, and redemption/usage limits at final order creation, atomically with discount redemption.
 - [ ] Commit and verify the SQL implementation of `process_order_transaction`, including stock reservation/decrement, order and line-item writes, constraints, and transaction rollback behavior. The application calls this RPC, but its SQL definition is not in this repository.

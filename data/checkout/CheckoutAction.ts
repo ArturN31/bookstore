@@ -8,7 +8,7 @@ import { getCurrentUserCheckoutData } from './services/CheckoutUserService';
 import { validateAndCalculateDiscount } from './services/CheckoutDiscountService';
 import { executeCheckoutOrder } from './services/CheckoutService';
 import { AppliedDiscountState, ProcessCheckoutResult } from './CheckoutTypes';
-import { applyDiscountSchema, checkoutFormSchema } from '@/data/schemas/checkoutSchema';
+import { applyDiscountSchema, serverCheckoutPayloadSchema } from '@/data/schemas/checkoutSchema';
 import { clearUsersCart, getUsersCartID } from '../cart/CartService';
 
 export interface ActionResult<T> {
@@ -83,6 +83,15 @@ export const processCheckoutAction = async (
                 error: 'Stripe configuration is missing on the server.',
             };
 
+        const payloadParse = serverCheckoutPayloadSchema.safeParse(payload);
+        if (!payloadParse.success)
+            return {
+                success: false,
+                error: payloadParse.error.issues[0]?.message ?? 'Invalid checkout payload entries.',
+            };
+
+        const validatedPayload = payloadParse.data;
+
         const clientIp = await getAppClientIp();
         const ipRateLimit = await verifyRateLimit({
             identifier: `ip:${clientIp}`,
@@ -92,9 +101,7 @@ export const processCheckoutAction = async (
         if (!ipRateLimit.success)
             return {
                 success: false,
-                error:
-                    ipRateLimit.error ??
-                    'Too many checkout attempts. Please wait a moment.',
+                error: ipRateLimit.error ?? 'Too many checkout attempts. Please wait a moment.',
             };
 
         const userResult = await getCurrentUserCheckoutData();
@@ -118,35 +125,26 @@ export const processCheckoutAction = async (
         if (!userRateLimit.success)
             return {
                 success: false,
-                error:
-                    userRateLimit.error ??
-                    'Too many checkout attempts. Please wait a moment.',
-            };
-
-        const formParse = checkoutFormSchema.safeParse(payload.shippingDetails);
-        if (!formParse.success)
-            return {
-                success: false,
-                error: formParse.error.issues[0]?.message ?? 'Invalid checkout form entries.',
+                error: userRateLimit.error ?? 'Too many checkout attempts. Please wait a moment.',
             };
 
         const checkoutResult = await executeCheckoutOrder({
             userId,
             customerEmail,
             stripeCustomerId,
-            items: payload.items,
-            discountId: payload.discountId,
-            paymentMethod: formParse.data.paymentMethod,
-            shippingMethodId: payload.shippingMethodId,
-            idempotencyKey: payload.idempotencyKey,
+            items: validatedPayload.items,
+            discountId: validatedPayload.discountId,
+            paymentMethod: validatedPayload.shippingDetails.paymentMethod,
+            shippingMethodId: validatedPayload.shippingMethodId,
+            idempotencyKey: validatedPayload.idempotencyKey,
             shippingAddress: {
-                firstName: formParse.data.firstName,
-                lastName: formParse.data.lastName,
-                streetAddress: formParse.data.streetAddress,
-                city: formParse.data.city,
-                postcode: formParse.data.postcode,
-                country: formParse.data.country,
-                phoneNumber: formParse.data.phoneNumber ?? '',
+                firstName: validatedPayload.shippingDetails.firstName,
+                lastName: validatedPayload.shippingDetails.lastName,
+                streetAddress: validatedPayload.shippingDetails.streetAddress,
+                city: validatedPayload.shippingDetails.city,
+                postcode: validatedPayload.shippingDetails.postcode,
+                country: validatedPayload.shippingDetails.country,
+                phoneNumber: validatedPayload.shippingDetails.phoneNumber ?? '',
             },
         });
 
