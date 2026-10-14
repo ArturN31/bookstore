@@ -481,7 +481,7 @@ Public profile and wishlist routes exist, but public profile content is limited.
 - [X] Validate every checkout payload field on the server, including item IDs, positive integer quantities, shipping method, discount ID, and idempotency key.
 - [X] Derive checkout line items from the current authenticated user's server-side cart instead of trusting a client-supplied item list.
 - [X] Revalidate discount activation dates, eligibility, minimum spend, and redemption/usage limits at final order creation, atomically with discount redemption.
-- [ ] Commit and verify the SQL implementation of `process_order_transaction`, including stock reservation/decrement, order and line-item writes, constraints, and transaction rollback behavior. The application calls this RPC, but its SQL definition is not in this repository.
+- [X] Commit and verify the SQL implementation of `process_order_transaction`, including stock reservation/decrement, order and line-item writes, constraints, and transaction rollback behavior. The application calls this RPC, but its SQL definition is not in this repository.
 - [X] Keep the cart intact until payment succeeds; currently the cart is cleared after order/payment-intent creation and before client-side card confirmation.
 - [X] Implement the Stripe webhook route and verify Stripe signatures.
 - [ ] Persist Stripe event IDs and make webhook handling idempotent, including conditional order-state transitions and one-time inventory restoration.
@@ -546,7 +546,7 @@ Public profile and wishlist routes exist, but public profile content is limited.
 - [ ] Add centralized server, client, and database exception logging.
 - [ ] Preserve sanitized query/authentication context in operational logs.
 - [ ] Make security audit delivery observable and durable for events that require retention.
-- [ ] Commit database schema migrations, RLS policies, constraints, indexes, and RPC definitions; verify them in CI. Generated `database.types.ts` does not replace these artifacts.
+- [X] Commit database schema migrations, RLS policies, constraints, indexes, and RPC definitions; verify them in CI. Generated `database.types.ts` does not replace these artifacts.
 - [ ] Add CI gates for lint, TypeScript/production build, migration/RLS checks, dependency security checks, integration tests, webhook retry behavior, and E2E journeys.
 - [ ] Add environment validation and a safe `.env.example` template without real credentials.
 - [ ] Replace unchecked model/RPC casts with runtime validation and typed results.
