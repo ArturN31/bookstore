@@ -155,7 +155,7 @@ export const processCheckoutAction = async (
                 city: validatedPayload.shippingDetails.city,
                 postcode: validatedPayload.shippingDetails.postcode,
                 country: validatedPayload.shippingDetails.country,
-                phoneNumber: validatedPayload.shippingDetails.phoneNumber ?? '',
+                phoneNumber: validatedPayload.shippingDetails.phoneNumber,
             },
         });
 

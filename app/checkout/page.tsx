@@ -18,7 +18,7 @@ export default async function CheckoutPage(): Promise<JSX.Element> {
 
     if (cartResult.error || !cartResult.data) return <CheckoutEmptyCart />;
 
-    const cartItems = cartResult.data.books ?? [];
+    const cartItems = cartResult.data.books;
 
     if (cartItems.length === 0) return <CheckoutEmptyCart />;
 

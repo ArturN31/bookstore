@@ -3,6 +3,16 @@ import { OrderConfirmationSummary } from '@/app/checkout/success/components/Orde
 import { OrderWithRelations } from '@/data/checkout/CheckoutTypes';
 import { createMockBook } from '@/utils/testing/mockBook';
 
+const mockResetCart = jest.fn();
+const mockRefreshCart = jest.fn();
+
+jest.mock('@/providers/cart/utils/useCart', () => ({
+    useCartActions: () => ({
+        resetCart: mockResetCart,
+        refreshCart: mockRefreshCart,
+    }),
+}));
+
 describe('OrderConfirmationSummary', () => {
     const mockBook = createMockBook({ title: 'Clean Code' });
 
@@ -35,7 +45,11 @@ describe('OrderConfirmationSummary', () => {
         tax_amount: 0,
     };
 
-    it('renders main section and delegates correctly to all subcomponents with order data', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('renders main section, delegates correctly, and triggers cart reset/refresh on mount', () => {
         render(<OrderConfirmationSummary order={mockOrder} />);
 
         expect(screen.getByText('Order Confirmed Successfully')).toBeInTheDocument();
@@ -57,5 +71,8 @@ describe('OrderConfirmationSummary', () => {
             'href',
             '/',
         );
+
+        expect(mockResetCart).toHaveBeenCalledTimes(1);
+        expect(mockRefreshCart).toHaveBeenCalledWith('user-1');
     });
 });
