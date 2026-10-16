@@ -484,11 +484,11 @@ Public profile and wishlist routes exist, but public profile content is limited.
 - [X] Commit and verify the SQL implementation of `process_order_transaction`, including stock reservation/decrement, order and line-item writes, constraints, and transaction rollback behavior. The application calls this RPC, but its SQL definition is not in this repository.
 - [X] Keep the cart intact until payment succeeds; currently the cart is cleared after order/payment-intent creation and before client-side card confirmation.
 - [X] Implement the Stripe webhook route and verify Stripe signatures.
-- [ ] Persist Stripe event IDs and make webhook handling idempotent, including conditional order-state transitions and one-time inventory restoration.
-- [ ] Surface database failures from webhook fulfillment so Stripe retries can safely recover; do not acknowledge incomplete state changes as successful.
+- [X] Persist Stripe event IDs and make webhook handling idempotent, including conditional order-state transitions and one-time inventory restoration.
+- [X] Surface database failures from webhook fulfillment so Stripe retries can safely recover; do not acknowledge incomplete state changes as successful.
 - [ ] Add payment/order reconciliation for PaymentIntents created without a matching order and orders left in an intermediate state.
 - [X] Add protected order confirmation and order detail views with ownership checks (`/checkout/success` and `/user/order/[orderId]`).
-- [ ] Verify successful, declined, canceled, retried, and abandoned card-payment flows against Stripe test mode and a real disposable Supabase database.
+- [X] Verify successful, declined, canceled, retried, and abandoned card-payment flows against Stripe test mode and a real disposable Supabase database.
 - [ ] Confirm the supported payment, country, shipping, tax, refund, and cancellation requirements before enabling live payments. Current checkout UI is card-only, tax defaults to zero, and shipping zones are hard-coded for UK postcodes.
 - [ ] Provide additional payment methods (for example PayPal) only as complete server-validated payment flows.
 - [ ] Add post-purchase receipt display and transactional email workflows.

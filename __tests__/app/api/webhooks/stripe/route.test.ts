@@ -5,10 +5,11 @@
 import { POST } from '@/app/api/webhooks/stripe/route';
 import { stripe } from '@/data/checkout/CheckoutStripeServer';
 import { createBackendClient } from '@/utils/db/server';
+import Stripe from 'stripe';
 
 jest.mock('next/server', () => ({
     NextResponse: {
-        json: jest.fn((body, init) => ({
+        json: jest.fn((body: unknown, init?: { status?: number }) => ({
             json: async () => body,
             status: init?.status ?? 200,
         })),
@@ -28,9 +29,9 @@ jest.mock('@/data/checkout/CheckoutStripeServer', () => ({
 
 jest.mock('@/utils/db/server');
 
-describe('Stripe Webhook API Route', () => {
+describe('Stripe Webhook API Route (RPC Architecture)', () => {
     const originalEnv = process.env;
-    let mockSupabase: { from: jest.Mock; rpc: jest.Mock };
+    let mockSupabase: { rpc: jest.Mock };
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -40,7 +41,6 @@ describe('Stripe Webhook API Route', () => {
         };
 
         mockSupabase = {
-            from: jest.fn(),
             rpc: jest.fn(),
         };
 
@@ -53,7 +53,7 @@ describe('Stripe Webhook API Route', () => {
         process.env = originalEnv;
     });
 
-    const createRequest = (signatureHeader?: string, bodyContent = '{"id":"evt_123"}') => {
+    const createRequest = (signatureHeader?: string, bodyContent = '{"id":"evt_123"}'): Request => {
         const headers = new Headers();
         if (signatureHeader) {
             headers.set('stripe-signature', signatureHeader);
@@ -65,473 +65,216 @@ describe('Stripe Webhook API Route', () => {
         });
     };
 
-    it('should return 400 when stripe-signature header is missing', async () => {
-        const req = createRequest(undefined);
-        const res = await POST(req);
-        const json = await res.json();
+    describe('Signature & Security Validation', () => {
+        it('should return 400 when stripe-signature header is missing', async () => {
+            const req = createRequest(undefined);
+            const res = await POST(req);
+            const json = (await res.json()) as { error: string };
 
-        expect(res.status).toBe(400);
-        expect(json).toEqual({ error: 'Webhook signature or secret missing.' });
-    });
-
-    it('should return 400 when STRIPE_WEBHOOK_SECRET is missing', async () => {
-        delete process.env.STRIPE_WEBHOOK_SECRET;
-        const req = createRequest('sig_123');
-        const res = await POST(req);
-        const json = await res.json();
-
-        expect(res.status).toBe(400);
-        expect(json).toEqual({ error: 'Webhook signature or secret missing.' });
-    });
-
-    it('should return 400 when constructEvent throws an Error instance', async () => {
-        jest.mocked(stripe.webhooks.constructEvent).mockImplementation(() => {
-            throw new Error('Invalid signature payload');
+            expect(res.status).toBe(400);
+            expect(json).toEqual({ error: 'Webhook signature or secret missing.' });
         });
 
-        const req = createRequest('sig_invalid');
-        const res = await POST(req);
-        const json = await res.json();
+        it('should return 400 when STRIPE_WEBHOOK_SECRET is missing', async () => {
+            delete process.env.STRIPE_WEBHOOK_SECRET;
+            const req = createRequest('sig_123');
+            const res = await POST(req);
+            const json = (await res.json()) as { error: string };
 
-        expect(res.status).toBe(400);
-        expect(json).toEqual({ error: 'Webhook Error: Invalid signature payload' });
-    });
-
-    it('should return 400 when constructEvent throws a non-Error object', async () => {
-        jest.mocked(stripe.webhooks.constructEvent).mockImplementation(() => {
-            throw 'String signature error';
+            expect(res.status).toBe(400);
+            expect(json).toEqual({ error: 'Webhook signature or secret missing.' });
         });
 
-        const req = createRequest('sig_invalid');
-        const res = await POST(req);
-        const json = await res.json();
+        it('should return 400 when constructEvent throws an Error instance', async () => {
+            jest.mocked(stripe.webhooks.constructEvent).mockImplementation(() => {
+                throw new Error('Invalid signature payload');
+            });
 
-        expect(res.status).toBe(400);
-        expect(json).toEqual({ error: 'Webhook Error: Invalid signature.' });
+            const req = createRequest('sig_invalid');
+            const res = await POST(req);
+            const json = (await res.json()) as { error: string };
+
+            expect(res.status).toBe(400);
+            expect(json).toEqual({ error: 'Webhook Error: Invalid signature payload' });
+        });
+
+        it('should return 400 when constructEvent throws a non-Error object', async () => {
+            jest.mocked(stripe.webhooks.constructEvent).mockImplementation(() => {
+                throw 'String signature error';
+            });
+
+            const req = createRequest('sig_invalid');
+            const res = await POST(req);
+            const json = (await res.json()) as { error: string };
+
+            expect(res.status).toBe(400);
+            expect(json).toEqual({ error: 'Webhook Error: Invalid signature.' });
+        });
     });
 
-    describe('payment_intent.succeeded', () => {
-        it('should return 404 when order record is not found', async () => {
-            jest.mocked(stripe.webhooks.constructEvent).mockReturnValue({
+    describe('Event Fulfillment via Database RPC', () => {
+        it('should successfully process payment_intent.succeeded and return 200', async () => {
+            const mockEvent: Stripe.Event = {
+                id: 'evt_success_123',
+                object: 'event',
+                api_version: '2026-08-26.dahlia',
+                created: 1792081325,
+                data: {
+                    object: {
+                        id: 'pi_success_123',
+                        object: 'payment_intent',
+                    } as Stripe.PaymentIntent,
+                },
+                livemode: false,
+                pending_webhooks: 1,
+                request: { id: 'req_123', idempotency_key: 'key_123' },
                 type: 'payment_intent.succeeded',
-                data: { object: { id: 'pi_missing_123' } },
-            } as never);
+            };
 
-            const mockSingle = jest
-                .fn()
-                .mockResolvedValue({ data: null, error: { message: 'Not found' } });
-            const mockSelect = jest.fn().mockReturnValue({ single: mockSingle });
-            const mockEq = jest.fn().mockReturnValue({ select: mockSelect });
-            const mockUpdate = jest.fn().mockReturnValue({ eq: mockEq });
-            mockSupabase.from.mockReturnValue({ update: mockUpdate });
+            jest.mocked(stripe.webhooks.constructEvent).mockReturnValue(mockEvent);
+            mockSupabase.rpc.mockResolvedValue({ data: { success: true }, error: null });
+
+            const req = createRequest('sig_valid');
+            const res = await POST(req);
+            const json = (await res.json()) as { received: boolean };
+
+            expect(res.status).toBe(200);
+            expect(json).toEqual({ received: true });
+            expect(mockSupabase.rpc).toHaveBeenCalledWith('handle_stripe_webhook_transaction', {
+                p_event_id: 'evt_success_123',
+                p_event_type: 'payment_intent.succeeded',
+                p_payment_intent_id: 'pi_success_123',
+            });
+        });
+
+        it('should successfully handle idempotent duplicate delivery skips', async () => {
+            const mockEvent: Stripe.Event = {
+                id: 'evt_duplicate_123',
+                object: 'event',
+                api_version: '2026-08-26.dahlia',
+                created: 1792081325,
+                data: {
+                    object: {
+                        id: 'pi_success_123',
+                        object: 'payment_intent',
+                    } as Stripe.PaymentIntent,
+                },
+                livemode: false,
+                pending_webhooks: 1,
+                request: { id: 'req_123', idempotency_key: 'key_123' },
+                type: 'payment_intent.succeeded',
+            };
+
+            jest.mocked(stripe.webhooks.constructEvent).mockReturnValue(mockEvent);
+            mockSupabase.rpc.mockResolvedValue({
+                data: { success: true, idempotent_skip: true },
+                error: null,
+            });
+
+            const req = createRequest('sig_valid');
+            const res = await POST(req);
+            const json = (await res.json()) as { received: boolean };
+
+            expect(res.status).toBe(200);
+            expect(json).toEqual({ received: true });
+        });
+
+        it('should return 200 with warning when order is not found in database', async () => {
+            const mockEvent: Stripe.Event = {
+                id: 'evt_missing_order',
+                object: 'event',
+                api_version: '2026-08-26.dahlia',
+                created: 1792081325,
+                data: {
+                    object: {
+                        id: 'pi_missing_123',
+                        object: 'payment_intent',
+                    } as Stripe.PaymentIntent,
+                },
+                livemode: false,
+                pending_webhooks: 1,
+                request: { id: 'req_123', idempotency_key: 'key_123' },
+                type: 'payment_intent.succeeded',
+            };
+
+            jest.mocked(stripe.webhooks.constructEvent).mockReturnValue(mockEvent);
+            mockSupabase.rpc.mockResolvedValue({
+                data: { success: false, error: 'ORDER_NOT_FOUND' },
+                error: null,
+            });
 
             const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
             const req = createRequest('sig_valid');
             const res = await POST(req);
-            const json = await res.json();
+            const json = (await res.json()) as { received: boolean; warning?: string };
 
-            expect(res.status).toBe(404);
-            expect(json).toEqual({ error: 'Order not found.' });
+            expect(res.status).toBe(200);
+            expect(json).toEqual({ received: true, warning: 'Order not found.' });
             expect(consoleSpy).toHaveBeenCalled();
             consoleSpy.mockRestore();
         });
 
-        it('should successfully update order to paid and clear shopping cart items', async () => {
-            jest.mocked(stripe.webhooks.constructEvent).mockReturnValue({
+        it('should return 500 when database RPC execution fails with a runtime error', async () => {
+            const mockEvent: Stripe.Event = {
+                id: 'evt_dberror_123',
+                object: 'event',
+                api_version: '2026-08-26.dahlia',
+                created: 1792081325,
+                data: {
+                    object: {
+                        id: 'pi_error_123',
+                        object: 'payment_intent',
+                    } as Stripe.PaymentIntent,
+                },
+                livemode: false,
+                pending_webhooks: 1,
+                request: { id: 'req_123', idempotency_key: 'key_123' },
                 type: 'payment_intent.succeeded',
-                data: { object: { id: 'pi_success_123' } },
-            } as never);
+            };
 
-            const mockOrderSingle = jest.fn().mockResolvedValue({
-                data: { id: 'order_123', user_id: 'user_123' },
-                error: null,
-            });
-            const mockCartSingle = jest.fn().mockResolvedValue({
-                data: { id: 'cart_123' },
-                error: null,
-            });
-            const mockDeleteEq = jest.fn().mockResolvedValue({ error: null });
-
-            mockSupabase.from.mockImplementation((table: string) => {
-                if (table === 'orders') {
-                    return {
-                        update: jest.fn().mockReturnValue({
-                            eq: jest.fn().mockReturnValue({
-                                select: jest.fn().mockReturnValue({
-                                    single: mockOrderSingle,
-                                }),
-                            }),
-                        }),
-                    };
-                }
-                if (table === 'shopping_carts') {
-                    return {
-                        select: jest.fn().mockReturnValue({
-                            eq: jest.fn().mockReturnValue({
-                                single: mockCartSingle,
-                            }),
-                        }),
-                    };
-                }
-                if (table === 'shopping_cart_items') {
-                    return {
-                        delete: jest.fn().mockReturnValue({
-                            eq: mockDeleteEq,
-                        }),
-                    };
-                }
-                return {};
-            });
-
-            const req = createRequest('sig_valid');
-            const res = await POST(req);
-            const json = await res.json();
-
-            expect(res.status).toBe(200);
-            expect(json).toEqual({ received: true });
-            expect(mockDeleteEq).toHaveBeenCalledWith('cart_id', 'cart_123');
-        });
-
-        it('should successfully update order to paid when shopping cart is not found', async () => {
-            jest.mocked(stripe.webhooks.constructEvent).mockReturnValue({
-                type: 'payment_intent.succeeded',
-                data: { object: { id: 'pi_success_123' } },
-            } as never);
-
-            const mockOrderSingle = jest.fn().mockResolvedValue({
-                data: { id: 'order_123', user_id: 'user_123' },
-                error: null,
-            });
-            const mockCartSingle = jest.fn().mockResolvedValue({
+            jest.mocked(stripe.webhooks.constructEvent).mockReturnValue(mockEvent);
+            mockSupabase.rpc.mockResolvedValue({
                 data: null,
-                error: null,
+                error: { message: 'Database connection timeout' },
             });
 
-            mockSupabase.from.mockImplementation((table: string) => {
-                if (table === 'orders') {
-                    return {
-                        update: jest.fn().mockReturnValue({
-                            eq: jest.fn().mockReturnValue({
-                                select: jest.fn().mockReturnValue({
-                                    single: mockOrderSingle,
-                                }),
-                            }),
-                        }),
-                    };
-                }
-                if (table === 'shopping_carts') {
-                    return {
-                        select: jest.fn().mockReturnValue({
-                            eq: jest.fn().mockReturnValue({
-                                single: mockCartSingle,
-                            }),
-                        }),
-                    };
-                }
-                return {};
-            });
+            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
             const req = createRequest('sig_valid');
             const res = await POST(req);
-            const json = await res.json();
+            const json = (await res.json()) as { error: string };
 
-            expect(res.status).toBe(200);
-            expect(json).toEqual({ received: true });
+            expect(res.status).toBe(500);
+            expect(json).toEqual({ error: 'Webhook processing failed.' });
+            expect(consoleSpy).toHaveBeenCalled();
+            consoleSpy.mockRestore();
         });
-    });
 
-    describe('payment_intent.payment_failed & payment_intent.canceled', () => {
-        it('should handle payment_intent.canceled and restore stock via increment_book_stock RPC', async () => {
-            jest.mocked(stripe.webhooks.constructEvent).mockReturnValue({
-                type: 'payment_intent.canceled',
-                data: { object: { id: 'pi_cancel_123' } },
-            } as never);
+        it('should return 200 for unhandled Stripe event types', async () => {
+            const mockEvent: Stripe.Event = {
+                id: 'evt_unhandled_123',
+                object: 'event',
+                api_version: '2026-08-26.dahlia',
+                created: 1792081325,
+                data: {
+                    object: {} as Stripe.Customer,
+                },
+                livemode: false,
+                pending_webhooks: 1,
+                request: { id: 'req_123', idempotency_key: 'key_123' },
+                type: 'customer.created',
+            };
 
-            const mockOrderSingle = jest.fn().mockResolvedValue({
-                data: { id: 'order_123' },
-                error: null,
-            });
-            const mockItemsSelect = jest.fn().mockResolvedValue({
-                data: [{ book_id: 'book_1', quantity: 2 }],
-                error: null,
-            });
-
-            mockSupabase.rpc.mockResolvedValue({ error: null });
-
-            mockSupabase.from.mockImplementation((table: string) => {
-                if (table === 'orders') {
-                    return {
-                        update: jest.fn().mockReturnValue({
-                            eq: jest.fn().mockReturnValue({
-                                select: jest.fn().mockReturnValue({
-                                    single: mockOrderSingle,
-                                }),
-                            }),
-                        }),
-                    };
-                }
-                if (table === 'order_items') {
-                    return {
-                        select: jest.fn().mockReturnValue({
-                            eq: mockItemsSelect,
-                        }),
-                    };
-                }
-                return {};
-            });
+            jest.mocked(stripe.webhooks.constructEvent).mockReturnValue(mockEvent);
 
             const req = createRequest('sig_valid');
             const res = await POST(req);
-            const json = await res.json();
+            const json = (await res.json()) as { received: boolean };
 
             expect(res.status).toBe(200);
             expect(json).toEqual({ received: true });
-            expect(mockSupabase.rpc).toHaveBeenCalledWith('increment_book_stock', {
-                p_book_id: 'book_1',
-                p_quantity: 2,
-            });
+            expect(mockSupabase.rpc).not.toHaveBeenCalled();
         });
-
-        it('should fallback to direct book update when increment_book_stock RPC fails', async () => {
-            jest.mocked(stripe.webhooks.constructEvent).mockReturnValue({
-                type: 'payment_intent.payment_failed',
-                data: { object: { id: 'pi_fail_123' } },
-            } as never);
-
-            const mockOrderSingle = jest.fn().mockResolvedValue({
-                data: { id: 'order_123' },
-                error: null,
-            });
-            const mockItemsSelect = jest.fn().mockResolvedValue({
-                data: [{ book_id: 'book_1', quantity: 3 }],
-                error: null,
-            });
-            const mockBookSingle = jest.fn().mockResolvedValue({
-                data: { stock_quantity: 10, sales_count: 5 },
-                error: null,
-            });
-            const mockBookUpdateEq = jest.fn().mockResolvedValue({ error: null });
-
-            mockSupabase.rpc.mockResolvedValue({ error: { message: 'RPC not available' } });
-
-            mockSupabase.from.mockImplementation((table: string) => {
-                if (table === 'orders') {
-                    return {
-                        update: jest.fn().mockReturnValue({
-                            eq: jest.fn().mockReturnValue({
-                                select: jest.fn().mockReturnValue({
-                                    single: mockOrderSingle,
-                                }),
-                            }),
-                        }),
-                    };
-                }
-                if (table === 'order_items') {
-                    return {
-                        select: jest.fn().mockReturnValue({
-                            eq: mockItemsSelect,
-                        }),
-                    };
-                }
-                if (table === 'books') {
-                    return {
-                        select: jest.fn().mockReturnValue({
-                            eq: jest.fn().mockReturnValue({
-                                single: mockBookSingle,
-                            }),
-                        }),
-                        update: jest.fn().mockReturnValue({
-                            eq: mockBookUpdateEq,
-                        }),
-                    };
-                }
-                return {};
-            });
-
-            const req = createRequest('sig_valid');
-            const res = await POST(req);
-            const json = await res.json();
-
-            expect(res.status).toBe(200);
-            expect(json).toEqual({ received: true });
-            expect(mockBookUpdateEq).toHaveBeenCalledWith('id', 'book_1');
-        });
-
-        it('should handle fallback book update gracefully when book row is not found', async () => {
-            jest.mocked(stripe.webhooks.constructEvent).mockReturnValue({
-                type: 'payment_intent.payment_failed',
-                data: { object: { id: 'pi_fail_123' } },
-            } as never);
-
-            const mockOrderSingle = jest.fn().mockResolvedValue({
-                data: { id: 'order_123' },
-                error: null,
-            });
-            const mockItemsSelect = jest.fn().mockResolvedValue({
-                data: [{ book_id: 'book_1', quantity: 3 }],
-                error: null,
-            });
-            const mockBookSingle = jest.fn().mockResolvedValue({
-                data: null,
-                error: null,
-            });
-
-            mockSupabase.rpc.mockResolvedValue({ error: { message: 'RPC error' } });
-
-            mockSupabase.from.mockImplementation((table: string) => {
-                if (table === 'orders') {
-                    return {
-                        update: jest.fn().mockReturnValue({
-                            eq: jest.fn().mockReturnValue({
-                                select: jest.fn().mockReturnValue({
-                                    single: mockOrderSingle,
-                                }),
-                            }),
-                        }),
-                    };
-                }
-                if (table === 'order_items') {
-                    return {
-                        select: jest.fn().mockReturnValue({
-                            eq: mockItemsSelect,
-                        }),
-                    };
-                }
-                if (table === 'books') {
-                    return {
-                        select: jest.fn().mockReturnValue({
-                            eq: jest.fn().mockReturnValue({
-                                single: mockBookSingle,
-                            }),
-                        }),
-                    };
-                }
-                return {};
-            });
-
-            const req = createRequest('sig_valid');
-            const res = await POST(req);
-            const json = await res.json();
-
-            expect(res.status).toBe(200);
-            expect(json).toEqual({ received: true });
-        });
-
-        it('should do nothing if order is missing during failure handling', async () => {
-            jest.mocked(stripe.webhooks.constructEvent).mockReturnValue({
-                type: 'payment_intent.payment_failed',
-                data: { object: { id: 'pi_missing_123' } },
-            } as never);
-
-            const mockOrderSingle = jest.fn().mockResolvedValue({
-                data: null,
-                error: null,
-            });
-
-            mockSupabase.from.mockImplementation((table: string) => {
-                if (table === 'orders') {
-                    return {
-                        update: jest.fn().mockReturnValue({
-                            eq: jest.fn().mockReturnValue({
-                                select: jest.fn().mockReturnValue({
-                                    single: mockOrderSingle,
-                                }),
-                            }),
-                        }),
-                    };
-                }
-                return {};
-            });
-
-            const req = createRequest('sig_valid');
-            const res = await POST(req);
-            const json = await res.json();
-
-            expect(res.status).toBe(200);
-            expect(json).toEqual({ received: true });
-        });
-    });
-
-    it('should return 200 for unhandled event types', async () => {
-        jest.mocked(stripe.webhooks.constructEvent).mockReturnValue({
-            type: 'customer.created',
-            data: { object: {} },
-        } as never);
-
-        const req = createRequest('sig_valid');
-        const res = await POST(req);
-        const json = await res.json();
-
-        expect(res.status).toBe(200);
-        expect(json).toEqual({ received: true });
-    });
-
-    it('should handle fallback book update correctly when sales_count is null', async () => {
-        jest.mocked(stripe.webhooks.constructEvent).mockReturnValue({
-            type: 'payment_intent.payment_failed',
-            data: { object: { id: 'pi_fail_null_sales' } },
-        } as never);
-
-        const mockOrderSingle = jest.fn().mockResolvedValue({
-            data: { id: 'order_123' },
-            error: null,
-        });
-        const mockItemsSelect = jest.fn().mockResolvedValue({
-            data: [{ book_id: 'book_1', quantity: 2 }],
-            error: null,
-        });
-        const mockBookSingle = jest.fn().mockResolvedValue({
-            data: { stock_quantity: 10, sales_count: null },
-            error: null,
-        });
-        const mockBookUpdateEq = jest.fn().mockResolvedValue({ error: null });
-        const mockBookUpdate = jest.fn().mockReturnValue({ eq: mockBookUpdateEq });
-
-        mockSupabase.rpc.mockResolvedValue({ error: { message: 'RPC not available' } });
-
-        mockSupabase.from.mockImplementation((table: string) => {
-            if (table === 'orders') {
-                return {
-                    update: jest.fn().mockReturnValue({
-                        eq: jest.fn().mockReturnValue({
-                            select: jest.fn().mockReturnValue({
-                                single: mockOrderSingle,
-                            }),
-                        }),
-                    }),
-                };
-            }
-            if (table === 'order_items') {
-                return {
-                    select: jest.fn().mockReturnValue({
-                        eq: mockItemsSelect,
-                    }),
-                };
-            }
-            if (table === 'books') {
-                return {
-                    select: jest.fn().mockReturnValue({
-                        eq: jest.fn().mockReturnValue({
-                            single: mockBookSingle,
-                        }),
-                    }),
-                    update: mockBookUpdate,
-                };
-            }
-            return {};
-        });
-
-        const req = createRequest('sig_valid');
-        const res = await POST(req);
-        const json = await res.json();
-
-        expect(res.status).toBe(200);
-        expect(json).toEqual({ received: true });
-        expect(mockBookUpdate).toHaveBeenCalledWith({
-            stock_quantity: 12,
-            sales_count: 0,
-        });
-        expect(mockBookUpdateEq).toHaveBeenCalledWith('id', 'book_1');
     });
 });

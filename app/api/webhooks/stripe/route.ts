@@ -25,82 +25,35 @@ export async function POST(req: Request): Promise<Response> {
     const supabase = await createBackendClient();
 
     switch (event.type) {
-        case 'payment_intent.succeeded': {
-            const paymentIntent = event.data.object as Stripe.PaymentIntent;
-            const paymentIntentId = paymentIntent.id;
-
-            const { data: order, error: orderError } = await supabase
-                .from('orders')
-                .update({ status: 'paid' })
-                .eq('stripe_payment_intent_id', paymentIntentId)
-                .select('id, user_id')
-                .single();
-
-            if (orderError || !order) {
-                console.error('Failed to update order status to paid:', orderError);
-                return NextResponse.json({ error: 'Order not found.' }, { status: 404 });
-            }
-
-            const { data: cart } = await supabase
-                .from('shopping_carts')
-                .select('id')
-                .eq('user_id', order.user_id)
-                .single();
-
-            if (cart) await supabase.from('shopping_cart_items').delete().eq('cart_id', cart.id);
-
-            break;
-        }
-
+        case 'payment_intent.succeeded':
         case 'payment_intent.payment_failed':
         case 'payment_intent.canceled': {
             const paymentIntent = event.data.object as Stripe.PaymentIntent;
             const paymentIntentId = paymentIntent.id;
-            const nextStatus = event.type === 'payment_intent.canceled' ? 'cancelled' : 'failed';
 
-            const { data: order } = await supabase
-                .from('orders')
-                .update({ status: nextStatus })
-                .eq('stripe_payment_intent_id', paymentIntentId)
-                .select('id')
-                .single();
+            const { data: rpcResult, error: rpcError } = await supabase.rpc(
+                'handle_stripe_webhook_transaction',
+                {
+                    p_event_id: event.id,
+                    p_event_type: event.type,
+                    p_payment_intent_id: paymentIntentId,
+                },
+            );
 
-            if (order) {
-                const { data: items } = await supabase
-                    .from('order_items')
-                    .select('book_id, quantity')
-                    .eq('order_id', order.id);
-
-                if (items) {
-                    for (const item of items) {
-                        const { error: rpcError } = await supabase.rpc('increment_book_stock', {
-                            p_book_id: item.book_id,
-                            p_quantity: item.quantity,
-                        });
-
-                        if (rpcError) {
-                            const { data: book } = await supabase
-                                .from('books')
-                                .select('stock_quantity, sales_count')
-                                .eq('id', item.book_id)
-                                .single();
-
-                            if (book) {
-                                await supabase
-                                    .from('books')
-                                    .update({
-                                        stock_quantity: book.stock_quantity + item.quantity,
-                                        sales_count: Math.max(
-                                            0,
-                                            (book.sales_count ?? 0) - item.quantity,
-                                        ),
-                                    })
-                                    .eq('id', item.book_id);
-                            }
-                        }
-                    }
-                }
+            if (rpcError || !rpcResult || !(rpcResult as { readonly success: boolean }).success) {
+                console.error(
+                    '[Webhook Error] Failed to process webhook transaction:',
+                    rpcError ?? rpcResult,
+                );
+                const errorMessage = (rpcResult as { readonly error?: string })?.error;
+                if (errorMessage === 'ORDER_NOT_FOUND')
+                    return NextResponse.json(
+                        { received: true, warning: 'Order not found.' },
+                        { status: 200 },
+                    );
+                return NextResponse.json({ error: 'Webhook processing failed.' }, { status: 500 });
             }
+
             break;
         }
 
