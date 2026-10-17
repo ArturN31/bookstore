@@ -7,9 +7,9 @@ import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { getCurrentUserCheckoutData } from './services/CheckoutUserService';
 import { validateAndCalculateDiscount } from './services/CheckoutDiscountService';
 import { executeCheckoutOrder } from './services/CheckoutService';
+import { getActiveCartCheckoutItems } from './services/CheckoutCartService';
 import { AppliedDiscountState, ProcessCheckoutResult } from './CheckoutTypes';
-import { applyDiscountSchema, checkoutFormSchema } from '@/data/schemas/checkoutSchema';
-import { clearUsersCart, getUsersCartID } from '../cart/CartService';
+import { applyDiscountSchema, serverCheckoutPayloadSchema } from '@/data/schemas/checkoutSchema';
 
 export interface ActionResult<T> {
     readonly success: boolean;
@@ -67,7 +67,6 @@ export const validateAndApplyDiscountAction = async (
 
 export interface ProcessCheckoutActionPayload {
     readonly shippingDetails: unknown;
-    readonly items: readonly { readonly bookId: string; readonly quantity: number }[];
     readonly discountId: string | null;
     readonly shippingMethodId: string;
     readonly idempotencyKey: string;
@@ -83,6 +82,15 @@ export const processCheckoutAction = async (
                 error: 'Stripe configuration is missing on the server.',
             };
 
+        const payloadParse = serverCheckoutPayloadSchema.safeParse(payload);
+        if (!payloadParse.success)
+            return {
+                success: false,
+                error: payloadParse.error.issues[0]?.message ?? 'Invalid checkout payload entries.',
+            };
+
+        const validatedPayload = payloadParse.data;
+
         const clientIp = await getAppClientIp();
         const ipRateLimit = await verifyRateLimit({
             identifier: `ip:${clientIp}`,
@@ -92,9 +100,7 @@ export const processCheckoutAction = async (
         if (!ipRateLimit.success)
             return {
                 success: false,
-                error:
-                    ipRateLimit.error ??
-                    'Too many checkout attempts. Please wait a moment.',
+                error: ipRateLimit.error ?? 'Too many checkout attempts. Please wait a moment.',
             };
 
         const userResult = await getCurrentUserCheckoutData();
@@ -118,35 +124,38 @@ export const processCheckoutAction = async (
         if (!userRateLimit.success)
             return {
                 success: false,
-                error:
-                    userRateLimit.error ??
-                    'Too many checkout attempts. Please wait a moment.',
+                error: userRateLimit.error ?? 'Too many checkout attempts. Please wait a moment.',
             };
 
-        const formParse = checkoutFormSchema.safeParse(payload.shippingDetails);
-        if (!formParse.success)
+        const serverCartResult = await getActiveCartCheckoutItems(userId);
+        if (serverCartResult.error || !serverCartResult.data || serverCartResult.data.length === 0)
             return {
                 success: false,
-                error: formParse.error.issues[0]?.message ?? 'Invalid checkout form entries.',
+                error: serverCartResult.error ?? APP_ERROR_MESSAGES.EMPTY_CART_CHECKOUT,
             };
+
+        const authoritativeItems = serverCartResult.data.map((item) => ({
+            bookId: item.id,
+            quantity: item.quantity,
+        }));
 
         const checkoutResult = await executeCheckoutOrder({
             userId,
             customerEmail,
             stripeCustomerId,
-            items: payload.items,
-            discountId: payload.discountId,
-            paymentMethod: formParse.data.paymentMethod,
-            shippingMethodId: payload.shippingMethodId,
-            idempotencyKey: payload.idempotencyKey,
+            items: authoritativeItems,
+            discountId: validatedPayload.discountId,
+            paymentMethod: validatedPayload.shippingDetails.paymentMethod,
+            shippingMethodId: validatedPayload.shippingMethodId,
+            idempotencyKey: validatedPayload.idempotencyKey,
             shippingAddress: {
-                firstName: formParse.data.firstName,
-                lastName: formParse.data.lastName,
-                streetAddress: formParse.data.streetAddress,
-                city: formParse.data.city,
-                postcode: formParse.data.postcode,
-                country: formParse.data.country,
-                phoneNumber: formParse.data.phoneNumber ?? '',
+                firstName: validatedPayload.shippingDetails.firstName,
+                lastName: validatedPayload.shippingDetails.lastName,
+                streetAddress: validatedPayload.shippingDetails.streetAddress,
+                city: validatedPayload.shippingDetails.city,
+                postcode: validatedPayload.shippingDetails.postcode,
+                country: validatedPayload.shippingDetails.country,
+                phoneNumber: validatedPayload.shippingDetails.phoneNumber,
             },
         });
 
@@ -155,9 +164,6 @@ export const processCheckoutAction = async (
                 success: false,
                 error: checkoutResult.error ?? APP_ERROR_MESSAGES.ORDER_CREATION_FAILED,
             };
-
-        const cartLookup = await getUsersCartID(userId);
-        if (cartLookup.data) await clearUsersCart(cartLookup.data);
 
         return {
             success: true,

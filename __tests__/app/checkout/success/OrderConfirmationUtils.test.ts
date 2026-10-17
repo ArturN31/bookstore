@@ -14,6 +14,9 @@ describe('OrderConfirmationUtils', () => {
         code: 'TENOFF',
         type: 'percentage',
         value: 10,
+        times_used: 0,
+        usage_limit: null,
+        uses_per_user: null,
         minimum_subtotal: null,
         start_date: '2026-01-01T00:00:00Z',
         end_date: '2026-12-31T00:00:00Z',
@@ -28,6 +31,9 @@ describe('OrderConfirmationUtils', () => {
         code: 'FIVEFIXED',
         type: 'fixed_amount',
         value: 5,
+        times_used: 0,
+        usage_limit: null,
+        uses_per_user: null,
         minimum_subtotal: null,
         start_date: '2026-01-01T00:00:00Z',
         end_date: '2026-12-31T00:00:00Z',
@@ -82,6 +88,7 @@ describe('OrderConfirmationUtils', () => {
                 stripe_payment_intent_id: null,
                 subtotal: 0,
                 tax_amount: 0,
+                inventory_restored: false,
             };
 
             const result = calculateOrderTotals(mockOrder);
@@ -121,6 +128,7 @@ describe('OrderConfirmationUtils', () => {
                 stripe_payment_intent_id: null,
                 subtotal: 0,
                 tax_amount: 0,
+                inventory_restored: false,
             };
 
             const result = calculateOrderTotals(mockOrder);
@@ -160,6 +168,9 @@ describe('OrderConfirmationUtils', () => {
                             created_at: '2026-01-01T00:00:00Z',
                             updated_at: '2026-01-01T00:00:00Z',
                             stripe_coupon_id: null,
+                            times_used: 0,
+                            usage_limit: null,
+                            uses_per_user: null,
                         },
                     },
                 ],
@@ -171,6 +182,7 @@ describe('OrderConfirmationUtils', () => {
                 stripe_payment_intent_id: null,
                 subtotal: 0,
                 tax_amount: 0,
+                inventory_restored: false,
             };
 
             const result = calculateOrderTotals(mockOrder);
@@ -212,6 +224,7 @@ describe('OrderConfirmationUtils', () => {
                 stripe_payment_intent_id: null,
                 subtotal: 0,
                 tax_amount: 0,
+                inventory_restored: false,
             };
 
             const result = calculateOrderTotals(mockOrder);

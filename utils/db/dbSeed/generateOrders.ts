@@ -109,6 +109,7 @@ export const generateOrdersAndItems = (
             created_at: faker.date.recent({ days: 30 }).toISOString(),
             stripe_checkout_session_id: null,
             stripe_payment_intent_id: `pi_${faker.string.alphanumeric(24)}`,
+            inventory_restored: false,
         });
     }
 

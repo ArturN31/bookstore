@@ -19,7 +19,8 @@
         "lighthouse:desktop": "npx concurrently -k -s first \"npm run start\" \"npx wait-on http://localhost:3000 && npx lighthouse http://localhost:3000 --preset=desktop --output json --output html --output-path ./lighthouse-desktop\"",
         "lighthouse:all": "npx concurrently -k -s first \"npm run start\" \"npx wait-on http://localhost:3000 && npx lighthouse http://localhost:3000 --output json --output html --output-path ./lighthouse-mobile && npx lighthouse http://localhost:3000 --preset=desktop --output json --output html --output-path ./lighthouse-desktop\"",
         "build:audit": "npm run build && npm run lighthouse:all",
-        "db:types-refresh": "node --env-file=.env -e \"const { execSync } = require('child_process'); execSync('npx supabase gen types typescript --project-id ' + process.env.NEXT_PUBLIC_SUPABASE_PROJECT_ID + ' --schema public > database.types.ts', { stdio: 'inherit' });\""
+        "db:types-refresh": "node --env-file=.env -e \"const { execSync } = require('child_process'); execSync('npx supabase gen types typescript --project-id ' + process.env.NEXT_PUBLIC_SUPABASE_PROJECT_ID + ' --schema public > database.types.ts', { stdio: 'inherit' });\"",
+        "db:migration-pull": "npx supabase db pull"
     },
     "dependencies": {
         "@emotion/react": "^11.14.0",

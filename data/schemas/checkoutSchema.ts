@@ -1,7 +1,8 @@
 import { z } from 'zod';
-import { PAYMENT_METHODS } from '../checkout/CheckoutConstants';
+import { PAYMENT_METHODS, SHIPPING_METHODS } from '../checkout/CheckoutConstants';
 import { addressFields } from './onboardingSchema';
 import { sanitizeText } from './schemaUtils';
+import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 
 const paymentMethodValues = [PAYMENT_METHODS.CARD, PAYMENT_METHODS.PAYPAL] as const;
 
@@ -63,3 +64,14 @@ export const applyDiscountSchema = z.object({
 });
 
 export type ApplyDiscountSchemaValues = z.infer<typeof applyDiscountSchema>;
+
+export const serverCheckoutPayloadSchema = z.object({
+    shippingDetails: checkoutFormSchema,
+    discountId: z.string().nullable(),
+    shippingMethodId: z
+        .string()
+        .refine((id: string) => SHIPPING_METHODS.some((method) => method.id === id), {
+            message: 'Invalid shipping method selected.',
+        }),
+    idempotencyKey: z.string().min(1, { message: 'Idempotency key is required.' }),
+});

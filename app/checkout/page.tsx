@@ -1,6 +1,5 @@
 import { getCurrentUserCheckoutData } from '@/data/checkout/services/CheckoutUserService';
 import { getCartData } from '@/data/cart/CartService';
-import { redirect } from 'next/navigation';
 import { CheckoutEmptyCart } from './components/CheckoutEmptyCart';
 import { CheckoutForm } from './components/CheckoutForm';
 import { CheckoutStripeProvider } from './components/CheckoutStripeProvider';
@@ -11,12 +10,15 @@ export const dynamic = 'force-dynamic';
 export default async function CheckoutPage(): Promise<JSX.Element> {
     const userResult = await getCurrentUserCheckoutData();
 
-    if (userResult.error || !userResult.data) redirect('/login?redirect=/checkout');
+    if (!userResult.data || userResult.error) return <CheckoutEmptyCart />;
 
     const { id: userId, email, profile, stripeCustomerId } = userResult.data;
 
     const cartResult = await getCartData(userId);
-    const cartItems = cartResult.data?.books ?? [];
+
+    if (cartResult.error || !cartResult.data) return <CheckoutEmptyCart />;
+
+    const cartItems = cartResult.data.books;
 
     if (cartItems.length === 0) return <CheckoutEmptyCart />;
 

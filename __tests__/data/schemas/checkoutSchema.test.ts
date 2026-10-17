@@ -1,8 +1,9 @@
-import { PAYMENT_METHODS } from '@/data/checkout/CheckoutConstants';
+import { PAYMENT_METHODS, SHIPPING_METHODS } from '@/data/checkout/CheckoutConstants';
 import {
     applyDiscountSchema,
     checkoutFormSchema,
     CheckoutFormSchemaValues,
+    serverCheckoutPayloadSchema,
 } from '@/data/schemas/checkoutSchema';
 import { sanitizeText } from '@/data/schemas/schemaUtils';
 
@@ -422,6 +423,84 @@ describe('checkoutSchema', () => {
             if (!result.success) {
                 expect(result.error.flatten().fieldErrors.subtotal).toContain(
                     'Subtotal must be a valid number.',
+                );
+            }
+        });
+    });
+
+    describe('serverCheckoutPayloadSchema', () => {
+        const validShippingDetails: CheckoutFormSchemaValues = {
+            firstName: 'Jane',
+            lastName: 'Doe',
+            email: 'jane.doe@example.com',
+            phoneNumber: '+1 123 456 7890',
+            streetAddress: '123 Main St',
+            city: 'London',
+            postcode: 'SW1A 1AA',
+            country: 'United Kingdom',
+            paymentMethod: PAYMENT_METHODS.CARD,
+        };
+
+        const validShippingMethodId = SHIPPING_METHODS[0]?.id ?? 'royal_mail_standard';
+
+        it('should successfully validate a complete server payload', () => {
+            const result = serverCheckoutPayloadSchema.safeParse({
+                shippingDetails: validShippingDetails,
+                discountId: 'disc-123',
+                shippingMethodId: validShippingMethodId,
+                idempotencyKey: 'idemp-key-1',
+            });
+
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect(result.data.discountId).toBe('disc-123');
+                expect(result.data.shippingMethodId).toBe(validShippingMethodId);
+                expect(result.data.idempotencyKey).toBe('idemp-key-1');
+            }
+        });
+
+        it('should allow null discountId', () => {
+            const result = serverCheckoutPayloadSchema.safeParse({
+                shippingDetails: validShippingDetails,
+                discountId: null,
+                shippingMethodId: validShippingMethodId,
+                idempotencyKey: 'idemp-key-1',
+            });
+
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect(result.data.discountId).toBeNull();
+            }
+        });
+
+        it('should fail when shippingMethodId is invalid or not in SHIPPING_METHODS', () => {
+            const result = serverCheckoutPayloadSchema.safeParse({
+                shippingDetails: validShippingDetails,
+                discountId: null,
+                shippingMethodId: 'non-existent-method',
+                idempotencyKey: 'idemp-key-1',
+            });
+
+            expect(result.success).toBe(false);
+            if (!result.success) {
+                expect(result.error.flatten().fieldErrors.shippingMethodId).toContain(
+                    'Invalid shipping method selected.',
+                );
+            }
+        });
+
+        it('should fail when idempotencyKey is missing or empty', () => {
+            const result = serverCheckoutPayloadSchema.safeParse({
+                shippingDetails: validShippingDetails,
+                discountId: null,
+                shippingMethodId: validShippingMethodId,
+                idempotencyKey: '',
+            });
+
+            expect(result.success).toBe(false);
+            if (!result.success) {
+                expect(result.error.flatten().fieldErrors.idempotencyKey).toContain(
+                    'Idempotency key is required.',
                 );
             }
         });

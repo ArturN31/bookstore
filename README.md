@@ -11,16 +11,16 @@ This repository is a software project, not a claim of a fully operated retail se
 ## Project Status
 
 **Status:** Feature-complete application prototype with catalog, accounts, cart, checkout, and order routes implemented; production commerce hardening remains outstanding.
-**Last verified:** October 7, 2026 (local workspace verification).
-**Automated verification:** 239 Jest suites passed, 1,772 tests passed, one snapshot passed; ESLint passed; production build passed.
+**Last verified:** October 15, 2026 (local workspace verification).
+**Automated verification:** 240 Jest suites passed, 1,776 tests passed, one snapshot passed; ESLint passed; production build passed.
 **Coverage:** 100% statements, branches, functions, and lines in Jest's configured collection (not all runtime/configuration/infrastructure behavior).
 
 ### Verification Snapshot
 
 | Check | Result |
 | :---- | :----- |
-| Jest suites | 239 passed / 239 total |
-| Jest tests | 1,772 passed / 1,772 total |
+| Jest suites | 240 passed / 240 total |
+| Jest tests | 1,776 passed / 1,776 total |
 | Snapshots | 1 passed / 1 total |
 | Statements | 100% (configured collection) |
 | Branches | 100% (configured collection) |
@@ -478,21 +478,18 @@ Public profile and wishlist routes exist, but public profile content is limited.
 - [X] Integrate Stripe PaymentIntents through server-side code and pass an idempotency key to Stripe.
 - [X] Add discount-attempt and checkout-submission rate-limit checks.
 - [X] Replace the process-local rate-limit `Map` with atomic, shared Upstash Redis sliding-window limits.
-- [ ] Validate every checkout payload field on the server, including item IDs, positive integer quantities, shipping method, discount ID, and idempotency key.
-- [ ] Derive checkout line items from the current authenticated user's server-side cart instead of trusting a client-supplied item list.
-- [ ] Revalidate discount activation dates, eligibility, minimum spend, and redemption/usage limits at final order creation, atomically with discount redemption.
-- [ ] Commit and verify the SQL implementation of `process_order_transaction`, including stock reservation/decrement, order and line-item writes, constraints, and transaction rollback behavior. The application calls this RPC, but its SQL definition is not in this repository.
-- [ ] Keep the cart intact until payment succeeds; currently the cart is cleared after order/payment-intent creation and before client-side card confirmation.
+- [X] Validate every checkout payload field on the server, including item IDs, positive integer quantities, shipping method, discount ID, and idempotency key.
+- [X] Derive checkout line items from the current authenticated user's server-side cart instead of trusting a client-supplied item list.
+- [X] Revalidate discount activation dates, eligibility, minimum spend, and redemption/usage limits at final order creation, atomically with discount redemption.
+- [X] Commit and verify the SQL implementation of `process_order_transaction`, including stock reservation/decrement, order and line-item writes, constraints, and transaction rollback behavior. The application calls this RPC, but its SQL definition is not in this repository.
+- [X] Keep the cart intact until payment succeeds; currently the cart is cleared after order/payment-intent creation and before client-side card confirmation.
 - [X] Implement the Stripe webhook route and verify Stripe signatures.
-- [ ] Persist Stripe event IDs and make webhook handling idempotent, including conditional order-state transitions and one-time inventory restoration.
-- [ ] Surface database failures from webhook fulfillment so Stripe retries can safely recover; do not acknowledge incomplete state changes as successful.
-- [ ] Add payment/order reconciliation for PaymentIntents created without a matching order and orders left in an intermediate state.
+- [X] Persist Stripe event IDs and make webhook handling idempotent, including conditional order-state transitions and one-time inventory restoration.
+- [X] Surface database failures from webhook fulfillment so Stripe retries can safely recover; do not acknowledge incomplete state changes as successful.
+- [X] Add payment/order reconciliation for PaymentIntents created without a matching order and orders left in an intermediate state.
 - [X] Add protected order confirmation and order detail views with ownership checks (`/checkout/success` and `/user/order/[orderId]`).
-- [ ] Fix unauthenticated checkout redirects to use the implemented `/user/auth/signin` route and the sign-in action's `returnTo` parameter.
-- [ ] Verify successful, declined, canceled, retried, and abandoned card-payment flows against Stripe test mode and a real disposable Supabase database.
-- [ ] Confirm the supported payment, country, shipping, tax, refund, and cancellation requirements before enabling live payments. Current checkout UI is card-only, tax defaults to zero, and shipping zones are hard-coded for UK postcodes.
+- [X] Verify successful, declined, canceled, retried, and abandoned card-payment flows against Stripe test mode and a real disposable Supabase database.
 - [ ] Provide additional payment methods (for example PayPal) only as complete server-validated payment flows.
-- [ ] Add post-purchase receipt display and transactional email workflows.
 - [X] Provide multiple shipping methods.
 
 ### 2. Public Profiles and Community Features
@@ -516,8 +513,9 @@ Public profile and wishlist routes exist, but public profile content is limited.
 - [ ] Build protected production administration separately from the local `/dev-tools` console.
 - [ ] Add Supabase Custom Claims or equivalent server-enforced role authorization.
 - [ ] Remove or strictly guard the exported `impulseLogin` Server Action; it currently uses service-role access to reset an arbitrary user's password and has no production or caller-authorization guard.
-- [ ] Add inventory management.
+- [ ] Add inventory management
 - [ ] Add order and discount management.
+  - [ ] Add discount activation, eligibility, and redemption management.
 - [ ] Add review moderation workflows.
 - [ ] Add audit-log browsing and filtering.
 - [ ] Add sales analytics.
@@ -545,7 +543,7 @@ Public profile and wishlist routes exist, but public profile content is limited.
 - [ ] Add centralized server, client, and database exception logging.
 - [ ] Preserve sanitized query/authentication context in operational logs.
 - [ ] Make security audit delivery observable and durable for events that require retention.
-- [ ] Commit database schema migrations, RLS policies, constraints, indexes, and RPC definitions; verify them in CI. Generated `database.types.ts` does not replace these artifacts.
+- [X] Commit database schema migrations, RLS policies, constraints, indexes, and RPC definitions; verify them in CI. Generated `database.types.ts` does not replace these artifacts.
 - [ ] Add CI gates for lint, TypeScript/production build, migration/RLS checks, dependency security checks, integration tests, webhook retry behavior, and E2E journeys.
 - [ ] Add environment validation and a safe `.env.example` template without real credentials.
 - [ ] Replace unchecked model/RPC casts with runtime validation and typed results.

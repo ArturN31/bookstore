@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -166,8 +166,11 @@ export type Database = {
           minimum_subtotal: number | null
           start_date: string
           stripe_coupon_id: string | null
+          times_used: number
           type: string
           updated_at: string
+          usage_limit: number | null
+          uses_per_user: number | null
           value: number
         }
         Insert: {
@@ -179,8 +182,11 @@ export type Database = {
           minimum_subtotal?: number | null
           start_date?: string
           stripe_coupon_id?: string | null
+          times_used?: number
           type?: string
           updated_at?: string
+          usage_limit?: number | null
+          uses_per_user?: number | null
           value: number
         }
         Update: {
@@ -192,8 +198,11 @@ export type Database = {
           minimum_subtotal?: number | null
           start_date?: string
           stripe_coupon_id?: string | null
+          times_used?: number
           type?: string
           updated_at?: string
+          usage_limit?: number | null
+          uses_per_user?: number | null
           value?: number
         }
         Relationships: []
@@ -335,6 +344,7 @@ export type Database = {
           created_at: string
           discount_amount: number
           id: string
+          inventory_restored: boolean
           payment_method: string
           shipping_cost: number
           shipping_method_id: string
@@ -351,6 +361,7 @@ export type Database = {
           created_at?: string
           discount_amount?: number
           id?: string
+          inventory_restored?: boolean
           payment_method: string
           shipping_cost?: number
           shipping_method_id?: string
@@ -367,6 +378,7 @@ export type Database = {
           created_at?: string
           discount_amount?: number
           id?: string
+          inventory_restored?: boolean
           payment_method?: string
           shipping_cost?: number
           shipping_method_id?: string
@@ -519,6 +531,27 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_events: {
+        Row: {
+          created_at: string
+          event_id: string
+          event_type: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          event_type: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          event_type?: string
+          status?: string
+        }
+        Relationships: []
+      }
       wishlist: {
         Row: {
           book_id: string
@@ -640,6 +673,14 @@ export type Database = {
           updated_at: string
           username: string
         }[]
+      }
+      handle_stripe_webhook_transaction: {
+        Args: {
+          p_event_id: string
+          p_event_type: string
+          p_payment_intent_id: string
+        }
+        Returns: Json
       }
       increment_book_stock: {
         Args: { p_book_id: string; p_quantity: number }

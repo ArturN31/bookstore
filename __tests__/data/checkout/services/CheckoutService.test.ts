@@ -566,6 +566,7 @@ describe('CheckoutService', () => {
                 order_items: [],
                 order_discounts: [],
                 order_addresses: [],
+                inventory_restored: false,
             };
 
             jest.mocked(fetchOrderById).mockResolvedValue({
