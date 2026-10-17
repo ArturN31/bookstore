@@ -66,6 +66,7 @@ describe('UserOrdersPage', () => {
         stripe_payment_intent_id: null,
         subtotal: 29.99,
         tax_amount: 0,
+        inventory_restored: false,
     };
 
     beforeEach(() => {

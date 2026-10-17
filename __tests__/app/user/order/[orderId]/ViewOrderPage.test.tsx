@@ -39,6 +39,7 @@ describe('ViewOrderPage', () => {
         stripe_payment_intent_id: null,
         subtotal: 0,
         tax_amount: 0,
+        inventory_restored: false,
     };
 
     beforeEach(() => {

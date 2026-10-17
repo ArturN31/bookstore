@@ -48,6 +48,7 @@ describe('verifyOrderOwnershipAndFetch', () => {
         order_items: [],
         order_discounts: [],
         order_addresses: [],
+        inventory_restored: false,
     };
 
     beforeEach(() => {
@@ -117,17 +118,19 @@ describe('verifyOrderOwnershipAndFetch', () => {
             data: { user: { id: 'user-auth-123' } as never },
             error: null,
         });
-        mockVerifyRateLimit.mockResolvedValueOnce({
-            success: true,
-            limit: 60,
-            remaining: 59,
-            reset: Date.now() + 60000,
-        }).mockResolvedValueOnce({
-            success: false,
-            limit: 60,
-            remaining: 0,
-            reset: Date.now() + 60000,
-        });
+        mockVerifyRateLimit
+            .mockResolvedValueOnce({
+                success: true,
+                limit: 60,
+                remaining: 59,
+                reset: Date.now() + 60000,
+            })
+            .mockResolvedValueOnce({
+                success: false,
+                limit: 60,
+                remaining: 0,
+                reset: Date.now() + 60000,
+            });
 
         const result = await verifyOrderOwnershipAndFetch('order-123');
 
