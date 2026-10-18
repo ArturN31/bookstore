@@ -52,9 +52,7 @@ export function SettlementSummaryCard({ totals }: SettlementSummaryCardProps): J
                     </div>
 
                     <div className="flex items-baseline justify-between border-t border-slate-200 pt-5">
-                        <span className="text-base font-black text-slate-900">
-                            Grand Total Paid
-                        </span>
+                        <span className="text-base font-black text-slate-900">Total</span>
                         <span className="font-mono text-2xl font-black text-emerald-700">
                             £{totals.grandTotal.toFixed(2)}
                         </span>

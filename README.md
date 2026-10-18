@@ -555,7 +555,7 @@ Public profile and wishlist routes exist, but public profile content is limited.
 
 - [X] Add a view-orders page to the private profile area.
   - [X] Add an order-details page with line items, shipping, and payment information.
-- [ ] Add an order cancellation workflow with server-side eligibility checks, payment/refund handling, and inventory restoration.
+- [X] Add an order cancellation workflow with server-side eligibility checks and inventory restoration.
 
 This repository is a personal engineering project that demonstrates a full-stack bookstore implementation. The checked-in source does not include a maintainer biography, support contact, service-level commitment, or production support channel. Do not treat the repository demo as an operational retail service without the deployment, security, legal, and payment work above.
 
