@@ -32,7 +32,7 @@ describe('SettlementSummaryCard', () => {
         expect(screen.getByText('Shipping & Handling')).toBeInTheDocument();
         expect(screen.getByText('£4.99')).toBeInTheDocument();
 
-        expect(screen.getByText('Grand Total Paid')).toBeInTheDocument();
+        expect(screen.getByText('Total')).toBeInTheDocument();
         expect(screen.getByText('£44.99')).toBeInTheDocument();
 
         const continueLink = screen.getByRole('link', { name: /continue shopping/i });

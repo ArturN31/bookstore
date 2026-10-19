@@ -4,6 +4,8 @@ import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { JSX } from 'react';
 import { OrderDetails } from '@/app/checkout/success/components/OrderDetails';
 import { OrderErrorState } from '@/app/checkout/success/components/OrderErrorState';
+import { OrderCancelModal } from './components/OrderCancelModal';
+import { BackButton } from '@/components/layout/BackButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +36,7 @@ export default async function ViewOrderPage({ params }: PageProps): Promise<JSX.
         );
 
     if (ownershipResult.status === 'UNAUTHENTICATED')
-        redirect(`/login?redirect=/user/order/${encodeURIComponent(orderId)}`);
+        return redirect(`/login?redirect=/user/order/${encodeURIComponent(orderId)}`);
 
     if (ownershipResult.status === 'RATE_LIMITED')
         return (
@@ -53,7 +55,14 @@ export default async function ViewOrderPage({ params }: PageProps): Promise<JSX.
         );
 
     return (
-        <main className="bg-gray-50 px-4 py-10 sm:px-6 lg:px-8">
+        <main className="mx-auto max-w-7xl space-y-8 bg-gray-50 px-4 py-10 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between">
+                <BackButton />
+            </div>
+            <OrderCancelModal
+                orderId={orderId}
+                orderStatus={ownershipResult.order.status}
+            />
             <OrderDetails order={ownershipResult.order} />
         </main>
     );

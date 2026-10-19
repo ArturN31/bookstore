@@ -622,6 +622,10 @@ export type Database = {
       }
     }
     Functions: {
+      cancel_user_order: {
+        Args: { p_order_id: string; p_user_id: string }
+        Returns: Json
+      }
       get_public_profile: {
         Args: { target_username: string }
         Returns: {
