@@ -36,7 +36,7 @@ export default async function ViewOrderPage({ params }: PageProps): Promise<JSX.
         );
 
     if (ownershipResult.status === 'UNAUTHENTICATED')
-        redirect(`/login?redirect=/user/order/${encodeURIComponent(orderId)}`);
+        return redirect(`/login?redirect=/user/order/${encodeURIComponent(orderId)}`);
 
     if (ownershipResult.status === 'RATE_LIMITED')
         return (

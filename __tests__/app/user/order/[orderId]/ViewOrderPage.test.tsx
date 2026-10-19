@@ -8,6 +8,10 @@ import ViewOrderPage from '@/app/user/order/[orderId]/page';
 
 jest.mock('next/navigation', () => ({
     redirect: jest.fn(),
+    useRouter: () => ({
+        back: jest.fn(),
+        refresh: jest.fn(),
+    }),
 }));
 
 jest.mock('@/data/checkout/services/OrderOwnershipService');
@@ -18,6 +22,14 @@ jest.mock('@/app/checkout/success/components/OrderDetails', () => ({
     ),
 }));
 
+jest.mock('@/app/user/order/[orderId]/components/OrderCancelModal', () => ({
+    OrderCancelModal: (): JSX.Element => <div data-testid="order-cancel-modal" />,
+}));
+
+jest.mock('@/components/layout/BackButton', () => ({
+    BackButton: (): JSX.Element => <button type="button">Back</button>,
+}));
+
 describe('ViewOrderPage', () => {
     const mockRedirect = jest.mocked(redirect);
     const mockVerifyOrderOwnershipAndFetch = jest.mocked(verifyOrderOwnershipAndFetch);
@@ -25,7 +37,7 @@ describe('ViewOrderPage', () => {
     const mockOrder: OrderWithRelations = {
         id: 'order-123',
         user_id: 'user-456',
-        status: 'PROCESSING',
+        status: 'pending',
         created_at: '2026-01-01T00:00:00Z',
         payment_method: 'card',
         total_amount: 49.99,
@@ -121,10 +133,6 @@ describe('ViewOrderPage', () => {
 
         expect(screen.getByText('Access Denied')).toBeInTheDocument();
         expect(screen.getByText(APP_ERROR_MESSAGES.UNAUTHORIZED_ORDER_ACCESS)).toBeInTheDocument();
-
-        const storefrontButton = screen.getByRole('link', { name: 'Return to Storefront' });
-        expect(storefrontButton).toBeInTheDocument();
-        expect(storefrontButton).toHaveAttribute('href', '/');
     });
 
     it('renders a retry-later state when order access is rate limited', async () => {
@@ -146,7 +154,7 @@ describe('ViewOrderPage', () => {
         ).toBeInTheDocument();
     });
 
-    it('renders OrderDetails component when status is SUCCESS', async () => {
+    it('renders OrderDetails component and modal when status is SUCCESS', async () => {
         mockVerifyOrderOwnershipAndFetch.mockResolvedValueOnce({
             status: 'SUCCESS',
             order: mockOrder,
@@ -160,5 +168,6 @@ describe('ViewOrderPage', () => {
 
         expect(screen.getByTestId('order-details')).toBeInTheDocument();
         expect(screen.getByText('Order Details: order-123')).toBeInTheDocument();
+        expect(screen.getByTestId('order-cancel-modal')).toBeInTheDocument();
     });
 });

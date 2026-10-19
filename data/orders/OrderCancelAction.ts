@@ -24,7 +24,7 @@ export const cancelOrderAction = async (orderId: string): Promise<ActionResult> 
         if (!parseResult.success)
             return {
                 success: false,
-                error: parseResult.error.issues[0]?.message ?? 'Invalid order reference.',
+                error: parseResult.error.issues[0]?.message,
             };
 
         const clientIp = await getAppClientIp();

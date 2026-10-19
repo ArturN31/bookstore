@@ -12,15 +12,15 @@ This repository is a software project, not a claim of a fully operated retail se
 
 **Status:** Feature-complete application prototype with catalog, accounts, cart, checkout, and order routes implemented; production commerce hardening remains outstanding.
 **Last verified:** October 15, 2026 (local workspace verification).
-**Automated verification:** 240 Jest suites passed, 1,776 tests passed, one snapshot passed; ESLint passed; production build passed.
+**Automated verification:** 245 Jest suites passed, 1,808 tests passed, one snapshot passed; ESLint passed; production build passed.
 **Coverage:** 100% statements, branches, functions, and lines in Jest's configured collection (not all runtime/configuration/infrastructure behavior).
 
 ### Verification Snapshot
 
 | Check | Result |
 | :---- | :----- |
-| Jest suites | 240 passed / 240 total |
-| Jest tests | 1,776 passed / 1,776 total |
+| Jest suites | 245 passed / 245 total |
+| Jest tests | 1,808 passed / 1,808 total |
 | Snapshots | 1 passed / 1 total |
 | Statements | 100% (configured collection) |
 | Branches | 100% (configured collection) |
