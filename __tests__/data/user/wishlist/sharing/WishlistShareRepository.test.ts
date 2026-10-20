@@ -96,12 +96,11 @@ describe('WishlistShareRepository', () => {
             expect(mockEq).toHaveBeenCalledWith('is_wishlist_public', true);
             expect(result.error).toBeNull();
             expect(result.data).toEqual({
-                user_id: 'user-123',
                 username: 'testuser',
-                first_name: 'John',
-                last_name: 'Doe',
-                wishlist: validUserData.test_wishlist_table,
+                wishlist: [{ books: null }],
             });
+            const selection = mockSelect.mock.calls[0][0] as string;
+            expect(selection).not.toMatch(/user_id|first_name|last_name|created_at|book_id/);
         });
 
         it('should fallback to an empty array if wishlist is not an array', async () => {
@@ -158,11 +157,8 @@ describe('WishlistShareRepository', () => {
             expect(mockEq).toHaveBeenCalledWith('wishlist_share_token', 'valid-token');
             expect(result.error).toBeNull();
             expect(result.data).toEqual({
-                user_id: 'user-456',
                 username: 'tokenuser',
-                first_name: 'Jane',
-                last_name: 'Smith',
-                wishlist: validTokenData.test_wishlist_table,
+                wishlist: [{ books: null }],
             });
         });
 

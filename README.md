@@ -504,7 +504,7 @@ Public profile and wishlist routes exist, but public profile content is limited.
     - [X] Add a private-profile view.
     - [X] Add a public-profile view.
     - [X] Add a profile visibility toggle.
-- [ ] Verify that every public profile, review, and wishlist response exposes only fields allowed by the user's current privacy settings.
+- [X] Verify that every public profile, review, and wishlist response exposes only fields allowed by the user's current privacy settings.
 - [ ] Add database-backed integration tests for profile visibility, review visibility, public wishlist access, and private token revocation.
 - [ ] Consider additional social/community features only after the privacy model and data exposure rules are explicitly documented.
 

@@ -21,7 +21,7 @@ describe('PublicProfileBanner', () => {
         expect(screen.getByText('Public Profile')).toBeInTheDocument();
     });
 
-    it('should render Private Profile when mode is private', () => {
+    it('should render Private Profile without exposing the join date when mode is private', () => {
         const mockProfile = {
             username: 'johndoe',
             created_at: '2026-01-01T00:00:00.000Z',
@@ -35,5 +35,6 @@ describe('PublicProfileBanner', () => {
         );
 
         expect(screen.getByText('Private Profile')).toBeInTheDocument();
+        expect(screen.queryByText(/Joined/)).not.toBeInTheDocument();
     });
 });

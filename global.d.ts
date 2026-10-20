@@ -26,13 +26,18 @@ declare global {
     //Extends base schemas with UI-specific or joined fields
 
     interface Book extends BookDB {
-        reviews?: Review[];
+        reviews?: PublicReview[];
         rating?: number;
         avg_rating?: number;
         review_count?: number;
     }
 
     interface Review extends ReviewDB {}
+
+    type PublicReview = Pick<
+        Review,
+        'id' | 'book_id' | 'username' | 'rating' | 'review' | 'created_at' | 'updated_at'
+    >;
 
     interface User extends UserDB {
         email: string;
@@ -64,7 +69,7 @@ declare global {
     }
 
     interface PaginatedReviewsResult {
-        data: Review[];
+        data: PublicReview[];
         total: number;
         totalPages: number;
         currentPage: number;

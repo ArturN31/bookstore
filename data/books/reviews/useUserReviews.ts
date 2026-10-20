@@ -12,14 +12,14 @@ export interface SelectedEditReview {
 }
 
 export interface UseUserReviewsProps {
-    initialReviews: Review[];
+    initialReviews: PublicReview[];
     initialBooksMap: Record<string | number, Partial<BookDB> | null>;
     initialHasMore: boolean;
     isOwner?: boolean;
 }
 
 export interface UseUserReviewsReturn {
-    reviews: Review[];
+    reviews: PublicReview[];
     booksMap: Record<string | number, Partial<BookDB> | null>;
     hasMore: boolean;
     isLoadingMore: boolean;
@@ -42,14 +42,14 @@ export const useUserReviews = ({
     isOwner = false,
 }: UseUserReviewsProps): UseUserReviewsReturn => {
     const router = useRouter();
-    const [reviews, setReviews] = useState<Review[]>(initialReviews);
+    const [reviews, setReviews] = useState<PublicReview[]>(initialReviews);
     const [booksMap, setBooksMap] =
         useState<Record<string | number, Partial<BookDB> | null>>(initialBooksMap);
     const [hasMore, setHasMore] = useState<boolean>(initialHasMore);
     const [page, setPage] = useState<number>(1);
     const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
 
-    const [prevInitialReviews, setPrevInitialReviews] = useState<Review[]>(initialReviews);
+    const [prevInitialReviews, setPrevInitialReviews] = useState<PublicReview[]>(initialReviews);
     if (prevInitialReviews !== initialReviews) {
         setPrevInitialReviews(initialReviews);
         setReviews(initialReviews);

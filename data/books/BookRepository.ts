@@ -25,7 +25,9 @@ export const createBaseBookQuery = (
     supabase: SupabaseClient<Database>,
     params: BookQueryParams,
 ) => {
-    const selector = params.bookID ? 'book_reviews(*)' : 'book_reviews(rating)';
+    const selector = params.bookID
+        ? 'book_reviews(id, book_id, username, rating, review, created_at, updated_at)'
+        : 'book_reviews(rating)';
 
     let query = supabase.from('books_with_stats').select(`*, ${selector}`, { count: 'exact' });
 

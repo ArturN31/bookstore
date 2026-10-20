@@ -7,9 +7,9 @@ interface BookRowWithReviews extends BookViewRow {
     readonly book_reviews: readonly { readonly rating: number }[] | null;
 }
 
-const getReviews = (reviews: readonly { readonly rating: number }[] | null): Review[] => {
+const getReviews = (reviews: readonly { readonly rating: number }[] | null): PublicReview[] => {
     if (!reviews) return [];
-    return reviews as unknown as Review[];
+    return reviews as unknown as PublicReview[];
 };
 
 const calculateRating = (avgRating: number | null | undefined): number => {

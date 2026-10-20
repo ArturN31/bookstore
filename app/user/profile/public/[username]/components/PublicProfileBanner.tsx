@@ -29,9 +29,11 @@ export const PublicProfileBanner = ({
                             <h1 className="text-3xl font-bold tracking-tight text-slate-900">
                                 @{profile.username}
                             </h1>
-                            <p className="mt-1 text-sm font-medium text-slate-500">
-                                Joined {joinedDate}
-                            </p>
+                            {mode === 'public' && (
+                                <p className="mt-1 text-sm font-medium text-slate-500">
+                                    Joined {joinedDate}
+                                </p>
+                            )}
                         </div>
                     </div>
 
