@@ -106,7 +106,7 @@ Important implementation areas:
 
 ### Backend and Database Configuration Caveat
 
-The application expects Supabase tables and RPC functions, including order/inventory transaction procedures, but this repository does not include a committed SQL migration/schema set under `supabase/`. Supabase RLS policies, constraints, triggers, and RPC implementation therefore cannot be verified or reproduced from this repository alone. Obtain or create versioned migrations and test them before deploying or using real customer data.
+The repository includes versioned SQL files under `supabase/migrations/`, including the captured schema and privacy-related policy changes. Verify that these migrations represent the deployed database and test the applied policies and RPC behavior before deploying or using real customer data.
 
 ## Implemented Features
 
@@ -143,7 +143,7 @@ The application expects Supabase tables and RPC functions, including order/inven
 
 - Private profile and address management.
 - Public profile route at `/user/profile/public/[username]`.
-- Profile privacy settings UI; public identity/content scope remains limited and needs dedicated access-control verification.
+- Independent profile, review, and wishlist visibility controls; see [Privacy Model and Data Exposure](#privacy-model-and-data-exposure).
 - Relevant code: [app/user/profile/](app/user/profile/), [data/user/profile/](data/user/profile/).
 
 ### Shopping Cart
@@ -255,7 +255,14 @@ Before launch, audit accessible names/state for icon controls and search, focus 
 - Order detail access checks that the order belongs to the current user.
 - Stripe webhook signature is verified before handling event contents.
 - **Critical limitation:** the exported `impulseLogin` action in [app/dev-tools/actions/DevToolsActions.ts](app/dev-tools/actions/DevToolsActions.ts) uses a service-role client to reset an arbitrary user's password and sign in as that user. It has a production guard and rate limit, but no caller authorization check; page redirects are not an adequate Server Action security boundary. Do not expose development environments to untrusted callers and authorize privileged actions server-side.
-- RLS cannot be verified because policy/migration SQL is not present in the repository. Treat it as unverified; service-role access bypasses RLS.
+
+### Privacy Model and Data Exposure
+
+- Profile visibility controls the public profile page. A private profile still shows the username and private-profile status, but not the join date or profile sections. Owners can view their own content regardless of visibility.
+- Review and wishlist visibility are independent: enabled reviews and username-based wishlists can be viewed even when the profile is private. These sections appear on the public profile only when both the profile and corresponding content are public.
+- Public profile rendering exposes the username and, when public, join month/year. Reviews expose review and book IDs, username, rating, text, timestamps, and book title/author. Wishlists expose username and book ID, title, author, price, image URL, and description. Contact details, address, date of birth, phone number, and share token are excluded.
+- Profile data is fetched through a service-role-only RPC; review reads are governed by RLS and the review visibility setting; wishlist reads are server-side and constrained by public visibility or a matching share token.
+- A private wishlist URL is a bearer link: anyone with its token can view the wishlist. Switching to public sharing clears the token; rotating it replaces the previous link. Local Supabase integration tests cover visibility and token revocation.
 
 ### Input and Error Safety
 
@@ -271,7 +278,7 @@ Zod and shared Supabase error utilities are used broadly. Remaining concerns inc
 - Stripe webhook event processing does not durably deduplicate event IDs; repeated failure/cancel events may repeat stock restoration, and some database errors are ignored.
 - Checkout clears the cart before client-side card confirmation is completed.
 - Server-side checkout validation/revalidation is incomplete for items, quantities, shipping/payment choices, discount date windows, and usage limits.
-- No in-repository migrations/RLS/RPC definitions; authorization policy and atomic inventory behavior cannot be verified.
+- Verify the deployed database matches the committed migrations; authorization policy and atomic inventory behavior depend on the applied SQL definitions.
 - The development console uses a service-role key; it must never be available to untrusted callers.
 - No centralized durable audit delivery, structured error reporting, or monitored abuse controls are evidenced.
 
@@ -279,7 +286,7 @@ Zod and shared Supabase error utilities are used broadly. Remaining concerns inc
 
 ### Test Organization
 
-Tests are under [__tests__/](__tests__/) and include app route/component tests, data action/service/repository/schema tests, hook tests, provider/reducer tests, security/error utility tests, checkout and Stripe webhook tests. Framework/external boundaries are mocked in [__mocks__/](__mocks__/). The standard suite uses Jest/jsdom and React Testing Library. An opt-in real Supabase integration suite covers profile/review visibility, public wishlist access, and wishlist token revocation against a local database.
+Tests are under [__tests__/](__tests__/) and include app route/component tests, data action/service/repository/schema tests, hook tests, provider/reducer tests, security/error utility tests, checkout and Stripe webhook tests. Framework/external boundaries are mocked in [__mocks__/](__mocks__/). The standard suite uses Jest/jsdom and React Testing Library and excludes the opt-in integration tests. The real Supabase integration suite covers profile/review visibility, public wishlist access, and wishlist token revocation against a local database; run it separately with `npm run test:db:privacy` after starting and configuring local Supabase.
 
 ### Current Coverage
 
@@ -467,12 +474,12 @@ Discounts can be submitted and calculated, but final-order validation must reche
 
 ### Public Identity
 
-Public profile and wishlist routes exist, but public profile content is limited. Verify privacy settings against real RLS and server-side authorization. No social feed or moderation workflow is implemented.
+Public profile, review, and wishlist routes follow the [Privacy Model and Data Exposure](#privacy-model-and-data-exposure). No social feed or moderation workflow is implemented.
 
 ### Security, Accessibility, and Observability
 
 - In-memory rate limiting is process-local, not distributed, and is not a reliable production control.
-- No migration/RLS/RPC SQL is committed; effective database security cannot be confirmed from the codebase.
+- Verify that privacy-related migrations are applied and that deployed policies match the local integration-test expectations before relying on access control.
 - CSP permits inline/eval scripts; harden after assessing framework/payment requirements.
 - No full WCAG audit, automated axe suite, live integration test suite, or browser E2E suite is configured.
 - CI currently runs Jest only; lint/build/migration/payment checks are not required gates.
@@ -515,7 +522,6 @@ Public profile and wishlist routes exist, but public profile content is limited.
     - [X] Add a profile visibility toggle.
 - [X] Verify that every public profile, review, and wishlist response exposes only fields allowed by the user's current privacy settings.
 - [X] Add database-backed integration tests for profile visibility, review visibility, public wishlist access, and private token revocation.
-- [ ] Consider additional social/community features only after the privacy model and data exposure rules are explicitly documented.
 
 ### 3. Store Operations
 
