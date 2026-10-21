@@ -15,38 +15,22 @@ export interface WishlistBookDto {
 }
 
 export interface WishlistSharedItem {
-    id: string;
-    created_at: string;
-    book_id: string;
     books: WishlistBookDto | null;
 }
 
 export interface PublicWishlistProfile {
-    user_id: string;
     username: string;
-    first_name: string;
-    last_name: string;
     wishlist: WishlistSharedItem[];
 }
 
 export interface TokenWishlistProfile {
-    user_id: string;
     username: string;
-    first_name: string;
-    last_name: string;
     wishlist: WishlistSharedItem[];
 }
 
 const WISHLIST_SELECT_QUERY = `
-    id,
     username,
-    first_name,
-    last_name,
-    is_wishlist_public,
     ${WISHLIST_TABLE}(
-        id,
-        created_at,
-        book_id,
         books(
             id,
             title,
@@ -57,6 +41,14 @@ const WISHLIST_SELECT_QUERY = `
         )
     )
 `;
+
+const getSharedWishlistItems = (rawWishlist: unknown): WishlistSharedItem[] => {
+    if (!Array.isArray(rawWishlist)) return [];
+
+    return (rawWishlist as WishlistSharedItem[]).map(({ books }) => ({
+        books: books ?? null,
+    }));
+};
 
 export const fetchWishlistByUsername = async (
     username: string,
@@ -78,15 +70,9 @@ export const fetchWishlistByUsername = async (
             if (!result.data) return { data: null, error: null };
 
             const rawData = result.data as Record<string, unknown>;
-            const rawWishlist = Array.isArray(rawData[WISHLIST_TABLE])
-                ? (rawData[WISHLIST_TABLE] as WishlistSharedItem[])
-                : [];
             const profile: PublicWishlistProfile = {
-                user_id: String(rawData.id),
                 username: String(rawData.username),
-                first_name: String(rawData.first_name),
-                last_name: String(rawData.last_name),
-                wishlist: rawWishlist,
+                wishlist: getSharedWishlistItems(rawData[WISHLIST_TABLE]),
             };
 
             return { data: profile, error: null };
@@ -115,15 +101,9 @@ export const fetchWishlistByToken = async (
             if (!result.data) return { data: null, error: null };
 
             const rawData = result.data as Record<string, unknown>;
-            const rawWishlist = Array.isArray(rawData[WISHLIST_TABLE])
-                ? (rawData[WISHLIST_TABLE] as WishlistSharedItem[])
-                : [];
             const profile: TokenWishlistProfile = {
-                user_id: String(rawData.id),
                 username: String(rawData.username),
-                first_name: String(rawData.first_name),
-                last_name: String(rawData.last_name),
-                wishlist: rawWishlist,
+                wishlist: getSharedWishlistItems(rawData[WISHLIST_TABLE]),
             };
 
             return { data: profile, error: null };

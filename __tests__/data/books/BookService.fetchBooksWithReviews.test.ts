@@ -144,7 +144,7 @@ describe('BookService.fetchBooksWithReviews', () => {
         expect(result.data?.data).toEqual([]);
     });
 
-    it('should use the wildcard review selector and filter by id when bookID is provided', async () => {
+    it('should select only public review fields and filter by id when bookID is provided', async () => {
         const testID = 'specific-book-id';
         const { supabaseClient, chain } = setupSupabaseMock({
             data: [],
@@ -159,9 +159,12 @@ describe('BookService.fetchBooksWithReviews', () => {
         await fetchBooksWithReviews({ bookID: testID });
 
         expect(supabaseClient.from).toHaveBeenCalledWith('books_with_stats');
-        expect(chain.select).toHaveBeenCalledWith(expect.stringContaining('book_reviews(*)'), {
-            count: 'exact',
-        });
+        const selection = chain.select.mock.calls[0][0] as string;
+        expect(selection).toContain(
+            'book_reviews(id, book_id, username, rating, review, created_at, updated_at)',
+        );
+        expect(selection).not.toContain('user_id');
+        expect(chain.select).toHaveBeenCalledWith(expect.any(String), { count: 'exact' });
         expect(chain.eq).toHaveBeenCalledWith('id', testID);
     });
 

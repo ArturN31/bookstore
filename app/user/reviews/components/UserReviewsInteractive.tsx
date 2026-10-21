@@ -9,7 +9,7 @@ import { InfiniteScrollSentinel } from './InfiniteScrollSentinel';
 import { useUserReviews } from '../../../../data/books/reviews/useUserReviews';
 
 interface UserReviewsInteractiveProps {
-    initialReviews: Review[];
+    initialReviews: PublicReview[];
     initialBooksMap: Record<string | number, Partial<BookDB> | null>;
     initialHasMore: boolean;
     isOwner?: boolean;

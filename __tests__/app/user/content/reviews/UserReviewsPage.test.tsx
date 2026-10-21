@@ -3,7 +3,12 @@ import { createBackendClient } from '@/utils/db/server';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import UserReviewsPage from '@/app/user/reviews/[username]/page';
 import { UserReviewsInteractive } from '@/app/user/reviews/components/UserReviewsInteractive';
+import { getPublicProfile } from '@/data/user/profile/PrivacySettingsService';
 import { verifyRateLimit } from '@/utils/network/rateLimiter';
+
+jest.mock('@/data/user/profile/PrivacySettingsService', () => ({
+    getPublicProfile: jest.fn(),
+}));
 
 jest.mock('@/utils/db/server', () => ({
     createBackendClient: jest.fn(),
@@ -37,6 +42,7 @@ jest.mock('@mui/icons-material/RateReviewOutlined', () => ({
 }));
 
 describe('UserReviewsPage', () => {
+    const mockGetPublicProfile = jest.mocked(getPublicProfile);
     const mockVerifyRateLimit = jest.mocked(verifyRateLimit);
     const mockGetUser = jest.fn<
         Promise<{
@@ -54,6 +60,17 @@ describe('UserReviewsPage', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        mockGetPublicProfile.mockResolvedValue({
+            data: {
+                id: 'user-123',
+                username: 'testuser',
+                created_at: '2026-01-01T00:00:00.000Z',
+                is_wishlist_public: false,
+                are_reviews_public: true,
+                is_profile_public: true,
+            },
+            error: null,
+        });
         mockVerifyRateLimit.mockResolvedValue({
             success: true,
             limit: 60,

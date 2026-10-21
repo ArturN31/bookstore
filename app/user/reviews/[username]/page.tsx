@@ -8,6 +8,8 @@ import { checkIsOwner } from '@/utils/auth/checkOwnership';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { getAppClientIp } from '@/utils/network/getAppClientIp';
 import { limiters, verifyRateLimit } from '@/utils/network/rateLimiter';
+import { getPublicProfile } from '@/data/user/profile/PrivacySettingsService';
+import { notFound } from 'next/navigation';
 
 const PAGE_SIZE = 5;
 
@@ -32,8 +34,21 @@ export default async function UserReviewsPage({
             />
         );
 
-    const supabase = await createBackendClient();
-    const isOwner = await checkIsOwner(username);
+    const [supabase, isOwner, profileResult] = await Promise.all([
+        createBackendClient(),
+        checkIsOwner(username),
+        getPublicProfile(username),
+    ]);
+
+    if (profileResult.error)
+        return (
+            <ErrorState
+                title="Unable to Load Reviews"
+                message="Could not verify review visibility. Please try again later."
+            />
+        );
+
+    if (!profileResult.data || (!isOwner && !profileResult.data.are_reviews_public)) notFound();
 
     const reviewsQueryResult = await safeSupabaseQuery(async () =>
         supabase
@@ -42,7 +57,6 @@ export default async function UserReviewsPage({
                 `
                 id,
                 book_id,
-                user_id,
                 username,
                 rating,
                 review,
@@ -64,7 +78,7 @@ export default async function UserReviewsPage({
     const initialHasMore = rawReviews.length > PAGE_SIZE;
     const slicedRaw = initialHasMore ? rawReviews.slice(0, PAGE_SIZE) : rawReviews;
 
-    const initialReviews: Review[] = slicedRaw.map(({ books: _books, ...review }) => review);
+    const initialReviews: PublicReview[] = slicedRaw.map(({ books: _books, ...review }) => review);
     const initialBooksMap: Record<string | number, Partial<BookDB> | null> = {};
 
     slicedRaw.forEach((item) => {
