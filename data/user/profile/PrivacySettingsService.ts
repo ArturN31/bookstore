@@ -1,5 +1,7 @@
 import { createAdminClient } from '@/utils/db/admin';
 import { createBackendClient } from '@/utils/db/server';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/database.types';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { withRetry } from '@/utils/network/retry';
 import {
@@ -84,9 +86,10 @@ export const getUserPrivacySettings = async (
 export const updateUserPrivacySettings = async (
     userId: string,
     payload: UpdatePrivacySettingsPayload,
+    client?: SupabaseClient<Database>,
 ): Promise<{ error: string | null }> => {
     try {
-        const supabase = await createBackendClient();
+        const supabase = client ?? (await createBackendClient());
         const updatePayload: UpdatePrivacySettingsPayload = {
             ...payload,
             updated_at: new Date().toISOString(),

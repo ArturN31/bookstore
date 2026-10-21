@@ -279,13 +279,13 @@ Zod and shared Supabase error utilities are used broadly. Remaining concerns inc
 
 ### Test Organization
 
-Tests are under [__tests__/](__tests__/) and include app route/component tests, data action/service/repository/schema tests, hook tests, provider/reducer tests, security/error utility tests, checkout and Stripe webhook tests. Framework/external boundaries are mocked in [__mocks__/](__mocks__/). The declared setup is Jest/jsdom and React Testing Library; no browser E2E runner or real Supabase/Stripe integration test environment is configured.
+Tests are under [__tests__/](__tests__/) and include app route/component tests, data action/service/repository/schema tests, hook tests, provider/reducer tests, security/error utility tests, checkout and Stripe webhook tests. Framework/external boundaries are mocked in [__mocks__/](__mocks__/). The standard suite uses Jest/jsdom and React Testing Library. An opt-in real Supabase integration suite covers profile/review visibility, public wishlist access, and wishlist token revocation against a local database.
 
 ### Current Coverage
 
 Latest audit run: **234 suites passed; 1,704 tests passed; one snapshot passed**. Jest's V8 report showed 100% statements, branches, functions, and lines for its configured collection. The thresholds in [jest.config.ts](jest.config.ts) are 99% branches, 95% functions, and 90% statements/lines.
 
-Coverage excludes root layout/global CSS and does not include every repository/deployment boundary. Tests largely use mocked Supabase, Stripe, and Next behavior, so they cannot validate SQL/RLS/RPC implementation, real webhook retries, secrets/configuration, or complete customer workflows against deployed services. The current GitHub Actions workflow runs only Jest on PRs to `master`; lint and production build are not CI gates.
+Coverage excludes root layout/global CSS and does not include every repository/deployment boundary. Tests largely use mocked Supabase, Stripe, and Next behavior, so they cannot validate real webhook retries, secrets/configuration, or complete customer workflows against deployed services. The database-backed privacy suite is separate from coverage and is intentionally restricted to localhost; it requires a running local Supabase stack. The current GitHub Actions workflow runs only Jest on PRs to `master`; lint and production build are not CI gates.
 
 ### Verification Commands
 
@@ -298,6 +298,15 @@ npm run dev
 
 # Run Jest and collect coverage
 npm test -- --watchAll=false --ci
+
+# Start/reset local Supabase, then provide its API URL, anon key, and service-role/secret key
+# as SUPABASE_INTEGRATION_URL, SUPABASE_INTEGRATION_ANON_KEY, and
+# SUPABASE_INTEGRATION_SERVICE_KEY respectively. The suite refuses non-localhost URLs.
+npx supabase start
+npx supabase db reset
+npm run test:db:privacy
+
+Set the three `SUPABASE_INTEGRATION_*` variables from the local values shown by `npx supabase status -o env`. Do not use remote project credentials; the tests reject non-loopback database URLs and clean up their temporary auth user, profile, book, review, and wishlist.
 
 # Run lint and production build/type verification
 npm run lint
@@ -505,7 +514,7 @@ Public profile and wishlist routes exist, but public profile content is limited.
     - [X] Add a public-profile view.
     - [X] Add a profile visibility toggle.
 - [X] Verify that every public profile, review, and wishlist response exposes only fields allowed by the user's current privacy settings.
-- [ ] Add database-backed integration tests for profile visibility, review visibility, public wishlist access, and private token revocation.
+- [X] Add database-backed integration tests for profile visibility, review visibility, public wishlist access, and private token revocation.
 - [ ] Consider additional social/community features only after the privacy model and data exposure rules are explicitly documented.
 
 ### 3. Store Operations
