@@ -4,7 +4,7 @@
 
 import { POST } from '@/app/api/webhooks/stripe/route';
 import { stripe } from '@/data/checkout/CheckoutStripeServer';
-import { createBackendClient } from '@/utils/db/server';
+import { createAdminClient } from '@/utils/db/admin';
 import Stripe from 'stripe';
 
 jest.mock('next/server', () => ({
@@ -27,7 +27,7 @@ jest.mock('@/data/checkout/CheckoutStripeServer', () => ({
     },
 }));
 
-jest.mock('@/utils/db/server');
+jest.mock('@/utils/db/admin');
 
 describe('Stripe Webhook API Route (RPC Architecture)', () => {
     const originalEnv = process.env;
@@ -44,8 +44,8 @@ describe('Stripe Webhook API Route (RPC Architecture)', () => {
             rpc: jest.fn(),
         };
 
-        jest.mocked(createBackendClient).mockResolvedValue(
-            mockSupabase as unknown as Awaited<ReturnType<typeof createBackendClient>>,
+        jest.mocked(createAdminClient).mockResolvedValue(
+            mockSupabase as unknown as Awaited<ReturnType<typeof createAdminClient>>,
         );
     });
 

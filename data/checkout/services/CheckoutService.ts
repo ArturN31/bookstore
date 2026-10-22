@@ -1,4 +1,5 @@
 import { createBackendClient } from '@/utils/db/server';
+import { createAdminClient } from '@/utils/db/admin';
 import { SafeQueryResult, safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import {
     ProcessCheckoutResult,
@@ -143,9 +144,10 @@ export const executeCheckoutOrder = async (
                 error: paymentIntentResult.error ?? APP_ERROR_MESSAGES.PAYMENT_PROCESSING_FAILED,
             };
 
+        const adminClient = await createAdminClient();
         const rpcResult = await safeSupabaseQuery<{ readonly order_id: string }>(() =>
             withRetry(async () => {
-                const res = await processOrderTransaction(supabase, {
+                const res = await processOrderTransaction(adminClient, {
                     user_id: params.userId,
                     subtotal: totals.subtotal,
                     discount_amount: totals.discountAmount,

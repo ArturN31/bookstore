@@ -8,5 +8,5 @@ module.exports = createJestConfig({
     testEnvironment: 'node',
     setupFilesAfterEnv: [],
     collectCoverage: false,
-    testMatch: ['<rootDir>/__tests__/integration/**/*.integration.test.ts'],
+    testMatch: ['<rootDir>/__tests__/integration/**/*.test.ts'],
 });

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createBackendClient } from '@/utils/db/server';
+import { createAdminClient } from '@/utils/db/admin';
 import { stripe } from '@/data/checkout/CheckoutStripeServer';
 import Stripe from 'stripe';
 
@@ -11,7 +11,7 @@ export interface ReconciliationSummary {
     errors: string[];
 }
 
-type SupabaseClientInstance = Awaited<ReturnType<typeof createBackendClient>>;
+type SupabaseClientInstance = Awaited<ReturnType<typeof createAdminClient>>;
 
 /**
  * Validates the incoming request authorization header against the server CRON_SECRET.
@@ -151,7 +151,7 @@ export async function GET(req: Request): Promise<Response> {
     if (!verifyCronAuthorization(req))
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const supabase = await createBackendClient();
+    const supabase = await createAdminClient();
     const summary: ReconciliationSummary = {
         processedStaleOrders: 0,
         processedUnmatchedEvents: 0,

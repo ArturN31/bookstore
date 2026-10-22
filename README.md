@@ -11,16 +11,16 @@ This repository is a software project, not a claim of a fully operated retail se
 ## Project Status
 
 **Status:** Feature-complete application prototype with catalog, accounts, cart, checkout, and order routes implemented; production commerce hardening remains outstanding.
-**Last verified:** October 15, 2026 (local workspace verification).
-**Automated verification:** 245 Jest suites passed, 1,808 tests passed, one snapshot passed; ESLint passed; production build passed.
+**Last verified:** October 22, 2026 (local workspace verification).
+**Automated verification:** 246 Jest suites passed, 1,810 tests passed, one snapshot passed; ESLint passed; production build passed.
 **Coverage:** 100% statements, branches, functions, and lines in Jest's configured collection (not all runtime/configuration/infrastructure behavior).
 
 ### Verification Snapshot
 
 | Check | Result |
 | :---- | :----- |
-| Jest suites | 245 passed / 245 total |
-| Jest tests | 1,808 passed / 1,808 total |
+| Jest suites | 246 passed / 246 total |
+| Jest tests | 1,810 passed / 1,810 total |
 | Snapshots | 1 passed / 1 total |
 | Statements | 100% (configured collection) |
 | Branches | 100% (configured collection) |
@@ -266,7 +266,7 @@ Before launch, audit accessible names/state for icon controls and search, focus 
 
 ### Input and Error Safety
 
-Zod and shared Supabase error utilities are used broadly. Remaining concerns include incomplete runtime validation of the full checkout action payload; discount validity/limits not being rechecked consistently at final order time; message-fragment transient retry classification; and some paths that ignore persistence failures.
+Zod and shared Supabase error utilities are used broadly. Checkout validates the payload and derives line items from the authenticated user's cart, but final discount dates and usage limits are not enforced atomically. Message-fragment transient retry classification and ignored persistence failures also remain concerns.
 
 ### Response Security
 
@@ -274,19 +274,20 @@ Zod and shared Supabase error utilities are used broadly. Remaining concerns inc
 
 ### Security Gaps
 
-- Rate limits depend on Upstash Redis and trusted edge-proxy client-IP headers; validate both in each deployment environment.
-- Stripe webhook event processing does not durably deduplicate event IDs; repeated failure/cancel events may repeat stock restoration, and some database errors are ignored.
-- Checkout clears the cart before client-side card confirmation is completed.
-- Server-side checkout validation/revalidation is incomplete for items, quantities, shipping/payment choices, discount date windows, and usage limits.
-- Verify the deployed database matches the committed migrations; authorization policy and atomic inventory behavior depend on the applied SQL definitions.
-- The development console uses a service-role key; it must never be available to untrusted callers.
+- IP-based rate limits trust proxy headers; a directly reachable origin may allow callers to spoof their IP. Verify trusted proxy behavior in each deployment.
+- Reconciliation ignores a webhook-event deletion error before reprocessing, which can cause a failed recovery to be reported as successful.
+- Final checkout does not revalidate discount date windows or enforce usage limits atomically.
+- Commerce RPC execution is restricted to `service_role` by migration; verify that deployed Supabase projects have applied this migration.
+- Development-console actions use a service-role key and lack caller authorization in non-production environments; do not expose them to untrusted callers.
 - No centralized durable audit delivery, structured error reporting, or monitored abuse controls are evidenced.
 
 ## Testing and Quality Assurance
 
 ### Test Organization
 
-Tests are under [__tests__/](__tests__/) and include app route/component tests, data action/service/repository/schema tests, hook tests, provider/reducer tests, security/error utility tests, checkout and Stripe webhook tests. Framework/external boundaries are mocked in [__mocks__/](__mocks__/). The standard suite uses Jest/jsdom and React Testing Library and excludes the opt-in integration tests. The real Supabase integration suite covers profile/review visibility, public wishlist access, and wishlist token revocation against a local database; run it separately with `npm run test:db:privacy` after starting and configuring local Supabase.
+Tests are under [__tests__/](__tests__/) and include app route/component tests, data action/service/repository/schema tests, hook tests, provider/reducer tests, security/error utility tests, checkout and Stripe webhook tests. Framework/external boundaries are mocked in [__mocks__/](__mocks__/). The standard suite uses Jest/jsdom and React Testing Library and excludes the opt-in integration tests. Local Supabase integration suites cover privacy behavior and commerce RPC role permissions; run them separately with `npm run test:db:privacy` and `npm run test:db:rpc-security` after starting and configuring local Supabase.
+
+Integration tests create only their own isolated fixtures through the local Supabase API and remove them afterward; they do not depend on a pre-seeded development database. The privacy suite creates one auth user, profile, book, review, and wishlist item. The commerce RPC permission suite creates an auth identity and unique webhook-event IDs; no catalog, cart, order, or discount fixtures are needed because the RPC calls verify authorization and early server-side rejection. Do not call the development seed's `runFullDatabaseSeed` from tests: it clears application tables and seeds unrelated random data.
 
 ### Current Coverage
 
@@ -296,7 +297,7 @@ Coverage excludes root layout/global CSS and does not include every repository/d
 
 ### Verification Commands
 
-```bash
+```powershell
 # Install dependencies from the lockfile
 npm ci
 
@@ -306,15 +307,24 @@ npm run dev
 # Run Jest and collect coverage
 npm test -- --watchAll=false --ci
 
-# Start/reset local Supabase, then provide its API URL, anon key, and service-role/secret key
-# as SUPABASE_INTEGRATION_URL, SUPABASE_INTEGRATION_ANON_KEY, and
-# SUPABASE_INTEGRATION_SERVICE_KEY respectively. The suite refuses non-localhost URLs.
+# Start/reset local Supabase, then read its local credentials
 npx supabase start
 npx supabase db reset
+npx supabase status -o env
+
+# In PowerShell, map API_URL, ANON_KEY, and SERVICE_ROLE_KEY to the test variables.
+# Use API_URL (for example http://127.0.0.1:54321), not REST_URL or DB_URL.
+$env:SUPABASE_INTEGRATION_URL = "<API_URL>"
+$env:SUPABASE_INTEGRATION_ANON_KEY = "<ANON_KEY>"
+$env:SUPABASE_INTEGRATION_SERVICE_KEY = "<SERVICE_ROLE_KEY>"
+
 npm run test:db:privacy
+npm run test:db:rpc-security
+```
 
-Set the three `SUPABASE_INTEGRATION_*` variables from the local values shown by `npx supabase status -o env`. Do not use remote project credentials; the tests reject non-loopback database URLs and clean up their temporary auth user, profile, book, review, and wishlist.
+Use only local credentials. The suites refuse non-loopback URLs and clean up their own fixtures.
 
+```powershell
 # Run lint and production build/type verification
 npm run lint
 npm run build
@@ -496,13 +506,14 @@ Public profile, review, and wishlist routes follow the [Privacy Model and Data E
 - [X] Replace the process-local rate-limit `Map` with atomic, shared Upstash Redis sliding-window limits.
 - [X] Validate every checkout payload field on the server, including item IDs, positive integer quantities, shipping method, discount ID, and idempotency key.
 - [X] Derive checkout line items from the current authenticated user's server-side cart instead of trusting a client-supplied item list.
-- [X] Revalidate discount activation dates, eligibility, minimum spend, and redemption/usage limits at final order creation, atomically with discount redemption.
-- [X] Commit and verify the SQL implementation of `process_order_transaction`, including stock reservation/decrement, order and line-item writes, constraints, and transaction rollback behavior. The application calls this RPC, but its SQL definition is not in this repository.
-- [X] Keep the cart intact until payment succeeds; currently the cart is cleared after order/payment-intent creation and before client-side card confirmation.
+- [ ] Revalidate discount activation dates, eligibility, minimum spend, and redemption/usage limits at final order creation, atomically with discount redemption.
+- [X] Commit SQL for `process_order_transaction`, including stock reservation/decrement, order and line-item writes, constraints, and transaction rollback behavior; verify that deployed databases apply the committed migrations.
+- [X] Keep the cart intact until payment succeeds; cart clearing occurs in the successful-payment database flow.
 - [X] Implement the Stripe webhook route and verify Stripe signatures.
 - [X] Persist Stripe event IDs and make webhook handling idempotent, including conditional order-state transitions and one-time inventory restoration.
 - [X] Surface database failures from webhook fulfillment so Stripe retries can safely recover; do not acknowledge incomplete state changes as successful.
 - [X] Add payment/order reconciliation for PaymentIntents created without a matching order and orders left in an intermediate state.
+- [ ] Surface and handle webhook-event deletion failures during reconciliation before retrying an event.
 - [X] Add protected order confirmation and order detail views with ownership checks (`/checkout/success` and `/user/order/[orderId]`).
 - [X] Verify successful, declined, canceled, retried, and abandoned card-payment flows against Stripe test mode and a real disposable Supabase database.
 - [ ] Provide additional payment methods (for example PayPal) only as complete server-validated payment flows.
@@ -527,7 +538,7 @@ Public profile, review, and wishlist routes follow the [Privacy Model and Data E
 
 - [ ] Build protected production administration separately from the local `/dev-tools` console.
 - [ ] Add Supabase Custom Claims or equivalent server-enforced role authorization.
-- [ ] Remove or strictly guard the exported `impulseLogin` Server Action; it currently uses service-role access to reset an arbitrary user's password and has no production or caller-authorization guard.
+- [ ] Remove or strictly disable development-console actions outside isolated local environments and require server-side caller authorization; `impulseLogin` uses service-role access and has a non-production guard, but lacks caller authorization.
 - [ ] Add inventory management
 - [ ] Add order and discount management.
   - [ ] Add discount activation, eligibility, and redemption management.
@@ -554,11 +565,14 @@ Public profile, review, and wishlist routes follow the [Privacy Model and Data E
 ### 5. Security and Reliability
 
 - [X] Add distributed rate limiting to authentication, checkout/order reads, public catalog/filter/profile/review/wishlist lookups, privileged development-console reads/actions, and sensitive mutation paths.
+- [ ] Verify trusted-proxy and client-IP header configuration for rate limits in every deployment; prevent direct-origin access or spoofed forwarding headers.
+- [X] Restrict commerce RPC execution to `service_role`; checkout, webhook, and reconciliation calls remain server-side and validated.
+- [ ] Verify that deployed Supabase databases have applied the committed migrations and policies.
 - [ ] Extend security audit coverage to production administration actions.
 - [ ] Add centralized server, client, and database exception logging.
 - [ ] Preserve sanitized query/authentication context in operational logs.
 - [ ] Make security audit delivery observable and durable for events that require retention.
-- [X] Commit database schema migrations, RLS policies, constraints, indexes, and RPC definitions; verify them in CI. Generated `database.types.ts` does not replace these artifacts.
+- [X] Commit database schema migrations, RLS policies, constraints, indexes, and RPC definitions. Generated `database.types.ts` does not replace these artifacts.
 - [ ] Add CI gates for lint, TypeScript/production build, migration/RLS checks, dependency security checks, integration tests, webhook retry behavior, and E2E journeys.
 - [ ] Add environment validation and a safe `.env.example` template without real credentials.
 - [ ] Replace unchecked model/RPC casts with runtime validation and typed results.

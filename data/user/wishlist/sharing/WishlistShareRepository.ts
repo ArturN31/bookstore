@@ -1,4 +1,4 @@
-import { safeSupabaseQuery, SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
+import { SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { withRetry } from '@/utils/network/retry';
 import { WISHLIST_TABLE } from '../../UserConstants';
@@ -57,14 +57,12 @@ export const fetchWishlistByUsername = async (
         return await withRetry(async () => {
             const supabase = await createAdminClient();
 
-            const result = await safeSupabaseQuery(async () =>
-                supabase
-                    .from('users')
-                    .select(WISHLIST_SELECT_QUERY)
-                    .eq('username', username)
-                    .eq('is_wishlist_public', true)
-                    .maybeSingle(),
-            );
+            const result = await supabase
+                .from('users')
+                .select(WISHLIST_SELECT_QUERY)
+                .eq('username', username)
+                .eq('is_wishlist_public', true)
+                .maybeSingle();
 
             if (result.error) return { data: null, error: sanitizeSupabaseError(result.error) };
             if (!result.data) return { data: null, error: null };
@@ -89,13 +87,11 @@ export const fetchWishlistByToken = async (
         return await withRetry(async () => {
             const supabase = await createAdminClient();
 
-            const result = await safeSupabaseQuery(async () =>
-                supabase
-                    .from('users')
-                    .select(WISHLIST_SELECT_QUERY)
-                    .eq('wishlist_share_token', token)
-                    .maybeSingle(),
-            );
+            const result = await supabase
+                .from('users')
+                .select(WISHLIST_SELECT_QUERY)
+                .eq('wishlist_share_token', token)
+                .maybeSingle();
 
             if (result.error) return { data: null, error: sanitizeSupabaseError(result.error) };
             if (!result.data) return { data: null, error: null };
