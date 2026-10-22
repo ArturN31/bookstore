@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createBackendClient } from '@/utils/db/server';
+import { createAdminClient } from '@/utils/db/admin';
 import { stripe } from '@/data/checkout/CheckoutStripeServer';
 
 export async function POST(req: Request): Promise<Response> {
@@ -22,7 +22,7 @@ export async function POST(req: Request): Promise<Response> {
         return NextResponse.json({ error: `Webhook Error: ${message}` }, { status: 400 });
     }
 
-    const supabase = await createBackendClient();
+    const supabase = await createAdminClient();
 
     switch (event.type) {
         case 'payment_intent.succeeded':

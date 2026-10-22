@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
 import { Database } from '@/database.types';
+import { validateLocalSupabaseApiUrl } from './supabaseIntegration';
 
 const integrationUrl = process.env.SUPABASE_INTEGRATION_URL;
 const integrationAnonKey = process.env.SUPABASE_INTEGRATION_ANON_KEY;
@@ -32,18 +33,16 @@ integrationDescribe('Privacy settings database integration', () => {
         if (!integrationUrl || !integrationAnonKey || !integrationServiceKey)
             throw new Error('Supabase integration test configuration is incomplete.');
 
-        const hostname = new URL(integrationUrl).hostname;
-        if (!['localhost', '127.0.0.1', '::1'].includes(hostname))
-            throw new Error('Privacy integration tests only run against a local Supabase URL.');
+        const apiUrl = await validateLocalSupabaseApiUrl(integrationUrl);
 
-        process.env.NEXT_PUBLIC_SUPABASE_DB_URL = integrationUrl;
+        process.env.NEXT_PUBLIC_SUPABASE_DB_URL = apiUrl;
         process.env.NEXT_PUBLIC_SUPABASE_PUBLIC_KEY = integrationAnonKey;
         process.env.SUPABASE_SECRET_KEY = integrationServiceKey;
 
-        admin = createClient<Database>(integrationUrl, integrationServiceKey, {
+        admin = createClient<Database>(apiUrl, integrationServiceKey, {
             auth: { autoRefreshToken: false, persistSession: false },
         });
-        anonymous = createClient<Database>(integrationUrl, integrationAnonKey, {
+        anonymous = createClient<Database>(apiUrl, integrationAnonKey, {
             auth: { autoRefreshToken: false, persistSession: false },
         });
 

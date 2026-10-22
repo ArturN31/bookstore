@@ -11,6 +11,7 @@ import {
     processOrderTransaction,
 } from '@/data/checkout/repositories/CheckoutOrderRepository';
 import { createBackendClient } from '@/utils/db/server';
+import { createAdminClient } from '@/utils/db/admin';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { withRetry } from '@/utils/network/retry';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
@@ -22,6 +23,7 @@ import { createPaymentIntentAction } from '@/data/checkout/CheckoutStripeServer'
 import { calculateTotals } from '@/data/checkout/CheckoutUtils';
 
 jest.mock('@/utils/db/server');
+jest.mock('@/utils/db/admin');
 jest.mock('@/utils/db/safeSupabaseQuery');
 jest.mock('@/utils/network/retry');
 jest.mock('@/utils/errors/SupabaseErrorHandler');
@@ -31,6 +33,7 @@ jest.mock('@/data/checkout/CheckoutStripeServer');
 
 describe('CheckoutService', () => {
     let mockSupabase: SupabaseClient<Database>;
+    let mockAdminSupabase: SupabaseClient<Database>;
 
     const mockCheckoutParams: ProcessCheckoutParams = {
         userId: 'user-uuid-123',
@@ -62,8 +65,10 @@ describe('CheckoutService', () => {
             eq: jest.fn().mockReturnThis(),
             maybeSingle: jest.fn(),
         } as unknown as SupabaseClient<Database>;
+        mockAdminSupabase = {} as SupabaseClient<Database>;
 
         jest.mocked(createBackendClient).mockResolvedValue(mockSupabase);
+        jest.mocked(createAdminClient).mockResolvedValue(mockAdminSupabase);
         jest.mocked(safeSupabaseQuery).mockImplementation(async (fn) => (await fn()) as never);
         jest.mocked(withRetry).mockImplementation(async (fn) => (await fn()) as never);
         jest.mocked(sanitizeSupabaseError).mockImplementation((err: unknown) =>
@@ -111,6 +116,10 @@ describe('CheckoutService', () => {
                 paymentIntentId: 'pi_test_123',
                 error: null,
             });
+            expect(processOrderTransaction).toHaveBeenCalledWith(
+                mockAdminSupabase,
+                expect.objectContaining({ user_id: mockCheckoutParams.userId }),
+            );
             expect(createPaymentIntentAction).toHaveBeenCalledWith(
                 4599,
                 'idemp-key-999',
