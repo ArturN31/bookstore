@@ -6,7 +6,7 @@ type BookDB = Database['public']['Tables']['books']['Row'];
 type DiscountDB = Database['public']['Tables']['discounts']['Row'];
 type OrderDB = Database['public']['Tables']['orders']['Row'];
 type OrderItemDB = Database['public']['Tables']['order_items']['Row'];
-type OrderDiscountDB = Database['public']['Tables']['order_discounts']['Row'];
+type OrderDiscountDB = Database['public']['Tables']['order_discounts']['Insert'];
 
 const PAYMENT_METHODS: readonly string[] = [
     'Credit Card',
@@ -65,9 +65,20 @@ export const generateOrdersAndItems = (
     const baseItemsPerOrder = Math.floor(itemsAmount / ordersAmount);
     let extraItems = itemsAmount % ordersAmount;
     let remainingDiscounts = Math.min(discountsAmount, ordersAmount);
+    const generatedUsage = new Map(
+        discounts.map((discount) => [discount.id, discount.times_used]),
+    );
+    const generationTime = Date.now();
 
     for (let i = 0; i < ordersAmount; i++) {
         const orderID = faker.string.uuid();
+        const userId = faker.helpers.arrayElement(testUserIds);
+        const status = faker.helpers.arrayElement([
+            'pending',
+            'completed',
+            'cancelled',
+            'shipped',
+        ]);
         const currentOrderItemsCount = baseItemsPerOrder + (extraItems > 0 ? 1 : 0);
         if (extraItems > 0) extraItems--;
 
@@ -75,15 +86,34 @@ export const generateOrdersAndItems = (
         allItems.push(...items);
 
         let discountAmount = 0;
-        if (remainingDiscounts > 0 && discounts.length > 0) {
-            const discount = faker.helpers.arrayElement(discounts);
-            if (discount && discount.id) {
+        if (
+            remainingDiscounts > 0 &&
+            !['failed', 'cancelled'].includes(status)
+        ) {
+            const eligibleDiscounts = discounts.filter((discount) => {
+                const usage = generatedUsage.get(discount.id) ?? discount.times_used;
+                return (
+                    discount.is_active &&
+                    new Date(discount.start_date).getTime() <= generationTime &&
+                    new Date(discount.end_date).getTime() >= generationTime &&
+                    (discount.minimum_subtotal === null ||
+                        subtotal >= Number(discount.minimum_subtotal)) &&
+                    (discount.usage_limit === null || usage < discount.usage_limit) &&
+                    discount.uses_per_user === null
+                );
+            });
+            if (eligibleDiscounts.length > 0) {
+                const discount = faker.helpers.arrayElement(eligibleDiscounts);
                 orderDiscounts.push({
                     id: faker.string.uuid(),
                     order_id: orderID,
                     discount_id: discount.id,
                 });
                 discountAmount = calculateDiscountAmount(subtotal, discount);
+                generatedUsage.set(
+                    discount.id,
+                    (generatedUsage.get(discount.id) ?? discount.times_used) + 1,
+                );
                 remainingDiscounts--;
             }
         }
@@ -96,7 +126,7 @@ export const generateOrdersAndItems = (
 
         orders.push({
             id: orderID,
-            user_id: faker.helpers.arrayElement(testUserIds),
+            user_id: userId,
             subtotal: Number(subtotal.toFixed(2)),
             discount_amount: Number(discountAmount.toFixed(2)),
             shipping_cost: Number(shippingCost.toFixed(2)),
@@ -104,7 +134,7 @@ export const generateOrdersAndItems = (
             total_amount: Number(finalTotal.toFixed(2)),
             shipping_method_id: 'royal_mail_standard',
             shipping_method_name: 'Royal Mail Standard',
-            status: faker.helpers.arrayElement(['pending', 'completed', 'cancelled', 'shipped']),
+            status,
             payment_method: faker.helpers.arrayElement(PAYMENT_METHODS),
             created_at: faker.date.recent({ days: 30 }).toISOString(),
             stripe_checkout_session_id: null,

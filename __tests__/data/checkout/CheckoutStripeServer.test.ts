@@ -3,11 +3,15 @@
  */
 
 const mockPaymentIntentsCreate = jest.fn();
+const mockPaymentIntentsCancel = jest.fn();
+const mockPaymentIntentsRetrieve = jest.fn();
 const mockOnFunction = jest.fn();
 
 const mockStripeConstructor = jest.fn().mockImplementation(() => ({
     paymentIntents: {
         create: mockPaymentIntentsCreate,
+        cancel: mockPaymentIntentsCancel,
+        retrieve: mockPaymentIntentsRetrieve,
     },
     VERSION: '14.0.0',
     on: mockOnFunction,
@@ -194,6 +198,7 @@ describe('CheckoutStripeServer', () => {
                 paymentIntentId: null,
                 error: 'Your card has insufficient funds.',
             });
+
         });
 
         it('should handle non-Error exceptions and return default error message', async () => {
@@ -227,6 +232,89 @@ describe('CheckoutStripeServer', () => {
                 clientSecret: null,
                 paymentIntentId: null,
                 error: 'Missing STRIPE_SECRET_KEY environment variable.',
+            });
+        });
+
+        describe('cancelPaymentIntentAction', () => {
+            it('cancels a payment intent and reports success', async () => {
+                process.env.STRIPE_SECRET_KEY = 'sk_test_valid_key';
+                mockPaymentIntentsCancel.mockResolvedValueOnce({ id: 'pi_cancelled' });
+
+                const { cancelPaymentIntentAction } =
+                    await import('@/data/checkout/CheckoutStripeServer');
+
+                await expect(cancelPaymentIntentAction('pi_cancelled')).resolves.toEqual({
+                    success: true,
+                    error: null,
+                });
+                expect(mockPaymentIntentsCancel).toHaveBeenCalledWith('pi_cancelled');
+            });
+
+            it('returns an explicit failure when Stripe cannot cancel the intent', async () => {
+                process.env.STRIPE_SECRET_KEY = 'sk_test_valid_key';
+                mockPaymentIntentsCancel.mockRejectedValueOnce(new Error('Stripe unavailable'));
+                mockPaymentIntentsRetrieve.mockResolvedValueOnce({ status: 'requires_payment_method' });
+
+                const { cancelPaymentIntentAction } =
+                    await import('@/data/checkout/CheckoutStripeServer');
+
+                await expect(cancelPaymentIntentAction('pi_orphan')).resolves.toEqual({
+                    success: false,
+                    error: 'Stripe unavailable',
+                });
+            });
+
+            it('treats an already-cancelled intent as successful cleanup', async () => {
+                process.env.STRIPE_SECRET_KEY = 'sk_test_valid_key';
+                mockPaymentIntentsCancel.mockRejectedValueOnce(new Error('Already cancelled'));
+                mockPaymentIntentsRetrieve.mockResolvedValueOnce({ status: 'canceled' });
+
+                const { cancelPaymentIntentAction } =
+                    await import('@/data/checkout/CheckoutStripeServer');
+
+                await expect(cancelPaymentIntentAction('pi_already_cancelled')).resolves.toEqual({
+                    success: true,
+                    error: null,
+                });
+            });
+
+            it('reports an error when cancellation and status verification both fail', async () => {
+                process.env.STRIPE_SECRET_KEY = 'sk_test_valid_key';
+                mockPaymentIntentsCancel.mockRejectedValueOnce(new Error('Cancel failed'));
+                mockPaymentIntentsRetrieve.mockRejectedValueOnce(new Error('Retrieve failed'));
+
+                const { cancelPaymentIntentAction } =
+                    await import('@/data/checkout/CheckoutStripeServer');
+
+                await expect(cancelPaymentIntentAction('pi_unverified')).resolves.toEqual({
+                    success: false,
+                    error:
+                        'Cancellation failed and payment intent status could not be verified: Retrieve failed',
+                });
+            });
+
+            it('uses fallback messages when Stripe throws non-Error values', async () => {
+                process.env.STRIPE_SECRET_KEY = 'sk_test_valid_key';
+                mockPaymentIntentsCancel.mockRejectedValueOnce('Cancel failed');
+                mockPaymentIntentsRetrieve.mockResolvedValueOnce({
+                    status: 'requires_payment_method',
+                });
+
+                const { cancelPaymentIntentAction } =
+                    await import('@/data/checkout/CheckoutStripeServer');
+
+                await expect(cancelPaymentIntentAction('pi_non_error')).resolves.toEqual({
+                    success: false,
+                    error: 'Failed to cancel the payment intent.',
+                });
+
+                mockPaymentIntentsCancel.mockRejectedValueOnce(new Error('Cancel failed'));
+                mockPaymentIntentsRetrieve.mockRejectedValueOnce('Retrieve failed');
+                await expect(cancelPaymentIntentAction('pi_non_error_verification')).resolves.toEqual({
+                    success: false,
+                    error:
+                        'Cancellation failed and payment intent status could not be verified: Payment intent status could not be verified.',
+                });
             });
         });
     });

@@ -262,16 +262,19 @@ export type Database = {
           discount_id: string
           id: string
           order_id: string
+          usage_counted: boolean
         }
         Insert: {
           discount_id: string
           id?: string
           order_id: string
+          usage_counted?: boolean
         }
         Update: {
           discount_id?: string
           id?: string
           order_id?: string
+          usage_counted?: boolean
         }
         Relationships: [
           {
