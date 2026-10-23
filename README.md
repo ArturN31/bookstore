@@ -11,8 +11,8 @@ This repository is a software project, not a claim of a fully operated retail se
 ## Project Status
 
 **Status:** Feature-complete application prototype with catalog, accounts, cart, checkout, and order routes implemented; production commerce hardening remains outstanding.
-**Last verified:** October 22, 2026 (local workspace verification).
-**Automated verification:** 246 Jest suites passed, 1,810 tests passed, one snapshot passed; ESLint passed; production build passed.
+**Last verified:** October 23, 2026 (local workspace verification).
+**Automated verification:** 246 Jest suites passed, 1,815 tests passed, one snapshot passed; ESLint passed; production build passed.
 **Coverage:** 100% statements, branches, functions, and lines in Jest's configured collection (not all runtime/configuration/infrastructure behavior).
 
 ### Verification Snapshot
@@ -20,7 +20,7 @@ This repository is a software project, not a claim of a fully operated retail se
 | Check | Result |
 | :---- | :----- |
 | Jest suites | 246 passed / 246 total |
-| Jest tests | 1,810 passed / 1,810 total |
+| Jest tests | 1,815 passed / 1,815 total |
 | Snapshots | 1 passed / 1 total |
 | Statements | 100% (configured collection) |
 | Branches | 100% (configured collection) |
@@ -157,7 +157,7 @@ The repository includes versioned SQL files under `supabase/migrations/`, includ
 
 Checkout is implemented at `/checkout` with shipping/address entry, discount entry, shipping methods, Stripe card Elements, server-side book price/stock lookup, order creation through a database RPC, and a PaymentIntent flow. `/checkout/success`, `/user/orders`, and `/user/order/[orderId]` provide order confirmation/history views. `/api/webhooks/stripe` verifies signed Stripe events and updates payment/order state.
 
-The delivered implementation should be treated as **prototype-level commerce until the Known Issues below are resolved**. Notable limits include card-only UI despite a PayPal enum in the schema, zero default tax calculation, UK-specific postcode shipping zones, a cart-clearing timing defect, incomplete final discount revalidation, no durable webhook idempotency, and absent versioned SQL migrations/functions. Do not use live payments until transaction and webhook behavior is independently tested.
+The delivered implementation should be treated as **prototype-level commerce until the Known Issues below are resolved**. Notable limits include card-only UI despite a PayPal enum in the schema, zero default tax calculation, UK-specific postcode shipping zones, a cart-clearing timing defect, no durable webhook idempotency, and incomplete deployment verification of SQL migrations/functions. Do not use live payments until transaction and webhook behavior is independently tested.
 
 ### Wishlist and Sharing
 
@@ -266,7 +266,7 @@ Before launch, audit accessible names/state for icon controls and search, focus 
 
 ### Input and Error Safety
 
-Zod and shared Supabase error utilities are used broadly. Checkout validates the payload and derives line items from the authenticated user's cart, but final discount dates and usage limits are not enforced atomically. Message-fragment transient retry classification and ignored persistence failures also remain concerns.
+Zod and shared Supabase error utilities are used broadly. Checkout validates the payload and derives line items from the authenticated user's cart. Final discount eligibility and usage limits are enforced in the order-discount insert transaction; counted redemptions are backfilled for existing active orders, released once on failed/cancelled orders, and reconciled if the order-discount row is deleted. If order persistence fails after PaymentIntent creation, checkout checks for an already-created order before cancelling the intent. Message-fragment transient retry classification and ignored persistence failures also remain concerns.
 
 ### Response Security
 
@@ -276,7 +276,6 @@ Zod and shared Supabase error utilities are used broadly. Checkout validates the
 
 - IP-based rate limits trust proxy headers; a directly reachable origin may allow callers to spoof their IP. Verify trusted proxy behavior in each deployment.
 - Reconciliation ignores a webhook-event deletion error before reprocessing, which can cause a failed recovery to be reported as successful.
-- Final checkout does not revalidate discount date windows or enforce usage limits atomically.
 - Commerce RPC execution is restricted to `service_role` by migration; verify that deployed Supabase projects have applied this migration.
 - Development-console actions use a service-role key and lack caller authorization in non-production environments; do not expose them to untrusted callers.
 - No centralized durable audit delivery, structured error reporting, or monitored abuse controls are evidenced.
@@ -285,9 +284,9 @@ Zod and shared Supabase error utilities are used broadly. Checkout validates the
 
 ### Test Organization
 
-Tests are under [__tests__/](__tests__/) and include app route/component tests, data action/service/repository/schema tests, hook tests, provider/reducer tests, security/error utility tests, checkout and Stripe webhook tests. Framework/external boundaries are mocked in [__mocks__/](__mocks__/). The standard suite uses Jest/jsdom and React Testing Library and excludes the opt-in integration tests. Local Supabase integration suites cover privacy behavior and commerce RPC role permissions; run them separately with `npm run test:db:privacy` and `npm run test:db:rpc-security` after starting and configuring local Supabase.
+Tests are under [__tests__/](__tests__/) and include app route/component tests, data action/service/repository/schema tests, hook tests, provider/reducer tests, security/error utility tests, checkout and Stripe webhook tests. Framework/external boundaries are mocked in [__mocks__/](__mocks__/). The standard suite uses Jest/jsdom and React Testing Library and excludes the opt-in integration tests. Local Supabase integration suites cover privacy behavior, commerce RPC role permissions, and atomic discount redemption; run them separately with `npm run test:db:privacy`, `npm run test:db:rpc-security`, and `npm run test:db:discount-redemption` after starting and configuring local Supabase.
 
-Integration tests create only their own isolated fixtures through the local Supabase API and remove them afterward; they do not depend on a pre-seeded development database. The privacy suite creates one auth user, profile, book, review, and wishlist item. The commerce RPC permission suite creates an auth identity and unique webhook-event IDs; no catalog, cart, order, or discount fixtures are needed because the RPC calls verify authorization and early server-side rejection. Do not call the development seed's `runFullDatabaseSeed` from tests: it clears application tables and seeds unrelated random data.
+Integration tests create only their own isolated fixtures through the local Supabase API and remove them afterward; they do not depend on a pre-seeded development database. The privacy suite creates one auth user, profile, book, review, and wishlist item. The commerce RPC permission suite creates an auth identity and unique webhook-event IDs. The discount redemption suite creates two auth users, a book, and temporary discounts to verify eligibility, usage limits, concurrency, duplicate prevention, legacy reservation backfill, and release on cancellation or deletion. Failed/cancelled seed orders do not consume a use. Do not call the development seed's `runFullDatabaseSeed` from tests: it clears application tables and seeds unrelated random data.
 
 ### Current Coverage
 
@@ -320,6 +319,7 @@ $env:SUPABASE_INTEGRATION_SERVICE_KEY = "<SERVICE_ROLE_KEY>"
 
 npm run test:db:privacy
 npm run test:db:rpc-security
+npm run test:db:discount-redemption
 ```
 
 Use only local credentials. The suites refuse non-loopback URLs and clean up their own fixtures.
@@ -469,14 +469,14 @@ Detailed current known issues and constraints are listed in [Known Issues & Limi
 2. **Webhook idempotency:** [app/api/webhooks/stripe/route.ts](app/api/webhooks/stripe/route.ts) does not persist event IDs or condition failure/cancel inventory restoration on a one-time status transition. Stripe retries can result in repeated stock adjustments; some database write failures are ignored.
 3. **Cart data loss on failed/abandoned payment:** [data/checkout/CheckoutAction.ts](data/checkout/CheckoutAction.ts) clears the cart after creating the order/payment intent but before `stripe.confirmCardPayment` resolves.
 4. **Unvalidated checkout fields:** the checkout action validates shipping form fields but not the complete item/quantity/options/idempotency payload. The server re-reads book prices and stock, but should also source lines from the authenticated user's cart and validate all values.
-5. **Discount preview/final mismatch:** preview checks start/end dates; final checkout rechecks active/minimum subtotal but not all validity, eligibility, or usage-limit rules.
+5. **Discount deployment verification:** final order creation rechecks active dates, minimum subtotal, and global/per-user limits atomically. Pending uses are tracked and released once on failed/cancelled orders; legacy active orders are backfilled. Apply the committed Supabase migrations to each deployment and run `npm run test:db:discount-redemption` against that environment before relying on the behavior there.
 6. **Broken sign-in return path:** checkout pages redirect to `/login?redirect=...`; the actual route is `/user/auth/signin`, and sign-in consumes `returnTo`. Unauthenticated checkout/order return flow is therefore inconsistent.
 7. **Limited payment/tax/shipping scope:** the payment UI supports Stripe card only; the schema contains an unused PayPal option. Totals default to a zero tax rate. Shipping methods use hard-coded UK postcode zones and pricing.
 8. **Cross-system recovery:** Stripe PaymentIntent creation and the database order RPC are not covered by an in-repository durable checkout state machine/reconciliation job. A failure between them can require manual cleanup or reconciliation.
 
 ### Discounts and Promotions
 
-Discounts can be submitted and calculated, but final-order validation must recheck date windows, eligibility, redemption/usage limits, and subtotal atomically with order creation. Redemption counters and database enforcement cannot be verified without the missing SQL schema/RPC source.
+Discounts can be submitted and calculated. Final order creation rechecks active dates, minimum subtotal, and global/per-user usage limits atomically. `npm run test:db:discount-redemption` verifies these rules and reservation lifecycle against local Supabase; production behavior still depends on deploying and verifying the migrations.
 
 ### Administration and Operations
 
@@ -506,7 +506,7 @@ Public profile, review, and wishlist routes follow the [Privacy Model and Data E
 - [X] Replace the process-local rate-limit `Map` with atomic, shared Upstash Redis sliding-window limits.
 - [X] Validate every checkout payload field on the server, including item IDs, positive integer quantities, shipping method, discount ID, and idempotency key.
 - [X] Derive checkout line items from the current authenticated user's server-side cart instead of trusting a client-supplied item list.
-- [ ] Revalidate discount activation dates, eligibility, minimum spend, and redemption/usage limits at final order creation, atomically with discount redemption.
+- [X] Revalidate discount activation dates, minimum spend, and global/per-user usage limits atomically at final order creation; pending orders reserve a use that is released if payment fails or is cancelled.
 - [X] Commit SQL for `process_order_transaction`, including stock reservation/decrement, order and line-item writes, constraints, and transaction rollback behavior; verify that deployed databases apply the committed migrations.
 - [X] Keep the cart intact until payment succeeds; cart clearing occurs in the successful-payment database flow.
 - [X] Implement the Stripe webhook route and verify Stripe signatures.

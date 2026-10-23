@@ -13,6 +13,7 @@
         "test": "jest --coverage",
         "test:db:privacy": "jest --config jest.integration.config.js --runInBand --runTestsByPath __tests__/integration/privacySettings.integration.test.ts",
         "test:db:rpc-security": "jest --config jest.integration.config.js --runInBand --runTestsByPath __tests__/integration/commerceRpcPermissions.integration.test.ts",
+        "test:db:discount-redemption": "jest --config jest.integration.config.js --runInBand --runTestsByPath __tests__/integration/checkoutDiscountRedemption.integration.test.ts",
         "test:coverage": "jest --coverage --coverageReporters=\"json-summary\" --watchAll=false --forceExit",
         "test:generate-report": "node utils/scripts/generate-test-summary-file.js",
         "test:report": "node -e \"const { execSync } = require('child_process'); try { execSync('npm run test:coverage', { stdio: 'inherit' }); } catch (e) {} execSync('npm run test:generate-report', { stdio: 'inherit' });\"",

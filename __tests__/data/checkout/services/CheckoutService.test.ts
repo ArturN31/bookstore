@@ -6,41 +6,40 @@ import {
     executeCheckoutOrder,
     getOrderDetailsById,
 } from '@/data/checkout/services/CheckoutService';
-import {
-    fetchOrderById,
-    processOrderTransaction,
-} from '@/data/checkout/repositories/CheckoutOrderRepository';
+import * as checkoutUtils from '@/data/checkout/services/CheckoutServiceUtils';
+import { fetchOrderById } from '@/data/checkout/repositories/CheckoutOrderRepository';
 import { createBackendClient } from '@/utils/db/server';
-import { createAdminClient } from '@/utils/db/admin';
 import { safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { withRetry } from '@/utils/network/retry';
 import { sanitizeSupabaseError } from '@/utils/errors/SupabaseErrorHandler';
 import { APP_ERROR_MESSAGES } from '@/utils/errors/ErrorHandlerConstants';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/database.types';
-import { ProcessCheckoutParams, OrderWithRelations } from '@/data/checkout/CheckoutTypes';
-import { createPaymentIntentAction } from '@/data/checkout/CheckoutStripeServer';
-import { calculateTotals } from '@/data/checkout/CheckoutUtils';
+import {
+    OrderWithRelations,
+    ProcessCheckoutParams,
+    ProcessCheckoutResult,
+    ProcessOrderPayload,
+} from '@/data/checkout/CheckoutTypes';
+import { SHIPPING_METHODS } from '@/data/checkout/CheckoutConstants';
+import { SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
 
 jest.mock('@/utils/db/server');
-jest.mock('@/utils/db/admin');
 jest.mock('@/utils/db/safeSupabaseQuery');
 jest.mock('@/utils/network/retry');
 jest.mock('@/utils/errors/SupabaseErrorHandler');
 jest.mock('@/data/checkout/repositories/CheckoutOrderRepository');
-jest.mock('@/data/checkout/CheckoutUtils');
-jest.mock('@/data/checkout/CheckoutStripeServer');
+jest.mock('@/data/checkout/services/CheckoutServiceUtils');
 
 describe('CheckoutService', () => {
     let mockSupabase: SupabaseClient<Database>;
-    let mockAdminSupabase: SupabaseClient<Database>;
 
-    const mockCheckoutParams: ProcessCheckoutParams = {
+    const checkoutParams: ProcessCheckoutParams = {
         userId: 'user-uuid-123',
         customerEmail: 'user@example.com',
         stripeCustomerId: 'cus_123',
         items: [{ bookId: 'book-1', quantity: 2 }],
-        discountId: null,
+        discountId: 'discount-1',
         paymentMethod: 'card',
         shippingMethodId: 'royal_mail_standard',
         idempotencyKey: 'idemp-key-999',
@@ -55,576 +54,279 @@ describe('CheckoutService', () => {
         },
     };
 
+    const preparedItems = {
+        processItems: [{ book_id: 'book-1', quantity: 2, price: 20 }],
+        cartItems: [{ id: 'book-1', price: '20.00', quantity: 2 }],
+    } as unknown as NonNullable<
+        Awaited<ReturnType<typeof checkoutUtils.loadCheckoutItems>>['data']
+    >;
+    const checkoutTotals = {
+        totals: {
+            subtotal: 40,
+            discountAmount: 4,
+            shippingCost: 5.99,
+            taxAmount: 0,
+            grandTotal: 41.99,
+        },
+        shippingMethod: SHIPPING_METHODS[0],
+    };
+    const paymentIntent = {
+        clientSecret: 'pi_secret',
+        paymentIntentId: 'pi_test_123',
+    };
+    const orderPayload = {
+        user_id: checkoutParams.userId,
+        subtotal: 40,
+        discount_amount: 4,
+        shipping_cost: 5.99,
+        tax_amount: 0,
+        total_amount: 41.99,
+        shipping_method_id: 'royal_mail_standard',
+        shipping_method_name: 'Royal Mail Standard',
+        payment_method: 'card',
+        discount_id: checkoutParams.discountId,
+        payment_intent_id: paymentIntent.paymentIntentId,
+        shipping_address: checkoutParams.shippingAddress,
+        items: preparedItems.processItems,
+    } satisfies ProcessOrderPayload;
+    const checkoutResult: SafeQueryResult<ProcessCheckoutResult> = {
+        data: {
+            success: true,
+            orderId: 'order-1',
+            clientSecret: paymentIntent.clientSecret,
+            paymentIntentId: paymentIntent.paymentIntentId,
+            error: null,
+        },
+        error: null,
+    };
+
     beforeEach(() => {
         jest.clearAllMocks();
 
-        mockSupabase = {
-            from: jest.fn().mockReturnThis(),
-            select: jest.fn().mockReturnThis(),
-            in: jest.fn().mockReturnThis(),
-            eq: jest.fn().mockReturnThis(),
-            maybeSingle: jest.fn(),
-        } as unknown as SupabaseClient<Database>;
-        mockAdminSupabase = {} as SupabaseClient<Database>;
-
+        mockSupabase = {} as SupabaseClient<Database>;
         jest.mocked(createBackendClient).mockResolvedValue(mockSupabase);
-        jest.mocked(createAdminClient).mockResolvedValue(mockAdminSupabase);
-        jest.mocked(safeSupabaseQuery).mockImplementation(async (fn) => (await fn()) as never);
-        jest.mocked(withRetry).mockImplementation(async (fn) => (await fn()) as never);
-        jest.mocked(sanitizeSupabaseError).mockImplementation((err: unknown) =>
-            typeof err === 'string' ? err : 'Sanitized error',
+        jest.mocked(safeSupabaseQuery).mockImplementation(async (query) => (await query()) as never);
+        jest.mocked(withRetry).mockImplementation(async (query) => (await query()) as never);
+        jest.mocked(sanitizeSupabaseError).mockImplementation((error: unknown) =>
+            typeof error === 'string' ? error : 'Sanitized error',
         );
-        jest.mocked(calculateTotals).mockReturnValue({
-            subtotal: 40.0,
-            discountAmount: 0,
-            shippingCost: 5.99,
-            taxAmount: 0,
-            grandTotal: 45.99,
-        });
-        jest.mocked(createPaymentIntentAction).mockResolvedValue({
-            success: true,
-            clientSecret: 'seti_secret_123',
-            paymentIntentId: 'pi_test_123',
+
+        jest.mocked(checkoutUtils.loadCheckoutItems).mockResolvedValue({
+            data: preparedItems,
             error: null,
         });
+        jest.mocked(checkoutUtils.loadDiscountState).mockResolvedValue({
+            data: null,
+            error: null,
+        });
+        jest.mocked(checkoutUtils.calculateRawSubtotal).mockReturnValue(40);
+        jest.mocked(checkoutUtils.calculateCheckoutTotals).mockReturnValue(checkoutTotals);
+        jest.mocked(checkoutUtils.createCheckoutPaymentIntent).mockResolvedValue({
+            data: paymentIntent,
+            error: null,
+        });
+        jest.mocked(checkoutUtils.buildOrderPayload).mockReturnValue(orderPayload);
+        jest.mocked(checkoutUtils.persistCheckoutOrder).mockResolvedValue({
+            data: 'order-1',
+            error: null,
+        });
+        jest.mocked(checkoutUtils.createCheckoutResult).mockReturnValue(checkoutResult);
     });
 
     describe('executeCheckoutOrder', () => {
-        it('should successfully execute checkout order flow without discount', async () => {
-            const mockBooks = [
-                { id: 'book-1', title: 'Book 1', price: 20.0, stock_quantity: 10, is_active: true },
-            ];
+        it('coordinates checkout preparation, payment, persistence, and result creation', async () => {
+            const result = await executeCheckoutOrder(checkoutParams);
 
-            (mockSupabase.from as jest.Mock).mockReturnValue({
-                select: jest.fn().mockReturnValue({
-                    in: jest.fn().mockResolvedValue({ data: mockBooks, error: null }),
-                }),
-            });
-
-            jest.mocked(processOrderTransaction).mockResolvedValue({
-                data: { order_id: 'order-uuid-888' },
-                error: null,
-            } as never);
-
-            const result = await executeCheckoutOrder(mockCheckoutParams);
-
-            expect(result.error).toBeNull();
-            expect(result.data).toEqual({
-                success: true,
-                orderId: 'order-uuid-888',
-                clientSecret: 'seti_secret_123',
-                paymentIntentId: 'pi_test_123',
-                error: null,
-            });
-            expect(processOrderTransaction).toHaveBeenCalledWith(
-                mockAdminSupabase,
-                expect.objectContaining({ user_id: mockCheckoutParams.userId }),
+            expect(result).toEqual(checkoutResult);
+            expect(checkoutUtils.loadCheckoutItems).toHaveBeenCalledWith(
+                mockSupabase,
+                checkoutParams,
             );
-            expect(createPaymentIntentAction).toHaveBeenCalledWith(
-                4599,
-                'idemp-key-999',
-                'GBP',
-                {
-                    userId: 'user-uuid-123',
-                    customerEmail: 'user@example.com',
-                },
-                'cus_123',
+            expect(checkoutUtils.loadDiscountState).toHaveBeenCalledWith(
+                mockSupabase,
+                checkoutParams.discountId,
+                40,
+            );
+            expect(checkoutUtils.calculateRawSubtotal).toHaveBeenCalledWith(
+                preparedItems.cartItems,
+            );
+            expect(checkoutUtils.calculateCheckoutTotals).toHaveBeenCalledWith(
+                preparedItems.cartItems,
+                null,
+                checkoutParams,
+            );
+            expect(checkoutUtils.createCheckoutPaymentIntent).toHaveBeenCalledWith(
+                checkoutParams,
+                checkoutTotals.totals.grandTotal,
+            );
+            expect(checkoutUtils.buildOrderPayload).toHaveBeenCalledWith(
+                checkoutParams,
+                checkoutTotals.totals,
+                checkoutTotals.shippingMethod,
+                paymentIntent.paymentIntentId,
+                preparedItems.processItems,
+            );
+            expect(checkoutUtils.persistCheckoutOrder).toHaveBeenCalledWith(
+                checkoutParams,
+                paymentIntent.paymentIntentId,
+                orderPayload,
+            );
+            expect(checkoutUtils.createCheckoutResult).toHaveBeenCalledWith(
+                'order-1',
+                paymentIntent,
             );
         });
 
-        it('should fallback to default SHIPPING_METHODS[0] when shippingMethodId is invalid or not found', async () => {
-            const mockBooks = [
-                { id: 'book-1', title: 'Book 1', price: 20.0, stock_quantity: 10, is_active: true },
-            ];
-
-            (mockSupabase.from as jest.Mock).mockReturnValue({
-                select: jest.fn().mockReturnValue({
-                    in: jest.fn().mockResolvedValue({ data: mockBooks, error: null }),
-                }),
+        it('stops when checkout items cannot be prepared', async () => {
+            jest.mocked(checkoutUtils.loadCheckoutItems).mockResolvedValueOnce({
+                data: null,
+                error: APP_ERROR_MESSAGES.INSUFFICIENT_STOCK,
             });
 
-            jest.mocked(processOrderTransaction).mockResolvedValue({
-                data: { order_id: 'order-uuid-fallback' },
-                error: null,
-            } as never);
-
-            const result = await executeCheckoutOrder({
-                ...mockCheckoutParams,
-                shippingMethodId: 'non_existent_method_id',
+            await expect(executeCheckoutOrder(checkoutParams)).resolves.toEqual({
+                data: null,
+                error: APP_ERROR_MESSAGES.INSUFFICIENT_STOCK,
             });
-
-            expect(result.error).toBeNull();
-            expect(result.data?.orderId).toBe('order-uuid-fallback');
+            expect(checkoutUtils.loadDiscountState).not.toHaveBeenCalled();
+            expect(checkoutUtils.createCheckoutPaymentIntent).not.toHaveBeenCalled();
         });
 
-        it('should successfully execute checkout order flow with a valid active percentage discount', async () => {
-            const mockBooks = [
-                { id: 'book-1', title: 'Book 1', price: 20.0, stock_quantity: 10, is_active: true },
-            ];
-
-            const mockDiscount = {
-                id: 'disc-1',
-                code: 'SAVE10',
-                value: 10,
-                type: 'percentage',
-                is_active: true,
-                minimum_subtotal: 20,
-            };
-
-            (mockSupabase.from as jest.Mock).mockImplementation((table: string) => {
-                if (table === 'books') {
-                    return {
-                        select: jest.fn().mockReturnValue({
-                            in: jest.fn().mockResolvedValue({ data: mockBooks, error: null }),
-                        }),
-                    };
-                }
-                if (table === 'discounts') {
-                    return {
-                        select: jest.fn().mockReturnValue({
-                            eq: jest.fn().mockReturnValue({
-                                maybeSingle: jest
-                                    .fn()
-                                    .mockResolvedValue({ data: mockDiscount, error: null }),
-                            }),
-                        }),
-                    };
-                }
-                return {};
-            });
-
-            jest.mocked(processOrderTransaction).mockResolvedValue({
-                data: { order_id: 'order-uuid-888' },
-                error: null,
-            } as never);
-
-            const result = await executeCheckoutOrder({
-                ...mockCheckoutParams,
-                discountId: 'disc-1',
-            });
-
-            expect(result.error).toBeNull();
-            expect(result.data?.orderId).toBe('order-uuid-888');
-        });
-
-        it('should successfully execute checkout order flow with a fixed_amount discount having null minimum_subtotal', async () => {
-            const mockBooks = [
-                { id: 'book-1', title: 'Book 1', price: 20.0, stock_quantity: 10, is_active: true },
-            ];
-
-            const mockDiscount = {
-                id: 'disc-fixed',
-                code: 'FIXED5',
-                value: 5,
-                type: 'fixed_amount',
-                is_active: true,
-                minimum_subtotal: null,
-            };
-
-            (mockSupabase.from as jest.Mock).mockImplementation((table: string) => {
-                if (table === 'books') {
-                    return {
-                        select: jest.fn().mockReturnValue({
-                            in: jest.fn().mockResolvedValue({ data: mockBooks, error: null }),
-                        }),
-                    };
-                }
-                if (table === 'discounts') {
-                    return {
-                        select: jest.fn().mockReturnValue({
-                            eq: jest.fn().mockReturnValue({
-                                maybeSingle: jest
-                                    .fn()
-                                    .mockResolvedValue({ data: mockDiscount, error: null }),
-                            }),
-                        }),
-                    };
-                }
-                return {};
-            });
-
-            jest.mocked(processOrderTransaction).mockResolvedValue({
-                data: { order_id: 'order-uuid-999' },
-                error: null,
-            } as never);
-
-            const result = await executeCheckoutOrder({
-                ...mockCheckoutParams,
-                discountId: 'disc-fixed',
-            });
-
-            expect(result.error).toBeNull();
-            expect(result.data?.orderId).toBe('order-uuid-999');
-        });
-
-        it('should return error when discount minimum subtotal requirement is not met', async () => {
-            const mockBooks = [
-                { id: 'book-1', title: 'Book 1', price: 20.0, stock_quantity: 10, is_active: true },
-            ];
-
-            const mockDiscount = {
-                id: 'disc-1',
-                code: 'SAVE10',
-                value: 10,
-                type: 'percentage',
-                is_active: true,
-                minimum_subtotal: 100,
-            };
-
-            (mockSupabase.from as jest.Mock).mockImplementation((table: string) => {
-                if (table === 'books') {
-                    return {
-                        select: jest.fn().mockReturnValue({
-                            in: jest.fn().mockResolvedValue({ data: mockBooks, error: null }),
-                        }),
-                    };
-                }
-                if (table === 'discounts') {
-                    return {
-                        select: jest.fn().mockReturnValue({
-                            eq: jest.fn().mockReturnValue({
-                                maybeSingle: jest
-                                    .fn()
-                                    .mockResolvedValue({ data: mockDiscount, error: null }),
-                            }),
-                        }),
-                    };
-                }
-                return {};
-            });
-
-            const result = await executeCheckoutOrder({
-                ...mockCheckoutParams,
-                discountId: 'disc-1',
-            });
-
-            expect(result.data).toBeNull();
-            expect(result.error).toBe('This discount requires a minimum subtotal of £100.00.');
-        });
-
-        it('should return sanitized error when discount query fails with database error', async () => {
-            const mockBooks = [
-                { id: 'book-1', title: 'Book 1', price: 20.0, stock_quantity: 10, is_active: true },
-            ];
-
-            (mockSupabase.from as jest.Mock).mockImplementation((table: string) => {
-                if (table === 'books') {
-                    return {
-                        select: jest.fn().mockReturnValue({
-                            in: jest.fn().mockResolvedValue({ data: mockBooks, error: null }),
-                        }),
-                    };
-                }
-                if (table === 'discounts') {
-                    return {
-                        select: jest.fn().mockReturnValue({
-                            eq: jest.fn().mockReturnValue({
-                                maybeSingle: jest.fn().mockResolvedValue({
-                                    data: null,
-                                    error: { message: 'Discount DB Error' },
-                                }),
-                            }),
-                        }),
-                    };
-                }
-                return {};
-            });
-
-            const result = await executeCheckoutOrder({
-                ...mockCheckoutParams,
-                discountId: 'disc-1',
-            });
-
-            expect(result.data).toBeNull();
-            expect(result.error).toBe('Sanitized error');
-        });
-
-        it('should return EMPTY_CART_CHECKOUT when items array is empty', async () => {
-            const result = await executeCheckoutOrder({
-                ...mockCheckoutParams,
-                items: [],
-            });
-
-            expect(result.data).toBeNull();
-            expect(result.error).toBe(APP_ERROR_MESSAGES.EMPTY_CART_CHECKOUT);
-        });
-
-        it('should return sanitized error if books query returns database error', async () => {
-            (mockSupabase.from as jest.Mock).mockReturnValue({
-                select: jest.fn().mockReturnValue({
-                    in: jest.fn().mockResolvedValue({ data: null, error: { message: 'DB Error' } }),
-                }),
-            });
-
-            const result = await executeCheckoutOrder(mockCheckoutParams);
-
-            expect(result.data).toBeNull();
-            expect(result.error).toBe('Sanitized error');
-        });
-
-        it('should return INSUFFICIENT_STOCK if returned books count does not match requested items count', async () => {
-            const mockBooks = [
-                { id: 'book-1', title: 'Book 1', price: 20.0, stock_quantity: 10, is_active: true },
-            ];
-
-            (mockSupabase.from as jest.Mock).mockReturnValue({
-                select: jest.fn().mockReturnValue({
-                    in: jest.fn().mockResolvedValue({ data: mockBooks, error: null }),
-                }),
-            });
-
-            const result = await executeCheckoutOrder({
-                ...mockCheckoutParams,
-                items: [
-                    { bookId: 'book-1', quantity: 1 },
-                    { bookId: 'book-2', quantity: 1 },
-                ],
-            });
-
-            expect(result.data).toBeNull();
-            expect(result.error).toBe(APP_ERROR_MESSAGES.INSUFFICIENT_STOCK);
-        });
-
-        it('should return INSUFFICIENT_STOCK if a book ID is missing from returned books despite matching array length', async () => {
-            const mockBooks = [
-                { id: 'book-1', title: 'Book 1', price: 20.0, stock_quantity: 10, is_active: true },
-                { id: 'book-3', title: 'Book 3', price: 20.0, stock_quantity: 10, is_active: true },
-            ];
-
-            (mockSupabase.from as jest.Mock).mockReturnValue({
-                select: jest.fn().mockReturnValue({
-                    in: jest.fn().mockResolvedValue({ data: mockBooks, error: null }),
-                }),
-            });
-
-            const result = await executeCheckoutOrder({
-                ...mockCheckoutParams,
-                items: [
-                    { bookId: 'book-1', quantity: 1 },
-                    { bookId: 'book-2', quantity: 1 },
-                ],
-            });
-
-            expect(result.data).toBeNull();
-            expect(result.error).toBe(APP_ERROR_MESSAGES.INSUFFICIENT_STOCK);
-        });
-
-        it('should return INSUFFICIENT_STOCK if a book is not active', async () => {
-            const mockInactiveBook = [
-                {
-                    id: 'book-1',
-                    title: 'Book 1',
-                    price: 20.0,
-                    stock_quantity: 10,
-                    is_active: false,
-                },
-            ];
-
-            (mockSupabase.from as jest.Mock).mockReturnValue({
-                select: jest.fn().mockReturnValue({
-                    in: jest.fn().mockResolvedValue({ data: mockInactiveBook, error: null }),
-                }),
-            });
-
-            const result = await executeCheckoutOrder(mockCheckoutParams);
-
-            expect(result.data).toBeNull();
-            expect(result.error).toBe(APP_ERROR_MESSAGES.INSUFFICIENT_STOCK);
-        });
-
-        it('should return INSUFFICIENT_STOCK if stock quantity is less than requested', async () => {
-            const mockLowStockBook = [
-                { id: 'book-1', title: 'Book 1', price: 20.0, stock_quantity: 1, is_active: true },
-            ];
-
-            (mockSupabase.from as jest.Mock).mockReturnValue({
-                select: jest.fn().mockReturnValue({
-                    in: jest.fn().mockResolvedValue({ data: mockLowStockBook, error: null }),
-                }),
-            });
-
-            const result = await executeCheckoutOrder(mockCheckoutParams);
-
-            expect(result.data).toBeNull();
-            expect(result.error).toBe(APP_ERROR_MESSAGES.INSUFFICIENT_STOCK);
-        });
-
-        it('should return PAYMENT_PROCESSING_FAILED if createPaymentIntentAction fails with explicit error', async () => {
-            const mockBooks = [
-                { id: 'book-1', title: 'Book 1', price: 20.0, stock_quantity: 10, is_active: true },
-            ];
-
-            (mockSupabase.from as jest.Mock).mockReturnValue({
-                select: jest.fn().mockReturnValue({
-                    in: jest.fn().mockResolvedValue({ data: mockBooks, error: null }),
-                }),
-            });
-
-            jest.mocked(createPaymentIntentAction).mockResolvedValueOnce({
-                success: false,
-                clientSecret: null,
-                paymentIntentId: null,
-                error: 'Card declined',
-            });
-
-            const result = await executeCheckoutOrder(mockCheckoutParams);
-
-            expect(result.data).toBeNull();
-            expect(result.error).toBe('Card declined');
-        });
-
-        it('should fallback to PAYMENT_PROCESSING_FAILED if createPaymentIntentAction fails without an explicit error message', async () => {
-            const mockBooks = [
-                { id: 'book-1', title: 'Book 1', price: 20.0, stock_quantity: 10, is_active: true },
-            ];
-
-            (mockSupabase.from as jest.Mock).mockReturnValue({
-                select: jest.fn().mockReturnValue({
-                    in: jest.fn().mockResolvedValue({ data: mockBooks, error: null }),
-                }),
-            });
-
-            jest.mocked(createPaymentIntentAction).mockResolvedValueOnce({
-                success: false,
-                clientSecret: null,
-                paymentIntentId: null,
-                error: null,
-            });
-
-            const result = await executeCheckoutOrder(mockCheckoutParams);
-
-            expect(result.data).toBeNull();
-            expect(result.error).toBe(APP_ERROR_MESSAGES.PAYMENT_PROCESSING_FAILED);
-        });
-
-        it('should return ORDER_CREATION_FAILED if order RPC transaction returns null data and null error', async () => {
-            const mockBooks = [
-                { id: 'book-1', title: 'Book 1', price: 20.0, stock_quantity: 10, is_active: true },
-            ];
-
-            (mockSupabase.from as jest.Mock).mockReturnValue({
-                select: jest.fn().mockReturnValue({
-                    in: jest.fn().mockResolvedValue({ data: mockBooks, error: null }),
-                }),
-            });
-
-            jest.mocked(processOrderTransaction).mockResolvedValue({
+        it('uses the stock fallback if item preparation unexpectedly returns no result or error', async () => {
+            jest.mocked(checkoutUtils.loadCheckoutItems).mockResolvedValueOnce({
                 data: null,
                 error: null,
             } as never);
 
-            const result = await executeCheckoutOrder(mockCheckoutParams);
-
-            expect(result.data).toBeNull();
-            expect(result.error).toBe(APP_ERROR_MESSAGES.ORDER_CREATION_FAILED);
+            await expect(executeCheckoutOrder(checkoutParams)).resolves.toEqual({
+                data: null,
+                error: APP_ERROR_MESSAGES.INSUFFICIENT_STOCK,
+            });
+            expect(checkoutUtils.loadDiscountState).not.toHaveBeenCalled();
         });
 
-        it('should return sanitized error when order RPC transaction returns a database error', async () => {
-            const mockBooks = [
-                { id: 'book-1', title: 'Book 1', price: 20.0, stock_quantity: 10, is_active: true },
-            ];
-
-            (mockSupabase.from as jest.Mock).mockReturnValue({
-                select: jest.fn().mockReturnValue({
-                    in: jest.fn().mockResolvedValue({ data: mockBooks, error: null }),
-                }),
+        it('stops when discount lookup fails', async () => {
+            jest.mocked(checkoutUtils.loadDiscountState).mockResolvedValueOnce({
+                data: null,
+                error: 'Discount lookup failed',
             });
 
-            const rpcError = { message: 'RPC database failure' };
-            jest.mocked(processOrderTransaction).mockResolvedValue({
+            await expect(executeCheckoutOrder(checkoutParams)).resolves.toEqual({
                 data: null,
-                error: rpcError,
-            } as never);
-
-            const result = await executeCheckoutOrder(mockCheckoutParams);
-
-            expect(result.data).toBeNull();
-            expect(result.error).toBe('Sanitized error');
-            expect(sanitizeSupabaseError).toHaveBeenCalledWith(rpcError);
+                error: 'Discount lookup failed',
+            });
+            expect(checkoutUtils.createCheckoutPaymentIntent).not.toHaveBeenCalled();
         });
 
-        it('should handle thrown exception in executeCheckoutOrder and return sanitized error', async () => {
-            const error = new Error('Unexpected client creation failure');
-            jest.mocked(createBackendClient).mockRejectedValueOnce(error);
+        it('stops when PaymentIntent creation fails', async () => {
+            jest.mocked(checkoutUtils.createCheckoutPaymentIntent).mockResolvedValueOnce({
+                data: null,
+                error: APP_ERROR_MESSAGES.PAYMENT_PROCESSING_FAILED,
+            });
 
-            const result = await executeCheckoutOrder(mockCheckoutParams);
+            await expect(executeCheckoutOrder(checkoutParams)).resolves.toEqual({
+                data: null,
+                error: APP_ERROR_MESSAGES.PAYMENT_PROCESSING_FAILED,
+            });
+            expect(checkoutUtils.persistCheckoutOrder).not.toHaveBeenCalled();
+        });
 
-            expect(result.data).toBeNull();
-            expect(result.error).toBe('Sanitized error');
-            expect(sanitizeSupabaseError).toHaveBeenCalledWith(error);
+        it('returns persistence errors without formatting a success response', async () => {
+            jest.mocked(checkoutUtils.persistCheckoutOrder).mockResolvedValueOnce({
+                data: null,
+                error: 'Order persistence failed',
+            });
+
+            await expect(executeCheckoutOrder(checkoutParams)).resolves.toEqual({
+                data: null,
+                error: 'Order persistence failed',
+            });
+            expect(checkoutUtils.createCheckoutResult).not.toHaveBeenCalled();
+        });
+
+        it('returns an explicit fallback if persistence unexpectedly returns no order ID', async () => {
+            jest.mocked(checkoutUtils.persistCheckoutOrder).mockResolvedValueOnce({
+                data: null,
+                error: null,
+            } as never);
+
+            await expect(executeCheckoutOrder(checkoutParams)).resolves.toEqual({
+                data: null,
+                error: APP_ERROR_MESSAGES.ORDER_CREATION_FAILED,
+            });
+        });
+
+        it('sanitizes unexpected failures at the service boundary', async () => {
+            const failure = new Error('Unexpected checkout failure');
+            jest.mocked(createBackendClient).mockRejectedValueOnce(failure);
+
+            await expect(executeCheckoutOrder(checkoutParams)).resolves.toEqual({
+                data: null,
+                error: 'Sanitized error',
+            });
+            expect(sanitizeSupabaseError).toHaveBeenCalledWith(failure);
         });
     });
 
     describe('getOrderDetailsById', () => {
-        it('should return order details on successful query', async () => {
-            const mockOrderDetails: OrderWithRelations = {
-                id: 'order-123',
-                user_id: 'user-uuid-123',
-                subtotal: 40.0,
-                discount_amount: 0,
-                shipping_cost: 5.99,
-                tax_amount: 0,
-                total_amount: 45.99,
-                shipping_method_id: 'royal_mail_standard',
-                shipping_method_name: 'Royal Mail Standard',
-                status: 'paid',
-                payment_method: 'card',
-                created_at: '2026-01-01T00:00:00Z',
-                stripe_checkout_session_id: null,
-                stripe_payment_intent_id: 'pi_123',
-                order_items: [],
-                order_discounts: [],
-                order_addresses: [],
-                inventory_restored: false,
-            };
+        const order: OrderWithRelations = {
+            id: 'order-1',
+            user_id: checkoutParams.userId,
+            subtotal: 40,
+            discount_amount: 0,
+            shipping_cost: 5.99,
+            tax_amount: 0,
+            total_amount: 45.99,
+            shipping_method_id: 'royal_mail_standard',
+            shipping_method_name: 'Royal Mail Standard',
+            status: 'paid',
+            payment_method: 'card',
+            created_at: '2026-01-01T00:00:00Z',
+            stripe_checkout_session_id: null,
+            stripe_payment_intent_id: 'pi-1',
+            order_items: [],
+            order_discounts: [],
+            order_addresses: [],
+            inventory_restored: false,
+        };
 
-            jest.mocked(fetchOrderById).mockResolvedValue({
-                data: mockOrderDetails,
+        it('returns the fetched order', async () => {
+            jest.mocked(fetchOrderById).mockResolvedValue({ data: order, error: null } as never);
+
+            await expect(getOrderDetailsById(order.id)).resolves.toEqual({
+                data: order,
                 error: null,
-            } as never);
-
-            const result = await getOrderDetailsById('order-123');
-
-            expect(result.error).toBeNull();
-            expect(result.data).toEqual(mockOrderDetails);
-            expect(fetchOrderById).toHaveBeenCalledWith(mockSupabase, 'order-123');
+            });
+            expect(fetchOrderById).toHaveBeenCalledWith(mockSupabase, order.id);
         });
 
-        it('should return ORDER_NOT_FOUND when query returns empty data', async () => {
+        it('returns ORDER_NOT_FOUND when the order does not exist', async () => {
+            jest.mocked(fetchOrderById).mockResolvedValue({ data: null, error: null } as never);
+
+            await expect(getOrderDetailsById('missing')).resolves.toEqual({
+                data: null,
+                error: APP_ERROR_MESSAGES.ORDER_NOT_FOUND,
+            });
+        });
+
+        it('sanitizes database and unexpected lookup errors', async () => {
+            const databaseError = { message: 'database error' };
             jest.mocked(fetchOrderById).mockResolvedValue({
                 data: null,
-                error: null,
+                error: databaseError,
             } as never);
-
-            const result = await getOrderDetailsById('non-existent-order');
-
-            expect(result.data).toBeNull();
-            expect(result.error).toBe(APP_ERROR_MESSAGES.ORDER_NOT_FOUND);
-        });
-
-        it('should return sanitized error when fetchOrderById returns database error', async () => {
-            const dbError = { message: 'Database query failed' };
-            jest.mocked(fetchOrderById).mockResolvedValue({
+            await expect(getOrderDetailsById(order.id)).resolves.toEqual({
                 data: null,
-                error: dbError,
-            } as never);
+                error: 'Sanitized error',
+            });
+            expect(sanitizeSupabaseError).toHaveBeenCalledWith(databaseError);
 
-            const result = await getOrderDetailsById('order-123');
-
-            expect(result.data).toBeNull();
-            expect(result.error).toBe('Sanitized error');
-            expect(sanitizeSupabaseError).toHaveBeenCalledWith(dbError);
-        });
-
-        it('should handle thrown exception in getOrderDetailsById and return sanitized error', async () => {
-            const error = new Error('Unexpected client creation failure');
-            jest.mocked(createBackendClient).mockRejectedValueOnce(error);
-
-            const result = await getOrderDetailsById('order-123');
-
-            expect(result.data).toBeNull();
-            expect(result.error).toBe('Sanitized error');
-            expect(sanitizeSupabaseError).toHaveBeenCalledWith(error);
+            const unexpectedError = new Error('client failure');
+            jest.mocked(fetchOrderById).mockRejectedValueOnce(unexpectedError);
+            await expect(getOrderDetailsById(order.id)).resolves.toEqual({
+                data: null,
+                error: 'Sanitized error',
+            });
+            expect(sanitizeSupabaseError).toHaveBeenCalledWith(unexpectedError);
         });
     });
 });

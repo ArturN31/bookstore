@@ -63,3 +63,31 @@ export async function createPaymentIntentAction(
         };
     }
 }
+
+export async function cancelPaymentIntentAction(
+    paymentIntentId: string,
+): Promise<{ readonly success: boolean; readonly error: string | null }> {
+    try {
+        await getStripe().paymentIntents.cancel(paymentIntentId);
+        return { success: true, error: null };
+    } catch (err: unknown) {
+        try {
+            const paymentIntent = await getStripe().paymentIntents.retrieve(paymentIntentId);
+            if (paymentIntent.status === 'canceled') return { success: true, error: null };
+        } catch (verificationError: unknown) {
+            const verificationMessage =
+                verificationError instanceof Error
+                    ? verificationError.message
+                    : 'Payment intent status could not be verified.';
+            return {
+                success: false,
+                error: `Cancellation failed and payment intent status could not be verified: ${verificationMessage}`,
+            };
+        }
+
+        return {
+            success: false,
+            error: err instanceof Error ? err.message : 'Failed to cancel the payment intent.',
+        };
+    }
+}
