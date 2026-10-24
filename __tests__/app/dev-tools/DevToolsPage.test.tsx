@@ -1,11 +1,13 @@
 import DevToolsPage from '@/app/dev-tools/page';
 import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
-import { redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { verifyRateLimit } from '@/utils/network/rateLimiter';
 
 jest.mock('next/navigation', () => ({
-    redirect: jest.fn(),
+    notFound: jest.fn(() => {
+        throw new Error('NEXT_NOT_FOUND');
+    }),
 }));
 
 jest.mock('@/utils/network/getAppClientIp', () => ({
@@ -40,10 +42,6 @@ jest.mock('@/app/dev-tools/components/DatabaseActions/DatabaseActions', () => ({
     DatabaseActions: () => <div data-testid="database-actions" />,
 }));
 
-jest.mock('@/app/dev-tools/components/UserRegistry/UserRegistry', () => ({
-    UserRegistry: () => <div data-testid="user-registry" />,
-}));
-
 describe('DevToolsPage', () => {
     const mockVerifyRateLimit = jest.mocked(verifyRateLimit);
     const originalNodeEnv = process.env.NODE_ENV;
@@ -68,19 +66,25 @@ describe('DevToolsPage', () => {
         else env.FORCE_PRODUCTION = originalForceProduction;
     });
 
-    it('should redirect to "/" if NODE_ENV is production', async () => {
+    it('should return not found if NODE_ENV is production', async () => {
         env.NODE_ENV = 'production';
 
-        await DevToolsPage();
-        expect(redirect).toHaveBeenCalledWith('/');
+        await expect(DevToolsPage()).rejects.toThrow('NEXT_NOT_FOUND');
+        expect(mockVerifyRateLimit).not.toHaveBeenCalled();
     });
 
-    it('should redirect when FORCE_PRODUCTION is enabled', async () => {
+    it('should return not found outside development mode', async () => {
+        env.NODE_ENV = 'test';
+
+        await expect(DevToolsPage()).rejects.toThrow('NEXT_NOT_FOUND');
+        expect(mockVerifyRateLimit).not.toHaveBeenCalled();
+    });
+
+    it('should return not found when FORCE_PRODUCTION is enabled', async () => {
         env.FORCE_PRODUCTION = 'true';
 
-        await DevToolsPage();
+        await expect(DevToolsPage()).rejects.toThrow('NEXT_NOT_FOUND');
 
-        expect(redirect).toHaveBeenCalledWith('/');
         expect(mockVerifyRateLimit).not.toHaveBeenCalled();
     });
 
@@ -97,7 +101,6 @@ describe('DevToolsPage', () => {
         expect(screen.getByTestId('system-log')).toBeInTheDocument();
         expect(screen.getByTestId('live-telemetry')).toBeInTheDocument();
         expect(screen.getByTestId('database-actions')).toBeInTheDocument();
-        expect(screen.getByTestId('user-registry')).toBeInTheDocument();
     });
 
     it('should stop before rendering privileged tools when rate limited', async () => {

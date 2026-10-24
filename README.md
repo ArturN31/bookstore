@@ -11,15 +11,15 @@ This repository is an application project, not a claim that a fully operated ret
 ## Project Status
 
 **Status:** Feature-rich bookstore prototype; local tests, lint, and production build pass. Production commerce readiness remains conditional on the security, payment, database, and deployment work below.
-**Audit snapshot:** October 23, 2026, local `master` checkout at `7421b80`, synchronized with `origin/master`.
-**Automated verification:** 247 Jest suites, 1,830 tests, and one snapshot passed; configured coverage is 100% across statements, branches, functions, and lines; ESLint and the production build passed.
+**Audit snapshot:** October 23, 2026, local `master` at `bf2e178` with current uncommitted development-tools changes.
+**Automated verification:** 243 Jest suites, 1,810 tests, and one snapshot passed; configured coverage is 100% across statements, branches, functions, and lines; ESLint and the production build passed.
 
 ### Verification Snapshot
 
 | Check | Result |
 | :--- | :--- |
-| Jest suites | 247 passed / 247 total |
-| Jest tests | 1,830 passed / 1,830 total |
+| Jest suites | 243 passed / 243 total |
+| Jest tests | 1,810 passed / 1,810 total |
 | Snapshots | 1 passed / 1 total |
 | Statements / branches / functions / lines | 100% each in the configured Jest collection |
 | ESLint | Passed |
@@ -182,7 +182,7 @@ Discount dates, active status, minimum spend, and global/per-user usage limits a
 
 - `/dev-tools` provides development seed/reset controls and tooling for local data inspection.
 - Faker-based generators support books, users, reviews, carts, wishlists, orders, and discounts.
-- These tools use service-role access and are not a production administration system. Some actions have a production guard and rate limit, but the impersonation action has no caller authorization. Do not expose development tooling to untrusted users or shared environments.
+- These tools use service-role access to populate, extend, and reset the personal project's development database. The page and all exported server actions are restricted to development mode. Keep the local server private and use a development database, because reset operations are destructive.
 - Relevant code: [app/dev-tools/](app/dev-tools/), [utils/db/dbSeed/](utils/db/dbSeed/).
 
 ## Architecture
@@ -261,7 +261,7 @@ Before release, audit accessible names/state for icon controls and search, focus
 - `proxy.ts` handles sessions on selected private routes. It is not a substitute for action-level authentication/authorization.
 - Many domain mutations resolve the current actor and apply ownership rules; order details check ownership.
 - Stripe webhook requests verify their signature before processing.
-- The development impersonation action is blocked in production and rate-limited, but lacks caller authorization and can use the service role to reset a target account to a fixed development password. Keep it out of untrusted environments and replace it with securely authorized tooling.
+- The `/dev-tools` route and all its server actions are restricted to `NODE_ENV=development` and are unavailable otherwise, including production builds and test environments. The tools use service-role privileges to seed and reset development data; run them only against the intended development project and do not expose the development server to untrusted users or networks.
 
 ### Privacy Model and Data Exposure
 
@@ -287,7 +287,7 @@ Zod validation and shared Supabase error utilities are used across important bou
 
 ### Security Gaps
 
-- Development impersonation lacks caller authorization. Production guard and rate limit do not make it safe to expose in shared or untrusted non-production environments.
+- Development seed/reset actions are destructive and use service-role privileges. The app-mode guard prevents access outside development, but operators must also ensure the configured Supabase project is the intended development database.
 - Reconciliation does not check the result of deleting an unmatched webhook event before replaying it.
 - Checkout success redirects to `/login?redirect=...`, while the actual sign-in page is `/user/auth/signin` and consumes `returnTo`.
 - IP rate limiting trusts edge-provided client-IP headers. The production proxy must overwrite them and prevent direct-origin access.
@@ -304,7 +304,7 @@ The local Supabase integration suites cover privacy behavior, commerce RPC role 
 
 ### Current Coverage
 
-The October 23, 2026 Jest run passed **247 suites, 1,830 tests, and one snapshot**. Its configured V8 report showed **100% statements, branches, functions, and lines** for files included by [jest.config.ts](jest.config.ts).
+The October 23, 2026 Jest run passed **243 suites, 1,810 tests, and one snapshot**. Its configured V8 report showed **100% statements, branches, functions, and lines** for files included by [jest.config.ts](jest.config.ts).
 
 The percentage excludes source and behavior outside the configured collection. It does not cover all route/deployment boundaries, CSS, live Supabase/Stripe interactions, environment configuration, or customer journeys in a browser. Coverage is a regression measure, not proof of system correctness.
 
@@ -486,7 +486,7 @@ npm run test
 npm run build
 ```
 
-Before enabling live payments, also verify migration history and RLS in the target project, secure privileged development actions, test discount redemption and payment/webhook retries against a disposable database and Stripe test account, fix the sign-in return path, and confirm tax/shipping rules. Passing the commands above alone is not production certification.
+Before enabling live payments, also verify migration history and RLS in the target project, keep the `/dev-tools` runtime guard in place, test discount redemption and payment/webhook retries against a disposable database and Stripe test account, fix the sign-in return path, and confirm tax/shipping rules. Passing the commands above alone is not production certification.
 
 ## Known Limitations
 
@@ -508,7 +508,7 @@ Discount preview is informational; final order creation is authoritative. The `2
 
 ### Administration and Operations
 
-`/dev-tools` is development tooling, not a production admin product. It uses service-role access for seed and user operations. `impulseLogin` rejects production execution and is rate-limited, but it lacks caller authorization and changes a target user's password to a fixed development password. Do not expose it or other privileged tooling to untrusted callers; require explicit server-side authorization or remove the action.
+`/dev-tools` is a personal-project development console for seeding books, reviews, carts, wishlists, orders, and discounts, adding generated data, and resetting the database. The page returns not found outside `NODE_ENV=development`, and all exported server actions independently enforce the same runtime guard before privileged work. Its seed/reset operations use the service role and can destroy data; keep the server private and verify that the configured Supabase project is the development database before running them.
 
 There is no reviewed production RBAC/admin console. The reconciliation route also requires a correctly configured cron secret and monitored scheduler.
 
@@ -551,11 +551,10 @@ The roadmap lists remaining work based on the audited local checkout; implemente
 
 - [ ] Build a protected production administration surface separate from `/dev-tools`.
 - [ ] Add server-enforced roles/claims and caller authorization for every privileged operation.
-- [ ] Remove the fixed-password impersonation flow or replace it with tightly controlled development-only tooling.
 - [ ] Add inventory, order, and discount administration with auditable changes.
 - [ ] Add review moderation and audit-log browsing.
 - [ ] Add sales analytics and controlled bulk catalog/customer operations.
-- [ ] Restrict destructive seed/reset operations to explicitly configured disposable development environments.
+- [ ] Add a development-database target check/confirmation before destructive seed/reset operations.
 - [ ] Add structured logs, metrics, traces, alerts, and durable security audit delivery.
 
 ### 4. Experience and Accessibility
@@ -569,7 +568,7 @@ The roadmap lists remaining work based on the audited local checkout; implemente
 
 ### 5. Security and Reliability
 
-- [ ] Ensure every privileged Server Action validates the caller and authorizes the operation.
+- [x] Restrict `/dev-tools` and every exported server action to development mode; other environments return not found or reject the action.
 - [ ] Verify the deployment has applied and tested the committed migrations and RLS policies.
 - [ ] Verify trusted-proxy/client-IP configuration and prevent direct-origin access.
 - [ ] Check cron authorization, scheduler delivery, and reconciliation alerts in deployment.
@@ -612,6 +611,6 @@ Faker-generated related data supports UI development and test setup. Full reset 
 
 ## Conclusion
 
-The checked-out repository provides a broad bookstore prototype with domain-oriented code, five committed database migrations, database-backed webhook idempotency, atomic discount reservation, and comprehensive configured Jest coverage. The October 23, 2026 local Jest, lint, and production-build checks passed. These results do not verify the opt-in database suites, a deployed Supabase project's migration/RLS state, or live Stripe behavior.
+The checked-out repository provides a broad bookstore prototype with domain-oriented code, five committed database migrations, database-backed webhook idempotency, atomic discount reservation, and comprehensive configured Jest coverage. The October 23, 2026 local Jest (243 suites and 1,810 tests), lint, and production-build checks passed with the current uncommitted development-tools changes. These results do not verify the opt-in database suites, a deployed Supabase project's migration/RLS state, or live Stripe behavior.
 
-Before production commerce, resolve privileged development-action authorization, reconciliation error handling, and the checkout sign-in return mismatch. Then validate migrations, RLS, proxy trust, cron delivery, payment recovery, tax/shipping behavior, and accessibility in production-like environments. This assessment describes commit `7421b80`.
+Before production commerce, address reconciliation error handling and the checkout sign-in return mismatch. Then validate migrations, RLS, proxy trust, cron delivery, payment recovery, tax/shipping behavior, and accessibility in production-like environments. The personal-project dev console remains development-only, service-role privileged, and destructive by design. This assessment describes the current local changes based on commit `bf2e178`.

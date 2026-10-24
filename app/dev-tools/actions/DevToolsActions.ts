@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache';
 import * as service from './DevToolsService';
 import { verifyRateLimit, limiters } from '@/utils/network/rateLimiter';
 import { getAppClientIp } from '@/utils/network/getAppClientIp';
+import { DEV_TOOLS_UNAVAILABLE_MESSAGE, isDevToolsEnabled } from '../devToolsAccess';
 
 const COMMAND_REGISTRY: Record<string, service.CommandHandler> = {
     add_sales: service.addSales,
@@ -53,8 +54,8 @@ export async function systemCommandAction(
     prevState: service.CommandResponse,
     formData: FormData,
 ): Promise<service.CommandResponse> {
-    if (process.env.NODE_ENV === 'production' || process.env.FORCE_PRODUCTION === 'true')
-        return { message: 'Unauthorized: Command rejected in production.', success: false };
+    if (!isDevToolsEnabled())
+        return { message: DEV_TOOLS_UNAVAILABLE_MESSAGE, success: false };
 
     const rateLimitError = await checkDevToolsRateLimit();
     if (rateLimitError) return rateLimitError;
@@ -84,8 +85,8 @@ export async function fullResetAction(
     prevState: service.CommandResponse,
     formData: FormData,
 ): Promise<service.CommandResponse> {
-    if (process.env.NODE_ENV === 'production' || process.env.FORCE_PRODUCTION === 'true')
-        return { message: 'Unauthorized', success: false };
+    if (!isDevToolsEnabled())
+        return { message: DEV_TOOLS_UNAVAILABLE_MESSAGE, success: false };
 
     const rateLimitError = await checkDevToolsRateLimit();
     if (rateLimitError) return rateLimitError;
@@ -97,49 +98,4 @@ export async function fullResetAction(
     } catch (e: unknown) {
         return { message: 'Reset Failed', success: false };
     }
-}
-
-/**
- * AUTH TOOLS
- */
-export async function impulseLogin(email: string): Promise<{ success: boolean }> {
-    if (process.env.NODE_ENV === 'production' || process.env.FORCE_PRODUCTION === 'true')
-        throw new Error('Unauthorized: Dev tools are unavailable in production.');
-
-    const clientIp = await getAppClientIp();
-
-    const rateLimit = await verifyRateLimit({
-        identifiers: [`ip:${clientIp}`, `email:${email.trim().toLowerCase()}`],
-        limiter: limiters.privileged,
-        failClosed: true,
-    });
-
-    if (!rateLimit.success)
-        throw new Error(
-            rateLimit.error ?? 'Unauthorized: Dev tools impulse login rate limit exceeded.',
-        );
-
-    const adminClient = await createAdminClient();
-    const supabase = await createBackendClient();
-
-    const { data: userList, error: listError } = await adminClient.auth.admin.listUsers();
-    if (listError) throw new Error('LIST_USERS_FAILED: ' + listError.message);
-
-    const targetUser = userList?.users.find((u: { email?: string }) => u.email === email);
-    if (!targetUser) throw new Error('USER_NOT_FOUND: No user found with email ' + email);
-
-    const userId = targetUser.id;
-
-    const { error: updateError } = await adminClient.auth.admin.updateUserById(userId, {
-        password: 'DevTempPassword123!',
-    });
-    if (updateError) throw new Error('ADMIN_UPDATE_FAILED: ' + updateError.message);
-
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: 'DevTempPassword123!',
-    });
-
-    if (signInError) throw new Error('SIGN_IN_FAILED: ' + signInError.message);
-    return { success: true };
 }
