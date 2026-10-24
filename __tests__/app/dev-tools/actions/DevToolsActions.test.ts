@@ -1,7 +1,6 @@
 import {
     systemCommandAction,
     fullResetAction,
-    impulseLogin,
 } from '@/app/dev-tools/actions/DevToolsActions';
 import * as service from '@/app/dev-tools/actions/DevToolsService';
 import { createAdminClient } from '@/utils/db/admin';
@@ -87,9 +86,22 @@ describe('DevToolsActions', () => {
             const result = await systemCommandAction(initialCommandResponse, formData);
 
             expect(result).toEqual({
-                message: 'Unauthorized: Command rejected in production.',
+                message: 'Unauthorized: Dev tools are only available when running npm run dev.',
                 success: false,
             });
+        });
+
+        it('should reject commands outside development mode', async () => {
+            env.NODE_ENV = 'test';
+            const formData = new FormData();
+            formData.append('command', 'add_sales');
+
+            const result = await systemCommandAction(initialCommandResponse, formData);
+
+            expect(result.success).toBe(false);
+            expect(result.message).toContain('only available when running npm run dev');
+            expect(createAdminClient).not.toHaveBeenCalled();
+            expect(mockedVerifyRateLimit).not.toHaveBeenCalled();
         });
 
         it('should return unauthorized if FORCE_PRODUCTION is true', async () => {
@@ -100,7 +112,7 @@ describe('DevToolsActions', () => {
             const result = await systemCommandAction(initialCommandResponse, formData);
 
             expect(result).toEqual({
-                message: 'Unauthorized: Command rejected in production.',
+                message: 'Unauthorized: Dev tools are only available when running npm run dev.',
                 success: false,
             });
         });
@@ -233,7 +245,22 @@ describe('DevToolsActions', () => {
 
             const result = await fullResetAction(initialResetResponse, formData);
 
-            expect(result).toEqual({ message: 'Unauthorized', success: false });
+            expect(result).toEqual({
+                message: 'Unauthorized: Dev tools are only available when running npm run dev.',
+                success: false,
+            });
+        });
+
+        it('should reject resets outside development mode', async () => {
+            env.NODE_ENV = 'test';
+            const formData = new FormData();
+
+            const result = await fullResetAction(initialResetResponse, formData);
+
+            expect(result.success).toBe(false);
+            expect(result.message).toContain('only available when running npm run dev');
+            expect(runFullDatabaseSeed).not.toHaveBeenCalled();
+            expect(mockedVerifyRateLimit).not.toHaveBeenCalled();
         });
 
         it('should return unauthorized if FORCE_PRODUCTION is true', async () => {
@@ -242,7 +269,10 @@ describe('DevToolsActions', () => {
 
             const result = await fullResetAction(initialResetResponse, formData);
 
-            expect(result).toEqual({ message: 'Unauthorized', success: false });
+            expect(result).toEqual({
+                message: 'Unauthorized: Dev tools are only available when running npm run dev.',
+                success: false,
+            });
         });
 
         it('should return rate limit error if rate limit is exceeded', async () => {
@@ -286,203 +316,4 @@ describe('DevToolsActions', () => {
         });
     });
 
-    describe('impulseLogin', () => {
-        it('should throw an error if NODE_ENV is production', async () => {
-            env.NODE_ENV = 'production';
-
-            await expect(impulseLogin('test@example.com')).rejects.toThrow(
-                'Unauthorized: Dev tools are unavailable in production.',
-            );
-        });
-
-        it('should throw an error if FORCE_PRODUCTION is true', async () => {
-            env.FORCE_PRODUCTION = 'true';
-
-            await expect(impulseLogin('test@example.com')).rejects.toThrow(
-                'Unauthorized: Dev tools are unavailable in production.',
-            );
-        });
-
-        it('should throw an error if rate limit is exceeded', async () => {
-            mockedVerifyRateLimit.mockResolvedValueOnce({
-                success: false,
-                limit: 10,
-                remaining: 0,
-                reset: Date.now() + 60000,
-                error: 'Unauthorized: Dev tools impulse login rate limit exceeded.',
-            });
-
-            await expect(impulseLogin('test@example.com')).rejects.toThrow(
-                'Unauthorized: Dev tools impulse login rate limit exceeded.',
-            );
-            expect(createAdminClient).not.toHaveBeenCalled();
-        });
-
-        it('should fallback to default rate limit message when error is undefined', async () => {
-            mockedVerifyRateLimit.mockResolvedValueOnce({
-                success: false,
-                limit: 10,
-                remaining: 0,
-                reset: Date.now() + 60000,
-                error: undefined,
-            });
-
-            await expect(impulseLogin('test@example.com')).rejects.toThrow(
-                'Unauthorized: Dev tools impulse login rate limit exceeded.',
-            );
-        });
-
-        it('should successfully login user', async () => {
-            const mockAdminClient = {
-                auth: {
-                    admin: {
-                        listUsers: jest.fn().mockResolvedValue({
-                            data: { users: [{ id: 'user-1', email: 'test@example.com' }] },
-                            error: null,
-                        }),
-                        updateUserById: jest.fn().mockResolvedValue({ error: null }),
-                    },
-                },
-            };
-
-            const mockBackendClient = {
-                auth: {
-                    signInWithPassword: jest.fn().mockResolvedValue({ error: null }),
-                },
-            };
-
-            jest.mocked(createAdminClient).mockResolvedValueOnce(
-                mockAdminClient as unknown as SupabaseClient,
-            );
-            jest.mocked(createBackendClient).mockResolvedValueOnce(
-                mockBackendClient as unknown as SupabaseClient,
-            );
-
-            const result = await impulseLogin('test@example.com');
-            expect(result).toEqual({ success: true });
-            expect(mockAdminClient.auth.admin.updateUserById).toHaveBeenCalledWith('user-1', {
-                password: 'DevTempPassword123!',
-            });
-            expect(mockBackendClient.auth.signInWithPassword).toHaveBeenCalledWith({
-                email: 'test@example.com',
-                password: 'DevTempPassword123!',
-            });
-        });
-
-        it('should throw an error if admin listUsers returns an error', async () => {
-            const mockAdminClient = {
-                auth: {
-                    admin: {
-                        listUsers: jest.fn().mockResolvedValue({
-                            data: null,
-                            error: { message: 'Database failure' },
-                        }),
-                        updateUserById: jest.fn(),
-                    },
-                },
-            };
-
-            const mockBackendClient = {};
-
-            jest.mocked(createAdminClient).mockResolvedValueOnce(
-                mockAdminClient as unknown as SupabaseClient,
-            );
-            jest.mocked(createBackendClient).mockResolvedValueOnce(
-                mockBackendClient as unknown as SupabaseClient,
-            );
-
-            await expect(impulseLogin('test@example.com')).rejects.toThrow(
-                'LIST_USERS_FAILED: Database failure',
-            );
-        });
-
-        it('should throw an error if user is not found in the user list', async () => {
-            const mockAdminClient = {
-                auth: {
-                    admin: {
-                        listUsers: jest.fn().mockResolvedValue({
-                            data: { users: [{ id: 'user-1', email: 'other@example.com' }] },
-                            error: null,
-                        }),
-                        updateUserById: jest.fn(),
-                    },
-                },
-            };
-
-            const mockBackendClient = {};
-
-            jest.mocked(createAdminClient).mockResolvedValueOnce(
-                mockAdminClient as unknown as SupabaseClient,
-            );
-            jest.mocked(createBackendClient).mockResolvedValueOnce(
-                mockBackendClient as unknown as SupabaseClient,
-            );
-
-            await expect(impulseLogin('test@example.com')).rejects.toThrow(
-                'USER_NOT_FOUND: No user found with email test@example.com',
-            );
-        });
-
-        it('should throw an error if admin updateUserById fails', async () => {
-            const mockAdminClient = {
-                auth: {
-                    admin: {
-                        listUsers: jest.fn().mockResolvedValue({
-                            data: { users: [{ id: 'user-1', email: 'test@example.com' }] },
-                            error: null,
-                        }),
-                        updateUserById: jest
-                            .fn()
-                            .mockResolvedValue({ error: { message: 'Update failed' } }),
-                    },
-                },
-            };
-
-            const mockBackendClient = {};
-
-            jest.mocked(createAdminClient).mockResolvedValueOnce(
-                mockAdminClient as unknown as SupabaseClient,
-            );
-            jest.mocked(createBackendClient).mockResolvedValueOnce(
-                mockBackendClient as unknown as SupabaseClient,
-            );
-
-            await expect(impulseLogin('test@example.com')).rejects.toThrow(
-                'ADMIN_UPDATE_FAILED: Update failed',
-            );
-        });
-
-        it('should throw an error if signInWithPassword fails', async () => {
-            const mockAdminClient = {
-                auth: {
-                    admin: {
-                        listUsers: jest.fn().mockResolvedValue({
-                            data: { users: [{ id: 'user-1', email: 'test@example.com' }] },
-                            error: null,
-                        }),
-                        updateUserById: jest.fn().mockResolvedValue({ error: null }),
-                    },
-                },
-            };
-
-            const mockBackendClient = {
-                auth: {
-                    signInWithPassword: jest
-                        .fn()
-                        .mockResolvedValue({ error: { message: 'Sign in failed' } }),
-                },
-            };
-
-            jest.mocked(createAdminClient).mockResolvedValueOnce(
-                mockAdminClient as unknown as SupabaseClient,
-            );
-            jest.mocked(createBackendClient).mockResolvedValueOnce(
-                mockBackendClient as unknown as SupabaseClient,
-            );
-
-            await expect(impulseLogin('test@example.com')).rejects.toThrow(
-                'SIGN_IN_FAILED: Sign in failed',
-            );
-        });
-    });
 });

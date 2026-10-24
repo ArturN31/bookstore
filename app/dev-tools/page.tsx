@@ -2,15 +2,14 @@ import { ConsoleSection } from './components/ConsoleSection';
 import { LiveTelemetry } from './components/LiveTelemetry/LiveTelemetry';
 import { SystemLog } from './components/SystemLog/SystemLog';
 import { DatabaseActions } from './components/DatabaseActions/DatabaseActions';
-import { redirect } from 'next/navigation';
-import { UserRegistry } from './components/UserRegistry/UserRegistry';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { getAppClientIp } from '@/utils/network/getAppClientIp';
 import { limiters, verifyRateLimit } from '@/utils/network/rateLimiter';
+import { isDevToolsEnabled } from './devToolsAccess';
+import { notFound } from 'next/navigation';
 
 export default async function DevToolsPage() {
-    if (process.env.NODE_ENV === 'production' || process.env.FORCE_PRODUCTION === 'true')
-        return redirect('/');
+    if (!isDevToolsEnabled()) notFound();
 
     const rateLimit = await verifyRateLimit({
         identifier: `ip:${await getAppClientIp()}`,
@@ -52,10 +51,6 @@ export default async function DevToolsPage() {
                 </ConsoleSection>
 
                 <DatabaseActions />
-
-                <ConsoleSection title="Access Registry">
-                    <UserRegistry />
-                </ConsoleSection>
 
                 <footer className="pt-8 text-center font-mono text-[10px] font-black tracking-[0.5em] text-slate-400 uppercase">
                     Supabase Admin Engine // Status: Active
