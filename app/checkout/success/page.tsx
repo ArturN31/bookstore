@@ -36,7 +36,11 @@ export default async function CheckoutSuccessPage({
         );
 
     if (ownershipResult.status === 'UNAUTHENTICATED')
-        redirect(`/login?redirect=/checkout/success?orderId=${encodeURIComponent(orderId)}`);
+        redirect(
+            `/user/auth/signin?returnTo=${encodeURIComponent(
+                `/checkout/success?orderId=${encodeURIComponent(orderId)}`,
+            )}`,
+        );
 
     if (ownershipResult.status === 'RATE_LIMITED')
         return (

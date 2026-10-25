@@ -197,10 +197,10 @@ describe('APP - Auth - SignIn', () => {
         });
     });
 
-    it('should append returnTo when present in URL', async () => {
+    it('should pass the checkout order returnTo destination to the sign-in action', async () => {
         const { SignInAction } = require('@/data/auth/SignInAction');
 
-        mockGetParam.mockReturnValue('/profile');
+        mockGetParam.mockReturnValue('/checkout/success?orderId=order-123');
 
         render(<SignInPage />);
 
@@ -215,7 +215,7 @@ describe('APP - Auth - SignIn', () => {
 
         await waitFor(() => {
             const sentData = (SignInAction as jest.Mock).mock.calls[0][1];
-            expect(sentData.get('returnTo')).toBe('/profile');
+            expect(sentData.get('returnTo')).toBe('/checkout/success?orderId=order-123');
         });
     });
 
