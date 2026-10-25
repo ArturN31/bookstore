@@ -93,7 +93,7 @@ describe('CheckoutSuccessPage', () => {
         ).toBeInTheDocument();
     });
 
-    it('redirects to login page with encoded redirect URL when UNAUTHENTICATED', async () => {
+    it('redirects unauthenticated customers to sign in and returns them to the order confirmation', async () => {
         mockVerifyOrderOwnershipAndFetch.mockResolvedValueOnce({
             status: 'UNAUTHENTICATED',
             order: null,
@@ -105,7 +105,7 @@ describe('CheckoutSuccessPage', () => {
 
         expect(mockVerifyOrderOwnershipAndFetch).toHaveBeenCalledWith('order-123');
         expect(mockRedirect).toHaveBeenCalledWith(
-            '/login?redirect=/checkout/success?orderId=order-123',
+            '/user/auth/signin?returnTo=%2Fcheckout%2Fsuccess%3ForderId%3Dorder-123',
         );
     });
 

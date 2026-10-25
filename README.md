@@ -162,7 +162,7 @@ Checkout at `/checkout` accepts shipping/address information, a discount selecti
 
 `/checkout/success`, `/user/orders`, and `/user/order/[orderId]` provide confirmation and order history/detail views. A cron reconciliation route handles stale pending orders and unmatched webhook events. These mechanisms are implemented in source but require database/Stripe integration and failure-path verification before production reliance.
 
-Discount dates, active status, minimum spend, and global/per-user usage limits are revalidated atomically when the order transaction attaches a discount. Reservations are released when pending orders fail or are cancelled. A local Supabase integration suite covers date/minimum checks, usage release, and concurrent global limits; it must be run separately. Remaining limitations include the sign-in return URL mismatch, card-only payment UI, zero default tax, and UK postcode-based shipping. See [Known Issues & Limitations](#known-issues--limitations).
+Discount dates, active status, minimum spend, and global/per-user usage limits are revalidated atomically when the order transaction attaches a discount. Reservations are released when pending orders fail or are cancelled. A local Supabase integration suite covers date/minimum checks, usage release, and concurrent global limits; it must be run separately. Remaining limitations include card-only payment UI, zero default tax, and UK postcode-based shipping. See [Known Issues & Limitations](#known-issues--limitations).
 
 ### Wishlist and Sharing
 
@@ -289,7 +289,6 @@ Zod validation and shared Supabase error utilities are used across important bou
 
 - Development seed/reset actions are destructive and use service-role privileges. The app-mode guard prevents access outside development, but operators must also ensure the configured Supabase project is the intended development database.
 - Reconciliation does not check the result of deleting an unmatched webhook event before replaying it.
-- Checkout success redirects to `/login?redirect=...`, while the actual sign-in page is `/user/auth/signin` and consumes `returnTo`.
 - IP rate limiting trusts edge-provided client-IP headers. The production proxy must overwrite them and prevent direct-origin access.
 - Verify deployed RLS policies and the service-role-only commerce RPC grants against the committed migrations.
 - There is no complete durable audit delivery, structured error reporting, or alerting stack.
@@ -486,7 +485,7 @@ npm run test
 npm run build
 ```
 
-Before enabling live payments, also verify migration history and RLS in the target project, keep the `/dev-tools` runtime guard in place, test discount redemption and payment/webhook retries against a disposable database and Stripe test account, fix the sign-in return path, and confirm tax/shipping rules. Passing the commands above alone is not production certification.
+Before enabling live payments, also verify migration history and RLS in the target project, keep the `/dev-tools` runtime guard in place, test discount redemption and payment/webhook retries against a disposable database and Stripe test account, and confirm tax/shipping rules. Passing the commands above alone is not production certification.
 
 ## Known Limitations
 
@@ -497,7 +496,6 @@ See [Known Issues & Limitations](#known-issues--limitations) and [Future Roadmap
 ### Commerce Completion
 
 1. **Reconciliation deletion failure:** [app/api/cron/reconcile/route.ts](app/api/cron/reconcile/route.ts) does not inspect the result of deleting an unmatched webhook event before attempting replay. Recovery could be reported as successful when the prior event remains and the RPC treats it as a duplicate.
-2. **Sign-in return mismatch:** [app/checkout/success/page.tsx](app/checkout/success/page.tsx) redirects to `/login?redirect=...`, but the sign-in route is `/user/auth/signin` and consumes `returnTo`.
 3. **Tax and shipping scope:** tax defaults to zero, and shipping methods/prices use UK postcode zones; confirm applicable business, tax, and fulfillment requirements.
 4. **Payment scope:** the UI supports Stripe card payment only. Alternative payment methods are not implemented as complete server-validated flows.
 5. **Cross-system recovery:** Stripe and Supabase do not share a transaction. Checkout now attempts to recover an order after an ambiguous RPC result and cancel an orphaned PaymentIntent when no order exists, but partial failures, deployment configuration, and all retry paths still require integration testing and operational alerting.
@@ -536,7 +534,6 @@ The roadmap lists remaining work based on the audited local checkout; implemente
 ### 1. Checkout and Commerce Completion
 
 - [ ] Check and handle webhook-event deletion failures before reconciliation replay.
-- [ ] Align the checkout sign-in route and return parameter with the actual sign-in page.
 - [ ] Run the discount redemption integration suite and verify migration application in disposable and production-like Supabase environments.
 - [ ] Test payment/webhook failure and retry flows against disposable Supabase and Stripe test environments.
 - [ ] Confirm tax calculation, shipping coverage/pricing, cancellation, refund, and order-state requirements.
@@ -613,4 +610,4 @@ Faker-generated related data supports UI development and test setup. Full reset 
 
 The checked-out repository provides a broad bookstore prototype with domain-oriented code, five committed database migrations, database-backed webhook idempotency, atomic discount reservation, and comprehensive configured Jest coverage. The October 23, 2026 local Jest (243 suites and 1,810 tests), lint, and production-build checks passed with the current uncommitted development-tools changes. These results do not verify the opt-in database suites, a deployed Supabase project's migration/RLS state, or live Stripe behavior.
 
-Before production commerce, address reconciliation error handling and the checkout sign-in return mismatch. Then validate migrations, RLS, proxy trust, cron delivery, payment recovery, tax/shipping behavior, and accessibility in production-like environments. The personal-project dev console remains development-only, service-role privileged, and destructive by design. This assessment describes the current local changes based on commit `bf2e178`.
+Before production commerce, address reconciliation error handling. Then validate migrations, RLS, proxy trust, cron delivery, payment recovery, tax/shipping behavior, and accessibility in production-like environments. The personal-project dev console remains development-only, service-role privileged, and destructive by design. This assessment describes the current local changes based on commit `bf2e178`.

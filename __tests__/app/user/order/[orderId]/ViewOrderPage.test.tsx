@@ -105,7 +105,7 @@ describe('ViewOrderPage', () => {
         ).toBeInTheDocument();
     });
 
-    it('redirects to login page with encoded redirect URL when UNAUTHENTICATED', async () => {
+    it('redirects unauthenticated customers to sign in and returns them to the order details', async () => {
         mockVerifyOrderOwnershipAndFetch.mockResolvedValueOnce({
             status: 'UNAUTHENTICATED',
             order: null,
@@ -116,7 +116,9 @@ describe('ViewOrderPage', () => {
         });
 
         expect(mockVerifyOrderOwnershipAndFetch).toHaveBeenCalledWith('order-123');
-        expect(mockRedirect).toHaveBeenCalledWith('/login?redirect=/user/order/order-123');
+        expect(mockRedirect).toHaveBeenCalledWith(
+            '/user/auth/signin?returnTo=%2Fuser%2Forder%2Forder-123',
+        );
     });
 
     it('renders access denied error state when user is UNAUTHORIZED', async () => {

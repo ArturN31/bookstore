@@ -251,7 +251,7 @@ describe('APP - Auth - SignInAction', () => {
         expect(redirect).toHaveBeenCalledWith('/user/profile');
     });
 
-    it('should redirect to returnTo URL if valid', async () => {
+    it('should redirect to the checkout order confirmation after sign-in when returnTo is valid', async () => {
         mockSupabase.auth.signInWithPassword.mockResolvedValue({ error: null });
         jest.mocked(getUserData).mockResolvedValue({
             data: { id: '123' },
@@ -262,11 +262,11 @@ describe('APP - Auth - SignInAction', () => {
         formData.append('email', 'test@example.com');
         formData.append('password', 'Password123!');
         formData.append('captchaToken', 'mocked-test-token');
-        formData.append('returnTo', '/user/account');
+        formData.append('returnTo', '/checkout/success?orderId=order-123');
 
         await SignInAction(undefined, formData);
 
-        expect(redirect).toHaveBeenCalledWith('/user/account');
+        expect(redirect).toHaveBeenCalledWith('/checkout/success?orderId=order-123');
     });
 
     it('should redirect to home by default if user exists and no returnTo provided', async () => {
