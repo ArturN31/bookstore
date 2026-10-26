@@ -12,7 +12,7 @@ This is a substantial full-stack bookstore prototype built with Next.js App Rout
 
 The audited checkout passes the current configured verification: **243 Jest suites, 1,810 tests, and one snapshot passed; configured statement, branch, function, and line coverage each report 100%; ESLint passed; and the Next.js production build completed its TypeScript verification and route generation.** The standard Jest run does not execute the opt-in local Supabase integration suites. These results do not prove deployed database policies, Stripe delivery/retry behavior, end-to-end customer journeys, or production operations. The reported coverage applies only to Jest's configured collection.
 
-**Assessment:** strong prototype-level breadth, clear domain boundaries in several areas, and broad mocked unit/component tests. The repository is a personal project, not an operated retail service. A high-priority remaining issue is a reconciliation path that ignores a database deletion failure. The checkout and order-detail pages now direct unauthenticated customers to the actual sign-in route and preserve the requested order destination. The development console is intended for local seed/reset/data-generation workflows, is restricted to development mode, and uses service-role access; it must target the intended development database. Any future production commerce deployment would also require verifying migrations, RLS policies, edge-proxy configuration, and external integrations.
+**Assessment:** strong prototype-level breadth, clear domain boundaries in several areas, and broad mocked unit/component tests. The repository is a personal project, not an operated retail service. Reconciliation now checks deletion errors before replaying unmatched webhook events and reports failures in its response summary. The checkout and order-detail pages direct unauthenticated customers to the actual sign-in route and preserve the requested order destination. The development console is intended for local seed/reset/data-generation workflows, is restricted to development mode, and uses service-role access; it must target the intended development database. Any future production commerce deployment would also require verifying migrations, RLS policies, edge-proxy configuration, and external integrations.
 
 ## 1. Architecture and Features
 
@@ -128,10 +128,9 @@ Opt-in database suites are configured by [jest.integration.config.js](jest.integ
 ### High-priority findings
 
 1. **Development seed/reset operations are destructive by design.** The `/dev-tools` page and its exported actions are restricted to `NODE_ENV=development`. The tools use service-role privileges for this personal project's data generation and reset workflows; keep the development server private and verify that its credentials target the intended development database.
-2. **Reconciliation ignores an event deletion error.** [app/api/cron/reconcile/route.ts](app/api/cron/reconcile/route.ts) deletes an unmatched webhook ledger row before retrying the event but does not inspect the delete result. A failed delete followed by a duplicate-aware RPC call can make recovery appear successful without replaying the intended transition. Check and surface the deletion error, and make replay semantics atomic and explicit.
-3. **Trusted proxy configuration is security-sensitive.** [utils/network/getAppClientIp.ts](utils/network/getAppClientIp.ts) reads edge-provided client-IP headers. Any deployment must ensure requests reach the app only through a trusted proxy that overwrites those headers; otherwise IP-based limits can be spoofed.
-4. **CSP has permissive script directives.** The current policy includes `'unsafe-inline'` and `'unsafe-eval'`. Evaluate nonces/hashes compatible with Next.js, MUI, and Stripe; do not remove required behavior without browser verification.
-5. **Migration application is unverified.** The repository contains privacy, commerce-RPC permission, and checkout-discount migrations, but deployment history and actual live RLS/grants were not inspected. Confirm the migration state and test least-privilege access against a disposable project before any production use.
+2. **Trusted proxy configuration is security-sensitive.** [utils/network/getAppClientIp.ts](utils/network/getAppClientIp.ts) reads edge-provided client-IP headers. Any deployment must ensure requests reach the app only through a trusted proxy that overwrites those headers; otherwise IP-based limits can be spoofed.
+3. **CSP has permissive script directives.** The current policy includes `'unsafe-inline'` and `'unsafe-eval'`. Evaluate nonces/hashes compatible with Next.js, MUI, and Stripe; do not remove required behavior without browser verification.
+4. **Migration application is unverified.** The repository contains privacy, commerce-RPC permission, and checkout-discount migrations, but deployment history and actual live RLS/grants were not inspected. Confirm the migration state and test least-privilege access against a disposable project before any production use.
 
 ### Privacy model and data exposure
 
@@ -189,9 +188,8 @@ A private wishlist token is a bearer secret: anyone who possesses the current to
 #### P0 — Before production customer commerce
 
 1. Keep `/dev-tools` and every exported action inaccessible outside development mode; run seed/reset actions only against the intended development database.
-2. Fix the reconciliation delete-error path and test replay/idempotency under duplicate and transient-failure conditions.
-3. Verify applied migrations, including atomic discount redemption, RLS policies, and service-role-only RPC grants before any production use.
-4. Confirm that any deployed trusted proxy protects client-IP headers and that cron authorization is configured.
+2. Verify applied migrations, including atomic discount redemption, RLS policies, and service-role-only RPC grants before any production use.
+3. Confirm that any deployed trusted proxy protects client-IP headers and that cron authorization is configured.
 
 #### P1 — Delivery confidence and customer journeys
 
@@ -228,4 +226,4 @@ A private wishlist token is a bearer secret: anyone who possesses the current to
 
 The checked-out code has a broad bookstore feature set, useful domain separation, five committed SQL migrations, a database-backed webhook idempotency path, atomic discount reservation, and a strong configured Jest suite. All local Jest (243 suites and 1,810 tests), lint, and production-build checks passed with the current uncommitted development-tools changes. The coverage result is bounded to the configured collection, while opt-in database integration tests and live external service behavior remain separate evidence.
 
-The main outstanding issue is the webhook reconciliation delete-error path. Checkout and order-detail unauthenticated redirects now use the actual sign-in route and preserve the return destination. The dev console is a local personal-project tool, deliberately uses service-role access for seed/reset operations, and is restricted to development mode. If this application is ever operated as a real store, migration/RLS deployment state, edge proxy trust, cron secrets, payment recovery, tax/shipping behavior, and broader production controls require separate review.
+The reconciliation path now stops replay when deletion of an unmatched webhook event fails and includes the failure in its summary. Checkout and order-detail unauthenticated redirects use the actual sign-in route and preserve the return destination. The dev console is a local personal-project tool, deliberately uses service-role access for seed/reset operations, and is restricted to development mode. If this application is ever operated as a real store, migration/RLS deployment state, edge proxy trust, cron secrets, payment recovery, tax/shipping behavior, and broader production controls require separate review.
