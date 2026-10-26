@@ -655,6 +655,81 @@ describe('Reconciliation Cron API Route - Comprehensive Suite', () => {
         expect(json.summary.errors.length).toBeGreaterThan(0);
     });
 
+    it('does not replay a matched webhook event when deleting its unmatched record fails', async () => {
+        const mockOrdersSelect = jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+                not: jest.fn().mockReturnValue({
+                    lt: jest.fn().mockReturnValue({
+                        limit: jest.fn().mockResolvedValue({ data: [], error: null }),
+                    }),
+                }),
+            }),
+        });
+        const mockEventsSelect = jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+                lt: jest.fn().mockReturnValue({
+                    limit: jest.fn().mockResolvedValue({
+                        data: [
+                            {
+                                event_id: 'evt_delete_failed',
+                                event_type: 'payment_intent.succeeded',
+                                created_at: new Date().toISOString(),
+                                status: 'order_not_found',
+                            },
+                        ],
+                        error: null,
+                    }),
+                }),
+            }),
+        });
+        const mockOrderMatchSelect = jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({
+                    data: { id: 'ord_matched' },
+                    error: null,
+                }),
+            }),
+        });
+        const mockDeleteEq = jest.fn().mockResolvedValue({
+            error: { message: 'Database delete failed' },
+        });
+
+        mockSupabase.from.mockImplementation((table: string) => {
+            if (table === 'orders')
+                return {
+                    select: jest.fn((fields?: string) =>
+                        fields === 'id' ? mockOrderMatchSelect() : mockOrdersSelect(),
+                    ),
+                };
+            if (table === 'webhook_events')
+                return {
+                    select: mockEventsSelect,
+                    delete: jest.fn().mockReturnValue({ eq: mockDeleteEq }),
+                };
+            return {};
+        });
+        jest.mocked(stripe.events.retrieve).mockResolvedValue({
+            id: 'evt_delete_failed',
+            type: 'payment_intent.succeeded',
+            data: { object: { id: 'pi_matched' } },
+        } as unknown as Awaited<ReturnType<typeof stripe.events.retrieve>>);
+
+        const response = await GET(createRequest('Bearer test_cron_secret'));
+        const json = (await response.json()) as {
+            success: boolean;
+            summary: { processedUnmatchedEvents: number; errors: string[] };
+        };
+
+        expect(response.status).toBe(200);
+        expect(json.success).toBe(true);
+        expect(mockDeleteEq).toHaveBeenCalledWith('event_id', 'evt_delete_failed');
+        expect(mockSupabase.rpc).not.toHaveBeenCalled();
+        expect(json.summary.processedUnmatchedEvents).toBe(0);
+        expect(json.summary.errors).toContain(
+            'Event evt_delete_failed reconciliation error: Failed to delete webhook event before replay: Database delete failed',
+        );
+    });
+
     it('should successfully process valid stale orders and unmatched events with zero errors', async () => {
         const mockStaleOrders: TestStaleOrder[] = [
             {

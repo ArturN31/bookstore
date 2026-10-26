@@ -119,7 +119,15 @@ async function processUnmatchedEvents(
                     .single();
 
                 if (matchingOrder) {
-                    await supabase.from('webhook_events').delete().eq('event_id', event.event_id);
+                    const { error: deleteError } = await supabase
+                        .from('webhook_events')
+                        .delete()
+                        .eq('event_id', event.event_id);
+
+                    if (deleteError)
+                        throw new Error(
+                            `Failed to delete webhook event before replay: ${deleteError.message}`,
+                        );
 
                     const { error: rpcError } = await supabase.rpc(
                         'handle_stripe_webhook_transaction',

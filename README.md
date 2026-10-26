@@ -495,10 +495,9 @@ See [Known Issues & Limitations](#known-issues--limitations) and [Future Roadmap
 
 ### Commerce Completion
 
-1. **Reconciliation deletion failure:** [app/api/cron/reconcile/route.ts](app/api/cron/reconcile/route.ts) does not inspect the result of deleting an unmatched webhook event before attempting replay. Recovery could be reported as successful when the prior event remains and the RPC treats it as a duplicate.
-3. **Tax and shipping scope:** tax defaults to zero, and shipping methods/prices use UK postcode zones; confirm applicable business, tax, and fulfillment requirements.
-4. **Payment scope:** the UI supports Stripe card payment only. Alternative payment methods are not implemented as complete server-validated flows.
-5. **Cross-system recovery:** Stripe and Supabase do not share a transaction. Checkout now attempts to recover an order after an ambiguous RPC result and cancel an orphaned PaymentIntent when no order exists, but partial failures, deployment configuration, and all retry paths still require integration testing and operational alerting.
+1. **Tax and shipping scope:** tax defaults to zero, and shipping methods/prices use UK postcode zones; confirm applicable business, tax, and fulfillment requirements.
+2. **Payment scope:** the UI supports Stripe card payment only. Alternative payment methods are not implemented as complete server-validated flows.
+3. **Cross-system recovery:** Stripe and Supabase do not share a transaction. Checkout now attempts to recover an order after an ambiguous RPC result and cancel an orphaned PaymentIntent when no order exists, but partial failures, deployment configuration, and all retry paths still require integration testing and operational alerting.
 
 ### Discounts and Promotions
 
@@ -533,7 +532,6 @@ The roadmap lists remaining work based on the audited local checkout; implemente
 
 ### 1. Checkout and Commerce Completion
 
-- [ ] Check and handle webhook-event deletion failures before reconciliation replay.
 - [ ] Run the discount redemption integration suite and verify migration application in disposable and production-like Supabase environments.
 - [ ] Test payment/webhook failure and retry flows against disposable Supabase and Stripe test environments.
 - [ ] Confirm tax calculation, shipping coverage/pricing, cancellation, refund, and order-state requirements.
