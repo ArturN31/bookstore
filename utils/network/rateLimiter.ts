@@ -6,7 +6,7 @@ const rateLimitPolicies = {
     // Authentication: 5 requests per 15 minutes
     auth: { requests: 5, window: '15 m', prefix: 'ratelimit:auth' },
     // Administrative / privileged actions: 3 requests per hour
-    privileged: { requests: 3, window: '1 h', prefix: 'ratelimit:privileged' },
+    privileged: { requests: 10, window: '1 h', prefix: 'ratelimit:privileged' },
     // Checkout processing: 10 requests per minute
     checkout: { requests: 10, window: '1 m', prefix: 'ratelimit:checkout' },
     // Discount-code validation: 5 requests per minute
@@ -25,10 +25,8 @@ let configuredLimiters: Record<RateLimitPolicy, Ratelimit> | undefined;
 function getConfiguredLimiters(): Record<RateLimitPolicy, Ratelimit> {
     if (configuredLimiters) return configuredLimiters;
 
-    const url =
-        process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-    const token =
-        process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+    const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 
     if (!url || !token)
         throw new Error(

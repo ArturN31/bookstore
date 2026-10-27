@@ -42,6 +42,8 @@ jest.mock('@/utils/network/rateLimiter', () => ({
 describe('DevToolsActions', () => {
     const originalNodeEnv = process.env.NODE_ENV;
     const originalForceProduction = process.env.FORCE_PRODUCTION;
+    const originalDatabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_DB_URL;
+    const originalAllowedDatabaseUrl = process.env.DEV_TOOLS_ALLOWED_SUPABASE_URL;
     const env = process.env as Record<string, string | undefined>;
     const mockedVerifyRateLimit = verifyRateLimit as jest.Mock;
 
@@ -51,6 +53,8 @@ describe('DevToolsActions', () => {
         jest.clearAllMocks();
         env.NODE_ENV = 'development';
         delete env.FORCE_PRODUCTION;
+        env.NEXT_PUBLIC_SUPABASE_DB_URL = 'http://127.0.0.1:54321';
+        env.DEV_TOOLS_ALLOWED_SUPABASE_URL = 'http://127.0.0.1:54321';
 
         mockedVerifyRateLimit.mockResolvedValue({
             success: true,
@@ -75,6 +79,8 @@ describe('DevToolsActions', () => {
     afterAll(() => {
         env.NODE_ENV = originalNodeEnv;
         env.FORCE_PRODUCTION = originalForceProduction;
+        env.NEXT_PUBLIC_SUPABASE_DB_URL = originalDatabaseUrl;
+        env.DEV_TOOLS_ALLOWED_SUPABASE_URL = originalAllowedDatabaseUrl;
     });
 
     describe('systemCommandAction', () => {
@@ -209,6 +215,35 @@ describe('DevToolsActions', () => {
             expect(revalidatePath).toHaveBeenCalledWith('/');
         });
 
+        it('should block a command when the allowed development database is not configured', async () => {
+            delete env.DEV_TOOLS_ALLOWED_SUPABASE_URL;
+            const formData = new FormData();
+            formData.append('command', 'add_sales');
+
+            const result = await systemCommandAction(initialCommandResponse, formData);
+
+            expect(result).toEqual({
+                message:
+                    'Dev tools are blocked because the intended development database is not explicitly configured or does not match the active Supabase URL.',
+                success: false,
+            });
+            expect(createAdminClient).not.toHaveBeenCalled();
+            expect(service.addSales).not.toHaveBeenCalled();
+        });
+
+        it('should block a command when the active database differs from the allowed target', async () => {
+            env.DEV_TOOLS_ALLOWED_SUPABASE_URL = 'https://development-project.supabase.co';
+            const formData = new FormData();
+            formData.append('command', 'add_sales');
+
+            const result = await systemCommandAction(initialCommandResponse, formData);
+
+            expect(result.success).toBe(false);
+            expect(result.message).toContain('intended development database');
+            expect(createAdminClient).not.toHaveBeenCalled();
+            expect(service.addSales).not.toHaveBeenCalled();
+        });
+
         it('should catch Error and return its message', async () => {
             jest.mocked(service.addSales).mockRejectedValueOnce(new Error('Custom service error'));
             const mockAdminSupabase = {} as unknown as SupabaseClient;
@@ -304,6 +339,17 @@ describe('DevToolsActions', () => {
             expect(result).toEqual({ message: 'Full Reset Complete', success: true });
             expect(runFullDatabaseSeed).toHaveBeenCalled();
             expect(revalidatePath).toHaveBeenCalledWith('/');
+        });
+
+        it('should block a reset when the active database differs from the allowed target', async () => {
+            env.DEV_TOOLS_ALLOWED_SUPABASE_URL = 'https://development-project.supabase.co';
+            const formData = new FormData();
+
+            const result = await fullResetAction(initialResetResponse, formData);
+
+            expect(result.success).toBe(false);
+            expect(result.message).toContain('intended development database');
+            expect(runFullDatabaseSeed).not.toHaveBeenCalled();
         });
 
         it('should return Reset Failed if running seed throws an error', async () => {

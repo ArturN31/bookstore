@@ -24,7 +24,7 @@ This repository is an application project, not a claim that a fully operated ret
 | Statements / branches / functions / lines | 100% each in the configured Jest collection |
 | ESLint | Passed |
 | Production build | Passed; TypeScript verification and route generation completed |
-| Local Supabase integration suites | Not run as part of this audit |
+| Local Supabase integration suites | Passed on October 26, 2026: 10 tests across privacy, RPC permissions, and discount redemption |
 | Live Stripe / browser E2E verification | Not run as part of this audit |
 
 The coverage collection is defined in [jest.config.ts](jest.config.ts). It does not represent all deployment, infrastructure, excluded source, or external-service behavior. Unit/component tests primarily mock Supabase, Stripe, and framework boundaries; passing tests do not establish live payment or database correctness.
@@ -299,7 +299,7 @@ Zod validation and shared Supabase error utilities are used across important bou
 
 Tests in [__tests__/](__tests__/) cover app/components, domain actions/services/repositories/schemas, hooks, providers/reducers, and utilities. Framework and external-service mocks are in [__mocks__/](__mocks__/). The standard Jest suite excludes opt-in database integration tests.
 
-The local Supabase integration suites cover privacy behavior, commerce RPC role permissions, and checkout discount redemption. They require a running local Supabase stack and loopback endpoint; commands are `npm run test:db:privacy`, `npm run test:db:rpc-security`, and `npm run test:db:discount-redemption`. The discount-redemption suite was run after syncing `master` and passed all four tests; the other two suites were not run. There is no configured browser E2E suite, and mocks do not establish live Stripe delivery or deployed database correctness.
+The local Supabase integration suites cover privacy behavior, commerce RPC role permissions, and checkout discount redemption. They require a running local Supabase stack and loopback endpoint; commands are `npm run test:db:privacy`, `npm run test:db:rpc-security`, and `npm run test:db:discount-redemption`. On October 26, 2026, all three suites passed locally (4 privacy tests, 2 RPC-permission tests, and 4 discount-redemption tests). The local migration history lists all five checked-in migrations as applied. This verifies the local Supabase environment only; deployed database migration state and policies were not inspected. There is no configured browser E2E suite, and mocks do not establish live Stripe delivery or deployed database correctness.
 
 ### Current Coverage
 
@@ -441,6 +441,7 @@ Create `.env.local` in the repository root. Environment files are ignored by Git
 
 ```dotenv
 NEXT_PUBLIC_SUPABASE_DB_URL=https://<project-ref>.supabase.co
+DEV_TOOLS_ALLOWED_SUPABASE_URL=https://<intended-development-project-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLIC_KEY=<supabase-publishable-or-anon-key>
 SUPABASE_SECRET_KEY=<server-only-supabase-secret-key>
 
@@ -459,6 +460,8 @@ NEXT_PUBLIC_HCAPTCHA_SITE_KEY=<hcaptcha-site-key>
 
 The reconciliation endpoint requires `CRON_SECRET`; configure the scheduler to send the matching authorization header. IP-based limiting reads edge-provided headers such as `cf-connecting-ip` or `x-real-ip`. Production must ensure the trusted edge overwrites these headers and that the origin cannot be reached directly by untrusted clients.
 
+`DEV_TOOLS_ALLOWED_SUPABASE_URL` is a server-only safety allowlist for destructive `/dev-tools` actions. Set it to the exact API origin of the intended development Supabase project; actions are blocked unless it matches `NEXT_PUBLIC_SUPABASE_DB_URL`. Do not point it at production or a customer database.
+
 The optional type-refresh script additionally requires `NEXT_PUBLIC_SUPABASE_PROJECT_ID` in `.env`. It generates types from the configured remote Supabase project, so confirm the target before running it.
 
 ### Start Development
@@ -475,7 +478,7 @@ The optional type-refresh script additionally requires `NEXT_PUBLIC_SUPABASE_PRO
 5. Open `http://localhost:3000`.
 6. For local Stripe webhook testing, install the Stripe CLI separately and forward events to `http://localhost:3000/api/webhooks/stripe`; set its generated signing secret as `STRIPE_WEBHOOK_SECRET`.
 
-Seed/reset tools use service-role access and may delete or replace database data. Run them only against a disposable development project, never production or a customer database.
+Seed/reset tools use service-role access and may delete or replace database data. They fail closed unless `DEV_TOOLS_ALLOWED_SUPABASE_URL` matches the configured Supabase URL. Run them only against a disposable development project, never production or a customer database.
 
 ### Production Verification
 
@@ -533,7 +536,7 @@ The roadmap lists remaining work based on the audited local checkout; implemente
 
 ### 1. Checkout and Commerce Completion
 
-- [ ] Check and handle webhook-event deletion failures before reconciliation replay.
+- [x] Check and handle webhook-event deletion failures before reconciliation replay; the route reports deletion errors and skips replay for that event.
 - [ ] Run the discount redemption integration suite and verify migration application in disposable and production-like Supabase environments.
 - [ ] Test payment/webhook failure and retry flows against disposable Supabase and Stripe test environments.
 - [ ] Confirm tax calculation, shipping coverage/pricing, cancellation, refund, and order-state requirements.
@@ -551,7 +554,24 @@ The roadmap lists remaining work based on the audited local checkout; implemente
 - [ ] Add inventory, order, and discount administration with auditable changes.
 - [ ] Add review moderation and audit-log browsing.
 - [ ] Add sales analytics and controlled bulk catalog/customer operations.
-- [ ] Add a development-database target check/confirmation before destructive seed/reset operations.
+- [x] Require an explicit `DEV_TOOLS_ALLOWED_SUPABASE_URL` match before destructive seed/reset operations.
+
+- [ ] Make all development seeding and generated-data commands collision-aware, capacity-bounded, and safe to retry:
+  **Current failure evidence:** [generateBook.ts](utils/db/dbSeed/generateBook.ts) checks title duplicates only within the generated array, does not compare with stored books, and has an unbounded loop while filling the requested count. [generateReview.ts](utils/db/dbSeed/generateReview.ts) avoids duplicate `(book_id, user_id)` pairs only within one call, while the database enforces `one_review_per_user_per_book`; [DevToolsService.ts](app/dev-tools/actions/DevToolsService.ts) generates and inserts 50 books/reviews without loading their existing natural keys. Audit the other generators and insert paths as part of this task.
+
+  **Rate-limit requirement:** `/dev-tools` is currently limited to 10 privileged actions per hour. Treat one user-initiated command as one rate-limited write operation: candidate generation, deduplication, capacity calculation, preflight reads, and internal batches/retries must not consume additional rate-limit hits. Perform the check at most once per command, immediately before beginning its database writes; reject invalid commands, invalid target configuration, and preflight failures before consuming a write allowance. Do not weaken fail-closed behavior or allow internal loops to call the limiter repeatedly.
+  - [ ] Inventory every generator and write path used by full reset and individual commands (`generateBook(s)`, reviews, users, discounts, orders/items, carts/cart items, wishlists); document database unique constraints and each entity's natural/business key.
+  - [ ] Define canonical comparison rules before generating candidates: books by normalized title plus author (case/whitespace-insensitive); reviews by `(user_id, book_id)`; discounts by normalized code; users by normalized email and username; cart/wishlist/order relations by their actual constrained foreign-key pairs.
+  - [ ] Fetch only the existing keys needed for a command, merge them with keys reserved in the current batch, and reject candidates that collide with either set. Do not rely on Faker randomness, UUIDs alone, or a database exception as the normal deduplication strategy.
+  - [ ] Replace retry-until-count loops with bounded candidate generation. Calculate remaining capacity for constrained pairs (especially reviewable user/book combinations) and return an explicit result when the requested count cannot be met; never loop indefinitely or silently return fewer records as success.
+  - [ ] Make requested count semantics explicit: add exactly the requested number of new unique records or fail before writing, unless the UI explicitly offers a partial-count mode and reports requested/available/created counts.
+  - [ ] Preflight complete related batches before inserts: validate references, uniqueness within/across tables, order item composition, discount eligibility/capacity, and generated user identities. Keep generated relationships consistent with the users/books actually present rather than fixed fixture IDs.
+  - [ ] Define partial-failure and retry behavior for multi-table generation. Prefer transactional persistence for a generation batch where practical; otherwise track completed stages, surface partial results, and make retry safe without duplicating records.
+  - [ ] Preserve the 10-per-hour privileged-action limit without charging for generation loops: one limiter check at most per user-requested command, after non-mutating validation/preflight and immediately before writes. Ensure no per-row/per-batch/per-retry checks; test that preflight-only/invalid requests do not consume a write allowance and actual write attempts are limited exactly once.
+  - [ ] Return actionable outcomes to the dev-tools UI (inserted count, skipped collisions if intentionally supported, exhausted capacity, and failed stage); do not report success after unchecked insert errors or ignored `Promise.all` results.
+  - [ ] Add deterministic unit tests for canonical-key collisions, existing-database collisions, batch-internal duplicates, capacity exhaustion, exact-count behavior, concurrent/repeated generation, and each command's error reporting.
+  - [ ] Add local Supabase integration tests that invoke the real generation commands twice and verify no unique-constraint errors, no duplicate natural keys, correct inserted counts, preserved pre-existing rows, and cleanup of test fixtures.
+  - [ ] Keep full reset semantics separate from additive generation: reset may clear only the explicitly allowlisted development database; add commands must never clear or overwrite existing user-created data.
 - [ ] Add structured logs, metrics, traces, alerts, and durable security audit delivery.
 
 ### 4. Experience and Accessibility

@@ -17,6 +17,5 @@ export const config = {
         '/user/order/:orderId',
         '/checkout',
         '/checkout/success',
-        '/dev-tools',
     ],
 };

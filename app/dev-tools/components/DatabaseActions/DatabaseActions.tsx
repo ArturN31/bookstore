@@ -60,7 +60,7 @@ export const DatabaseActions = () => {
                                 id="DANGER_01"
                                 title="Atomic Reset"
                                 type="reset"
-                                description="Warning: Action will purge all relational data."
+                                description="Warning: Action will purge all relational data; then seed the database with default data."
                             />
                             <ControlModule
                                 id="DANGER_02"
