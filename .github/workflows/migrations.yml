@@ -26,5 +26,8 @@ jobs:
             - name: Install Supabase CLI
               run: npm install -g supabase
 
-            - name: Test Supabase Migrations
-              run: supabase migration test
+            - name: Start Local Supabase Instance to Apply Migrations
+              run: supabase start
+
+            - name: Verify Migrations Apply Cleanly (Reset)
+              run: supabase db reset
