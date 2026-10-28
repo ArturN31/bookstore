@@ -24,10 +24,8 @@ jobs:
             - name: Install dependencies
               run: npm ci
 
-            - name: Setup Supabase CLI
-              uses: supabase/setup-cli@v1
-              with:
-                  version: latest
+            - name: Install Supabase CLI
+              run: npm install -g supabase
 
             - name: Start Local Supabase Instance
               run: supabase start
@@ -35,7 +33,6 @@ jobs:
             - name: Configure Integration Environment Variables
               shell: bash
               run: |
-                  # Parse local Supabase configuration and map to integration test environment variables
                   SUPABASE_ENV=$(supabase status -o env)
 
                   API_URL=$(echo "$SUPABASE_ENV" | grep '^API_URL=' | cut -d '=' -f2 | tr -d '"')
