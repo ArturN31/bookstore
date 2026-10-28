@@ -1,0 +1,33 @@
+name: Database Migrations
+
+on:
+    pull_request:
+        branches: [master]
+
+permissions:
+    contents: read
+
+jobs:
+    migrations:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '25'
+                  cache: 'npm'
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Install Supabase CLI
+              run: npm install -g supabase
+
+            - name: Start Local Supabase Instance to Apply Migrations
+              run: supabase start
+
+            - name: Verify Migrations Apply Cleanly (Reset)
+              run: supabase db reset

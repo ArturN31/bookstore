@@ -7,7 +7,12 @@ import { revalidatePath } from 'next/cache';
 import * as service from './DevToolsService';
 import { verifyRateLimit, limiters } from '@/utils/network/rateLimiter';
 import { getAppClientIp } from '@/utils/network/getAppClientIp';
-import { DEV_TOOLS_UNAVAILABLE_MESSAGE, isDevToolsEnabled } from '../devToolsAccess';
+import {
+    DEV_TOOLS_DATABASE_TARGET_ERROR,
+    DEV_TOOLS_UNAVAILABLE_MESSAGE,
+    isDevToolsDatabaseTargetAllowed,
+    isDevToolsEnabled,
+} from '../devToolsAccess';
 
 const COMMAND_REGISTRY: Record<string, service.CommandHandler> = {
     add_sales: service.addSales,
@@ -60,6 +65,9 @@ export async function systemCommandAction(
     const rateLimitError = await checkDevToolsRateLimit();
     if (rateLimitError) return rateLimitError;
 
+    if (!isDevToolsDatabaseTargetAllowed())
+        return { message: DEV_TOOLS_DATABASE_TARGET_ERROR, success: false };
+
     const command = formData.get('command') as string;
     const handler = COMMAND_REGISTRY[command];
 
@@ -90,6 +98,9 @@ export async function fullResetAction(
 
     const rateLimitError = await checkDevToolsRateLimit();
     if (rateLimitError) return rateLimitError;
+
+    if (!isDevToolsDatabaseTargetAllowed())
+        return { message: DEV_TOOLS_DATABASE_TARGET_ERROR, success: false };
 
     try {
         await runFullDatabaseSeed();

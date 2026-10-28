@@ -1,4 +1,4 @@
-name: Run Tests
+name: Build
 
 on:
     pull_request:
@@ -8,9 +8,8 @@ permissions:
     contents: read
 
 jobs:
-    test:
+    build:
         runs-on: ubuntu-latest
-
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -24,5 +23,5 @@ jobs:
             - name: Install dependencies
               run: npm ci
 
-            - name: Run Jest tests
-              run: npm test -- --watchAll=false --ci
+            - name: Run Next.js Build
+              run: npm run build

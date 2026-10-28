@@ -39,7 +39,7 @@ The audited checkout passes the current configured verification: **243 Jest suit
 
 - **Distributed commerce state:** Supabase and Stripe cannot participate in one ACID transaction. Define and test explicit order/payment states, idempotent transitions, compensation, and operator recovery paths.
 - **Migration operations:** apply the committed migrations to a disposable database in CI and verify production migration history before rollout. Add explicit rollback/forward-fix guidance for schema changes.
-- **Development tools:** the local seed/reset console is purpose-built for maintaining project data and can make destructive service-role writes. Keep its runtime guard on the page and every action, keep the development server private, and ensure local credentials point to the intended development database.
+- **Development tools:** the local seed/reset console is purpose-built for maintaining project data and can make destructive service-role writes. The page/actions are development-only, and all data-changing actions require `DEV_TOOLS_ALLOWED_SUPABASE_URL` to match the configured Supabase API origin. Keep the development server private and set the allowlist only to the intended development database.
 - **Route/action scope:** some domain modules coordinate several operations. Keep the public action boundary narrow and put business rules into small, testable service functions.
 
 ## 2. State Management and Server Actions
@@ -96,7 +96,7 @@ The standard Jest suite contains app, component, data, hook, provider, and utili
 | ESLint | Passed |
 | Production build | Passed; TypeScript verification and route generation completed |
 
-Opt-in database suites are configured by [jest.integration.config.js](jest.integration.config.js), with commands for privacy behavior, commerce-RPC permissions, and discount-redemption behavior. The discount-redemption suite was run after syncing `master` and passed all four tests; the privacy and RPC-permission suites were not run. There is no evidence here of a live Stripe integration test, full browser E2E test suite, or production migration verification.
+Opt-in database suites are configured by [jest.integration.config.js](jest.integration.config.js), with commands for privacy behavior, commerce-RPC permissions, and discount-redemption behavior. On October 26, 2026, all three suites passed against local Supabase: 4 privacy tests, 2 RPC-permission tests, and 4 discount-redemption tests. `supabase migration list --local` also showed all five checked-in migrations applied locally. This does not verify deployed database migration state or policies. There is no evidence here of a live Stripe integration test or full browser E2E test suite.
 
 ### Strengths
 
@@ -175,9 +175,7 @@ A private wishlist token is a bearer secret: anyone who possesses the current to
 ### Current constraints
 
 - Stripe and Supabase transitions require explicit idempotency and compensation because they cannot share a transaction.
-- Discount usage limits are not currently reserved/redeemed atomically at final order creation.
-- Reconciliation has a failure path that can be misreported as successful when deletion errors are ignored.
-- The development seed/reset tools use service-role credentials; the development-only guard, private local server, and correct target database are important safeguards.
+- The development seed/reset tools use service-role credentials; the development-only guard, explicit database URL allowlist, and private local server are important safeguards.
 - Realtime listeners can multiply reads if many events trigger uncoalesced refreshes.
 - The CI workflow currently runs Jest only; lint, build, database integration, and browser E2E are not gates.
 - Observability is not a complete structured logging, tracing, metrics, durable audit, and alerting system.
@@ -219,7 +217,7 @@ A private wishlist token is a bearer secret: anyone who possesses the current to
 - **CI:** GitHub Actions on pull requests to `master`, Node.js 25, `npm ci`, then Jest only.
 - **Local verification:** `npm run test`, `npm run lint`, and `npm run build` all passed on October 23, 2026 at commit `bf2e178`.
 - **Environment:** `.env` is present locally but was not read; there is no checked-in `.env.example`. Configure local secrets from the README instructions without committing them.
-- **Database integration:** `npm run test:db:privacy`, `npm run test:db:rpc-security`, and `npm run test:db:discount-redemption` require a local Supabase stack and loopback credentials. The discount-redemption suite passed (4 tests); the privacy and RPC-permission suites were not run.
+- **Database integration:** `npm run test:db:privacy`, `npm run test:db:rpc-security`, and `npm run test:db:discount-redemption` require a local Supabase stack and loopback credentials. All three passed against local Supabase on October 26, 2026 (10 tests total). All five checked-in migrations are recorded as applied locally; deployed migration state was not inspected.
 - **Build routes:** the current build also includes `/api/cron/reconcile` in addition to the Stripe webhook and customer/storefront routes.
 
 ## 9. Conclusion

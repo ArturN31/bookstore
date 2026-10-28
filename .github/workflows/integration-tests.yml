@@ -1,0 +1,57 @@
+name: Database Integration Tests
+
+on:
+    pull_request:
+        branches: [master]
+
+permissions:
+    contents: read
+
+jobs:
+    integration-tests:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '25'
+                  cache: 'npm'
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Install Supabase CLI
+              run: npm install -g supabase
+
+            - name: Start Local Supabase Instance
+              run: supabase start
+
+            - name: Configure Integration Environment Variables
+              shell: bash
+              run: |
+                  SUPABASE_ENV=$(supabase status -o env)
+
+                  API_URL=$(echo "$SUPABASE_ENV" | grep '^API_URL=' | cut -d '=' -f2 | tr -d '"')
+                  ANON_KEY=$(echo "$SUPABASE_ENV" | grep '^ANON_KEY=' | cut -d '=' -f2 | tr -d '"')
+                  SERVICE_ROLE_KEY=$(echo "$SUPABASE_ENV" | grep '^SERVICE_ROLE_KEY=' | cut -d '=' -f2 | tr -d '"')
+
+                  echo "SUPABASE_INTEGRATION_URL=$API_URL" >> $GITHUB_ENV
+                  echo "SUPABASE_INTEGRATION_ANON_KEY=$ANON_KEY" >> $GITHUB_ENV
+                  echo "SUPABASE_INTEGRATION_SERVICE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
+
+            - name: Run Privacy Settings Integration Tests
+              run: npm run test:db:privacy
+
+            - name: Run Commerce RPC Permissions Integration Tests
+              run: npm run test:db:rpc-security
+
+            - name: Run Checkout Discount Redemption Integration Tests
+              run: npm run test:db:discount-redemption
+
+            - name: Stop Local Supabase Instance
+              if: always()
+              run: supabase stop
