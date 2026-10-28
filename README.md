@@ -590,7 +590,7 @@ The roadmap lists remaining work based on the audited local checkout; implemente
 - [ ] Verify trusted-proxy/client-IP configuration and prevent direct-origin access.
 - [ ] Check cron authorization, scheduler delivery, and reconciliation alerts in deployment.
 - [ ] Harden CSP with a compatible nonce/hash strategy where feasible.
-- [ ] Extend CI with lint, TypeScript/build, migrations, database integration, and E2E gates.
+- [X] Extend CI with lint, TypeScript/build, migrations, database integration, and E2E gates.
 - [ ] Add dependency/security checks and secret scanning to release workflows.
 - [ ] Add environment validation and a safe `.env.example` template.
 - [ ] Replace unvalidated RPC/external payload assumptions with runtime validation.
