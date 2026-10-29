@@ -35,7 +35,7 @@ const securityHeaders = [
             "style-src 'self' 'unsafe-inline' https://*.hcaptcha.com https://fonts.googleapis.com",
             "img-src 'self' blob: data: https://*.hcaptcha.com https://*.stripe.com",
             "font-src 'self' https://*.hcaptcha.com https://fonts.gstatic.com",
-            `connect-src 'self' ${supabaseUrl} wss://*.supabase.co https://va.vercel-scripts.com https://*.hcaptcha.com https://api.stripe.com`,
+            `connect-src 'self' ${supabaseUrl} wss://*.supabase.co https://va.vercel-scripts.com https://*.hcaptcha.com https://api.stripe.com ws://127.0.0.1:54321`,
             "frame-src 'self' https://*.hcaptcha.com https://js.stripe.com https://hooks.stripe.com",
             "frame-ancestors 'self'",
         ].join('; '),

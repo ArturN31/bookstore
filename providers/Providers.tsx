@@ -6,11 +6,17 @@ import { SnackbarProvider } from 'notistack';
 import { BookSortByProvider } from './BookSortByProvider';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v16-appRouter';
 import { BookAdvancedFilteringProvider } from './advancedFiltering/BookAdvancedFilteringProvider';
+import { ConsentProvider } from './ConsentProvider';
+import { ConsentState } from '@/utils/consentCookie';
+import { Analytics } from '@vercel/analytics/next';
+import ConsentBanner from '@/components/consent/ConsentBanner';
 
 export interface SessionData {
     initialUser: User | null;
     initialWishlist: Wishlist[] | null;
     initialCart: Cart | null;
+    initialConsent: ConsentState | null;
+    hasAnalyticsConsent: boolean;
 }
 
 export const Providers = ({
@@ -24,6 +30,8 @@ export const Providers = ({
         initialUser: null,
         initialWishlist: [],
         initialCart: null,
+        initialConsent: null,
+        hasAnalyticsConsent: false,
     };
 
     return (
@@ -35,14 +43,18 @@ export const Providers = ({
                         initialWishlist={data.initialWishlist}
                     >
                         <CartProvider initialCart={data.initialCart}>
-                            <SnackbarProvider
-                                anchorOrigin={{
-                                    vertical: 'bottom',
-                                    horizontal: 'left',
-                                }}
-                            >
-                                {children}
-                            </SnackbarProvider>
+                            <ConsentProvider initialConsent={data.initialConsent}>
+                                <SnackbarProvider
+                                    anchorOrigin={{
+                                        vertical: 'bottom',
+                                        horizontal: 'left',
+                                    }}
+                                >
+                                    {children}
+                                    <ConsentBanner />
+                                    {data.hasAnalyticsConsent && <Analytics />}
+                                </SnackbarProvider>
+                            </ConsentProvider>
                         </CartProvider>
                     </UserProvider>
                 </BookSortByProvider>

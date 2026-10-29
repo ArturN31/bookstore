@@ -1,14 +1,19 @@
-'use server';
-
 import { getCartData } from '@/data/cart/CartService';
+import { getServerConsentCookie } from '@/data/consentCookies/consentService';
+import { saveUserConsentToSupabase } from '@/data/consentCookies/consentRepository';
 import { getUserData, getUserWishlist } from '@/data/user/UserService';
 import { mapCartData } from '@/providers/cart/utils/CartMapper';
 import { Providers } from '@/providers/Providers';
 import { DEFAULT_USER } from '@/providers/user/UserContext';
 import { mapUserData } from '@/providers/user/utils/UserMapper';
+import { ConsentState } from '@/utils/consentCookie';
 import { createBackendClient } from '@/utils/db/server';
 
-export const SessionProviderWrapper = async ({ children }: { children: React.ReactNode }) => {
+export const SessionProviderWrapper = async ({
+    children,
+}: {
+    children: React.ReactNode;
+}): Promise<React.JSX.Element> => {
     const supabase = await createBackendClient();
     const {
         data: { user },
@@ -18,7 +23,17 @@ export const SessionProviderWrapper = async ({ children }: { children: React.Rea
     let initialWishlist: Wishlist[] = [];
     let initialCart: Cart | null = null;
 
+    const initialConsent: ConsentState | null = await getServerConsentCookie();
+
     if (user) {
+        if (initialConsent) {
+            try {
+                await saveUserConsentToSupabase(initialConsent.analytics, initialConsent.version);
+            } catch {
+                // Fail silently if network/db error occurs during sync
+            }
+        }
+
         const [userRes, wishlistRes, cartRes] = await Promise.all([
             getUserData(),
             getUserWishlist(),
@@ -37,6 +52,8 @@ export const SessionProviderWrapper = async ({ children }: { children: React.Rea
         initialUser,
         initialWishlist,
         initialCart,
+        initialConsent,
+        hasAnalyticsConsent: initialConsent?.analytics === true,
     };
 
     return (
