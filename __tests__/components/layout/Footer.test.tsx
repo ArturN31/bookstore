@@ -15,10 +15,15 @@ if (typeof global.Request === 'undefined') {
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import { Footer } from '../../../components/layout/Footer';
+import { ConsentProvider } from '../../../providers/ConsentProvider';
 
 describe('RootLayout - Footer', () => {
     beforeEach(() => {
-        render(<Footer />);
+        render(
+            <ConsentProvider initialConsent={null}>
+                <Footer />
+            </ConsentProvider>,
+        );
     });
 
     it('Renders mission', () => {

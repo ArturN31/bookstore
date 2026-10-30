@@ -17,6 +17,11 @@ jest.mock('notistack', () => ({
     SnackbarProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
+// Mock Vercel Analytics to prevent Jest ESM loading errors
+jest.mock('@vercel/analytics/next', () => ({
+    Analytics: () => null,
+}));
+
 jest.mock('@/providers/user/UserProvider', () => ({
     UserProvider: ({ children, initialUser, initialWishlist }: UserMockProps) => (
         <div
@@ -77,6 +82,8 @@ describe('Providers', () => {
             } as unknown as SessionData['initialUser'],
             initialWishlist: null,
             initialCart: null,
+            initialConsent: null,
+            hasAnalyticsConsent: false,
         };
 
         render(
@@ -96,6 +103,8 @@ describe('Providers', () => {
                 { book_id: 'book-2' },
             ] as unknown as SessionData['initialWishlist'],
             initialCart: null,
+            initialConsent: null,
+            hasAnalyticsConsent: false,
         };
 
         render(
@@ -112,6 +121,8 @@ describe('Providers', () => {
             initialUser: null,
             initialWishlist: null,
             initialCart: { cartID: 'cart-123' } as unknown as SessionData['initialCart'],
+            initialConsent: null,
+            hasAnalyticsConsent: false,
         };
 
         render(
