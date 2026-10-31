@@ -17,9 +17,9 @@ jest.mock('notistack', () => ({
     SnackbarProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-// Mock Vercel Analytics to prevent Jest ESM loading errors
+// Mock Vercel Analytics with a data-testid to test conditional rendering coverage
 jest.mock('@vercel/analytics/next', () => ({
-    Analytics: () => null,
+    Analytics: () => <div data-testid="vercel-analytics" />,
 }));
 
 jest.mock('@/providers/user/UserProvider', () => ({
@@ -132,6 +132,42 @@ describe('Providers', () => {
         );
 
         expect(screen.getByTestId('cart-provider')).toHaveAttribute('data-cart', 'cart-123');
+    });
+
+    it('should render Analytics when hasAnalyticsConsent is true', () => {
+        const initialSessionData: SessionData = {
+            initialUser: null,
+            initialWishlist: null,
+            initialCart: null,
+            initialConsent: null,
+            hasAnalyticsConsent: true,
+        };
+
+        render(
+            <Providers initialSessionData={initialSessionData}>
+                <span>Test Content</span>
+            </Providers>,
+        );
+
+        expect(screen.getByTestId('vercel-analytics')).toBeInTheDocument();
+    });
+
+    it('should not render Analytics when hasAnalyticsConsent is false', () => {
+        const initialSessionData: SessionData = {
+            initialUser: null,
+            initialWishlist: null,
+            initialCart: null,
+            initialConsent: null,
+            hasAnalyticsConsent: false,
+        };
+
+        render(
+            <Providers initialSessionData={initialSessionData}>
+                <span>Test Content</span>
+            </Providers>,
+        );
+
+        expect(screen.queryByTestId('vercel-analytics')).not.toBeInTheDocument();
     });
 
     it('should render children within all providers', () => {

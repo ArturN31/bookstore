@@ -1,7 +1,6 @@
 'use client';
 
-import { saveUserConsentToSupabase } from '@/data/consentCookies/consentRepository';
-import { CONSENT_VERSION, ConsentState, setConsentCookie } from '@/utils/consentCookie';
+import { saveUserConsentToSupabase } from '@/data/consentCookies/ConsentAction';
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface ConsentContextType {
@@ -14,12 +13,34 @@ interface ConsentContextType {
     isSettingsOpen: boolean;
     closeSettings: () => void;
 }
+export interface ConsentState {
+    necessary: boolean;
+    analytics: boolean;
+    timestamp: string;
+    version: string;
+}
 
 const ConsentContext = createContext<ConsentContextType | undefined>(undefined);
 
 interface ConsentProviderProps {
     children: ReactNode;
     initialConsent: ConsentState | null;
+}
+
+export const CONSENT_COOKIE_NAME = 'sb_consent_prefs';
+export const CONSENT_VERSION = '1.0';
+
+export function setConsentCookie(state: { analytics: boolean }): void {
+    const fullState: ConsentState = {
+        necessary: true,
+        analytics: state.analytics,
+        timestamp: new Date().toISOString(),
+        version: CONSENT_VERSION,
+    };
+    const expires = new Date();
+    expires.setFullYear(expires.getFullYear() + 1);
+
+    document.cookie = `${CONSENT_COOKIE_NAME}=${encodeURIComponent(JSON.stringify(fullState))}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
 }
 
 export function ConsentProvider({
@@ -89,8 +110,6 @@ export function ConsentProvider({
 
 export function useConsent(): ConsentContextType {
     const context = useContext(ConsentContext);
-    if (!context) {
-        throw new Error('useConsent must be used within a ConsentProvider');
-    }
+    if (!context) throw new Error('useConsent must be used within a ConsentProvider');
     return context;
 }

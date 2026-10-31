@@ -6,8 +6,7 @@ import { SnackbarProvider } from 'notistack';
 import { BookSortByProvider } from './BookSortByProvider';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v16-appRouter';
 import { BookAdvancedFilteringProvider } from './advancedFiltering/BookAdvancedFilteringProvider';
-import { ConsentProvider } from './ConsentProvider';
-import { ConsentState } from '@/utils/consentCookie';
+import { ConsentProvider, ConsentState } from './ConsentProvider';
 import { Analytics } from '@vercel/analytics/next';
 import ConsentBanner from '@/components/consent/ConsentBanner';
 
