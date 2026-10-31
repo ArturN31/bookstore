@@ -3,6 +3,7 @@ import InstagramIcon from '@mui/icons-material/Instagram';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import XIcon from '@mui/icons-material/X';
 import Link from 'next/link';
+import { CookiePreferencesButton } from '@/components/consent/CookiePreferencesButton';
 
 export const Footer = () => {
     return (
@@ -64,6 +65,11 @@ export const Footer = () => {
                                     </Link>
                                 </li>
                             ))}
+                            <li>
+                                <div data-testid="footer-cookie-preferences">
+                                    <CookiePreferencesButton />
+                                </div>
+                            </li>
                         </ul>
                     </div>
                 </div>

@@ -17,6 +17,11 @@ jest.mock('notistack', () => ({
     SnackbarProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
+// Mock Vercel Analytics with a data-testid to test conditional rendering coverage
+jest.mock('@vercel/analytics/next', () => ({
+    Analytics: () => <div data-testid="vercel-analytics" />,
+}));
+
 jest.mock('@/providers/user/UserProvider', () => ({
     UserProvider: ({ children, initialUser, initialWishlist }: UserMockProps) => (
         <div
@@ -77,6 +82,8 @@ describe('Providers', () => {
             } as unknown as SessionData['initialUser'],
             initialWishlist: null,
             initialCart: null,
+            initialConsent: null,
+            hasAnalyticsConsent: false,
         };
 
         render(
@@ -96,6 +103,8 @@ describe('Providers', () => {
                 { book_id: 'book-2' },
             ] as unknown as SessionData['initialWishlist'],
             initialCart: null,
+            initialConsent: null,
+            hasAnalyticsConsent: false,
         };
 
         render(
@@ -112,6 +121,8 @@ describe('Providers', () => {
             initialUser: null,
             initialWishlist: null,
             initialCart: { cartID: 'cart-123' } as unknown as SessionData['initialCart'],
+            initialConsent: null,
+            hasAnalyticsConsent: false,
         };
 
         render(
@@ -121,6 +132,42 @@ describe('Providers', () => {
         );
 
         expect(screen.getByTestId('cart-provider')).toHaveAttribute('data-cart', 'cart-123');
+    });
+
+    it('should render Analytics when hasAnalyticsConsent is true', () => {
+        const initialSessionData: SessionData = {
+            initialUser: null,
+            initialWishlist: null,
+            initialCart: null,
+            initialConsent: null,
+            hasAnalyticsConsent: true,
+        };
+
+        render(
+            <Providers initialSessionData={initialSessionData}>
+                <span>Test Content</span>
+            </Providers>,
+        );
+
+        expect(screen.getByTestId('vercel-analytics')).toBeInTheDocument();
+    });
+
+    it('should not render Analytics when hasAnalyticsConsent is false', () => {
+        const initialSessionData: SessionData = {
+            initialUser: null,
+            initialWishlist: null,
+            initialCart: null,
+            initialConsent: null,
+            hasAnalyticsConsent: false,
+        };
+
+        render(
+            <Providers initialSessionData={initialSessionData}>
+                <span>Test Content</span>
+            </Providers>,
+        );
+
+        expect(screen.queryByTestId('vercel-analytics')).not.toBeInTheDocument();
     });
 
     it('should render children within all providers', () => {

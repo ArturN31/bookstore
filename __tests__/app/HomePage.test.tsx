@@ -86,6 +86,11 @@ jest.mock('@/data/books/BookService', () => ({
     fetchBestsellers: jest.fn().mockResolvedValue({ data: [], error: null }),
 }));
 
+// Mock Vercel Analytics to prevent Jest ESM loading errors
+jest.mock('@vercel/analytics/next', () => ({
+    Analytics: () => null,
+}));
+
 const mockedFetchBooks = fetchBooksWithReviews as jest.Mock;
 const mockedFetchBestsellers = fetchBestsellers as jest.Mock;
 
@@ -96,6 +101,8 @@ const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
                 initialUser: null,
                 initialWishlist: [],
                 initialCart: null,
+                initialConsent: null,
+                hasAnalyticsConsent: false,
             }}
         >
             {children}

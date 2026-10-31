@@ -1,14 +1,33 @@
-'use server';
-
 import { getCartData } from '@/data/cart/CartService';
+import { saveUserConsentToSupabase } from '@/data/consentCookies/ConsentAction';
 import { getUserData, getUserWishlist } from '@/data/user/UserService';
 import { mapCartData } from '@/providers/cart/utils/CartMapper';
+import { CONSENT_COOKIE_NAME, CONSENT_VERSION, ConsentState } from '@/providers/ConsentProvider';
 import { Providers } from '@/providers/Providers';
 import { DEFAULT_USER } from '@/providers/user/UserContext';
 import { mapUserData } from '@/providers/user/utils/UserMapper';
 import { createBackendClient } from '@/utils/db/server';
+import { cookies } from 'next/headers';
 
-export const SessionProviderWrapper = async ({ children }: { children: React.ReactNode }) => {
+export async function getServerConsentCookie(): Promise<ConsentState | null> {
+    try {
+        const cookieStore = await cookies();
+        const consentCookie = cookieStore.get(CONSENT_COOKIE_NAME);
+        if (!consentCookie?.value) return null;
+
+        const parsed: ConsentState = JSON.parse(consentCookie.value);
+        if (parsed.version !== CONSENT_VERSION) return null;
+        return parsed;
+    } catch {
+        return null;
+    }
+}
+
+export const SessionProviderWrapper = async ({
+    children,
+}: {
+    children: React.ReactNode;
+}): Promise<React.JSX.Element> => {
     const supabase = await createBackendClient();
     const {
         data: { user },
@@ -18,7 +37,16 @@ export const SessionProviderWrapper = async ({ children }: { children: React.Rea
     let initialWishlist: Wishlist[] = [];
     let initialCart: Cart | null = null;
 
+    const initialConsent: ConsentState | null = await getServerConsentCookie();
+
     if (user) {
+        if (initialConsent)
+            try {
+                await saveUserConsentToSupabase(initialConsent.analytics, initialConsent.version);
+            } catch {
+                // Fail silently if network/db error occurs during sync
+            }
+
         const [userRes, wishlistRes, cartRes] = await Promise.all([
             getUserData(),
             getUserWishlist(),
@@ -37,6 +65,8 @@ export const SessionProviderWrapper = async ({ children }: { children: React.Rea
         initialUser,
         initialWishlist,
         initialCart,
+        initialConsent,
+        hasAnalyticsConsent: initialConsent?.analytics === true,
     };
 
     return (
