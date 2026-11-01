@@ -1,5 +1,10 @@
 import { faker } from '@faker-js/faker/locale/en_GB';
 import { Database } from '@/database.types';
+import {
+    assertValidRequestedCount,
+    naturalPairKey,
+    planUniqueCandidates,
+} from './candidatePlanning';
 
 type BookDB = Database['public']['Tables']['books']['Row'];
 
@@ -30,13 +35,21 @@ const generateBook = (): BookDB => {
     };
 };
 
-export const generateBooksArray = (booksAmount: number): BookDB[] => {
-    const books: BookDB[] = [];
+export const bookNaturalKey = (book: Pick<BookDB, 'title' | 'author'>): string =>
+    naturalPairKey(book.title, book.author);
 
-    while (books.length < booksAmount) {
-        const newBook = generateBook();
-        if (!books.some((book) => book.title === newBook.title)) books.push(newBook);
-    }
+const MAX_CANDIDATE_ATTEMPTS_PER_RECORD = 10;
 
-    return books;
+export const generateBooksArray = (
+    booksAmount: number,
+    existingKeys: Iterable<string> = [],
+): BookDB[] => {
+    assertValidRequestedCount(booksAmount);
+
+    return planUniqueCandidates(
+        Array.from({ length: booksAmount * MAX_CANDIDATE_ATTEMPTS_PER_RECORD }, generateBook),
+        booksAmount,
+        (book) => [bookNaturalKey(book)],
+        existingKeys,
+    );
 };

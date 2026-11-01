@@ -1,4 +1,9 @@
 import { faker } from '@faker-js/faker/locale/en_GB';
+import {
+    assertValidRequestedCount,
+    naturalPairKey,
+    sampleUniqueCandidates,
+} from './candidatePlanning';
 
 export const testUserIds = [
     '6719fac7-fc59-411c-b20c-22ac6c7b622f', //Test User10
@@ -13,49 +18,58 @@ export const testUserIds = [
     'f679c56a-f208-470e-8161-e7ffd62a4a32', //Test User
 ];
 
+export const reviewNaturalKey = (userId: string, bookId: string): string =>
+    naturalPairKey(userId, bookId);
+
+type ReviewCandidate = {
+    book: BookDB & { id: string };
+    user: { id: string; username: string };
+};
+
 export const generateReviewsArray = (
     books: BookDB[],
     targetCount: number,
     existingUsers: { id: string; username: string }[],
+    existingKeys: Iterable<string> = [],
+    random: () => number = Math.random,
 ): ReviewDB[] => {
-    const validBooks = books.filter((b): b is BookDB & { id: string } => !!b.id);
+    assertValidRequestedCount(targetCount);
 
-    if (validBooks.length === 0 || existingUsers.length === 0) return [];
+    const validBooks = [
+        ...new Map(
+            books
+                .filter((book): book is BookDB & { id: string } => Boolean(book.id))
+                .map((book) => [book.id, book]),
+        ).values(),
+    ];
+    const validUsers = [
+        ...new Map(
+            existingUsers
+                .filter((user) => Boolean(user.id))
+                .map((user) => [user.id, user]),
+        ).values(),
+    ];
 
-    const reviews: ReviewDB[] = [];
-    const bookReviewerMap = new Map<string, Set<string>>();
+    const selectedPairs = sampleUniqueCandidates(
+        validBooks.flatMap((book) => validUsers.map((user) => ({ book, user }))),
+        targetCount,
+        ({ book, user }) => [reviewNaturalKey(user.id, book.id)],
+        existingKeys,
+        random,
+    );
 
-    let createdCount = 0;
-    let failSafe = 0;
+    return selectedPairs.map(({ book, user }) => {
+        const timestamp = faker.date.past({ years: 1 }).toISOString();
 
-    while (createdCount < targetCount && failSafe < targetCount * 10) {
-        failSafe++;
-
-        const book = validBooks[Math.floor(Math.random() * validBooks.length)];
-        const user = existingUsers[Math.floor(Math.random() * existingUsers.length)];
-
-        if (!bookReviewerMap.has(book.id)) bookReviewerMap.set(book.id, new Set());
-
-        const reviewedUsers = bookReviewerMap.get(book.id)!;
-
-        if (!reviewedUsers.has(user.id)) {
-            const timestamp = faker.date.past({ years: 1 }).toISOString();
-
-            reviews.push({
-                id: faker.string.uuid(),
-                created_at: timestamp,
-                updated_at: timestamp,
-                book_id: book.id,
-                user_id: user.id,
-                username: user.username,
-                review: faker.lorem.paragraph({ min: 1, max: 3 }),
-                rating: Math.floor(Math.random() * 5) + 1,
-            });
-
-            reviewedUsers.add(user.id);
-            createdCount++;
-        }
-    }
-
-    return reviews;
+        return {
+            id: faker.string.uuid(),
+            created_at: timestamp,
+            updated_at: timestamp,
+            book_id: book.id,
+            user_id: user.id,
+            username: user.username,
+            review: faker.lorem.paragraph({ min: 1, max: 3 }),
+            rating: Math.floor(Math.random() * 5) + 1,
+        };
+    });
 };
