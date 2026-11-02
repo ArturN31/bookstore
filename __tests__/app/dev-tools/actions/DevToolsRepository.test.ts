@@ -35,6 +35,17 @@ describe('DevToolsRepository', () => {
         expect(result).toEqual(mockResult);
     });
 
+    it('fetchBookNaturalKeys should select only title and author', async () => {
+        const mockResult = { data: [{ title: 'Book', author: 'Writer' }], error: null };
+        mockQueryBuilder.then.mockImplementationOnce((resolve) => resolve(mockResult));
+
+        const result = await repository.fetchBookNaturalKeys(mockSupabase);
+
+        expect(mockSupabase.from).toHaveBeenCalledWith('books');
+        expect(mockQueryBuilder.select).toHaveBeenCalledWith('title, author');
+        expect(result).toEqual(mockResult);
+    });
+
     it('fetchAllDiscounts should execute query and return result', async () => {
         const mockResult = { data: [{ id: 'd-1' }], error: null };
         mockQueryBuilder.then.mockImplementationOnce((resolve) => resolve(mockResult));
@@ -42,6 +53,28 @@ describe('DevToolsRepository', () => {
         const result = await repository.fetchAllDiscounts(mockSupabase);
         expect(mockSupabase.from).toHaveBeenCalledWith('discounts');
         expect(mockQueryBuilder.select).toHaveBeenCalledWith('*');
+        expect(result).toEqual(mockResult);
+    });
+
+    it('fetchDiscountCodes should select only discount codes', async () => {
+        const mockResult = { data: [{ code: 'SAVE_123' }], error: null };
+        mockQueryBuilder.then.mockImplementationOnce((resolve) => resolve(mockResult));
+
+        const result = await repository.fetchDiscountCodes(mockSupabase);
+
+        expect(mockSupabase.from).toHaveBeenCalledWith('discounts');
+        expect(mockQueryBuilder.select).toHaveBeenCalledWith('code');
+        expect(result).toEqual(mockResult);
+    });
+
+    it('fetchUsersForOrders should select current user IDs', async () => {
+        const mockResult = { data: [{ id: 'user-1' }], error: null };
+        mockQueryBuilder.then.mockImplementationOnce((resolve) => resolve(mockResult));
+
+        const result = await repository.fetchUsersForOrders(mockSupabase);
+
+        expect(mockSupabase.from).toHaveBeenCalledWith('users');
+        expect(mockQueryBuilder.select).toHaveBeenCalledWith('id');
         expect(result).toEqual(mockResult);
     });
 
@@ -133,6 +166,17 @@ describe('DevToolsRepository', () => {
         const result = await repository.fetchUsersForReviews(mockSupabase);
         expect(mockSupabase.from).toHaveBeenCalledWith('users');
         expect(mockQueryBuilder.select).toHaveBeenCalledWith('id, username');
+        expect(result).toEqual(mockResult);
+    });
+
+    it('fetchReviewNaturalKeys should select only user and book IDs', async () => {
+        const mockResult = { data: [{ user_id: 'user-1', book_id: 'book-1' }], error: null };
+        mockQueryBuilder.then.mockImplementationOnce((resolve) => resolve(mockResult));
+
+        const result = await repository.fetchReviewNaturalKeys(mockSupabase);
+
+        expect(mockSupabase.from).toHaveBeenCalledWith('book_reviews');
+        expect(mockQueryBuilder.select).toHaveBeenCalledWith('user_id, book_id');
         expect(result).toEqual(mockResult);
     });
 

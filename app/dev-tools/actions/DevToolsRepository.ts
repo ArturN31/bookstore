@@ -5,10 +5,28 @@ export async function fetchAllBooks(supabase: SupabaseClient): Promise<SafeQuery
     return safeSupabaseQuery(async () => supabase.from('books').select('*'));
 }
 
+export async function fetchBookNaturalKeys(
+    supabase: SupabaseClient,
+): Promise<SafeQueryResult<Array<{ title: string; author: string }>>> {
+    return safeSupabaseQuery(async () => supabase.from('books').select('title, author'));
+}
+
 export async function fetchAllDiscounts(
     supabase: SupabaseClient,
 ): Promise<SafeQueryResult<unknown[]>> {
     return safeSupabaseQuery(async () => supabase.from('discounts').select('*'));
+}
+
+export async function fetchDiscountCodes(
+    supabase: SupabaseClient,
+): Promise<SafeQueryResult<Array<{ code: string }>>> {
+    return safeSupabaseQuery(async () => supabase.from('discounts').select('code'));
+}
+
+export async function fetchUsersForOrders(
+    supabase: SupabaseClient,
+): Promise<SafeQueryResult<Array<{ id: string }>>> {
+    return safeSupabaseQuery(async () => supabase.from('users').select('id'));
 }
 
 export async function insertOrders(
@@ -71,6 +89,14 @@ export async function fetchUsersForReviews(
     supabase: SupabaseClient,
 ): Promise<SafeQueryResult<Array<{ id: string; username: string }>>> {
     return safeSupabaseQuery(async () => supabase.from('users').select('id, username'));
+}
+
+export async function fetchReviewNaturalKeys(
+    supabase: SupabaseClient,
+): Promise<SafeQueryResult<Array<{ user_id: string; book_id: string }>>> {
+    return safeSupabaseQuery(async () =>
+        supabase.from('book_reviews').select('user_id, book_id'),
+    );
 }
 
 export async function insertBookReviews(

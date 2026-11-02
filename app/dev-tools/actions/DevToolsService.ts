@@ -4,6 +4,11 @@ import { generateOrdersAndItems } from '@/utils/db/dbSeed/generateOrders';
 import { generateReviewsArray } from '@/utils/db/dbSeed/generateReview';
 import { generateDiscounts } from '@/utils/db/dbSeed/generateDiscounts';
 import { generateBooksArray } from '@/utils/db/dbSeed/generateBook';
+import {
+    naturalPairKey,
+    normalizeNaturalKey,
+    planUniqueCandidates,
+} from '@/utils/db/dbSeed/candidatePlanning';
 import * as repository from './DevToolsRepository';
 import { SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
 
@@ -24,21 +29,27 @@ export type CommandResponse = { message: string; success: boolean };
 export type CommandHandler = (supabase: SupabaseClient) => Promise<CommandResponse>;
 
 export const addSales: CommandHandler = async (supabase) => {
-    const [booksRes, discountsRes] = await Promise.all([
+    const [booksRes, discountsRes, usersRes] = await Promise.all([
         repository.fetchAllBooks(supabase),
         repository.fetchAllDiscounts(supabase),
+        repository.fetchUsersForOrders(supabase),
     ]);
 
     if (booksRes.error) throw new Error(booksRes.error);
     if (discountsRes.error) throw new Error(discountsRes.error);
+    if (usersRes.error) throw new Error(usersRes.error);
 
     const books = booksRes.data as BookDB[];
     const discounts = (discountsRes.data as DiscountDB[]) || [];
+    const users = usersRes.data;
 
     if (!books || books.length === 0) throw new Error('Seed Failure: Catalog is empty.');
+    if (!users) throw new Error('Seed Failure: User lookup returned no data.');
+    if (users.length === 0) throw new Error('Seed Failure: No users are available for orders.');
 
     const { orders, items, orderDiscounts } = generateOrdersAndItems(
         books,
+        users,
         DEV_CONFIG.ORDERS_COUNT,
         DEV_CONFIG.ORDER_ITEM_COUNT,
         discounts,
@@ -64,7 +75,12 @@ export const addSales: CommandHandler = async (supabase) => {
 };
 
 export const seedDiscounts: CommandHandler = async (supabase) => {
-    const discounts = generateDiscounts(DEV_CONFIG.DISCOUNT_COUNT);
+    const existingRes = await repository.fetchDiscountCodes(supabase);
+    if (existingRes.error) throw new Error(existingRes.error);
+    if (!existingRes.data) throw new Error('Discount code lookup returned no data.');
+
+    const existingKeys = existingRes.data.map(({ code }) => normalizeNaturalKey(code));
+    const discounts = generateDiscounts(DEV_CONFIG.DISCOUNT_COUNT, existingKeys);
 
     const res = await repository.insertDiscounts(supabase, discounts);
     if (res.error) throw new Error(res.error);
@@ -88,13 +104,16 @@ export const stockPurge: CommandHandler = async (supabase) => {
 };
 
 export const reviewBomb: CommandHandler = async (supabase) => {
-    const [booksRes, usersRes] = await Promise.all([
+    const [booksRes, usersRes, existingReviewsRes] = await Promise.all([
         repository.fetchBooksForReviews(supabase),
         repository.fetchUsersForReviews(supabase),
+        repository.fetchReviewNaturalKeys(supabase),
     ]);
 
     if (booksRes.error) throw new Error(booksRes.error);
     if (usersRes.error) throw new Error(usersRes.error);
+    if (existingReviewsRes.error) throw new Error(existingReviewsRes.error);
+    if (!existingReviewsRes.data) throw new Error('Review key lookup returned no data.');
 
     const books = booksRes.data;
     const users = usersRes.data;
@@ -106,6 +125,9 @@ export const reviewBomb: CommandHandler = async (supabase) => {
         books as BookDB[],
         DEV_CONFIG.REVIEW_COUNT,
         users as UserDB[],
+        existingReviewsRes.data.map(({ user_id, book_id }) =>
+            naturalPairKey(user_id, book_id),
+        ),
     );
 
     const res = await repository.insertBookReviews(supabase, reviews);
@@ -169,24 +191,21 @@ export const addWishlists: CommandHandler = async (supabase) => {
     const users = usersRes.data;
     const existing = existingRes.data;
 
-    if (!books?.length || !users?.length) throw new Error('Missing data.');
+    if (!books?.length || !users?.length || !existing) throw new Error('Missing data.');
 
-    const existingSet = new Set(
-        existing?.map((e: { user_id: string; book_id: string }) => `${e.user_id}-${e.book_id}`),
+    const existingKeys = existing.map(({ user_id, book_id }) =>
+        naturalPairKey(user_id, book_id),
     );
     const allPossible = users.flatMap((u: { id: string }) =>
         books.map((b: { id: string }) => ({ user_id: u.id, book_id: b.id })),
     );
 
-    const newEntries = allPossible
-        .filter(
-            (pair: { user_id: string; book_id: string }) =>
-                !existingSet.has(`${pair.user_id}-${pair.book_id}`),
-        )
-        .sort(() => 0.5 - Math.random())
-        .slice(0, DEV_CONFIG.WISHLIST_COUNT);
-
-    if (newEntries.length === 0) throw new Error('No more unique combinations available.');
+    const newEntries = planUniqueCandidates(
+        allPossible.sort(() => 0.5 - Math.random()),
+        DEV_CONFIG.WISHLIST_COUNT,
+        ({ user_id, book_id }) => [naturalPairKey(user_id, book_id)],
+        existingKeys,
+    );
 
     const res = await repository.insertWishlistEntries(supabase, newEntries);
     if (res.error) throw new Error(res.error);
@@ -195,7 +214,14 @@ export const addWishlists: CommandHandler = async (supabase) => {
 };
 
 export const addBooks: CommandHandler = async (supabase: SupabaseClient) => {
-    const books = generateBooksArray(50);
+    const existingRes = await repository.fetchBookNaturalKeys(supabase);
+    if (existingRes.error) throw new Error(existingRes.error);
+    if (!existingRes.data) throw new Error('Book key lookup returned no data.');
+
+    const existingKeys = existingRes.data.map(({ title, author }) =>
+        naturalPairKey(title, author),
+    );
+    const books = generateBooksArray(DEV_CONFIG.BOOK_COUNT, existingKeys);
 
     const res = await repository.insertBooks(supabase, books);
     if (res.error) throw new Error(res.error);

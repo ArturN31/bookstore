@@ -26,6 +26,22 @@ describe('DevToolsService', () => {
     beforeEach(() => {
         supabase = {} as SupabaseClient;
         jest.clearAllMocks();
+        jest.mocked(repository.fetchUsersForOrders).mockResolvedValue({
+            data: [{ id: 'current-user' }],
+            error: null,
+        } as unknown as Awaited<ReturnType<typeof repository.fetchUsersForOrders>>);
+        jest.mocked(repository.fetchDiscountCodes).mockResolvedValue({
+            data: [],
+            error: null,
+        });
+        jest.mocked(repository.fetchBookNaturalKeys).mockResolvedValue({
+            data: [],
+            error: null,
+        });
+        jest.mocked(repository.fetchReviewNaturalKeys).mockResolvedValue({
+            data: [],
+            error: null,
+        });
     });
 
     describe('addSales', () => {
@@ -58,6 +74,14 @@ describe('DevToolsService', () => {
             const result = await service.addSales(supabase);
 
             expect(result.success).toBe(true);
+            expect(generateOrdersAndItems).toHaveBeenCalledWith(
+                expect.any(Array),
+                [{ id: 'current-user' }],
+                expect.any(Number),
+                expect.any(Number),
+                expect.any(Array),
+                expect.any(Number),
+            );
             expect(repository.insertOrders).toHaveBeenCalled();
             expect(repository.insertOrderItems).toHaveBeenCalled();
             expect(repository.insertOrderDiscounts).toHaveBeenCalled();
@@ -113,6 +137,26 @@ describe('DevToolsService', () => {
             } as unknown as Awaited<ReturnType<typeof repository.fetchAllDiscounts>>);
 
             await expect(service.addSales(supabase)).rejects.toThrow('Discount fetch failed');
+        });
+
+        it('should throw an error if fetching current order users fails', async () => {
+            jest.mocked(repository.fetchAllBooks).mockResolvedValueOnce({
+                data: [{ id: 'book-1' }],
+                error: null,
+            } as unknown as Awaited<ReturnType<typeof repository.fetchAllBooks>>);
+            jest.mocked(repository.fetchAllDiscounts).mockResolvedValueOnce({
+                data: [],
+                error: null,
+            } as unknown as Awaited<ReturnType<typeof repository.fetchAllDiscounts>>);
+            jest.mocked(repository.fetchUsersForOrders).mockResolvedValueOnce({
+                data: null,
+                error: 'Users for orders lookup failed',
+            } as unknown as Awaited<ReturnType<typeof repository.fetchUsersForOrders>>);
+
+            await expect(service.addSales(supabase)).rejects.toThrow(
+                'Users for orders lookup failed',
+            );
+            expect(repository.insertOrders).not.toHaveBeenCalled();
         });
 
         it('should throw an error if catalog is empty', async () => {
@@ -189,7 +233,27 @@ describe('DevToolsService', () => {
             const result = await service.seedDiscounts(supabase);
 
             expect(result.success).toBe(true);
+            expect(repository.fetchDiscountCodes).toHaveBeenCalledWith(supabase);
+            expect(generateDiscounts).toHaveBeenCalledWith(5, []);
             expect(repository.insertDiscounts).toHaveBeenCalled();
+        });
+
+        it('passes normalized existing codes to the discount planner', async () => {
+            jest.mocked(repository.fetchDiscountCodes).mockResolvedValueOnce({
+                data: [{ code: ' summer  sale ' }],
+                error: null,
+            });
+            jest.mocked(generateDiscounts).mockReturnValueOnce(
+                [] as unknown as ReturnType<typeof generateDiscounts>,
+            );
+            jest.mocked(repository.insertDiscounts).mockResolvedValueOnce({
+                data: [],
+                error: null,
+            });
+
+            await service.seedDiscounts(supabase);
+
+            expect(generateDiscounts).toHaveBeenCalledWith(5, ['summer sale']);
         });
 
         it('should throw an error if inserting discounts fails', async () => {
@@ -275,6 +339,13 @@ describe('DevToolsService', () => {
             const result = await service.reviewBomb(supabase);
 
             expect(result.success).toBe(true);
+            expect(repository.fetchReviewNaturalKeys).toHaveBeenCalledWith(supabase);
+            expect(generateReviewsArray).toHaveBeenCalledWith(
+                expect.any(Array),
+                50,
+                expect.any(Array),
+                [],
+            );
             expect(repository.insertBookReviews).toHaveBeenCalled();
         });
 
@@ -302,6 +373,37 @@ describe('DevToolsService', () => {
             } as unknown as Awaited<ReturnType<typeof repository.fetchUsersForReviews>>);
 
             await expect(service.reviewBomb(supabase)).rejects.toThrow('Users error');
+        });
+
+        it('passes existing review pairs to the review planner', async () => {
+            jest.mocked(repository.fetchBooksForReviews).mockResolvedValueOnce({
+                data: [{ id: 'book-1', title: 'Test Book' }],
+                error: null,
+            } as unknown as Awaited<ReturnType<typeof repository.fetchBooksForReviews>>);
+            jest.mocked(repository.fetchUsersForReviews).mockResolvedValueOnce({
+                data: [{ id: 'user-1', username: 'testuser' }],
+                error: null,
+            } as unknown as Awaited<ReturnType<typeof repository.fetchUsersForReviews>>);
+            jest.mocked(repository.fetchReviewNaturalKeys).mockResolvedValueOnce({
+                data: [{ user_id: 'user-1', book_id: 'book-1' }],
+                error: null,
+            });
+            jest.mocked(generateReviewsArray).mockReturnValueOnce(
+                [] as unknown as ReturnType<typeof generateReviewsArray>,
+            );
+            jest.mocked(repository.insertBookReviews).mockResolvedValueOnce({
+                data: [],
+                error: null,
+            });
+
+            await service.reviewBomb(supabase);
+
+            expect(generateReviewsArray).toHaveBeenCalledWith(
+                expect.any(Array),
+                50,
+                expect.any(Array),
+                ['["user-1","book-1"]'],
+            );
         });
 
         it('should throw an error if review data is missing or empty', async () => {
@@ -466,8 +568,17 @@ describe('DevToolsService', () => {
     describe('addWishlists', () => {
         it('should successfully add wishlists', async () => {
             jest.mocked(repository.fetchWishlistContext).mockResolvedValueOnce([
-                { data: [{ id: 'book-1' }], error: null },
-                { data: [{ id: 'user-1' }], error: null },
+                { data: [{ id: 'book-1' }, { id: 'book-2' }], error: null },
+                {
+                    data: [
+                        { id: 'user-1' },
+                        { id: 'user-2' },
+                        { id: 'user-3' },
+                        { id: 'user-4' },
+                        { id: 'user-5' },
+                    ],
+                    error: null,
+                },
                 { data: [], error: null },
             ] as unknown as Awaited<ReturnType<typeof repository.fetchWishlistContext>>);
 
@@ -530,14 +641,23 @@ describe('DevToolsService', () => {
             ] as unknown as Awaited<ReturnType<typeof repository.fetchWishlistContext>>);
 
             await expect(service.addWishlists(supabase)).rejects.toThrow(
-                'No more unique combinations available.',
+                'Unable to generate exactly 10 records; only 0 unique candidates were found during planning.',
             );
         });
 
         it('should throw an error if inserting wishlist entries fails', async () => {
             jest.mocked(repository.fetchWishlistContext).mockResolvedValueOnce([
-                { data: [{ id: 'book-1' }], error: null },
-                { data: [{ id: 'user-1' }], error: null },
+                { data: [{ id: 'book-1' }, { id: 'book-2' }], error: null },
+                {
+                    data: [
+                        { id: 'user-1' },
+                        { id: 'user-2' },
+                        { id: 'user-3' },
+                        { id: 'user-4' },
+                        { id: 'user-5' },
+                    ],
+                    error: null,
+                },
                 { data: [], error: null },
             ] as unknown as Awaited<ReturnType<typeof repository.fetchWishlistContext>>);
 
@@ -560,7 +680,24 @@ describe('DevToolsService', () => {
             const result = await service.addBooks(supabase);
 
             expect(result.success).toBe(true);
+            expect(repository.fetchBookNaturalKeys).toHaveBeenCalledWith(supabase);
+            expect(generateBooksArray).toHaveBeenCalledWith(50, []);
             expect(repository.insertBooks).toHaveBeenCalled();
+        });
+
+        it('passes normalized stored book keys to the book planner', async () => {
+            jest.mocked(repository.fetchBookNaturalKeys).mockResolvedValueOnce({
+                data: [{ title: '  The   Title ', author: 'A Writer' }],
+                error: null,
+            });
+            jest.mocked(generateBooksArray).mockReturnValueOnce(
+                [] as unknown as ReturnType<typeof generateBooksArray>,
+            );
+            jest.mocked(repository.insertBooks).mockResolvedValueOnce({ data: [], error: null });
+
+            await service.addBooks(supabase);
+
+            expect(generateBooksArray).toHaveBeenCalledWith(50, ['["the title","a writer"]']);
         });
 
         it('should throw an error if inserting books fails', async () => {

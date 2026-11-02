@@ -159,6 +159,7 @@ export async function seedMarketActivity(
 
     const { orders, items, orderDiscounts } = generateOrdersAndItems(
         activeBooks,
+        users,
         DEV_CONFIG.ORDERS_COUNT,
         DEV_CONFIG.ORDER_ITEM_COUNT,
         discounts as DiscountDB[],

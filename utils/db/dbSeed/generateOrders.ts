@@ -1,5 +1,4 @@
 import { faker } from '@faker-js/faker/locale/en_GB';
-import { testUserIds } from '@/utils/db/dbSeed/generateReview';
 import { Database } from '@/database.types';
 
 type BookDB = Database['public']['Tables']['books']['Row'];
@@ -53,16 +52,28 @@ const generateLineItems = (orderID: string, books: readonly BookDB[], count: num
 
 export const generateOrdersAndItems = (
     books: readonly BookDB[],
+    users: readonly Pick<UserDB, 'id'>[],
     ordersAmount: number,
     itemsAmount: number,
     discounts: readonly DiscountDB[],
     discountsAmount: number,
 ) => {
+    if (!Number.isInteger(ordersAmount) || ordersAmount < 0)
+        throw new RangeError('Orders amount must be a non-negative integer.');
+    if (!Number.isInteger(itemsAmount) || itemsAmount < 0)
+        throw new RangeError('Items amount must be a non-negative integer.');
+    if (!Number.isInteger(discountsAmount) || discountsAmount < 0)
+        throw new RangeError('Discounts amount must be a non-negative integer.');
+    if (ordersAmount > 0 && books.length === 0)
+        throw new Error('At least one book is required to generate orders.');
+    if (ordersAmount > 0 && users.length === 0)
+        throw new Error('At least one current user is required to generate orders.');
+
     const orders: OrderDB[] = [];
     const allItems: OrderItemDB[] = [];
     const orderDiscounts: OrderDiscountDB[] = [];
 
-    const baseItemsPerOrder = Math.floor(itemsAmount / ordersAmount);
+    const baseItemsPerOrder = ordersAmount === 0 ? 0 : Math.floor(itemsAmount / ordersAmount);
     let extraItems = itemsAmount % ordersAmount;
     let remainingDiscounts = Math.min(discountsAmount, ordersAmount);
     const generatedUsage = new Map(
@@ -72,7 +83,7 @@ export const generateOrdersAndItems = (
 
     for (let i = 0; i < ordersAmount; i++) {
         const orderID = faker.string.uuid();
-        const userId = faker.helpers.arrayElement(testUserIds);
+        const userId = faker.helpers.arrayElement(users).id;
         const status = faker.helpers.arrayElement([
             'pending',
             'completed',
