@@ -5,7 +5,7 @@ import { Redis } from '@upstash/redis';
 const rateLimitPolicies = {
     // Authentication: 5 requests per 15 minutes
     auth: { requests: 5, window: '15 m', prefix: 'ratelimit:auth' },
-    // Administrative / privileged actions: 3 requests per hour
+    // Administrative / privileged actions: 10 requests per hour
     privileged: { requests: 10, window: '1 h', prefix: 'ratelimit:privileged' },
     // Checkout processing: 10 requests per minute
     checkout: { requests: 10, window: '1 m', prefix: 'ratelimit:checkout' },

@@ -32,8 +32,17 @@ export async function fetchUsersForOrders(
 export async function insertOrders(
     supabase: SupabaseClient,
     orders: unknown[],
-): Promise<SafeQueryResult<unknown[]>> {
+): Promise<SafeQueryResult<Array<{ id: string }>>> {
     return safeSupabaseQuery(async () => supabase.from('orders').insert(orders).select());
+}
+
+export async function deleteOrderDiscountsForOrders(
+    supabase: SupabaseClient,
+    orderIds: string[],
+): Promise<SafeQueryResult<unknown[]>> {
+    return safeSupabaseQuery(async () =>
+        supabase.from('order_discounts').delete().in('order_id', orderIds).select('id'),
+    );
 }
 
 export async function insertOrderItems(
@@ -41,6 +50,24 @@ export async function insertOrderItems(
     items: unknown[],
 ): Promise<SafeQueryResult<unknown[]>> {
     return safeSupabaseQuery(async () => supabase.from('order_items').insert(items).select());
+}
+
+export async function deleteOrderItemsForOrders(
+    supabase: SupabaseClient,
+    orderIds: string[],
+): Promise<SafeQueryResult<unknown[]>> {
+    return safeSupabaseQuery(async () =>
+        supabase.from('order_items').delete().in('order_id', orderIds).select('id'),
+    );
+}
+
+export async function deleteOrders(
+    supabase: SupabaseClient,
+    orderIds: string[],
+): Promise<SafeQueryResult<unknown[]>> {
+    return safeSupabaseQuery(async () =>
+        supabase.from('orders').delete().in('id', orderIds).select('id'),
+    );
 }
 
 export async function insertOrderDiscounts(
@@ -94,9 +121,7 @@ export async function fetchUsersForReviews(
 export async function fetchReviewNaturalKeys(
     supabase: SupabaseClient,
 ): Promise<SafeQueryResult<Array<{ user_id: string; book_id: string }>>> {
-    return safeSupabaseQuery(async () =>
-        supabase.from('book_reviews').select('user_id, book_id'),
-    );
+    return safeSupabaseQuery(async () => supabase.from('book_reviews').select('user_id, book_id'));
 }
 
 export async function insertBookReviews(
@@ -127,12 +152,30 @@ export async function insertShoppingCarts(
     );
 }
 
+export async function deleteShoppingCarts(
+    supabase: SupabaseClient,
+    cartIds: string[],
+): Promise<SafeQueryResult<unknown[]>> {
+    return safeSupabaseQuery(async () =>
+        supabase.from('shopping_carts').delete().in('id', cartIds).select('id'),
+    );
+}
+
 export async function insertShoppingCartItems(
     supabase: SupabaseClient,
     cartItems: unknown[],
 ): Promise<SafeQueryResult<unknown[]>> {
     return safeSupabaseQuery(async () =>
         supabase.from('shopping_cart_items').insert(cartItems).select(),
+    );
+}
+
+export async function deleteShoppingCartItemsForCarts(
+    supabase: SupabaseClient,
+    cartIds: string[],
+): Promise<SafeQueryResult<unknown[]>> {
+    return safeSupabaseQuery(async () =>
+        supabase.from('shopping_cart_items').delete().in('cart_id', cartIds).select('id'),
     );
 }
 

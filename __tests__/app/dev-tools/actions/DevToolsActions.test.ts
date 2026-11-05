@@ -1,7 +1,4 @@
-import {
-    systemCommandAction,
-    fullResetAction,
-} from '@/app/dev-tools/actions/DevToolsActions';
+import { systemCommandAction, fullResetAction } from '@/app/dev-tools/actions/DevToolsActions';
 import * as service from '@/app/dev-tools/actions/DevToolsService';
 import { createAdminClient } from '@/utils/db/admin';
 import { runFullDatabaseSeed } from '@/utils/db/dbSeed/seedDatabase';
@@ -74,6 +71,14 @@ describe('DevToolsActions', () => {
         jest.mocked(createBackendClient).mockResolvedValue(
             mockSupabase as unknown as SupabaseClient,
         );
+        jest.mocked(runFullDatabaseSeed).mockImplementation(async (authorizeWrite) => {
+            await authorizeWrite?.();
+            return { success: true };
+        });
+        jest.mocked(service.addSales).mockImplementation(async (_supabase, authorizeWrite) => {
+            await authorizeWrite?.();
+            return { message: 'Success', success: true };
+        });
     });
 
     afterAll(() => {
@@ -125,10 +130,12 @@ describe('DevToolsActions', () => {
 
         it('should fall back to IP identifier when session verification throws an error', async () => {
             jest.mocked(createBackendClient).mockRejectedValueOnce(new Error('Session error'));
-            jest.mocked(service.addSales).mockResolvedValueOnce({
-                message: 'Success',
-                success: true,
-            });
+            jest.mocked(service.addSales).mockImplementationOnce(
+                async (_supabase, authorizeWrite) => {
+                    await authorizeWrite?.();
+                    return { message: 'Success', success: true };
+                },
+            );
             const mockAdminSupabase = {} as unknown as SupabaseClient;
             jest.mocked(createAdminClient).mockResolvedValueOnce(mockAdminSupabase);
 
@@ -153,6 +160,12 @@ describe('DevToolsActions', () => {
                 reset: Date.now() + 60000,
                 error: 'Unauthorized: Dev tools execution rate limit exceeded.',
             });
+            jest.mocked(service.addSales).mockImplementationOnce(
+                async (_supabase, authorizeWrite) => {
+                    await authorizeWrite?.();
+                    return { message: 'Success', success: true };
+                },
+            );
 
             const formData = new FormData();
             formData.append('command', 'add_sales');
@@ -163,7 +176,7 @@ describe('DevToolsActions', () => {
                 message: 'Unauthorized: Dev tools execution rate limit exceeded.',
                 success: false,
             });
-            expect(service.addSales).not.toHaveBeenCalled();
+            expect(service.addSales).toHaveBeenCalledTimes(1);
         });
 
         it('should fallback to default rate limit message when error is undefined', async () => {
@@ -174,6 +187,12 @@ describe('DevToolsActions', () => {
                 reset: Date.now() + 60000,
                 error: undefined,
             });
+            jest.mocked(service.addSales).mockImplementationOnce(
+                async (_supabase, authorizeWrite) => {
+                    await authorizeWrite?.();
+                    return { message: 'Success', success: true };
+                },
+            );
 
             const formData = new FormData();
             formData.append('command', 'add_sales');
@@ -199,10 +218,13 @@ describe('DevToolsActions', () => {
         });
 
         it('should execute command successfully and revalidate path', async () => {
-            jest.mocked(service.addSales).mockResolvedValueOnce({
-                message: 'Success',
-                success: true,
-            });
+            jest.mocked(service.addSales).mockImplementationOnce(
+                async (_supabase, authorizeWrite) => {
+                    await authorizeWrite?.();
+                    await authorizeWrite?.();
+                    return { message: 'Success', success: true };
+                },
+            );
             const mockAdminSupabase = {} as unknown as SupabaseClient;
             jest.mocked(createAdminClient).mockResolvedValueOnce(mockAdminSupabase);
 
@@ -212,7 +234,18 @@ describe('DevToolsActions', () => {
             const result = await systemCommandAction(initialCommandResponse, formData);
 
             expect(result).toEqual({ message: 'Success', success: true });
+            expect(mockedVerifyRateLimit).toHaveBeenCalledTimes(1);
             expect(revalidatePath).toHaveBeenCalledWith('/');
+        });
+
+        it('should not rate limit an invalid command', async () => {
+            const formData = new FormData();
+            formData.append('command', 'invalid');
+
+            await systemCommandAction(initialCommandResponse, formData);
+
+            expect(mockedVerifyRateLimit).not.toHaveBeenCalled();
+            expect(createAdminClient).not.toHaveBeenCalled();
         });
 
         it('should block a command when the allowed development database is not configured', async () => {
@@ -255,6 +288,20 @@ describe('DevToolsActions', () => {
             const result = await systemCommandAction(initialCommandResponse, formData);
 
             expect(result).toEqual({ message: 'Custom service error', success: false });
+        });
+
+        it('should not rate limit when command preflight fails before the write gate', async () => {
+            jest.mocked(service.addSales).mockRejectedValueOnce(
+                new Error('Preflight lookup failed'),
+            );
+            jest.mocked(createAdminClient).mockResolvedValueOnce({} as SupabaseClient);
+            const formData = new FormData();
+            formData.append('command', 'add_sales');
+
+            const result = await systemCommandAction(initialCommandResponse, formData);
+
+            expect(result).toEqual({ message: 'Preflight lookup failed', success: false });
+            expect(mockedVerifyRateLimit).not.toHaveBeenCalled();
         });
 
         it('should catch non-Error and fallback to Operation Failed message', async () => {
@@ -324,20 +371,24 @@ describe('DevToolsActions', () => {
             const result = await fullResetAction(initialResetResponse, formData);
 
             expect(result).toEqual({
-                message: 'Unauthorized: Dev tools execution rate limit exceeded.',
+                message: 'Reset Failed: Unauthorized: Dev tools execution rate limit exceeded.',
                 success: false,
             });
-            expect(runFullDatabaseSeed).not.toHaveBeenCalled();
+            expect(runFullDatabaseSeed).toHaveBeenCalledTimes(1);
         });
 
         it('should successfully run full reset and revalidate path', async () => {
-            jest.mocked(runFullDatabaseSeed).mockResolvedValueOnce({ success: true });
+            jest.mocked(runFullDatabaseSeed).mockImplementationOnce(async (authorizeWrite) => {
+                await authorizeWrite?.();
+                return { success: true };
+            });
             const formData = new FormData();
 
             const result = await fullResetAction(initialResetResponse, formData);
 
             expect(result).toEqual({ message: 'Full Reset Complete', success: true });
             expect(runFullDatabaseSeed).toHaveBeenCalled();
+            expect(mockedVerifyRateLimit).toHaveBeenCalledTimes(1);
             expect(revalidatePath).toHaveBeenCalledWith('/');
         });
 
@@ -358,8 +409,17 @@ describe('DevToolsActions', () => {
 
             const result = await fullResetAction(initialResetResponse, formData);
 
-            expect(result).toEqual({ message: 'Reset Failed', success: false });
+            expect(result).toEqual({ message: 'Reset Failed: Seed failed', success: false });
+        });
+
+        it('should not rate limit a reset when the database target is invalid', async () => {
+            env.DEV_TOOLS_ALLOWED_SUPABASE_URL = 'https://other-project.supabase.co';
+            const formData = new FormData();
+
+            await fullResetAction(initialResetResponse, formData);
+
+            expect(mockedVerifyRateLimit).not.toHaveBeenCalled();
+            expect(runFullDatabaseSeed).not.toHaveBeenCalled();
         });
     });
-
 });

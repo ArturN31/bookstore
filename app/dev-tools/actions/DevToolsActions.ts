@@ -24,7 +24,7 @@ const COMMAND_REGISTRY: Record<string, service.CommandHandler> = {
     add_books: service.addBooks,
 };
 
-async function checkDevToolsRateLimit(): Promise<service.CommandResponse | null> {
+async function checkDevToolsRateLimit(): Promise<void> {
     const clientIp = await getAppClientIp();
     let identifiers: [string, ...string[]] = [`ip:${clientIp}`];
 
@@ -45,11 +45,18 @@ async function checkDevToolsRateLimit(): Promise<service.CommandResponse | null>
     });
 
     if (!rateLimit.success)
-        return {
-            message: rateLimit.error ?? 'Unauthorized: Dev tools execution rate limit exceeded.',
-            success: false,
-        };
-    return null;
+        throw new Error(
+            rateLimit.error ?? 'Unauthorized: Dev tools execution rate limit exceeded.',
+        );
+}
+
+function createWriteAuthorization(): service.AuthorizeWrite {
+    let authorization: Promise<void> | undefined;
+
+    return () => {
+        if (!authorization) authorization = checkDevToolsRateLimit();
+        return authorization;
+    };
 }
 
 /**
@@ -59,23 +66,23 @@ export async function systemCommandAction(
     prevState: service.CommandResponse,
     formData: FormData,
 ): Promise<service.CommandResponse> {
-    if (!isDevToolsEnabled())
-        return { message: DEV_TOOLS_UNAVAILABLE_MESSAGE, success: false };
-
-    const rateLimitError = await checkDevToolsRateLimit();
-    if (rateLimitError) return rateLimitError;
+    if (!isDevToolsEnabled()) return { message: DEV_TOOLS_UNAVAILABLE_MESSAGE, success: false };
 
     if (!isDevToolsDatabaseTargetAllowed())
         return { message: DEV_TOOLS_DATABASE_TARGET_ERROR, success: false };
 
-    const command = formData.get('command') as string;
+    const commandValue = formData.get('command');
+    if (typeof commandValue !== 'string')
+        return { message: 'A valid command is required.', success: false };
+
+    const command = commandValue;
     const handler = COMMAND_REGISTRY[command];
 
     if (!handler) return { message: `Unknown Command: ${command}`, success: false };
 
     try {
         const supabase = await createAdminClient();
-        const result = await handler(supabase);
+        const result = await handler(supabase, createWriteAuthorization());
 
         revalidatePath('/');
         return result;
@@ -93,20 +100,18 @@ export async function fullResetAction(
     prevState: service.CommandResponse,
     formData: FormData,
 ): Promise<service.CommandResponse> {
-    if (!isDevToolsEnabled())
-        return { message: DEV_TOOLS_UNAVAILABLE_MESSAGE, success: false };
-
-    const rateLimitError = await checkDevToolsRateLimit();
-    if (rateLimitError) return rateLimitError;
+    if (!isDevToolsEnabled()) return { message: DEV_TOOLS_UNAVAILABLE_MESSAGE, success: false };
 
     if (!isDevToolsDatabaseTargetAllowed())
         return { message: DEV_TOOLS_DATABASE_TARGET_ERROR, success: false };
 
     try {
-        await runFullDatabaseSeed();
+        await runFullDatabaseSeed(checkDevToolsRateLimit);
         revalidatePath('/');
         return { message: 'Full Reset Complete', success: true };
-    } catch (e: unknown) {
-        return { message: 'Reset Failed', success: false };
+    } catch (error: unknown) {
+        console.error('[DevTools] Full reset failed:', error);
+        const message = error instanceof Error ? error.message : 'Operation Failed';
+        return { message: `Reset Failed: ${message}`, success: false };
     }
 }

@@ -12,6 +12,7 @@ describe('DevToolsRepository', () => {
     const mockQueryBuilder = {
         select: jest.fn().mockReturnThis(),
         insert: jest.fn().mockReturnThis(),
+        delete: jest.fn().mockReturnThis(),
         update: jest.fn().mockReturnThis(),
         in: jest.fn().mockReturnThis(),
         then: jest.fn((resolve: (value: unknown) => unknown) => resolve({ data: [], error: null })),
@@ -87,6 +88,18 @@ describe('DevToolsRepository', () => {
         expect(mockSupabase.from).toHaveBeenCalledWith('orders');
         expect(mockQueryBuilder.insert).toHaveBeenCalledWith(orders);
         expect(mockQueryBuilder.select).toHaveBeenCalled();
+        expect(result).toEqual(mockResult);
+    });
+
+    it('deleteOrders should delete only the specified order IDs', async () => {
+        const mockResult = { data: [{ id: 'order-1' }], error: null };
+        mockQueryBuilder.then.mockImplementationOnce((resolve) => resolve(mockResult));
+
+        const result = await repository.deleteOrders(mockSupabase, ['order-1']);
+
+        expect(mockSupabase.from).toHaveBeenCalledWith('orders');
+        expect(mockQueryBuilder.delete).toHaveBeenCalled();
+        expect(mockQueryBuilder.in).toHaveBeenCalledWith('id', ['order-1']);
         expect(result).toEqual(mockResult);
     });
 
