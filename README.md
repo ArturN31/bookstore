@@ -299,7 +299,7 @@ Zod validation and shared Supabase error utilities are used across important bou
 
 Tests in [__tests__/](__tests__/) cover app/components, domain actions/services/repositories/schemas, hooks, providers/reducers, and utilities. Framework and external-service mocks are in [__mocks__/](__mocks__/). The standard Jest suite excludes opt-in database integration tests.
 
-The local Supabase integration suites cover privacy behavior, commerce RPC role permissions, and checkout discount redemption. They require a running local Supabase stack and loopback endpoint; commands are `npm run test:db:privacy`, `npm run test:db:rpc-security`, and `npm run test:db:discount-redemption`. On October 26, 2026, all three suites passed locally (4 privacy tests, 2 RPC-permission tests, and 4 discount-redemption tests). The local migration history lists all five checked-in migrations as applied. This verifies the local Supabase environment only; deployed database migration state and policies were not inspected. There is no configured browser E2E suite, and mocks do not establish live Stripe delivery or deployed database correctness.
+The local Supabase integration suites cover privacy behavior, commerce RPC role permissions, checkout discount redemption, and repeat-run book generation in dev-tools. They require a running local Supabase stack and loopback endpoint; commands are `npm run test:db:privacy`, `npm run test:db:rpc-security`, `npm run test:db:discount-redemption`, and `npm run test:db:dev-tools-books`. On October 26, 2026, the first three suites passed locally (4 privacy tests, 2 RPC-permission tests, and 4 discount-redemption tests). The dev-tools book integration test passes against the local Supabase project. The local migration history lists all five checked-in migrations as applied. This verifies the local Supabase environment only; deployed database migration state and policies were not inspected. There is no configured browser E2E suite, and mocks do not establish live Stripe delivery or deployed database correctness.
 
 ### Current Coverage
 
@@ -349,6 +349,7 @@ $env:SUPABASE_INTEGRATION_SERVICE_KEY = "<local service-role key>"
 npm run test:db:privacy
 npm run test:db:rpc-security
 npm run test:db:discount-redemption
+npm run test:db:dev-tools-books
 ```
 
 The integration suites are restricted to loopback URLs and clean up their own fixtures. Do not point them at production or a customer database.
@@ -569,7 +570,13 @@ The roadmap lists remaining work based on the audited local checkout; implemente
   - [x] Return actionable outcomes to the dev-tools UI (inserted count, skipped collisions if intentionally supported, exhausted capacity, and failed stage); do not report success after unchecked insert errors or ignored `Promise.all` results.
   - [x] Add deterministic unit tests for canonical-key collisions, existing-database collisions, batch-internal duplicates, capacity exhaustion, exact-count behavior, sequential repeated generation, cleanup failures, and command error reporting.
   - [ ] Evaluate concurrent additive writes against local Supabase. Book title/author and discount code keys currently lack database uniqueness constraints, so preflight alone cannot prevent simultaneous duplicate writes; decide on a database-level guard after checking existing data.
-  - [ ] Add local Supabase integration tests that invoke the real generation commands repeatedly and verify no unique-constraint errors, no duplicate natural keys, correct inserted counts, preserved pre-existing rows, and cleanup of test fixtures.
+  - [ ] Add local Supabase repeat-run and fixture-preservation integration tests:
+    - [x] Books: exact inserted counts on repeat runs, distinct natural keys, pre-existing fixture preserved, and test rows cleaned up.
+    - [ ] Discounts.
+    - [ ] Reviews.
+    - [ ] Wishlists.
+    - [ ] Orders.
+    - [ ] Carts.
   - [ ] Keep full reset semantics separate from additive generation: reset may clear only the explicitly allowlisted development database; add commands must never clear or overwrite existing user-created data.
 
   **Generator/write-path inventory (2026-11-01):**
