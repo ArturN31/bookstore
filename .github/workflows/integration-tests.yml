@@ -52,8 +52,11 @@ jobs:
             - name: Run Checkout Discount Redemption Integration Tests
               run: npm run test:db:discount-redemption
 
-            - name: Run Dev Tools Unique Books Seeding Integration Tests
+            - name: Run Dev Tools Unique Books Seeding Integration Test
               run: npm run test:db:dev-tools-books
+
+            - name: Run Dev Tools Unique Discount Seeding Integration Test
+              run: npm run test:db:dev-tools-discounts
 
             - name: Stop Local Supabase Instance
               if: always()
