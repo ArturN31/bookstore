@@ -299,7 +299,7 @@ Zod validation and shared Supabase error utilities are used across important bou
 
 Tests in [__tests__/](__tests__/) cover app/components, domain actions/services/repositories/schemas, hooks, providers/reducers, and utilities. Framework and external-service mocks are in [__mocks__/](__mocks__/). The standard Jest suite excludes opt-in database integration tests.
 
-The local Supabase integration suites cover privacy behavior, commerce RPC role permissions, checkout discount redemption, and repeat-run book, discount, review, and wishlist generation in dev-tools. They require a running local Supabase stack and loopback endpoint; commands are `npm run test:db:privacy`, `npm run test:db:rpc-security`, `npm run test:db:discount-redemption`, `npm run test:db:dev-tools-books`, `npm run test:db:dev-tools-discounts`, `npm run test:db:dev-tools-reviews`, and `npm run test:db:dev-tools-wishlists`. On October 26, 2026, the first three suites passed locally (4 privacy tests, 2 RPC-permission tests, and 4 discount-redemption tests). The dev-tools repeat-run integration tests for books, discounts, reviews, and wishlists pass against local Supabase. The local migration history lists all five checked-in migrations as applied. This verifies the local Supabase environment only; deployed database migration state and policies were not inspected. There is no configured browser E2E suite, and mocks do not establish live Stripe delivery or deployed database correctness.
+The local Supabase integration suites cover privacy behavior, commerce RPC role permissions, checkout discount redemption, and repeat-run book, discount, review, and wishlist generation in dev-tools, plus additive order generation. They require a running local Supabase stack and loopback endpoint; commands are `npm run test:db:privacy`, `npm run test:db:rpc-security`, `npm run test:db:discount-redemption`, `npm run test:db:dev-tools-books`, `npm run test:db:dev-tools-discounts`, `npm run test:db:dev-tools-reviews`, `npm run test:db:dev-tools-wishlists`, and `npm run test:db:dev-tools-orders`. On October 26, 2026, the first three suites passed locally (4 privacy tests, 2 RPC-permission tests, and 4 discount-redemption tests). The dev-tools book, discount, review, wishlist, and order integration tests are validated against local Supabase. The local migration history lists all five checked-in migrations as applied. This verifies the local Supabase environment only; deployed database migration state and policies were not inspected. There is no configured browser E2E suite, and mocks do not establish live Stripe delivery or deployed database correctness.
 
 ### Current Coverage
 
@@ -353,6 +353,7 @@ npm run test:db:dev-tools-books
 npm run test:db:dev-tools-discounts
 npm run test:db:dev-tools-reviews
 npm run test:db:dev-tools-wishlists
+npm run test:db:dev-tools-orders
 ```
 
 The integration suites are restricted to loopback URLs and clean up their own fixtures. Do not point them at production or a customer database.
@@ -578,7 +579,7 @@ The roadmap lists remaining work based on the audited local checkout; implemente
     - [x] Discounts: exact inserted counts on repeat runs, distinct normalized codes, pre-existing fixture preserved, and test rows cleaned up.
     - [x] Reviews: exact inserted counts on repeat runs, distinct user/book pairs, pre-existing fixture preserved, and test rows cleaned up.
     - [x] Wishlists: exact inserted counts on repeat runs, distinct user/book pairs, pre-existing fixture preserved, and test rows cleaned up.
-    - [ ] Orders.
+    - [x] Orders: complete order/item batches use current database users/books and only test-owned fixtures are cleaned up.
     - [ ] Carts.
   - [ ] Keep full reset semantics separate from additive generation: reset may clear only the explicitly allowlisted development database; add commands must never clear or overwrite existing user-created data.
 

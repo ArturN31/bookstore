@@ -61,8 +61,11 @@ jobs:
             - name: Run Dev Tools Unique Reviews Seeding Integration Test
               run: npm run test:db:dev-tools-reviews
 
-            - name: Run Dev Tools Unique Wishlists Seeding Integration Test
-              run: npm run test:db:dev-tools-wishlists`
+            - name: Run Dev Tools Wishlists Generation Integration Test
+              run: npm run test:db:dev-tools-wishlists
+
+            - name: Run Dev Tools Order Generation Integration Test
+              run: npm run test:db:dev-tools-orders
 
             - name: Stop Local Supabase Instance
               if: always()

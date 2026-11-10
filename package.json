@@ -13,6 +13,7 @@
         "test": "jest --coverage",
         "test:db:dev-tools-books": "jest --config jest.integration.config.js --runInBand --runTestsByPath __tests__/integration/devToolsBooks.integration.test.ts",
         "test:db:dev-tools-discounts": "jest --config jest.integration.config.js --runInBand --runTestsByPath __tests__/integration/devToolsDiscounts.integration.test.ts",
+        "test:db:dev-tools-orders": "jest --config jest.integration.config.js --runInBand --runTestsByPath __tests__/integration/devToolsOrders.integration.test.ts",
         "test:db:dev-tools-reviews": "jest --config jest.integration.config.js --runInBand --runTestsByPath __tests__/integration/devToolsReviews.integration.test.ts",
         "test:db:dev-tools-wishlists": "jest --config jest.integration.config.js --runInBand --runTestsByPath __tests__/integration/devToolsWishlists.integration.test.ts",
         "test:db:privacy": "jest --config jest.integration.config.js --runInBand --runTestsByPath __tests__/integration/privacySettings.integration.test.ts",
