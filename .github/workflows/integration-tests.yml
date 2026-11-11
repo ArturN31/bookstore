@@ -67,6 +67,9 @@ jobs:
             - name: Run Dev Tools Order Generation Integration Test
               run: npm run test:db:dev-tools-orders
 
+            - name: Run Dev Tools Cart Generation Integration Test
+              run: npm run test:db:dev-tools-carts
+
             - name: Stop Local Supabase Instance
               if: always()
               run: supabase stop

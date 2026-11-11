@@ -299,7 +299,7 @@ Zod validation and shared Supabase error utilities are used across important bou
 
 Tests in [__tests__/](__tests__/) cover app/components, domain actions/services/repositories/schemas, hooks, providers/reducers, and utilities. Framework and external-service mocks are in [__mocks__/](__mocks__/). The standard Jest suite excludes opt-in database integration tests.
 
-The local Supabase integration suites cover privacy behavior, commerce RPC role permissions, checkout discount redemption, and repeat-run book, discount, review, and wishlist generation in dev-tools, plus additive order generation. They require a running local Supabase stack and loopback endpoint; commands are `npm run test:db:privacy`, `npm run test:db:rpc-security`, `npm run test:db:discount-redemption`, `npm run test:db:dev-tools-books`, `npm run test:db:dev-tools-discounts`, `npm run test:db:dev-tools-reviews`, `npm run test:db:dev-tools-wishlists`, and `npm run test:db:dev-tools-orders`. On October 26, 2026, the first three suites passed locally (4 privacy tests, 2 RPC-permission tests, and 4 discount-redemption tests). The dev-tools book, discount, review, wishlist, and order integration tests are validated against local Supabase. The local migration history lists all five checked-in migrations as applied. This verifies the local Supabase environment only; deployed database migration state and policies were not inspected. There is no configured browser E2E suite, and mocks do not establish live Stripe delivery or deployed database correctness.
+The local Supabase integration suites cover privacy behavior, commerce RPC role permissions, checkout discount redemption, and repeat-run book, discount, review, and wishlist generation in dev-tools, plus additive order and cart generation. They require a running local Supabase stack and loopback endpoint; commands are `npm run test:db:privacy`, `npm run test:db:rpc-security`, `npm run test:db:discount-redemption`, `npm run test:db:dev-tools-books`, `npm run test:db:dev-tools-discounts`, `npm run test:db:dev-tools-reviews`, `npm run test:db:dev-tools-wishlists`, `npm run test:db:dev-tools-orders`, and `npm run test:db:dev-tools-carts`. On October 26, 2026, the first three suites passed locally (4 privacy tests, 2 RPC-permission tests, and 4 discount-redemption tests). The dev-tools book, discount, review, wishlist, order, and cart integration tests are validated against local Supabase. The local migration history lists all five checked-in migrations as applied. This verifies the local Supabase environment only; deployed database migration state and policies were not inspected. There is no configured browser E2E suite, and mocks do not establish live Stripe delivery or deployed database correctness.
 
 ### Current Coverage
 
@@ -350,6 +350,7 @@ npm run test:db:privacy
 npm run test:db:rpc-security
 npm run test:db:discount-redemption
 npm run test:db:dev-tools-books
+npm run test:db:dev-tools-carts
 npm run test:db:dev-tools-discounts
 npm run test:db:dev-tools-reviews
 npm run test:db:dev-tools-wishlists
@@ -580,7 +581,7 @@ The roadmap lists remaining work based on the audited local checkout; implemente
     - [x] Reviews: exact inserted counts on repeat runs, distinct user/book pairs, pre-existing fixture preserved, and test rows cleaned up.
     - [x] Wishlists: exact inserted counts on repeat runs, distinct user/book pairs, pre-existing fixture preserved, and test rows cleaned up.
     - [x] Orders: complete order/item batches use current database users/books and only test-owned fixtures are cleaned up.
-    - [ ] Carts.
+    - [x] Carts: exact cart/item batches use current database users/books, preserve a pre-existing cart, and clean up test-owned rows.
   - [ ] Keep full reset semantics separate from additive generation: reset may clear only the explicitly allowlisted development database; add commands must never clear or overwrite existing user-created data.
 
   **Generator/write-path inventory (2026-11-01):**
@@ -601,6 +602,7 @@ The roadmap lists remaining work based on the audited local checkout; implemente
   **Rate-limit contract:** One user-initiated command is one write operation. Validate input, plan candidates, calculate capacity, and perform preflight reads before checking the limiter. If these steps fail, do not consume an allowance. Check the 10/hour limiter at most once per command, immediately before the first database write; internal batches or retries do not check it again. Keep enforcement fail-closed.
 
   **Execution order:** (1) inventory/schema audit (complete); (2) canonical keys and exact-count/rate-limit behavior (complete); (3) bounded, pure candidate planning and capacity reporting (complete); (4) additive-command existing-key preflight and current relationship IDs (complete); (5) single write authorization boundary, staged failure reporting, compensation, and write-result checks (complete); (6) add deterministic unit coverage; (7) add local-Supabase repeat-run and fixture-preservation integration tests; (8) validate dev-tools UI feedback and reset/additive separation. Keep each numbered stage as a separate task/PR-sized change; do not begin the next stage until its predecessor is reviewed and tested.
+
 - [ ] Add structured logs, metrics, traces, alerts, and durable security audit delivery.
 
 ### 4. Experience and Accessibility
