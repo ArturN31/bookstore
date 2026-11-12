@@ -123,4 +123,37 @@ integrationDescribe('Dev-tools discount generation integration', () => {
         assertNoError(error);
         expect(fixture).toEqual({ id: fixtureId, code: fixtureCode });
     });
+
+    it('rejects concurrent discount codes that differ only by case and surrounding spaces', async () => {
+        const code = `${generatedCodePrefix}_RACE`;
+        const ids = [randomUUID(), randomUUID()];
+        const rows = [code, ` ${code.toLowerCase()} `].map((candidateCode, index) => ({
+            id: ids[index],
+            code: candidateCode,
+            type: 'percentage' as const,
+            value: 10,
+            is_active: true,
+            start_date: '2026-01-01T00:00:00.000Z',
+            end_date: '2027-01-01T00:00:00.000Z',
+        }));
+
+        try {
+            const results = await Promise.all(
+                rows.map((row) => admin.from('discounts').insert(row).select('id')),
+            );
+            const inserted = results.filter((result) => !result.error);
+            const rejected = results.filter((result) => result.error);
+
+            expect(inserted).toHaveLength(1);
+            expect(rejected).toHaveLength(1);
+            expect(rejected[0].error?.code).toBe('23505');
+
+            const { data, error } = await admin.from('discounts').select('id').in('id', ids);
+            assertNoError(error);
+            expect(data).toHaveLength(1);
+        } finally {
+            const { error } = await admin.from('discounts').delete().in('id', ids);
+            assertNoError(error);
+        }
+    });
 });
