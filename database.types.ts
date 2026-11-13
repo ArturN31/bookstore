@@ -629,6 +629,20 @@ export type Database = {
         Args: { p_order_id: string; p_user_id: string }
         Returns: Json
       }
+      insert_dev_tool_books: {
+        Args: { p_books: Json }
+        Returns: {
+          author: string
+          id: string
+          title: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "books"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_public_profile: {
         Args: { target_username: string }
         Returns: {

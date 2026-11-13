@@ -153,4 +153,55 @@ integrationDescribe('Dev-tools book generation integration', () => {
             author: fixtureAuthor,
         });
     });
+
+    it('serializes concurrent additive writes with the same normalized book key', async () => {
+        const title = `${fixtureId} Concurrency Probe`;
+        const author = 'Concurrency Probe Author';
+        const ids = [randomUUID(), randomUUID()];
+        const createBook = (id: string, candidateTitle: string) => ({
+            id,
+            created_at: '2026-01-01T00:00:00.000Z',
+            updated_at: '2026-01-01T00:00:00.000Z',
+            title: candidateTitle,
+            author,
+            genre: 'Integration',
+            publisher: 'Dev Tools Tests',
+            publication_date: '2020-01-01',
+            price: '10.00',
+            description: 'Temporary concurrent book fixture.',
+            format: 'Paperback',
+            page_count: 100,
+            image_url: '',
+            stock_quantity: 1,
+            is_active: true,
+            sales_count: 0,
+            stripe_product_id: null,
+            stripe_price_id: null,
+        });
+        const rows = [
+            createBook(ids[0], title),
+            createBook(ids[1], ` ${title.toUpperCase()} `),
+        ];
+
+        try {
+            const results = await Promise.all(
+                rows.map((book) =>
+                    admin.rpc('insert_dev_tool_books', { p_books: [book] }),
+                ),
+            );
+            const inserted = results.filter((result) => !result.error);
+            const rejected = results.filter((result) => result.error);
+
+            expect(inserted).toHaveLength(1);
+            expect(rejected).toHaveLength(1);
+            expect(rejected[0].error?.code).toBe('23505');
+
+            const { data, error } = await admin.from('books').select('id').in('id', ids);
+            assertNoError(error);
+            expect(data).toHaveLength(1);
+        } finally {
+            const { error } = await admin.from('books').delete().in('id', ids);
+            assertNoError(error);
+        }
+    });
 });

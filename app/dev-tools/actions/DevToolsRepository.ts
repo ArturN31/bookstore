@@ -1,3 +1,4 @@
+import { Json } from '@/database.types';
 import { SafeQueryResult, safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { SupabaseClient } from '@supabase/supabase-js';
 
@@ -204,7 +205,9 @@ export async function insertWishlistEntries(
 
 export async function insertBooks(
     supabase: SupabaseClient,
-    books: unknown[],
+    books: Json[],
 ): Promise<SafeQueryResult<unknown[]>> {
-    return safeSupabaseQuery(async () => supabase.from('books').insert(books).select());
+    return safeSupabaseQuery(async () =>
+        supabase.rpc('insert_dev_tool_books', { p_books: books }),
+    );
 }

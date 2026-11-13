@@ -18,8 +18,10 @@ describe('DevToolsRepository', () => {
         then: jest.fn((resolve: (value: unknown) => unknown) => resolve({ data: [], error: null })),
     };
 
+    const mockRpc = jest.fn();
     const mockSupabase = {
         from: jest.fn().mockReturnValue(mockQueryBuilder),
+        rpc: mockRpc,
     } as unknown as SupabaseClient;
 
     beforeEach(() => {
@@ -273,14 +275,12 @@ describe('DevToolsRepository', () => {
     });
 
     it('insertBooks should execute query with books payload', async () => {
-        const mockResult = { data: [{ id: '2' }], error: null };
-        mockQueryBuilder.then.mockImplementationOnce((resolve) => resolve(mockResult));
+        const mockResult = { data: [{ id: '2', title: 'New Book', author: 'Writer' }], error: null };
+        mockRpc.mockResolvedValueOnce(mockResult);
 
-        const booksData = [{ title: 'New Book' }];
+        const booksData = [{ title: 'New Book', author: 'Writer' }];
         const result = await repository.insertBooks(mockSupabase, booksData);
-        expect(mockSupabase.from).toHaveBeenCalledWith('books');
-        expect(mockQueryBuilder.insert).toHaveBeenCalledWith(booksData);
-        expect(mockQueryBuilder.select).toHaveBeenCalled();
+        expect(mockRpc).toHaveBeenCalledWith('insert_dev_tool_books', { p_books: booksData });
         expect(result).toEqual(mockResult);
     });
 });
