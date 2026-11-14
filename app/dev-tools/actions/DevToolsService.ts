@@ -52,6 +52,62 @@ const describeError = (error: unknown): string =>
 const assertCleanupSucceeded = (results: Array<[string, SafeQueryResult<unknown[]>]>): string[] =>
     results.flatMap(([stage, result]) => (result.error ? [`${stage}: ${result.error}`] : []));
 
+const assertSalesBatchReferences = (
+    orders: OrderDB[],
+    items: OrderItemDB[],
+    orderDiscounts: Array<{ id?: string; order_id: string; discount_id: string }>,
+    books: BookDB[],
+    users: Array<{ id: string }>,
+    discounts: DiscountDB[],
+): void => {
+    const uniqueIds = (ids: string[], stage: string) => {
+        if (new Set(ids).size !== ids.length) throw new Error(`${stage} contain duplicate IDs.`);
+    };
+    const orderIds = new Set(orders.map(({ id }) => id));
+    const bookIds = new Set(books.map(({ id }) => id));
+    const userIds = new Set(users.map(({ id }) => id));
+    const discountIds = new Set(discounts.map(({ id }) => id));
+
+    uniqueIds(
+        orders.map(({ id }) => id),
+        'Order batch',
+    );
+    uniqueIds(
+        items.map(({ id }) => id),
+        'Order-item batch',
+    );
+    uniqueIds(
+        orderDiscounts.flatMap(({ id }) => (id ? [id] : [])),
+        'Order-discount batch',
+    );
+
+    if (orders.some(({ user_id }) => !userIds.has(user_id)))
+        throw new Error('Order batch contains a user outside the preflighted users.');
+
+    if (
+        items.some(
+            ({ order_id, book_id, quantity, price }) =>
+                !orderIds.has(order_id) ||
+                !bookIds.has(book_id) ||
+                !Number.isInteger(quantity) ||
+                quantity < 1 ||
+                !Number.isFinite(price) ||
+                price < 0,
+        )
+    )
+        throw new Error('Order-item batch contains an invalid order, book, quantity, or price.');
+
+    if (
+        orderDiscounts.some(
+            ({ order_id, discount_id }) => !orderIds.has(order_id) || !discountIds.has(discount_id),
+        )
+    )
+        throw new Error('Order-discount batch contains an invalid order or discount reference.');
+
+    if (new Set(orderDiscounts.map(({ order_id }) => order_id)).size !== orderDiscounts.length)
+        throw new Error('Order batch contains more than one discount for an order.');
+};
+
 export const addSales: CommandHandler = async (supabase, authorizeWrite) => {
     const [booksRes, discountsRes, usersRes] = await Promise.all([
         repository.fetchAllBooks(supabase),
@@ -88,6 +144,7 @@ export const addSales: CommandHandler = async (supabase, authorizeWrite) => {
         throw new Error(
             `Order-item planning returned ${items.length} of ${DEV_CONFIG.ORDER_ITEM_COUNT} items.`,
         );
+    assertSalesBatchReferences(orders, items, orderDiscounts, books, users, discounts);
 
     await authorizeWrite();
 

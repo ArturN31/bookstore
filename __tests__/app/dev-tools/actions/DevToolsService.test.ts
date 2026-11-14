@@ -24,12 +24,32 @@ jest.mock('@/utils/db/dbSeed/generateReview');
 jest.mock('@/utils/db/dbSeed/generateDiscounts');
 jest.mock('@/utils/db/dbSeed/generateBook');
 
-const createSalesBatch = (includeDiscount = false): ReturnType<typeof generateOrdersAndItems> =>
-    ({
-        orders: Array.from({ length: 10 }, (_, index) => ({ id: `order-${index}` })),
-        items: Array.from({ length: 10 }, (_, index) => ({ id: `item-${index}` })),
-        orderDiscounts: includeDiscount ? [{ id: 'order-discount-1' }] : [],
-    }) as unknown as ReturnType<typeof generateOrdersAndItems>;
+const createSalesBatch = (includeDiscount = false): ReturnType<typeof generateOrdersAndItems> => {
+    const orders = Array.from({ length: 10 }, (_, index) => ({
+        id: `order-${index}`,
+        user_id: 'current-user',
+    }));
+
+    return {
+        orders: orders as ReturnType<typeof generateOrdersAndItems>['orders'],
+        items: orders.map(({ id }, index) => ({
+            id: `item-${index}`,
+            order_id: id,
+            book_id: 'book-1',
+            quantity: 1,
+            price: 10,
+        })) as ReturnType<typeof generateOrdersAndItems>['items'],
+        orderDiscounts: includeDiscount
+            ? [
+                  {
+                      id: 'order-discount-1',
+                      order_id: orders[0].id,
+                      discount_id: 'discount-1',
+                  },
+              ]
+            : [],
+    };
+};
 
 const createdRows = (count: number, prefix: string) =>
     Array.from({ length: count }, (_, index) => ({ id: `${prefix}-${index}` }));
@@ -144,6 +164,28 @@ describe('DevToolsService', () => {
             expect(repository.insertOrders).toHaveBeenCalled();
             expect(repository.insertOrderItems).toHaveBeenCalled();
             expect(repository.insertOrderDiscounts).toHaveBeenCalled();
+        });
+
+        it('rejects invalid planned references before authorizing or writing', async () => {
+            jest.mocked(repository.fetchAllBooks).mockResolvedValueOnce({
+                data: [{ id: 'book-1' }],
+                error: null,
+            } as unknown as Awaited<ReturnType<typeof repository.fetchAllBooks>>);
+            jest.mocked(repository.fetchAllDiscounts).mockResolvedValueOnce({
+                data: [],
+                error: null,
+            } as unknown as Awaited<ReturnType<typeof repository.fetchAllDiscounts>>);
+            const batch = createSalesBatch();
+            batch.items[0].book_id = 'missing-book';
+            jest.mocked(generateOrdersAndItems).mockReturnValueOnce(batch);
+            const authorizeWrite = jest.fn().mockResolvedValue(undefined);
+
+            await expect(service.addSales(supabase, authorizeWrite)).rejects.toThrow(
+                'Order-item batch contains an invalid order, book, quantity, or price.',
+            );
+
+            expect(authorizeWrite).not.toHaveBeenCalled();
+            expect(repository.insertOrders).not.toHaveBeenCalled();
         });
 
         it('should handle null discounts data gracefully and default to empty array', async () => {
