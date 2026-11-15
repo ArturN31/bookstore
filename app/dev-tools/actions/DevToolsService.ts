@@ -10,16 +10,20 @@ import {
     planUniqueCandidates,
 } from '@/utils/db/dbSeed/candidatePlanning';
 import * as repository from './DevToolsRepository';
-import { SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
+import {
+    assertCleanupSucceeded,
+    assertInsertedCount,
+    assertSalesBatchReferences,
+    describeError,
+    shuffle,
+} from './DevToolsServiceUtils';
 
 const DEV_CONFIG = {
     BOOK_COUNT: 50,
     REVIEW_COUNT: 50,
     USER_COUNT: 15,
-    CART_ITEM_COUNT: 10,
     ORDERS_COUNT: 10,
     ORDER_ITEM_COUNT: 10,
-    ORDER_DISCOUNT_COUNT: 10,
     DISCOUNT_COUNT: 5,
     WISHLIST_COUNT: 10,
     STOCK_PURGE_RATIO: 0.5,
@@ -32,83 +36,15 @@ export type CommandHandler = (
     authorizeWrite: AuthorizeWrite,
 ) => Promise<CommandResponse>;
 
-const assertInsertedCount = <T>(
-    result: SafeQueryResult<T[]>,
-    expectedCount: number,
-    stage: string,
-): T[] => {
-    if (result.error) throw new Error(`${stage} insert failed: ${result.error}`);
-    if (!result.data) throw new Error(`${stage} insert returned no data.`);
-    if (result.data.length !== expectedCount)
-        throw new Error(
-            `${stage} insert returned ${result.data.length} rows; expected ${expectedCount}.`,
-        );
-    return result.data;
+type SalesContext = {
+    books: BookDB[];
+    discounts: DiscountDB[];
+    users: Array<{ id: string }>;
 };
 
-const describeError = (error: unknown): string =>
-    error instanceof Error ? error.message : 'Unknown error';
+type SalesBatch = ReturnType<typeof generateOrdersAndItems>;
 
-const assertCleanupSucceeded = (results: Array<[string, SafeQueryResult<unknown[]>]>): string[] =>
-    results.flatMap(([stage, result]) => (result.error ? [`${stage}: ${result.error}`] : []));
-
-const assertSalesBatchReferences = (
-    orders: OrderDB[],
-    items: OrderItemDB[],
-    orderDiscounts: Array<{ id?: string; order_id: string; discount_id: string }>,
-    books: BookDB[],
-    users: Array<{ id: string }>,
-    discounts: DiscountDB[],
-): void => {
-    const uniqueIds = (ids: string[], stage: string) => {
-        if (new Set(ids).size !== ids.length) throw new Error(`${stage} contain duplicate IDs.`);
-    };
-    const orderIds = new Set(orders.map(({ id }) => id));
-    const bookIds = new Set(books.map(({ id }) => id));
-    const userIds = new Set(users.map(({ id }) => id));
-    const discountIds = new Set(discounts.map(({ id }) => id));
-
-    uniqueIds(
-        orders.map(({ id }) => id),
-        'Order batch',
-    );
-    uniqueIds(
-        items.map(({ id }) => id),
-        'Order-item batch',
-    );
-    uniqueIds(
-        orderDiscounts.flatMap(({ id }) => (id ? [id] : [])),
-        'Order-discount batch',
-    );
-
-    if (orders.some(({ user_id }) => !userIds.has(user_id)))
-        throw new Error('Order batch contains a user outside the preflighted users.');
-
-    if (
-        items.some(
-            ({ order_id, book_id, quantity, price }) =>
-                !orderIds.has(order_id) ||
-                !bookIds.has(book_id) ||
-                !Number.isInteger(quantity) ||
-                quantity < 1 ||
-                !Number.isFinite(price) ||
-                price < 0,
-        )
-    )
-        throw new Error('Order-item batch contains an invalid order, book, quantity, or price.');
-
-    if (
-        orderDiscounts.some(
-            ({ order_id, discount_id }) => !orderIds.has(order_id) || !discountIds.has(discount_id),
-        )
-    )
-        throw new Error('Order-discount batch contains an invalid order or discount reference.');
-
-    if (new Set(orderDiscounts.map(({ order_id }) => order_id)).size !== orderDiscounts.length)
-        throw new Error('Order batch contains more than one discount for an order.');
-};
-
-export const addSales: CommandHandler = async (supabase, authorizeWrite) => {
+const fetchSalesContext = async (supabase: SupabaseClient): Promise<SalesContext> => {
     const [booksRes, discountsRes, usersRes] = await Promise.all([
         repository.fetchAllBooks(supabase),
         repository.fetchAllDiscounts(supabase),
@@ -119,15 +55,19 @@ export const addSales: CommandHandler = async (supabase, authorizeWrite) => {
     if (discountsRes.error) throw new Error(discountsRes.error);
     if (usersRes.error) throw new Error(usersRes.error);
 
-    const books = booksRes.data as BookDB[];
-    const discounts = (discountsRes.data as DiscountDB[]) || [];
+    const books = booksRes.data;
+    const discounts = discountsRes.data ?? [];
     const users = usersRes.data;
 
     if (!books || books.length === 0) throw new Error('Seed Failure: Catalog is empty.');
     if (!users) throw new Error('Seed Failure: User lookup returned no data.');
     if (users.length === 0) throw new Error('Seed Failure: No users are available for orders.');
 
-    const { orders, items, orderDiscounts } = generateOrdersAndItems(
+    return { books, discounts, users };
+};
+
+const planSalesBatch = ({ books, discounts, users }: SalesContext): SalesBatch => {
+    const batch = generateOrdersAndItems(
         books,
         users,
         DEV_CONFIG.ORDERS_COUNT,
@@ -136,18 +76,28 @@ export const addSales: CommandHandler = async (supabase, authorizeWrite) => {
         DEV_CONFIG.DISCOUNT_COUNT,
     );
 
-    if (orders.length !== DEV_CONFIG.ORDERS_COUNT)
+    if (batch.orders.length !== DEV_CONFIG.ORDERS_COUNT)
         throw new Error(
-            `Order planning returned ${orders.length} of ${DEV_CONFIG.ORDERS_COUNT} orders.`,
+            `Order planning returned ${batch.orders.length} of ${DEV_CONFIG.ORDERS_COUNT} orders.`,
         );
-    if (items.length !== DEV_CONFIG.ORDER_ITEM_COUNT)
+    if (batch.items.length !== DEV_CONFIG.ORDER_ITEM_COUNT)
         throw new Error(
-            `Order-item planning returned ${items.length} of ${DEV_CONFIG.ORDER_ITEM_COUNT} items.`,
+            `Order-item planning returned ${batch.items.length} of ${DEV_CONFIG.ORDER_ITEM_COUNT} items.`,
         );
-    assertSalesBatchReferences(orders, items, orderDiscounts, books, users, discounts);
+    assertSalesBatchReferences(
+        batch.orders,
+        batch.items,
+        batch.orderDiscounts,
+        books,
+        users,
+        discounts,
+    );
 
-    await authorizeWrite();
+    return batch;
+};
 
+const insertSalesBatch = async (supabase: SupabaseClient, batch: SalesBatch): Promise<void> => {
+    const { orders, items, orderDiscounts } = batch;
     const orderIds = orders.map(({ id }) => id);
     const orderResult = await repository.insertOrders(supabase, orders);
     if (orderResult.error)
@@ -210,6 +160,14 @@ export const addSales: CommandHandler = async (supabase, authorizeWrite) => {
             `Order generation failed: ${describeError(error)}.${previousStages}${cleanupStatus}`,
         );
     }
+};
+
+export const addSales: CommandHandler = async (supabase, authorizeWrite) => {
+    const context = await fetchSalesContext(supabase);
+    const batch = planSalesBatch(context);
+
+    await authorizeWrite();
+    await insertSalesBatch(supabase, batch);
 
     return {
         message: `Success: ${DEV_CONFIG.ORDERS_COUNT} Orders injected.`,
@@ -237,9 +195,7 @@ export const stockPurge: CommandHandler = async (supabase, authorizeWrite) => {
     if (fetchErr) throw new Error(fetchErr);
     if (!books?.length) throw new Error('Inventory lookup returned no books.');
 
-    const targetIds = books
-        .slice()
-        .sort(() => 0.5 - Math.random())
+    const targetIds = shuffle(books)
         .slice(0, Math.max(1, Math.floor(books.length * DEV_CONFIG.STOCK_PURGE_RATIO)))
         .map((b: { id: string }) => b.id);
 
@@ -274,9 +230,9 @@ export const reviewBomb: CommandHandler = async (supabase, authorizeWrite) => {
         throw new Error('Seed Error: Required data for reviews is missing.');
 
     const reviews = generateReviewsArray(
-        books as BookDB[],
+        books,
         DEV_CONFIG.REVIEW_COUNT,
-        users as UserDB[],
+        users,
         existingReviewsRes.data.map(({ user_id, book_id }) => naturalPairKey(user_id, book_id)),
     );
 
@@ -288,6 +244,107 @@ export const reviewBomb: CommandHandler = async (supabase, authorizeWrite) => {
         message: `Social Proof: ${insertedReviews.length} reviews distributed among ${users.length} profiles.`,
         success: true,
     };
+};
+
+type PlannedCart = {
+    userId: string;
+    books: Array<{ bookId: string; quantity: number }>;
+};
+
+const planCartItems = (
+    targetUsers: Array<{ id: string }>,
+    books: Array<{ id: string }>,
+): PlannedCart[] =>
+    targetUsers.map((user) => {
+        const itemCount = faker.number.int({
+            min: 1,
+            max: Math.min(3, books.length),
+        });
+        const selectedBooks = shuffle(books).slice(0, itemCount);
+        return {
+            userId: user.id,
+            books: selectedBooks.map((book) => ({
+                bookId: book.id,
+                quantity: faker.number.int({ min: 1, max: 2 }),
+            })),
+        };
+    });
+
+const createCartItemRows = (carts: Array<{ id: string; user_id: string }>, plan: PlannedCart[]) => {
+    const itemsByUser = new Map(plan.map(({ userId, books: items }) => [userId, items]));
+
+    return carts.flatMap((cart) => {
+        const userItems = itemsByUser.get(cart.user_id);
+        if (!userItems)
+            throw new Error(`Inserted cart ${cart.id} does not match the preflighted users.`);
+
+        return userItems.map(({ bookId, quantity }) => ({
+            cart_id: cart.id,
+            book_id: bookId,
+            quantity,
+        }));
+    });
+};
+
+const cleanupCartBatch = async (
+    supabase: SupabaseClient,
+    cartIds: string[],
+): Promise<string[]> => {
+    const itemCleanup = await repository.deleteShoppingCartItemsForCarts(supabase, cartIds);
+    const cartCleanup = await repository.deleteShoppingCarts(supabase, cartIds);
+
+    return assertCleanupSucceeded([
+        ['cart-item cleanup', itemCleanup],
+        ['cart cleanup', cartCleanup],
+    ]);
+};
+
+const insertCartBatch = async (
+    supabase: SupabaseClient,
+    targetUsers: Array<{ id: string }>,
+    plannedItems: PlannedCart[],
+): Promise<Array<{ id: string; user_id: string }>> => {
+    const { data: carts, error: cartErr } = await repository.insertShoppingCarts(
+        supabase,
+        targetUsers.map(({ id }) => ({ user_id: id })),
+    );
+
+    if (cartErr || !carts) {
+        throw new Error(
+            `Cart insert failed: ${cartErr || 'Cart insert error'}; no cart IDs were confirmed, so verify whether records were committed before retrying.`,
+        );
+    }
+
+    const insertedUserIds = carts.map(({ user_id }) => user_id);
+    if (
+        carts.length !== targetUsers.length ||
+        new Set(insertedUserIds).size !== targetUsers.length ||
+        targetUsers.some(({ id }) => !insertedUserIds.includes(id))
+    ) {
+        const confirmedCartIds = carts.map(({ id }) => id);
+        const rollbackErrors = await cleanupCartBatch(supabase, confirmedCartIds);
+        const rollbackError = rollbackErrors.length
+            ? ` Cleanup was incomplete (${rollbackErrors.join('; ')}); verify these records before retrying.`
+            : ' Inserted carts were rolled back.';
+        throw new Error(
+            `Cart insert returned ${carts.length} rows that did not match the ${targetUsers.length} planned users.${rollbackError} Verify for unconfirmed records before retrying.`,
+        );
+    }
+
+    try {
+        const cartItems = createCartItemRows(carts, plannedItems);
+        const itemRes = await repository.insertShoppingCartItems(supabase, cartItems);
+        assertInsertedCount(itemRes, cartItems.length, 'Cart item');
+    } catch (error: unknown) {
+        const cartIds = carts.map(({ id }) => id);
+        const cleanupErrors = await cleanupCartBatch(supabase, cartIds);
+        const cleanupStatus = cleanupErrors.length
+            ? ` Cleanup was incomplete (${cleanupErrors.join('; ')}); verify these records before retrying.`
+            : ' Generated carts were rolled back.';
+        throw new Error(`Cart generation failed: ${describeError(error)}.${cleanupStatus}`);
+    }
+
+    return carts;
 };
 
 export const addCarts: CommandHandler = async (supabase, authorizeWrite) => {
@@ -309,94 +366,11 @@ export const addCarts: CommandHandler = async (supabase, authorizeWrite) => {
             `Cart planning requires ${DEV_CONFIG.USER_COUNT} users; only ${users.length} are available.`,
         );
 
-    const targetUsers = users
-        .slice()
-        .sort(() => 0.5 - Math.random())
-        .slice(0, DEV_CONFIG.USER_COUNT);
-    const plannedItems = targetUsers.map((user) => {
-        const itemCount = faker.number.int({
-            min: 1,
-            max: Math.min(3, books.length),
-        });
-        const selectedBooks = books
-            .slice()
-            .sort(() => 0.5 - Math.random())
-            .slice(0, itemCount);
-        return {
-            userId: user.id,
-            books: selectedBooks.map((book) => ({
-                bookId: book.id,
-                quantity: faker.number.int({ min: 1, max: 2 }),
-            })),
-        };
-    });
+    const targetUsers = shuffle(users).slice(0, DEV_CONFIG.USER_COUNT);
+    const plannedItems = planCartItems(targetUsers, books);
+
     await authorizeWrite();
-    const { data: carts, error: cartErr } = await repository.insertShoppingCarts(
-        supabase,
-        targetUsers.map(({ id }) => ({ user_id: id })),
-    );
-
-    if (cartErr || !carts) {
-        throw new Error(
-            `Cart insert failed: ${cartErr || 'Cart insert error'}; no cart IDs were confirmed, so verify whether records were committed before retrying.`,
-        );
-    }
-
-    const insertedUserIds = carts.map(({ user_id }) => user_id);
-    if (
-        carts.length !== targetUsers.length ||
-        new Set(insertedUserIds).size !== targetUsers.length ||
-        targetUsers.some(({ id }) => !insertedUserIds.includes(id))
-    ) {
-        const confirmedCartIds = carts.map(({ id }) => id);
-        const itemCleanup = await repository.deleteShoppingCartItemsForCarts(
-            supabase,
-            confirmedCartIds,
-        );
-        const cartCleanup = await repository.deleteShoppingCarts(supabase, confirmedCartIds);
-        const rollbackErrors = assertCleanupSucceeded([
-            ['cart-item cleanup', itemCleanup],
-            ['cart cleanup', cartCleanup],
-        ]);
-        const rollbackError = rollbackErrors.length
-            ? ` Cleanup was incomplete (${rollbackErrors.join('; ')}); verify these records before retrying.`
-            : ' Inserted carts were rolled back.';
-        throw new Error(
-            `Cart insert returned ${carts.length} rows that did not match the ${targetUsers.length} planned users.${rollbackError} Verify for unconfirmed records before retrying.`,
-        );
-    }
-
-    try {
-        const itemsByUser = new Map(
-            plannedItems.map(({ userId, books: items }) => [userId, items]),
-        );
-        const cartItems = carts.flatMap((cart) => {
-            const plannedUserItems = itemsByUser.get(cart.user_id);
-            if (!plannedUserItems)
-                throw new Error(`Inserted cart ${cart.id} does not match the preflighted users.`);
-
-            return plannedUserItems.map(({ bookId, quantity }) => ({
-                cart_id: cart.id,
-                book_id: bookId,
-                quantity,
-            }));
-        });
-
-        const itemRes = await repository.insertShoppingCartItems(supabase, cartItems);
-        assertInsertedCount(itemRes, cartItems.length, 'Cart item');
-    } catch (error: unknown) {
-        const cartIds = carts.map(({ id }) => id);
-        const itemCleanup = await repository.deleteShoppingCartItemsForCarts(supabase, cartIds);
-        const cartCleanup = await repository.deleteShoppingCarts(supabase, cartIds);
-        const cleanupErrors = assertCleanupSucceeded([
-            ['cart-item cleanup', itemCleanup],
-            ['cart cleanup', cartCleanup],
-        ]);
-        const cleanupStatus = cleanupErrors.length
-            ? ` Cleanup was incomplete (${cleanupErrors.join('; ')}); verify these records before retrying.`
-            : ' Generated carts were rolled back.';
-        throw new Error(`Cart generation failed: ${describeError(error)}.${cleanupStatus}`);
-    }
+    const carts = await insertCartBatch(supabase, targetUsers, plannedItems);
 
     return { message: `Cart Injection: ${carts.length} carts populated.`, success: true };
 };
@@ -420,7 +394,7 @@ export const addWishlists: CommandHandler = async (supabase, authorizeWrite) => 
     );
 
     const newEntries = planUniqueCandidates(
-        allPossible.sort(() => 0.5 - Math.random()),
+        shuffle(allPossible),
         DEV_CONFIG.WISHLIST_COUNT,
         ({ user_id, book_id }) => [naturalPairKey(user_id, book_id)],
         existingKeys,

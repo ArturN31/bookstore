@@ -1,8 +1,14 @@
 import { Json } from '@/database.types';
+import type { Database } from '@/database.types';
 import { SafeQueryResult, safeSupabaseQuery } from '@/utils/db/safeSupabaseQuery';
 import { SupabaseClient } from '@supabase/supabase-js';
 
-export async function fetchAllBooks(supabase: SupabaseClient): Promise<SafeQueryResult<unknown[]>> {
+type BookRow = Database['public']['Tables']['books']['Row'];
+type DiscountRow = Database['public']['Tables']['discounts']['Row'];
+
+export async function fetchAllBooks(
+    supabase: SupabaseClient,
+): Promise<SafeQueryResult<BookRow[]>> {
     return safeSupabaseQuery(async () => supabase.from('books').select('*'));
 }
 
@@ -14,7 +20,7 @@ export async function fetchBookNaturalKeys(
 
 export async function fetchAllDiscounts(
     supabase: SupabaseClient,
-): Promise<SafeQueryResult<unknown[]>> {
+): Promise<SafeQueryResult<DiscountRow[]>> {
     return safeSupabaseQuery(async () => supabase.from('discounts').select('*'));
 }
 

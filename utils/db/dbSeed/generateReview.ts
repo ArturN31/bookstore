@@ -22,12 +22,12 @@ export const reviewNaturalKey = (userId: string, bookId: string): string =>
     naturalPairKey(userId, bookId);
 
 type ReviewCandidate = {
-    book: BookDB & { id: string };
+    book: Pick<BookDB, 'id'>;
     user: { id: string; username: string };
 };
 
 export const generateReviewsArray = (
-    books: BookDB[],
+    books: readonly Pick<BookDB, 'id'>[],
     targetCount: number,
     existingUsers: { id: string; username: string }[],
     existingKeys: Iterable<string> = [],
