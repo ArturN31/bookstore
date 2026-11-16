@@ -585,6 +585,7 @@ The roadmap lists remaining work based on the audited local checkout; implemente
     - [x] Discounts: exact inserted counts on repeat runs, distinct normalized codes, pre-existing fixture preserved, and test rows cleaned up.
     - [x] Reviews: exact inserted counts on repeat runs, distinct user/book pairs, pre-existing fixture preserved, and test rows cleaned up.
     - [x] Wishlists: exact inserted counts on repeat runs, distinct user/book pairs, pre-existing fixture preserved, and test rows cleaned up.
+      - [x] Plan requested wishlist pairs without materializing the full user/book Cartesian product; capacity is still checked exactly before writes.
     - [x] Orders: complete order/item batches use current database users/books and only test-owned fixtures are cleaned up.
     - [x] Carts: exact cart/item batches use current database users/books, preserve a pre-existing cart, and clean up test-owned rows.
   - [ ] Keep full reset semantics separate from additive generation: reset may clear only the explicitly allowlisted development database; add commands must never clear or overwrite existing user-created data.

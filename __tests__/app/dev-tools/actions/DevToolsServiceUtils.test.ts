@@ -3,8 +3,10 @@ import {
     assertInsertedCount,
     assertSalesBatchReferences,
     describeError,
+    planWishlistEntries,
     shuffle,
 } from '@/app/dev-tools/actions/DevToolsServiceUtils';
+import { isCandidateCapacityError } from '@/utils/db/dbSeed/candidatePlanning';
 
 describe('DevToolsServiceUtils', () => {
     it('shuffles without mutating the source array', () => {
@@ -118,6 +120,58 @@ describe('DevToolsServiceUtils', () => {
                     discounts,
                 ),
             ).toThrow('Order batch contains more than one discount for an order.');
+        });
+    });
+
+    describe('planWishlistEntries', () => {
+        it('plans exact unique pairs while excluding existing entries and duplicate IDs', () => {
+            const result = planWishlistEntries(
+                [{ id: 'user-1' }, { id: 'user-1' }, { id: 'user-2' }],
+                [{ id: 'book-1' }, { id: 'book-2' }],
+                [{ user_id: 'user-1', book_id: 'book-1' }],
+                3,
+                () => 0,
+            );
+
+            expect(result).toHaveLength(3);
+            expect(new Set(result.map(({ user_id, book_id }) => `${user_id}:${book_id}`)).size).toBe(
+                3,
+            );
+            expect(result).not.toContain({ user_id: 'user-1', book_id: 'book-1' });
+        });
+
+        it('reports exact available capacity when the requested count cannot be met', () => {
+            let error: unknown;
+
+            try {
+                planWishlistEntries(
+                    [{ id: 'user-1' }],
+                    [{ id: 'book-1' }, { id: 'book-2' }],
+                    [
+                        { user_id: 'user-1', book_id: 'book-1' },
+                        { user_id: 'user-1', book_id: 'book-2' },
+                        { user_id: 'user-1', book_id: 'book-2' },
+                    ],
+                    1,
+                );
+            } catch (caught) {
+                error = caught;
+            }
+
+            expect(isCandidateCapacityError(error)).toBe(true);
+            expect(error).toMatchObject({ requestedCount: 1, availableCount: 0 });
+        });
+
+        it('samples a small batch from a large pair space without expanding it', () => {
+            const users = Array.from({ length: 10_000 }, (_, index) => ({ id: `user-${index}` }));
+            const books = Array.from({ length: 10_000 }, (_, index) => ({ id: `book-${index}` }));
+
+            const result = planWishlistEntries(users, books, [], 5, () => 0);
+
+            expect(result).toHaveLength(5);
+            expect(new Set(result.map(({ user_id, book_id }) => `${user_id}:${book_id}`)).size).toBe(
+                5,
+            );
         });
     });
 });

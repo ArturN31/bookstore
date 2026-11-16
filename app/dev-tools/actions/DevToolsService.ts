@@ -7,7 +7,6 @@ import { generateBooksArray } from '@/utils/db/dbSeed/generateBook';
 import {
     naturalPairKey,
     normalizeNaturalKey,
-    planUniqueCandidates,
 } from '@/utils/db/dbSeed/candidatePlanning';
 import * as repository from './DevToolsRepository';
 import {
@@ -15,6 +14,7 @@ import {
     assertInsertedCount,
     assertSalesBatchReferences,
     describeError,
+    planWishlistEntries,
     shuffle,
 } from './DevToolsServiceUtils';
 
@@ -388,16 +388,11 @@ export const addWishlists: CommandHandler = async (supabase, authorizeWrite) => 
 
     if (!books?.length || !users?.length || !existing) throw new Error('Missing data.');
 
-    const existingKeys = existing.map(({ user_id, book_id }) => naturalPairKey(user_id, book_id));
-    const allPossible = users.flatMap((u: { id: string }) =>
-        books.map((b: { id: string }) => ({ user_id: u.id, book_id: b.id })),
-    );
-
-    const newEntries = planUniqueCandidates(
-        shuffle(allPossible),
+    const newEntries = planWishlistEntries(
+        users,
+        books,
+        existing,
         DEV_CONFIG.WISHLIST_COUNT,
-        ({ user_id, book_id }) => [naturalPairKey(user_id, book_id)],
-        existingKeys,
     );
 
     await authorizeWrite();

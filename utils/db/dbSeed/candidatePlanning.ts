@@ -15,6 +15,14 @@ const createCandidateCapacityError = (
         { name: 'CandidateCapacityError' as const, requestedCount, availableCount },
     );
 
+export const assertCandidateCapacity = (
+    requestedCount: number,
+    availableCount: number,
+): void => {
+    if (availableCount < requestedCount)
+        throw createCandidateCapacityError(requestedCount, availableCount);
+};
+
 export const isCandidateCapacityError = (error: unknown): error is CandidateCapacityError =>
     error instanceof Error && error.name === 'CandidateCapacityError';
 
@@ -59,8 +67,7 @@ export const planUniqueCandidates = <T>(
         { candidates: [], reservedKeys: new Set(existingKeys) },
     ).candidates;
 
-    if (planned.length < requestedCount)
-        throw createCandidateCapacityError(requestedCount, planned.length);
+    assertCandidateCapacity(requestedCount, planned.length);
 
     return planned.slice(0, requestedCount);
 };
@@ -109,8 +116,7 @@ export const sampleUniqueCandidates = <T>(
         { reservedKeys: new Set(existingKeys), sample: [], availableCount: 0 },
     );
 
-    if (selection.sample.length !== requestedCount)
-        throw createCandidateCapacityError(requestedCount, selection.availableCount);
+    assertCandidateCapacity(requestedCount, selection.availableCount);
 
     return selection.sample;
 };
