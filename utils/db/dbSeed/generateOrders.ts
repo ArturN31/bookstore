@@ -1,5 +1,6 @@
 import { faker } from '@faker-js/faker/locale/en_GB';
 import { Database } from '@/database.types';
+import { calculateDiscountAmount, parseBookPrice } from './orderMath';
 
 type BookDB = Database['public']['Tables']['books']['Row'];
 type DiscountDB = Database['public']['Tables']['discounts']['Row'];
@@ -16,14 +17,6 @@ const PAYMENT_METHODS: readonly string[] = [
     'Stripe',
 ];
 
-const calculateDiscountAmount = (subtotal: number, discount: DiscountDB): number => {
-    const value = Number(discount.value);
-    if (discount.type === 'percentage') return Math.round(((subtotal * value) / 100) * 100) / 100;
-    if (discount.type === 'fixed_amount' || discount.type === 'fixed')
-        return Math.min(subtotal, value);
-    return 0;
-};
-
 const generateLineItems = (orderID: string, books: readonly BookDB[], count: number) => {
     const items: OrderItemDB[] = [];
     let subtotal = 0;
@@ -33,7 +26,7 @@ const generateLineItems = (orderID: string, books: readonly BookDB[], count: num
         if (!book || !book.id) continue;
 
         const quantity = faker.number.int({ min: 1, max: 2 });
-        const unitPrice = parseFloat(book.price.toString().replace(/[£,]/g, ''));
+        const unitPrice = parseBookPrice(book.price);
 
         items.push({
             id: faker.string.uuid(),

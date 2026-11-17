@@ -28,6 +28,11 @@ const createSalesBatch = (includeDiscount = false): ReturnType<typeof generateOr
     const orders = Array.from({ length: 10 }, (_, index) => ({
         id: `order-${index}`,
         user_id: 'current-user',
+        subtotal: 10,
+        discount_amount: includeDiscount && index === 0 ? 1 : 0,
+        shipping_cost: 2.99,
+        tax_amount: 0,
+        total_amount: includeDiscount && index === 0 ? 11.99 : 12.99,
     }));
 
     return {
@@ -125,11 +130,11 @@ describe('DevToolsService', () => {
     describe('addSales', () => {
         it('should successfully add sales', async () => {
             jest.mocked(repository.fetchAllBooks).mockResolvedValueOnce({
-                data: [{ id: 'book-1' }],
+                data: [{ id: 'book-1', price: '10.00' }],
                 error: null,
             } as unknown as Awaited<ReturnType<typeof repository.fetchAllBooks>>);
             jest.mocked(repository.fetchAllDiscounts).mockResolvedValueOnce({
-                data: [{ id: 'discount-1' }],
+                data: [{ id: 'discount-1', type: 'percentage', value: 10 }],
                 error: null,
             } as unknown as Awaited<ReturnType<typeof repository.fetchAllDiscounts>>);
 
@@ -168,7 +173,7 @@ describe('DevToolsService', () => {
 
         it('rejects invalid planned references before authorizing or writing', async () => {
             jest.mocked(repository.fetchAllBooks).mockResolvedValueOnce({
-                data: [{ id: 'book-1' }],
+                data: [{ id: 'book-1', price: '10.00' }],
                 error: null,
             } as unknown as Awaited<ReturnType<typeof repository.fetchAllBooks>>);
             jest.mocked(repository.fetchAllDiscounts).mockResolvedValueOnce({
@@ -190,7 +195,7 @@ describe('DevToolsService', () => {
 
         it('should handle null discounts data gracefully and default to empty array', async () => {
             jest.mocked(repository.fetchAllBooks).mockResolvedValueOnce({
-                data: [{ id: 'book-1' }],
+                data: [{ id: 'book-1', price: '10.00' }],
                 error: null,
             } as unknown as Awaited<ReturnType<typeof repository.fetchAllBooks>>);
             jest.mocked(repository.fetchAllDiscounts).mockResolvedValueOnce({
@@ -228,7 +233,7 @@ describe('DevToolsService', () => {
 
         it('should throw an error if fetching discounts fails', async () => {
             jest.mocked(repository.fetchAllBooks).mockResolvedValueOnce({
-                data: [{ id: 'book-1' }],
+                data: [{ id: 'book-1', price: '10.00' }],
                 error: null,
             } as unknown as Awaited<ReturnType<typeof repository.fetchAllBooks>>);
             jest.mocked(repository.fetchAllDiscounts).mockResolvedValueOnce({
@@ -241,7 +246,7 @@ describe('DevToolsService', () => {
 
         it('should throw an error if fetching current order users fails', async () => {
             jest.mocked(repository.fetchAllBooks).mockResolvedValueOnce({
-                data: [{ id: 'book-1' }],
+                data: [{ id: 'book-1', price: '10.00' }],
                 error: null,
             } as unknown as Awaited<ReturnType<typeof repository.fetchAllBooks>>);
             jest.mocked(repository.fetchAllDiscounts).mockResolvedValueOnce({
@@ -276,7 +281,7 @@ describe('DevToolsService', () => {
 
         it('should throw an error if inserting orders fails', async () => {
             jest.mocked(repository.fetchAllBooks).mockResolvedValueOnce({
-                data: [{ id: 'book-1' }],
+                data: [{ id: 'book-1', price: '10.00' }],
                 error: null,
             } as unknown as Awaited<ReturnType<typeof repository.fetchAllBooks>>);
             jest.mocked(repository.fetchAllDiscounts).mockResolvedValueOnce({
@@ -295,7 +300,7 @@ describe('DevToolsService', () => {
 
         it('should throw an error if inserting order items fails', async () => {
             jest.mocked(repository.fetchAllBooks).mockResolvedValueOnce({
-                data: [{ id: 'book-1' }],
+                data: [{ id: 'book-1', price: '10.00' }],
                 error: null,
             } as unknown as Awaited<ReturnType<typeof repository.fetchAllBooks>>);
             jest.mocked(repository.fetchAllDiscounts).mockResolvedValueOnce({
@@ -325,7 +330,7 @@ describe('DevToolsService', () => {
 
         it('reports order cleanup failures after a dependent write fails', async () => {
             jest.mocked(repository.fetchAllBooks).mockResolvedValueOnce({
-                data: [{ id: 'book-1' }],
+                data: [{ id: 'book-1', price: '10.00' }],
                 error: null,
             } as unknown as Awaited<ReturnType<typeof repository.fetchAllBooks>>);
             jest.mocked(repository.fetchAllDiscounts).mockResolvedValueOnce({

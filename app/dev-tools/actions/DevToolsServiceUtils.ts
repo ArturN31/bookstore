@@ -5,8 +5,18 @@ import {
     assertValidRequestedCount,
     normalizeNaturalKey,
 } from '@/utils/db/dbSeed/candidatePlanning';
+import { calculateDiscountAmount, parseBookPrice } from '@/utils/db/dbSeed/orderMath';
 
-type Order = Pick<Database['public']['Tables']['orders']['Row'], 'id' | 'user_id'>;
+type Order = Pick<
+    Database['public']['Tables']['orders']['Row'],
+    | 'id'
+    | 'user_id'
+    | 'subtotal'
+    | 'discount_amount'
+    | 'shipping_cost'
+    | 'tax_amount'
+    | 'total_amount'
+>;
 type OrderItem = Pick<
     Database['public']['Tables']['order_items']['Row'],
     'id' | 'order_id' | 'book_id' | 'quantity' | 'price'
@@ -14,6 +24,10 @@ type OrderItem = Pick<
 type OrderDiscount = Pick<
     Database['public']['Tables']['order_discounts']['Insert'],
     'id' | 'order_id' | 'discount_id'
+>;
+type Discount = Pick<
+    Database['public']['Tables']['discounts']['Row'],
+    'id' | 'type' | 'value'
 >;
 type WishlistEntry = { user_id: string; book_id: string };
 
@@ -151,9 +165,9 @@ export const assertSalesBatchReferences = (
     orders: Order[],
     items: OrderItem[],
     orderDiscounts: OrderDiscount[],
-    books: Array<Pick<Database['public']['Tables']['books']['Row'], 'id'>>,
+    books: Array<Pick<Database['public']['Tables']['books']['Row'], 'id' | 'price'>>,
     users: Array<Pick<Database['public']['Tables']['users']['Row'], 'id'>>,
-    discounts: Array<Pick<Database['public']['Tables']['discounts']['Row'], 'id'>>,
+    discounts: Discount[],
 ): void => {
     const assertUniqueIds = (ids: string[], stage: string) => {
         if (new Set(ids).size !== ids.length) throw new Error(`${stage} contain duplicate IDs.`);
@@ -201,4 +215,50 @@ export const assertSalesBatchReferences = (
 
     if (new Set(orderDiscounts.map(({ order_id }) => order_id)).size !== orderDiscounts.length)
         throw new Error('Order batch contains more than one discount for an order.');
+
+    const booksById = new Map(books.map((book) => [book.id, book]));
+    const discountsById = new Map(discounts.map((discount) => [discount.id, discount]));
+    const itemsByOrderId = new Map<string, OrderItem[]>();
+    items.forEach((item) => {
+        const orderItems = itemsByOrderId.get(item.order_id) ?? [];
+        orderItems.push(item);
+        itemsByOrderId.set(item.order_id, orderItems);
+    });
+    const discountsByOrderId = new Map(orderDiscounts.map((discount) => [discount.order_id, discount]));
+    const toPence = (amount: number) => Math.round((amount + Number.EPSILON) * 100);
+
+    orders.forEach((order) => {
+        const orderItems = itemsByOrderId.get(order.id);
+        if (!orderItems?.length)
+            throw new Error(`Order ${order.id} must contain at least one item.`);
+
+        const calculatedSubtotal = orderItems.reduce((subtotal, item) => {
+            const book = booksById.get(item.book_id);
+            if (!book || toPence(item.price) !== toPence(parseBookPrice(book.price)))
+                throw new Error(`Order ${order.id} contains an item price that does not match its book.`);
+            return subtotal + item.price * item.quantity;
+        }, 0);
+
+        if (toPence(order.subtotal) !== toPence(calculatedSubtotal))
+            throw new Error(`Order ${order.id} subtotal does not match its items.`);
+
+        const orderDiscount = discountsByOrderId.get(order.id);
+        const discount = orderDiscount
+            ? discountsById.get(orderDiscount.discount_id)
+            : undefined;
+        if (orderDiscount && !discount)
+            throw new Error(`Order ${order.id} references an unavailable discount.`);
+
+        const expectedDiscountAmount = discount
+            ? calculateDiscountAmount(order.subtotal, discount)
+            : 0;
+        if (toPence(order.discount_amount) !== toPence(expectedDiscountAmount))
+            throw new Error(`Order ${order.id} discount amount does not match its discount.`);
+
+        const expectedTotal = toPence(
+            order.subtotal - order.discount_amount + order.shipping_cost + order.tax_amount,
+        );
+        if (toPence(order.total_amount) !== expectedTotal)
+            throw new Error(`Order ${order.id} total does not match its subtotal, discount, shipping, and tax.`);
+    });
 };

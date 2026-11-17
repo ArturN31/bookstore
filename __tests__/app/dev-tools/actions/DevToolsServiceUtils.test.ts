@@ -48,10 +48,20 @@ describe('DevToolsServiceUtils', () => {
     });
 
     describe('assertSalesBatchReferences', () => {
-        const books = [{ id: 'book-1' }];
+        const books = [{ id: 'book-1', price: '10.00' }];
         const users = [{ id: 'user-1' }];
-        const discounts = [{ id: 'discount-1' }];
-        const orders = [{ id: 'order-1', user_id: 'user-1' }];
+        const discounts = [{ id: 'discount-1', type: 'percentage', value: 10 }];
+        const orders = [
+            {
+                id: 'order-1',
+                user_id: 'user-1',
+                subtotal: 10,
+                discount_amount: 0,
+                shipping_cost: 2.99,
+                tax_amount: 0,
+                total_amount: 12.99,
+            },
+        ];
         const items = [
             {
                 id: 'item-1',
@@ -67,7 +77,7 @@ describe('DevToolsServiceUtils', () => {
 
         it('accepts a batch whose references and values are valid', () => {
             expect(() =>
-                assertSalesBatchReferences(orders, items, orderDiscounts, books, users, discounts),
+                assertSalesBatchReferences(orders, items, [], books, users, discounts),
             ).not.toThrow();
         });
 
@@ -120,6 +130,75 @@ describe('DevToolsServiceUtils', () => {
                     discounts,
                 ),
             ).toThrow('Order batch contains more than one discount for an order.');
+        });
+
+        it('rejects order totals that do not match line items', () => {
+            expect(() =>
+                assertSalesBatchReferences(
+                    [{ ...orders[0], subtotal: 20 }],
+                    items,
+                    [],
+                    books,
+                    users,
+                    discounts,
+                ),
+            ).toThrow('Order order-1 subtotal does not match its items.');
+
+            expect(() =>
+                assertSalesBatchReferences(
+                    [{ ...orders[0], total_amount: 99 }],
+                    items,
+                    [],
+                    books,
+                    users,
+                    discounts,
+                ),
+            ).toThrow(
+                'Order order-1 total does not match its subtotal, discount, shipping, and tax.',
+            );
+        });
+
+        it('validates discount amount against its referenced discount', () => {
+            expect(() =>
+                assertSalesBatchReferences(
+                    [{ ...orders[0], discount_amount: 0.5 }],
+                    items,
+                    orderDiscounts,
+                    books,
+                    users,
+                    discounts,
+                ),
+            ).toThrow('Order order-1 discount amount does not match its discount.');
+        });
+
+        it('accepts a correctly calculated discount and total', () => {
+            expect(() =>
+                assertSalesBatchReferences(
+                    [{ ...orders[0], discount_amount: 1, total_amount: 11.99 }],
+                    items,
+                    orderDiscounts,
+                    books,
+                    users,
+                    discounts,
+                ),
+            ).not.toThrow();
+        });
+
+        it('rejects empty order compositions and invalid book prices', () => {
+            expect(() =>
+                assertSalesBatchReferences(orders, [], [], books, users, discounts),
+            ).toThrow('Order order-1 must contain at least one item.');
+
+            expect(() =>
+                assertSalesBatchReferences(
+                    orders,
+                    items,
+                    [],
+                    [{ id: 'book-1', price: 'not-a-price' }],
+                    users,
+                    discounts,
+                ),
+            ).toThrow('Book price must be a non-negative number.');
         });
     });
 
