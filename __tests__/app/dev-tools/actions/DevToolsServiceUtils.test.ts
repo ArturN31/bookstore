@@ -50,7 +50,20 @@ describe('DevToolsServiceUtils', () => {
     describe('assertSalesBatchReferences', () => {
         const books = [{ id: 'book-1', price: '10.00' }];
         const users = [{ id: 'user-1' }];
-        const discounts = [{ id: 'discount-1', type: 'percentage', value: 10 }];
+        const discounts = [
+            {
+                id: 'discount-1',
+                type: 'percentage',
+                value: 10,
+                is_active: true,
+                start_date: '2020-01-01T00:00:00.000Z',
+                end_date: '2099-01-01T00:00:00.000Z',
+                minimum_subtotal: null,
+                usage_limit: 5,
+                times_used: 0,
+                uses_per_user: null,
+            },
+        ];
         const orders = [
             {
                 id: 'order-1',
@@ -60,6 +73,7 @@ describe('DevToolsServiceUtils', () => {
                 shipping_cost: 2.99,
                 tax_amount: 0,
                 total_amount: 12.99,
+                status: 'pending',
             },
         ];
         const items = [
@@ -182,6 +196,105 @@ describe('DevToolsServiceUtils', () => {
                     discounts,
                 ),
             ).not.toThrow();
+        });
+
+        it('rejects discounts that are inactive or do not meet their minimum subtotal', () => {
+            expect(() =>
+                assertSalesBatchReferences(
+                    [{ ...orders[0], discount_amount: 1, total_amount: 11.99 }],
+                    items,
+                    orderDiscounts,
+                    books,
+                    users,
+                    [{ ...discounts[0], is_active: false }],
+                ),
+            ).toThrow('Order order-1 applies a discount that is not currently active.');
+
+            expect(() =>
+                assertSalesBatchReferences(
+                    [{ ...orders[0], discount_amount: 1, total_amount: 11.99 }],
+                    items,
+                    orderDiscounts,
+                    books,
+                    users,
+                    [{ ...discounts[0], start_date: '2099-01-01T00:00:00.000Z' }],
+                ),
+            ).toThrow('Order order-1 applies a discount that is not currently active.');
+
+            expect(() =>
+                assertSalesBatchReferences(
+                    [{ ...orders[0], discount_amount: 1, total_amount: 11.99 }],
+                    items,
+                    orderDiscounts,
+                    books,
+                    users,
+                    [{ ...discounts[0], end_date: '2020-01-01T00:00:00.000Z' }],
+                ),
+            ).toThrow('Order order-1 applies a discount that is not currently active.');
+
+            expect(() =>
+                assertSalesBatchReferences(
+                    [{ ...orders[0], discount_amount: 1, total_amount: 11.99 }],
+                    items,
+                    orderDiscounts,
+                    books,
+                    users,
+                    [{ ...discounts[0], minimum_subtotal: 15 }],
+                ),
+            ).toThrow('Order order-1 does not meet the discount minimum subtotal.');
+        });
+
+        it('rejects unsupported per-user limits and exhausted usage capacity', () => {
+            expect(() =>
+                assertSalesBatchReferences(
+                    [{ ...orders[0], discount_amount: 1, total_amount: 11.99 }],
+                    items,
+                    orderDiscounts,
+                    books,
+                    users,
+                    [{ ...discounts[0], uses_per_user: 1 }],
+                ),
+            ).toThrow('Order order-1 applies a discount with an unsupported per-user limit.');
+
+            expect(() =>
+                assertSalesBatchReferences(
+                    [
+                        { ...orders[0], discount_amount: 1, total_amount: 11.99 },
+                        {
+                            ...orders[0],
+                            id: 'order-2',
+                            discount_amount: 1,
+                            total_amount: 11.99,
+                        },
+                    ],
+                    [
+                        items[0],
+                        { ...items[0], id: 'item-2', order_id: 'order-2' },
+                    ],
+                    [
+                        orderDiscounts[0],
+                        { ...orderDiscounts[0], id: 'order-discount-2', order_id: 'order-2' },
+                    ],
+                    books,
+                    users,
+                    [{ ...discounts[0], usage_limit: 1 }],
+                ),
+            ).toThrow(
+                'Discount discount-1 has insufficient remaining usage capacity for the batch.',
+            );
+        });
+
+        it('rejects discounts attached to failed or cancelled orders', () => {
+            expect(() =>
+                assertSalesBatchReferences(
+                    [{ ...orders[0], status: 'cancelled' }],
+                    items,
+                    orderDiscounts,
+                    books,
+                    users,
+                    discounts,
+                ),
+            ).toThrow('Order order-1 cannot apply a discount in its cancelled status.');
         });
 
         it('rejects empty order compositions and invalid book prices', () => {

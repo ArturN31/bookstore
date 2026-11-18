@@ -16,6 +16,7 @@ type Order = Pick<
     | 'shipping_cost'
     | 'tax_amount'
     | 'total_amount'
+    | 'status'
 >;
 type OrderItem = Pick<
     Database['public']['Tables']['order_items']['Row'],
@@ -27,7 +28,16 @@ type OrderDiscount = Pick<
 >;
 type Discount = Pick<
     Database['public']['Tables']['discounts']['Row'],
-    'id' | 'type' | 'value'
+    | 'id'
+    | 'type'
+    | 'value'
+    | 'is_active'
+    | 'start_date'
+    | 'end_date'
+    | 'minimum_subtotal'
+    | 'usage_limit'
+    | 'times_used'
+    | 'uses_per_user'
 >;
 type WishlistEntry = { user_id: string; book_id: string };
 
@@ -218,6 +228,7 @@ export const assertSalesBatchReferences = (
 
     const booksById = new Map(books.map((book) => [book.id, book]));
     const discountsById = new Map(discounts.map((discount) => [discount.id, discount]));
+    const ordersById = new Map(orders.map((order) => [order.id, order]));
     const itemsByOrderId = new Map<string, OrderItem[]>();
     items.forEach((item) => {
         const orderItems = itemsByOrderId.get(item.order_id) ?? [];
@@ -225,6 +236,54 @@ export const assertSalesBatchReferences = (
         itemsByOrderId.set(item.order_id, orderItems);
     });
     const discountsByOrderId = new Map(orderDiscounts.map((discount) => [discount.order_id, discount]));
+    const discountUsageInBatch = new Map<string, number>();
+    const now = Date.now();
+
+    orderDiscounts.forEach(({ order_id, discount_id }) => {
+        const order = ordersById.get(order_id);
+        const discount = discountsById.get(discount_id);
+        if (!order || !discount) return;
+        if (order.status === 'failed' || order.status === 'cancelled')
+            throw new Error(`Order ${order.id} cannot apply a discount in its ${order.status} status.`);
+
+        const startsAt = new Date(discount.start_date).getTime();
+        const endsAt = new Date(discount.end_date).getTime();
+        if (
+            !discount.is_active ||
+            !Number.isFinite(startsAt) ||
+            !Number.isFinite(endsAt) ||
+            startsAt > now ||
+            endsAt < now
+        )
+            throw new Error(`Order ${order.id} applies a discount that is not currently active.`);
+
+        if (
+            discount.minimum_subtotal !== null &&
+            order.subtotal < Number(discount.minimum_subtotal)
+        )
+            throw new Error(`Order ${order.id} does not meet the discount minimum subtotal.`);
+
+        if (discount.uses_per_user !== null)
+            throw new Error(`Order ${order.id} applies a discount with an unsupported per-user limit.`);
+
+        discountUsageInBatch.set(
+            discount_id,
+            (discountUsageInBatch.get(discount_id) ?? 0) + 1,
+        );
+    });
+
+    discountUsageInBatch.forEach((batchUsage, discountId) => {
+        const discount = discountsById.get(discountId);
+        if (
+            discount?.usage_limit !== null &&
+            discount &&
+            discount.times_used + batchUsage > discount.usage_limit
+        )
+            throw new Error(
+                `Discount ${discount.id} has insufficient remaining usage capacity for the batch.`,
+            );
+    });
+
     const toPence = (amount: number) => Math.round((amount + Number.EPSILON) * 100);
 
     orders.forEach((order) => {

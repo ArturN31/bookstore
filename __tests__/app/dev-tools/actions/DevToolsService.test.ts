@@ -28,6 +28,7 @@ const createSalesBatch = (includeDiscount = false): ReturnType<typeof generateOr
     const orders = Array.from({ length: 10 }, (_, index) => ({
         id: `order-${index}`,
         user_id: 'current-user',
+        status: 'pending',
         subtotal: 10,
         discount_amount: includeDiscount && index === 0 ? 1 : 0,
         shipping_cost: 2.99,
@@ -134,7 +135,20 @@ describe('DevToolsService', () => {
                 error: null,
             } as unknown as Awaited<ReturnType<typeof repository.fetchAllBooks>>);
             jest.mocked(repository.fetchAllDiscounts).mockResolvedValueOnce({
-                data: [{ id: 'discount-1', type: 'percentage', value: 10 }],
+                data: [
+                    {
+                        id: 'discount-1',
+                        type: 'percentage',
+                        value: 10,
+                        is_active: true,
+                        start_date: '2020-01-01T00:00:00.000Z',
+                        end_date: '2099-01-01T00:00:00.000Z',
+                        minimum_subtotal: null,
+                        usage_limit: null,
+                        times_used: 0,
+                        uses_per_user: null,
+                    },
+                ],
                 error: null,
             } as unknown as Awaited<ReturnType<typeof repository.fetchAllDiscounts>>);
 
