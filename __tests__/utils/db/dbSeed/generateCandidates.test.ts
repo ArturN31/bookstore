@@ -2,6 +2,7 @@ import { faker } from '@faker-js/faker/locale/en_GB';
 import { bookNaturalKey, generateBooksArray } from '@/utils/db/dbSeed/generateBook';
 import { discountNaturalKey, generateDiscounts } from '@/utils/db/dbSeed/generateDiscounts';
 import {
+    assertGeneratedUserIdentities,
     generateMockUsersArray,
     userEmailNaturalKey,
     userUsernameNaturalKey,
@@ -195,11 +196,38 @@ describe('user candidate generation', () => {
     it('keeps independently unique email and username keys within a batch', () => {
         const users = generateMockUsersArray(10);
 
+        expect(() => assertGeneratedUserIdentities(users)).not.toThrow();
         expect(users).toHaveLength(10);
         expect(new Set(users.map(({ email }) => userEmailNaturalKey(email))).size).toBe(10);
         expect(new Set(users.map(({ username }) => userUsernameNaturalKey(username))).size).toBe(
             10,
         );
+    });
+
+    it('rejects invalid emails and empty usernames before identity writes', () => {
+        expect(() =>
+            assertGeneratedUserIdentities([{ email: 'not-an-email', username: 'valid' }]),
+        ).toThrow('Generated user batch contains an invalid email address.');
+
+        expect(() =>
+            assertGeneratedUserIdentities([{ email: 'valid@example.com', username: '  ' }]),
+        ).toThrow('Generated user batch contains an empty username.');
+    });
+
+    it('rejects normalized duplicate emails and usernames independently', () => {
+        expect(() =>
+            assertGeneratedUserIdentities([
+                { email: 'User@example.com', username: 'first' },
+                { email: ' user@EXAMPLE.com ', username: 'second' },
+            ]),
+        ).toThrow('Generated user batch contains duplicate normalized email addresses.');
+
+        expect(() =>
+            assertGeneratedUserIdentities([
+                { email: 'first@example.com', username: 'User' },
+                { email: 'second@example.com', username: ' user ' },
+            ]),
+        ).toThrow('Generated user batch contains duplicate normalized usernames.');
     });
 
     it('avoids email and username collisions on a repeated run', () => {

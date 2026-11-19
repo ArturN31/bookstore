@@ -20,6 +20,37 @@ export const userEmailNaturalKey = (email: string): string =>
 export const userUsernameNaturalKey = (username: string): string =>
     `username:${normalizeNaturalKey(username)}`;
 
+export const assertGeneratedUserIdentities = (
+    users: readonly Pick<MockUserSetup, 'email' | 'username'>[],
+): void => {
+    const emailKeys = new Set<string>();
+    const usernameKeys = new Set<string>();
+
+    users.forEach(({ email, username }) => {
+        if (typeof email !== 'string')
+            throw new Error('Generated user batch contains an invalid email address.');
+        if (typeof username !== 'string')
+            throw new Error('Generated user batch contains an empty username.');
+
+        const normalizedEmail = normalizeNaturalKey(email);
+        const normalizedUsername = normalizeNaturalKey(username);
+
+        if (
+            !normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+        )
+            throw new Error('Generated user batch contains an invalid email address.');
+        if (!normalizedUsername)
+            throw new Error('Generated user batch contains an empty username.');
+        if (emailKeys.has(normalizedEmail))
+            throw new Error('Generated user batch contains duplicate normalized email addresses.');
+        if (usernameKeys.has(normalizedUsername))
+            throw new Error('Generated user batch contains duplicate normalized usernames.');
+
+        emailKeys.add(normalizedEmail);
+        usernameKeys.add(normalizedUsername);
+    });
+};
+
 const MAX_CANDIDATE_ATTEMPTS_PER_RECORD = 10;
 
 const generateUserCandidate = (index: number): MockUserSetup => {

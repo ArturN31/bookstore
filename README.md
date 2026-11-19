@@ -569,10 +569,11 @@ The roadmap lists remaining work based on the audited local checkout; implemente
   - [x] Fetch only the existing keys needed for a command, merge them with keys reserved in the current batch, and reject candidates that collide with either set. Do not rely on Faker randomness, UUIDs alone, or a database exception as the normal deduplication strategy.
   - [x] Replace retry-until-count loops with bounded candidate generation. Calculate remaining capacity for constrained pairs (especially reviewable user/book combinations) and fail before writing if the exact requested count cannot be met, reporting the available capacity; never loop indefinitely or silently return fewer records as success.
   - [x] Make requested count semantics explicit: add exactly the requested number of new unique records or fail before writing, unless the UI explicitly offers a partial-count mode and reports requested/available/created counts.
-  - [ ] Preflight complete related batches before inserts: validate references, uniqueness within/across tables, order item composition, discount eligibility/capacity, and generated user identities. Keep generated relationships consistent with the users/books actually present rather than fixed fixture IDs.
+  - [x] Preflight complete related batches before inserts: validate references, uniqueness within/across tables, order item composition, discount eligibility/capacity, and generated user identities. Keep generated relationships consistent with the users/books actually present rather than fixed fixture IDs.
     - [x] Add pre-write reference and basic shape validation for additive sales batches (order users, item books/orders, discount references, duplicate IDs, quantities, and prices).
     - [x] Validate additive sales order composition and financial consistency before authorization or writes: every order has items, line prices match current books, subtotals match line items, discounts match their referenced rules, and totals match subtotal/discount/shipping/tax.
     - [x] Validate assigned sales discounts before authorization or writes: active date window, minimum subtotal, supported per-user limits, order status, and remaining global usage capacity.
+    - [x] Validate generated user email and username identities for valid/non-empty values and normalized batch uniqueness before creating Auth identities.
   - [x] Define partial-failure and retry behavior for multi-table generation. Prefer transactional persistence for a generation batch where practical; otherwise track completed stages, surface partial results, and make retry safe without duplicating records.
   - [x] Preserve the 10-per-hour privileged-action limit without charging for generation loops: one limiter check at most per user-requested command, after non-mutating validation/preflight and immediately before writes. Ensure no per-row/per-batch/per-retry checks; test that preflight-only/invalid requests do not consume a write allowance and actual write attempts are limited exactly once.
   - [x] Return actionable outcomes to the dev-tools UI (inserted count, skipped collisions if intentionally supported, exhausted capacity, and failed stage); do not report success after unchecked insert errors or ignored `Promise.all` results.
@@ -624,6 +625,12 @@ The roadmap lists remaining work based on the audited local checkout; implemente
 - [ ] Add automated axe checks for key customer journeys.
 - [ ] Regenerate comparable mobile/desktop reports and improve the mobile performance baseline.
 - [ ] Verify contrast, visible focus, reduced motion, zoom, and responsive reflow.
+- [ ] Mobile improvements:
+  - [ ] Improve apps header/nav layout size, spacing, hide/show behavior, and touch targets.
+  - [ ] Improve Bestsellers output and spacing on small screens. Currently the book output is partially visible and partially clipped on small screens.
+  - [ ] Privacy banner keeps appearing even when the user has accepted it. Fix the cookie persistence and/or banner dismissal behavior.
+  - [ ] Improve cart output on mobile. Keep it full screen as scrolling it shifts its view.
+  - [ ] Verify all components on mobile and small screens, including checkout, forms, and dev-tools. Ensure they are usable and accessible.
 
 ### 5. Security and Reliability
 

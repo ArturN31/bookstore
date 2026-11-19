@@ -3,7 +3,11 @@ import { generateBooksArray } from '@/utils/db/dbSeed/generateBook';
 import { generateReviewsArray } from '@/utils/db/dbSeed/generateReview';
 import { generateOrdersAndItems } from '@/utils/db/dbSeed/generateOrders';
 import { generateDiscounts } from '@/utils/db/dbSeed/generateDiscounts';
-import { generateMockUsersArray, MockUserSetup } from '@/utils/db/dbSeed/generateUsers';
+import {
+    assertGeneratedUserIdentities,
+    generateMockUsersArray,
+    MockUserSetup,
+} from '@/utils/db/dbSeed/generateUsers';
 import { Database } from '@/database.types';
 
 type BookDB = Database['public']['Tables']['books']['Row'];
@@ -110,6 +114,7 @@ export async function seedIdentities(
     console.log(`Seeding ${count} identities...`);
 
     const mockUsers: readonly MockUserSetup[] = generateMockUsersArray(count);
+    assertGeneratedUserIdentities(mockUsers);
     const profileBatch: UserInsert[] = [];
     const createdAuthIds: string[] = [];
 
