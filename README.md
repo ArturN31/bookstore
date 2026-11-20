@@ -583,7 +583,7 @@ The roadmap lists remaining work based on the audited local checkout; implemente
     - Decision: add a case-insensitive unique constraint for discount codes, which checkout trims and uppercases before exact-code lookup. Do not add global uniqueness for book title/author because different editions can share those fields; use an atomic dev-tools-scoped write guard if concurrent additive book generation must be prevented.
   - [x] Add a case-insensitive database uniqueness guard for discount codes, validated with a concurrent insert integration test.
   - [x] Add an atomic dev-tools-scoped guard for concurrent additive book writes without imposing global title/author uniqueness; the guarded insert RPC serializes additive book batches and checks natural-key conflicts within its transaction.
-  - [ ] Add local Supabase repeat-run and fixture-preservation integration tests:
+  - [x] Add local Supabase repeat-run and fixture-preservation integration tests:
     - [x] Books: exact inserted counts on repeat runs, distinct natural keys, pre-existing fixture preserved, and test rows cleaned up.
     - [x] Discounts: exact inserted counts on repeat runs, distinct normalized codes, pre-existing fixture preserved, and test rows cleaned up.
     - [x] Reviews: exact inserted counts on repeat runs, distinct user/book pairs, pre-existing fixture preserved, and test rows cleaned up.
@@ -591,7 +591,7 @@ The roadmap lists remaining work based on the audited local checkout; implemente
       - [x] Plan requested wishlist pairs without materializing the full user/book Cartesian product; capacity is still checked exactly before writes.
     - [x] Orders: complete order/item batches use current database users/books and only test-owned fixtures are cleaned up.
     - [x] Carts: exact cart/item batches use current database users/books, preserve a pre-existing cart, and clean up test-owned rows.
-  - [ ] Keep full reset semantics separate from additive generation: reset may clear only the explicitly allowlisted development database; add commands must never clear or overwrite existing user-created data.
+  - [x] Keep full reset semantics separate from additive generation: the full-reset action and seed runner both require development mode and an exact allowlisted database target before creating an admin client or clearing data. Additive generation commands remain separate handlers and insert only new rows; rollback paths target only IDs confirmed as created by that command.
 
   **Generator/write-path inventory (2026-11-01):**
 

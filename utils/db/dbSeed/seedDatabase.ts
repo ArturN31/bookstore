@@ -4,6 +4,12 @@ import { generateReviewsArray } from '@/utils/db/dbSeed/generateReview';
 import { generateOrdersAndItems } from '@/utils/db/dbSeed/generateOrders';
 import { generateDiscounts } from '@/utils/db/dbSeed/generateDiscounts';
 import {
+    DEV_TOOLS_DATABASE_TARGET_ERROR,
+    DEV_TOOLS_UNAVAILABLE_MESSAGE,
+    isDevToolsDatabaseTargetAllowed,
+    isDevToolsEnabled,
+} from '@/app/dev-tools/devToolsAccess';
+import {
     assertGeneratedUserIdentities,
     generateMockUsersArray,
     MockUserSetup,
@@ -70,7 +76,7 @@ const deleteAuthIdentities = async (
 /**
  * Step 0: Atomic Purge
  */
-export async function clearDatabase(supabase: SupabaseClient) {
+async function clearDatabase(supabase: SupabaseClient) {
     console.log('Initiating sequential relational purge...');
     const clearedTables: string[] = [];
 
@@ -337,6 +343,9 @@ export async function seedMarketActivity(
  * MAIN ORCHESTRATOR
  */
 export async function runFullDatabaseSeed(authorizeWrite: () => Promise<void>) {
+    if (!isDevToolsEnabled()) throw new Error(DEV_TOOLS_UNAVAILABLE_MESSAGE);
+    if (!isDevToolsDatabaseTargetAllowed()) throw new Error(DEV_TOOLS_DATABASE_TARGET_ERROR);
+
     const startTime = performance.now();
     const { createAdminClient } = await import('@/utils/db/admin');
     const supabase = await createAdminClient();

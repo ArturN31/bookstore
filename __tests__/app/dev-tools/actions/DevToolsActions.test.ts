@@ -236,6 +236,7 @@ describe('DevToolsActions', () => {
             expect(result).toEqual({ message: 'Success', success: true });
             expect(mockedVerifyRateLimit).toHaveBeenCalledTimes(1);
             expect(revalidatePath).toHaveBeenCalledWith('/');
+            expect(runFullDatabaseSeed).not.toHaveBeenCalled();
         });
 
         it('should not rate limit an invalid command', async () => {
