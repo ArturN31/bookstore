@@ -217,6 +217,44 @@ describe('DevToolsActions', () => {
             });
         });
 
+        it('should reject a command value that is not a string', async () => {
+            const formData = new FormData();
+            formData.append('command', new Blob(['add_sales']));
+
+            const result = await systemCommandAction(initialCommandResponse, formData);
+
+            expect(result).toEqual({ message: 'A valid command is required.', success: false });
+            expect(createAdminClient).not.toHaveBeenCalled();
+            expect(mockedVerifyRateLimit).not.toHaveBeenCalled();
+        });
+
+        it('should use only the IP identifier when there is no authenticated user', async () => {
+            jest.mocked(createBackendClient).mockResolvedValueOnce({
+                auth: {
+                    getUser: jest.fn().mockResolvedValue({
+                        data: { user: null },
+                        error: null,
+                    }),
+                },
+            } as unknown as SupabaseClient);
+            jest.mocked(service.addSales).mockImplementationOnce(
+                async (_supabase, authorizeWrite) => {
+                    await authorizeWrite?.();
+                    return { message: 'Success', success: true };
+                },
+            );
+            jest.mocked(createAdminClient).mockResolvedValueOnce({} as SupabaseClient);
+            const formData = new FormData();
+            formData.append('command', 'add_sales');
+
+            const result = await systemCommandAction(initialCommandResponse, formData);
+
+            expect(result.success).toBe(true);
+            expect(mockedVerifyRateLimit).toHaveBeenCalledWith(
+                expect.objectContaining({ identifiers: ['ip:203.0.113.1'] }),
+            );
+        });
+
         it('should execute command successfully and revalidate path', async () => {
             jest.mocked(service.addSales).mockImplementationOnce(
                 async (_supabase, authorizeWrite) => {
@@ -411,6 +449,17 @@ describe('DevToolsActions', () => {
             const result = await fullResetAction(initialResetResponse, formData);
 
             expect(result).toEqual({ message: 'Reset Failed: Seed failed', success: false });
+        });
+
+        it('should use the fallback message when reset throws a non-Error value', async () => {
+            jest.mocked(runFullDatabaseSeed).mockRejectedValueOnce('unexpected failure');
+
+            const result = await fullResetAction(
+                initialResetResponse,
+                new FormData(),
+            );
+
+            expect(result).toEqual({ message: 'Reset Failed: Operation Failed', success: false });
         });
 
         it('should not rate limit a reset when the database target is invalid', async () => {

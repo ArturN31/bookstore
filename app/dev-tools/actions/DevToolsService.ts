@@ -13,6 +13,7 @@ import {
     assertCleanupSucceeded,
     assertInsertedCount,
     assertSalesBatchReferences,
+    createCartItemRows,
     describeError,
     planWishlistEntries,
     shuffle,
@@ -149,9 +150,7 @@ const insertSalesBatch = async (supabase: SupabaseClient, batch: SalesBatch): Pr
             ['order-item cleanup', itemCleanup],
             ['order cleanup', orderCleanup],
         ]);
-        const previousStages = completedStages.length
-            ? ` Completed stages: ${completedStages.join(', ')}.`
-            : '';
+        const previousStages = ` Completed stages: ${completedStages.join(', ')}.`;
         const cleanupStatus = cleanupErrors.length
             ? ` Cleanup was incomplete (${cleanupErrors.join('; ')}); verify these records before retrying.`
             : ' Generated order records were rolled back.';
@@ -269,22 +268,6 @@ const planCartItems = (
             })),
         };
     });
-
-const createCartItemRows = (carts: Array<{ id: string; user_id: string }>, plan: PlannedCart[]) => {
-    const itemsByUser = new Map(plan.map(({ userId, books: items }) => [userId, items]));
-
-    return carts.flatMap((cart) => {
-        const userItems = itemsByUser.get(cart.user_id);
-        if (!userItems)
-            throw new Error(`Inserted cart ${cart.id} does not match the preflighted users.`);
-
-        return userItems.map(({ bookId, quantity }) => ({
-            cart_id: cart.id,
-            book_id: bookId,
-            quantity,
-        }));
-    });
-};
 
 const cleanupCartBatch = async (
     supabase: SupabaseClient,

@@ -2,11 +2,14 @@ import {
     assertCleanupSucceeded,
     assertInsertedCount,
     assertSalesBatchReferences,
+    calculateWishlistCandidateSpaceSize,
+    createCartItemRows,
     describeError,
     planWishlistEntries,
     shuffle,
 } from '@/app/dev-tools/actions/DevToolsServiceUtils';
 import { isCandidateCapacityError } from '@/utils/db/dbSeed/candidatePlanning';
+import type { SafeQueryResult } from '@/utils/db/safeSupabaseQuery';
 
 describe('DevToolsServiceUtils', () => {
     it('shuffles without mutating the source array', () => {
@@ -28,6 +31,13 @@ describe('DevToolsServiceUtils', () => {
                 assertInsertedCount({ data: null, error: 'write failed' }, 1, 'Book'),
             ).toThrow('Book insert failed: write failed');
             expect(() =>
+                assertInsertedCount(
+                    { data: null, error: null } as unknown as SafeQueryResult<unknown[]>,
+                    1,
+                    'Book',
+                ),
+            ).toThrow('Book insert returned no data.');
+            expect(() =>
                 assertInsertedCount({ data: [], error: null }, 1, 'Book'),
             ).toThrow('Book insert returned 0 rows; expected 1.');
         });
@@ -45,6 +55,24 @@ describe('DevToolsServiceUtils', () => {
                 ['items', { data: null, error: 'delete denied' }],
             ]),
         ).toEqual(['items: delete denied']);
+    });
+
+    describe('createCartItemRows', () => {
+        const plan = [
+            { userId: 'user-1', books: [{ bookId: 'book-1', quantity: 2 }] },
+        ];
+
+        it('creates item rows for inserted carts using the matching user plan', () => {
+            expect(
+                createCartItemRows([{ id: 'cart-1', user_id: 'user-1' }], plan),
+            ).toEqual([{ cart_id: 'cart-1', book_id: 'book-1', quantity: 2 }]);
+        });
+
+        it('rejects carts that are not associated with a planned user', () => {
+            expect(() =>
+                createCartItemRows([{ id: 'cart-1', user_id: 'unexpected-user' }], plan),
+            ).toThrow('Inserted cart cart-1 does not match the preflighted users.');
+        });
     });
 
     describe('assertSalesBatchReferences', () => {
@@ -144,6 +172,43 @@ describe('DevToolsServiceUtils', () => {
                     discounts,
                 ),
             ).toThrow('Order batch contains more than one discount for an order.');
+        });
+
+        it('rejects discount references outside the preflighted batch', () => {
+            expect(() =>
+                assertSalesBatchReferences(
+                    orders,
+                    items,
+                    [{ ...orderDiscounts[0], order_id: 'missing-order' }],
+                    books,
+                    users,
+                    discounts,
+                ),
+            ).toThrow('Order-discount batch contains an invalid order or discount reference.');
+
+            expect(() =>
+                assertSalesBatchReferences(
+                    orders,
+                    items,
+                    [{ ...orderDiscounts[0], discount_id: 'missing-discount' }],
+                    books,
+                    users,
+                    discounts,
+                ),
+            ).toThrow('Order-discount batch contains an invalid order or discount reference.');
+        });
+
+        it('allows an order-discount row whose database-generated ID is omitted', () => {
+            expect(() =>
+                assertSalesBatchReferences(
+                    [{ ...orders[0], discount_amount: 1, total_amount: 11.99 }],
+                    items,
+                    [{ order_id: 'order-1', discount_id: 'discount-1' }],
+                    books,
+                    users,
+                    discounts,
+                ),
+            ).not.toThrow();
         });
 
         it('rejects order totals that do not match line items', () => {
@@ -313,9 +378,54 @@ describe('DevToolsServiceUtils', () => {
                 ),
             ).toThrow('Book price must be a non-negative number.');
         });
+
+        it('rejects line-item prices that differ from current book prices', () => {
+            expect(() =>
+                assertSalesBatchReferences(
+                    orders,
+                    [{ ...items[0], price: 9.99 }],
+                    [],
+                    books,
+                    users,
+                    discounts,
+                ),
+            ).toThrow('Order order-1 contains an item price that does not match its book.');
+        });
     });
 
     describe('planWishlistEntries', () => {
+        it('calculates wishlist capacity and rejects an unsafe pair-space size', () => {
+            expect(calculateWishlistCandidateSpaceSize(10, 20)).toBe(200);
+            expect(() =>
+                calculateWishlistCandidateSpaceSize(Number.MAX_SAFE_INTEGER, 2),
+            ).toThrow('Wishlist candidate space exceeds the safe integer range.');
+        });
+
+        it('returns an empty batch when no wishlist entries are requested', () => {
+            expect(planWishlistEntries([], [], [], 0)).toEqual([]);
+        });
+
+        it.each([
+            [[{ id: ' ' }], [{ id: 'book-1' }]],
+            [[{ id: 'user-1' }], [{ id: '\t' }]],
+        ])('rejects empty normalized IDs', (users, books) => {
+            expect(() => planWishlistEntries(users, books, [], 1)).toThrow(
+                'Wishlist planning requires non-empty user and book IDs.',
+            );
+        });
+
+        it.each([Number.NaN, -0.1, 1])('rejects an invalid random value %s', (randomValue) => {
+            expect(() =>
+                planWishlistEntries(
+                    [{ id: 'user-1' }],
+                    [{ id: 'book-1' }],
+                    [],
+                    1,
+                    () => randomValue,
+                ),
+            ).toThrow('Random source must return a value in the range [0, 1).');
+        });
+
         it('plans exact unique pairs while excluding existing entries and duplicate IDs', () => {
             const result = planWishlistEntries(
                 [{ id: 'user-1' }, { id: 'user-1' }, { id: 'user-2' }],
@@ -330,6 +440,18 @@ describe('DevToolsServiceUtils', () => {
                 3,
             );
             expect(result).not.toContain({ user_id: 'user-1', book_id: 'book-1' });
+        });
+
+        it('maps a sampled index past a later occupied pair', () => {
+            const result = planWishlistEntries(
+                [{ id: 'user-1' }],
+                [{ id: 'book-1' }, { id: 'book-2' }, { id: 'book-3' }],
+                [{ user_id: 'user-1', book_id: 'book-2' }],
+                1,
+                () => 0,
+            );
+
+            expect(result).toEqual([{ user_id: 'user-1', book_id: 'book-1' }]);
         });
 
         it('reports exact available capacity when the requested count cannot be met', () => {

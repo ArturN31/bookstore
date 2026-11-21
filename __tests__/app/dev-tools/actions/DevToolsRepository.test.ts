@@ -105,6 +105,20 @@ describe('DevToolsRepository', () => {
         expect(result).toEqual(mockResult);
     });
 
+    it('deleteOrderDiscountsForOrders should delete discounts for the specified orders', async () => {
+        const mockResult = { data: [{ id: 'discount-1' }], error: null };
+        mockQueryBuilder.then.mockImplementationOnce((resolve) => resolve(mockResult));
+        const orderIds = ['order-1'];
+
+        const result = await repository.deleteOrderDiscountsForOrders(mockSupabase, orderIds);
+
+        expect(mockSupabase.from).toHaveBeenCalledWith('order_discounts');
+        expect(mockQueryBuilder.delete).toHaveBeenCalled();
+        expect(mockQueryBuilder.in).toHaveBeenCalledWith('order_id', orderIds);
+        expect(mockQueryBuilder.select).toHaveBeenCalledWith('id');
+        expect(result).toEqual(mockResult);
+    });
+
     it('insertOrderItems should execute query with items payload', async () => {
         const mockResult = { data: [{ id: 'item-1' }], error: null };
         mockQueryBuilder.then.mockImplementationOnce((resolve) => resolve(mockResult));
@@ -114,6 +128,20 @@ describe('DevToolsRepository', () => {
         expect(mockSupabase.from).toHaveBeenCalledWith('order_items');
         expect(mockQueryBuilder.insert).toHaveBeenCalledWith(items);
         expect(mockQueryBuilder.select).toHaveBeenCalled();
+        expect(result).toEqual(mockResult);
+    });
+
+    it('deleteOrderItemsForOrders should delete items for the specified orders', async () => {
+        const mockResult = { data: [{ id: 'item-1' }], error: null };
+        mockQueryBuilder.then.mockImplementationOnce((resolve) => resolve(mockResult));
+        const orderIds = ['order-1'];
+
+        const result = await repository.deleteOrderItemsForOrders(mockSupabase, orderIds);
+
+        expect(mockSupabase.from).toHaveBeenCalledWith('order_items');
+        expect(mockQueryBuilder.delete).toHaveBeenCalled();
+        expect(mockQueryBuilder.in).toHaveBeenCalledWith('order_id', orderIds);
+        expect(mockQueryBuilder.select).toHaveBeenCalledWith('id');
         expect(result).toEqual(mockResult);
     });
 
@@ -239,6 +267,20 @@ describe('DevToolsRepository', () => {
         expect(result).toEqual(mockResult);
     });
 
+    it('deleteShoppingCarts should delete only the specified cart IDs', async () => {
+        const mockResult = { data: [{ id: 'cart-1' }], error: null };
+        mockQueryBuilder.then.mockImplementationOnce((resolve) => resolve(mockResult));
+        const cartIds = ['cart-1'];
+
+        const result = await repository.deleteShoppingCarts(mockSupabase, cartIds);
+
+        expect(mockSupabase.from).toHaveBeenCalledWith('shopping_carts');
+        expect(mockQueryBuilder.delete).toHaveBeenCalled();
+        expect(mockQueryBuilder.in).toHaveBeenCalledWith('id', cartIds);
+        expect(mockQueryBuilder.select).toHaveBeenCalledWith('id');
+        expect(result).toEqual(mockResult);
+    });
+
     it('insertShoppingCartItems should execute query with cartItems', async () => {
         const mockResult = { data: [{ id: 'ci-1' }], error: null };
         mockQueryBuilder.then.mockImplementationOnce((resolve) => resolve(mockResult));
@@ -248,6 +290,20 @@ describe('DevToolsRepository', () => {
         expect(mockSupabase.from).toHaveBeenCalledWith('shopping_cart_items');
         expect(mockQueryBuilder.insert).toHaveBeenCalledWith(cartItems);
         expect(mockQueryBuilder.select).toHaveBeenCalled();
+        expect(result).toEqual(mockResult);
+    });
+
+    it('deleteShoppingCartItemsForCarts should delete items for the specified carts', async () => {
+        const mockResult = { data: [{ id: 'item-1' }], error: null };
+        mockQueryBuilder.then.mockImplementationOnce((resolve) => resolve(mockResult));
+        const cartIds = ['cart-1'];
+
+        const result = await repository.deleteShoppingCartItemsForCarts(mockSupabase, cartIds);
+
+        expect(mockSupabase.from).toHaveBeenCalledWith('shopping_cart_items');
+        expect(mockQueryBuilder.delete).toHaveBeenCalled();
+        expect(mockQueryBuilder.in).toHaveBeenCalledWith('cart_id', cartIds);
+        expect(mockQueryBuilder.select).toHaveBeenCalledWith('id');
         expect(result).toEqual(mockResult);
     });
 

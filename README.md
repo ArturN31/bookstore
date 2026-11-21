@@ -11,15 +11,15 @@ This repository is an application project, not a claim that a fully operated ret
 ## Project Status
 
 **Status:** Feature-rich bookstore prototype; local tests, lint, and production build pass. Production commerce readiness remains conditional on the security, payment, database, and deployment work below.
-**Audit snapshot:** October 23, 2026, local `master` at `bf2e178` with current uncommitted development-tools changes.
-**Automated verification:** 243 Jest suites, 1,810 tests, and one snapshot passed; configured coverage is 100% across statements, branches, functions, and lines; ESLint and the production build passed.
+**Audit snapshot:** November 20, 2026, local `master` at `bf2e178` with current uncommitted development-tools changes.
+**Automated verification:** 254 Jest suites, 1,957 tests, and one snapshot passed; configured coverage is 100% across statements, branches, functions, and lines; ESLint and the production build passed.
 
 ### Verification Snapshot
 
 | Check | Result |
 | :--- | :--- |
-| Jest suites | 243 passed / 243 total |
-| Jest tests | 1,810 passed / 1,810 total |
+| Jest suites | 254 passed / 254 total |
+| Jest tests | 1,957 passed / 1,957 total |
 | Snapshots | 1 passed / 1 total |
 | Statements / branches / functions / lines | 100% each in the configured Jest collection |
 | ESLint | Passed |
@@ -612,7 +612,8 @@ The roadmap lists remaining work based on the audited local checkout; implemente
 
   **Execution order:** (1) inventory/schema audit (complete); (2) canonical keys and exact-count/rate-limit behavior (complete); (3) bounded, pure candidate planning and capacity reporting (complete); (4) additive-command existing-key preflight and current relationship IDs (complete); (5) single write authorization boundary, staged failure reporting, compensation, and write-result checks (complete); (6) add deterministic unit coverage; (7) add local-Supabase repeat-run and fixture-preservation integration tests; (8) validate dev-tools UI feedback and reset/additive separation. Keep each numbered stage as a separate task/PR-sized change; do not begin the next stage until its predecessor is reviewed and tested.
 
-- [ ] Bring Jest coverage for all `/dev-tools` production code to 100% statements, branches, functions, and lines. Ensure coverage collection includes every in-scope DevTools source file and add tests for uncovered behavior.
+- [x] Bring Jest coverage for all `app/dev-tools/` production code to 100% statements, branches, functions, and lines. Coverage was explicitly collected across the full directory and all uncovered behavior was tested.
+  - [x] Cover every DevTools repository query path, including order/cart rollback deletes (100% statements, branches, functions, and lines).
 - [ ] Add concise, accurate JSDoc to application functions where it adds useful context, documenting purpose, parameters, and return values so code is easier to revisit and maintain. Avoid duplicating information already clear from names and types.
 
 - [ ] Add structured logs, metrics, traces, alerts, and durable security audit delivery.

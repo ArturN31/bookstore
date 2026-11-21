@@ -40,6 +40,10 @@ type Discount = Pick<
     | 'uses_per_user'
 >;
 type WishlistEntry = { user_id: string; book_id: string };
+type PlannedCart = {
+    userId: string;
+    books: Array<{ bookId: string; quantity: number }>;
+};
 
 const uniqueIds = (ids: readonly string[]): string[] => [
     ...new Map(ids.map((id) => [normalizeNaturalKey(id), id])).values(),
@@ -87,6 +91,16 @@ const findAvailableIndex = (availableIndex: number, occupiedIndexes: number[]): 
     return low;
 };
 
+export const calculateWishlistCandidateSpaceSize = (
+    userCount: number,
+    bookCount: number,
+): number => {
+    const totalPairs = userCount * bookCount;
+    if (!Number.isSafeInteger(totalPairs))
+        throw new RangeError('Wishlist candidate space exceeds the safe integer range.');
+    return totalPairs;
+};
+
 export const planWishlistEntries = (
     users: readonly Pick<Database['public']['Tables']['users']['Row'], 'id'>[],
     books: readonly Pick<Database['public']['Tables']['books']['Row'], 'id'>[],
@@ -102,9 +116,7 @@ export const planWishlistEntries = (
     if (userIds.some((id) => !id.trim()) || bookIds.some((id) => !id.trim()))
         throw new Error('Wishlist planning requires non-empty user and book IDs.');
 
-    const totalPairs = userIds.length * bookIds.length;
-    if (!Number.isSafeInteger(totalPairs))
-        throw new RangeError('Wishlist candidate space exceeds the safe integer range.');
+    const totalPairs = calculateWishlistCandidateSpaceSize(userIds.length, bookIds.length);
 
     const userIndexes = new Map(
         userIds.map((id, index) => [normalizeNaturalKey(id), index]),
@@ -132,7 +144,6 @@ export const planWishlistEntries = (
     return selectedIndexes.map((index) => {
         const userId = userIds[Math.floor(index / bookIds.length)];
         const bookId = bookIds[index % bookIds.length];
-        if (!userId || !bookId) throw new Error('Wishlist sampling produced an invalid pair.');
 
         return { user_id: userId, book_id: bookId };
     });
@@ -171,6 +182,25 @@ export const assertCleanupSucceeded = (
 ): string[] =>
     results.flatMap(([stage, result]) => (result.error ? [`${stage}: ${result.error}`] : []));
 
+export const createCartItemRows = (
+    carts: Array<{ id: string; user_id: string }>,
+    plan: PlannedCart[],
+) => {
+    const itemsByUser = new Map(plan.map(({ userId, books: items }) => [userId, items]));
+
+    return carts.flatMap((cart) => {
+        const userItems = itemsByUser.get(cart.user_id);
+        if (!userItems)
+            throw new Error(`Inserted cart ${cart.id} does not match the preflighted users.`);
+
+        return userItems.map(({ bookId, quantity }) => ({
+            cart_id: cart.id,
+            book_id: bookId,
+            quantity,
+        }));
+    });
+};
+
 export const assertSalesBatchReferences = (
     orders: Order[],
     items: OrderItem[],
@@ -185,7 +215,6 @@ export const assertSalesBatchReferences = (
     const orderIds = new Set(orders.map(({ id }) => id));
     const bookIds = new Set(books.map(({ id }) => id));
     const userIds = new Set(users.map(({ id }) => id));
-    const discountIds = new Set(discounts.map(({ id }) => id));
 
     assertUniqueIds(
         orders.map(({ id }) => id),
@@ -216,16 +245,6 @@ export const assertSalesBatchReferences = (
     )
         throw new Error('Order-item batch contains an invalid order, book, quantity, or price.');
 
-    if (
-        orderDiscounts.some(
-            ({ order_id, discount_id }) => !orderIds.has(order_id) || !discountIds.has(discount_id),
-        )
-    )
-        throw new Error('Order-discount batch contains an invalid order or discount reference.');
-
-    if (new Set(orderDiscounts.map(({ order_id }) => order_id)).size !== orderDiscounts.length)
-        throw new Error('Order batch contains more than one discount for an order.');
-
     const booksById = new Map(books.map((book) => [book.id, book]));
     const discountsById = new Map(discounts.map((discount) => [discount.id, discount]));
     const ordersById = new Map(orders.map((order) => [order.id, order]));
@@ -235,14 +254,21 @@ export const assertSalesBatchReferences = (
         orderItems.push(item);
         itemsByOrderId.set(item.order_id, orderItems);
     });
-    const discountsByOrderId = new Map(orderDiscounts.map((discount) => [discount.order_id, discount]));
-    const discountUsageInBatch = new Map<string, number>();
-    const now = Date.now();
-
+    const discountRulesByOrderId = new Map<string, { order: Order; discount: Discount }>();
     orderDiscounts.forEach(({ order_id, discount_id }) => {
         const order = ordersById.get(order_id);
         const discount = discountsById.get(discount_id);
-        if (!order || !discount) return;
+        if (!order || !discount)
+            throw new Error('Order-discount batch contains an invalid order or discount reference.');
+        if (discountRulesByOrderId.has(order_id))
+            throw new Error('Order batch contains more than one discount for an order.');
+        discountRulesByOrderId.set(order_id, { order, discount });
+    });
+
+    const discountUsageInBatch = new Map<Discount, number>();
+    const now = Date.now();
+
+    discountRulesByOrderId.forEach(({ order, discount }) => {
         if (order.status === 'failed' || order.status === 'cancelled')
             throw new Error(`Order ${order.id} cannot apply a discount in its ${order.status} status.`);
 
@@ -267,18 +293,13 @@ export const assertSalesBatchReferences = (
             throw new Error(`Order ${order.id} applies a discount with an unsupported per-user limit.`);
 
         discountUsageInBatch.set(
-            discount_id,
-            (discountUsageInBatch.get(discount_id) ?? 0) + 1,
+            discount,
+            (discountUsageInBatch.get(discount) ?? 0) + 1,
         );
     });
 
-    discountUsageInBatch.forEach((batchUsage, discountId) => {
-        const discount = discountsById.get(discountId);
-        if (
-            discount?.usage_limit !== null &&
-            discount &&
-            discount.times_used + batchUsage > discount.usage_limit
-        )
+    discountUsageInBatch.forEach((batchUsage, discount) => {
+        if (discount.usage_limit !== null && discount.times_used + batchUsage > discount.usage_limit)
             throw new Error(
                 `Discount ${discount.id} has insufficient remaining usage capacity for the batch.`,
             );
@@ -301,12 +322,7 @@ export const assertSalesBatchReferences = (
         if (toPence(order.subtotal) !== toPence(calculatedSubtotal))
             throw new Error(`Order ${order.id} subtotal does not match its items.`);
 
-        const orderDiscount = discountsByOrderId.get(order.id);
-        const discount = orderDiscount
-            ? discountsById.get(orderDiscount.discount_id)
-            : undefined;
-        if (orderDiscount && !discount)
-            throw new Error(`Order ${order.id} references an unavailable discount.`);
+        const discount = discountRulesByOrderId.get(order.id)?.discount;
 
         const expectedDiscountAmount = discount
             ? calculateDiscountAmount(order.subtotal, discount)
