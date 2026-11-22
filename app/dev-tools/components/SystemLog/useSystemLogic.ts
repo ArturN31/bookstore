@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
+/** A timestamped entry displayed in the DevTools system console. */
 export type LogEntry = {
     id: string;
     timestamp: string;
@@ -9,6 +10,12 @@ export type LogEntry = {
     type: 'info' | 'error' | 'success' | 'warning' | 'system';
 };
 
+/**
+ * Dispatches a system-log event for browser-side DevTools consumers.
+ *
+ * @param message Text to display in the system log.
+ * @param type Severity or category used to style the entry.
+ */
 export const sysLog = (message: string, type: LogEntry['type'] = 'info') => {
     if (typeof window !== 'undefined') {
         const event = new CustomEvent('sys-log', {
@@ -18,6 +25,9 @@ export const sysLog = (message: string, type: LogEntry['type'] = 'info') => {
     }
 };
 
+/**
+ * Dispatches an event that clears all entries from the system log.
+ */
 export const clearSysLog = () => {
     if (typeof window !== 'undefined') {
         const event = new Event('sys-clear');
@@ -25,6 +35,11 @@ export const clearSysLog = () => {
     }
 };
 
+/**
+ * Subscribes to browser system-log events and maintains the latest 50 entries.
+ *
+ * @returns The current timestamped log entries.
+ */
 export function useSystemLog() {
     const [logs, setLogs] = useState<LogEntry[]>([]);
 

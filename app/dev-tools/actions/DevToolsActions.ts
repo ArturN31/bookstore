@@ -24,6 +24,11 @@ const COMMAND_REGISTRY: Record<string, service.CommandHandler> = {
     add_books: service.addBooks,
 };
 
+/**
+ * Checks the privileged DevTools limiter using the client IP and authenticated user when available.
+ *
+ * @throws If the limiter rejects the request or fails closed.
+ */
 async function checkDevToolsRateLimit(): Promise<void> {
     const clientIp = await getAppClientIp();
     let identifiers: [string, ...string[]] = [`ip:${clientIp}`];
@@ -50,6 +55,11 @@ async function checkDevToolsRateLimit(): Promise<void> {
         );
 }
 
+/**
+ * Creates a write-authorization callback that checks the rate limit at most once.
+ *
+ * @returns A callback that shares the same authorization result across repeated calls.
+ */
 function createWriteAuthorization(): service.AuthorizeWrite {
     let authorization: Promise<void> | undefined;
 
@@ -60,7 +70,11 @@ function createWriteAuthorization(): service.AuthorizeWrite {
 }
 
 /**
- * CORE COMMAND SYSTEM
+ * Validates and executes a registered additive DevTools command.
+ *
+ * @param prevState Previous action state required by React's action-state API.
+ * @param formData Submitted form data containing the command name.
+ * @returns The command result, or a failure response for invalid access, command, or execution.
  */
 export async function systemCommandAction(
     prevState: service.CommandResponse,
@@ -94,7 +108,11 @@ export async function systemCommandAction(
 }
 
 /**
- * NUCLEAR OPTION
+ * Runs the full database reset and seed operation in an allowed development environment.
+ *
+ * @param prevState Previous action state required by React's action-state API; unused by reset.
+ * @param formData Submitted form data; unused because reset is a dedicated action.
+ * @returns A success response when reset completes, otherwise a failure response.
  */
 export async function fullResetAction(
     prevState: service.CommandResponse,

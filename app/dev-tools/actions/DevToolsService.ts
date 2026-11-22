@@ -30,8 +30,13 @@ const DEV_CONFIG = {
     STOCK_PURGE_RATIO: 0.5,
 } as const;
 
+/** User-facing result returned by a DevTools command. */
 export type CommandResponse = { message: string; success: boolean };
+
+/** Checks whether a command is authorized to begin database writes. */
 export type AuthorizeWrite = () => Promise<void>;
+
+/** Executes a DevTools command using an admin client and a write-authorization callback. */
 export type CommandHandler = (
     supabase: SupabaseClient,
     authorizeWrite: AuthorizeWrite,
@@ -45,6 +50,13 @@ type SalesContext = {
 
 type SalesBatch = ReturnType<typeof generateOrdersAndItems>;
 
+/**
+ * Loads and validates the catalog, discounts, and users needed to plan sales.
+ *
+ * @param supabase Admin client used to fetch sales input data.
+ * @returns The validated data required for sales planning.
+ * @throws If a lookup fails or required books/users are unavailable.
+ */
 const fetchSalesContext = async (supabase: SupabaseClient): Promise<SalesContext> => {
     const [booksRes, discountsRes, usersRes] = await Promise.all([
         repository.fetchAllBooks(supabase),
@@ -67,6 +79,13 @@ const fetchSalesContext = async (supabase: SupabaseClient): Promise<SalesContext
     return { books, discounts, users };
 };
 
+/**
+ * Generates and validates the configured orders, items, and discount assignments.
+ *
+ * @param context Books, discounts, and users available to the planner.
+ * @returns A validated sales batch.
+ * @throws If generation does not meet the configured counts or batch validation fails.
+ */
 const planSalesBatch = ({ books, discounts, users }: SalesContext): SalesBatch => {
     const batch = generateOrdersAndItems(
         books,
@@ -97,6 +116,13 @@ const planSalesBatch = ({ books, discounts, users }: SalesContext): SalesBatch =
     return batch;
 };
 
+/**
+ * Inserts a sales batch and rolls back confirmed rows if a later stage fails.
+ *
+ * @param supabase Admin client used to insert and clean up sales rows.
+ * @param batch Validated orders, items, and discount assignments to persist.
+ * @throws If insertion fails or returns an incomplete result; the error reports rollback status.
+ */
 const insertSalesBatch = async (supabase: SupabaseClient, batch: SalesBatch): Promise<void> => {
     const { orders, items, orderDiscounts } = batch;
     const orderIds = orders.map(({ id }) => id);
@@ -161,6 +187,14 @@ const insertSalesBatch = async (supabase: SupabaseClient, batch: SalesBatch): Pr
     }
 };
 
+/**
+ * Generates and inserts a sales batch using the current books, users, and discounts.
+ *
+ * @param supabase Admin client used to read and write sales data.
+ * @param authorizeWrite Write authorization checked immediately before insertion.
+ * @returns A success response after the full batch is inserted.
+ * @throws If preflight, batch validation, authorization, insertion, or rollback fails.
+ */
 export const addSales: CommandHandler = async (supabase, authorizeWrite) => {
     const context = await fetchSalesContext(supabase);
     const batch = planSalesBatch(context);
@@ -174,6 +208,14 @@ export const addSales: CommandHandler = async (supabase, authorizeWrite) => {
     };
 };
 
+/**
+ * Adds a batch of discounts with codes not already present in the database.
+ *
+ * @param supabase Admin client used to read existing codes and insert discounts.
+ * @param authorizeWrite Write authorization checked immediately before insertion.
+ * @returns A success response containing the number of discounts added.
+ * @throws If lookup, authorization, or insertion fails.
+ */
 export const seedDiscounts: CommandHandler = async (supabase, authorizeWrite) => {
     const existingRes = await repository.fetchDiscountCodes(supabase);
     if (existingRes.error) throw new Error(existingRes.error);
@@ -189,6 +231,14 @@ export const seedDiscounts: CommandHandler = async (supabase, authorizeWrite) =>
     return { message: `${insertedDiscounts.length} New Discounts Added`, success: true };
 };
 
+/**
+ * Sets a random half of the current book inventory to zero stock.
+ *
+ * @param supabase Admin client used to read and update book stock.
+ * @param authorizeWrite Write authorization checked immediately before the update.
+ * @returns A success response containing the number of books updated.
+ * @throws If inventory lookup, authorization, or update verification fails.
+ */
 export const stockPurge: CommandHandler = async (supabase, authorizeWrite) => {
     const { data: books, error: fetchErr } = await repository.fetchBookIds(supabase);
     if (fetchErr) throw new Error(fetchErr);
@@ -210,6 +260,14 @@ export const stockPurge: CommandHandler = async (supabase, authorizeWrite) => {
     return { message: `Chaos: ${targetIds.length} books set to 0 stock.`, success: true };
 };
 
+/**
+ * Adds reviews using current users and books while excluding existing user/book pairs.
+ *
+ * @param supabase Admin client used to load review context and insert reviews.
+ * @param authorizeWrite Write authorization checked immediately before insertion.
+ * @returns A success response with the number of reviews and profiles involved.
+ * @throws If context lookup, generation, authorization, or insertion fails.
+ */
 export const reviewBomb: CommandHandler = async (supabase, authorizeWrite) => {
     const [booksRes, usersRes, existingReviewsRes] = await Promise.all([
         repository.fetchBooksForReviews(supabase),
@@ -250,6 +308,13 @@ type PlannedCart = {
     books: Array<{ bookId: string; quantity: number }>;
 };
 
+/**
+ * Plans one to three book items for each target user.
+ *
+ * @param targetUsers Users who will own the new carts.
+ * @param books Books available to populate those carts.
+ * @returns Planned cart contents keyed by user ID.
+ */
 const planCartItems = (
     targetUsers: Array<{ id: string }>,
     books: Array<{ id: string }>,
@@ -269,6 +334,13 @@ const planCartItems = (
         };
     });
 
+/**
+ * Deletes cart items and carts for the supplied IDs, collecting any query errors.
+ *
+ * @param supabase Admin client used for cleanup queries.
+ * @param cartIds IDs of carts created by the current command.
+ * @returns Descriptions of cleanup stages that failed.
+ */
 const cleanupCartBatch = async (
     supabase: SupabaseClient,
     cartIds: string[],
@@ -282,6 +354,15 @@ const cleanupCartBatch = async (
     ]);
 };
 
+/**
+ * Inserts planned carts and their items, rolling back confirmed carts on failure.
+ *
+ * @param supabase Admin client used to persist and clean up cart rows.
+ * @param targetUsers Users selected for this cart batch.
+ * @param plannedItems Planned items corresponding to the selected users.
+ * @returns Inserted carts after all planned items have been persisted.
+ * @throws If cart results do not match the plan, item insertion fails, or rollback is incomplete.
+ */
 const insertCartBatch = async (
     supabase: SupabaseClient,
     targetUsers: Array<{ id: string }>,
@@ -330,6 +411,14 @@ const insertCartBatch = async (
     return carts;
 };
 
+/**
+ * Creates carts for current users and populates them with planned book items.
+ *
+ * @param supabase Admin client used to load books/users and insert carts and items.
+ * @param authorizeWrite Write authorization checked immediately before insertion.
+ * @returns A success response containing the number of carts created.
+ * @throws If preflight, authorization, cart/item insertion, or rollback fails.
+ */
 export const addCarts: CommandHandler = async (supabase, authorizeWrite) => {
     const [booksRes, usersRes] = await Promise.all([
         repository.fetchBooksForCarts(supabase),
@@ -358,6 +447,14 @@ export const addCarts: CommandHandler = async (supabase, authorizeWrite) => {
     return { message: `Cart Injection: ${carts.length} carts populated.`, success: true };
 };
 
+/**
+ * Adds new wishlist pairs from the current users and books.
+ *
+ * @param supabase Admin client used to load wishlist context and insert entries.
+ * @param authorizeWrite Write authorization checked immediately before insertion.
+ * @returns A success response containing the number of wishlist entries added.
+ * @throws If lookup, candidate planning, authorization, or insertion fails.
+ */
 export const addWishlists: CommandHandler = async (supabase, authorizeWrite) => {
     const [booksRes, usersRes, existingRes] = await repository.fetchWishlistContext(supabase);
 
@@ -385,6 +482,14 @@ export const addWishlists: CommandHandler = async (supabase, authorizeWrite) => 
     return { message: `Success: Added ${insertedEntries.length} wishlist items.`, success: true };
 };
 
+/**
+ * Adds books whose natural keys do not collide with existing books.
+ *
+ * @param supabase Admin client used to load existing book keys and insert books.
+ * @param authorizeWrite Write authorization checked immediately before insertion.
+ * @returns A success response containing the number of books inserted.
+ * @throws If lookup, generation, authorization, or insertion fails.
+ */
 export const addBooks: CommandHandler = async (supabase: SupabaseClient, authorizeWrite) => {
     const existingRes = await repository.fetchBookNaturalKeys(supabase);
     if (existingRes.error) throw new Error(existingRes.error);

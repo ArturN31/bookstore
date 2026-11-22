@@ -45,10 +45,25 @@ type PlannedCart = {
     books: Array<{ bookId: string; quantity: number }>;
 };
 
+/**
+ * Removes duplicate IDs using their normalized natural-key value.
+ *
+ * @param ids IDs to normalize and deduplicate.
+ * @returns Unique IDs, preserving the original ID spelling from the last normalized match.
+ */
 const uniqueIds = (ids: readonly string[]): string[] => [
     ...new Map(ids.map((id) => [normalizeNaturalKey(id), id])).values(),
 ];
 
+/**
+ * Samples distinct indexes from a range using a supplied random source.
+ *
+ * @param rangeSize Size of the candidate index range.
+ * @param sampleSize Number of distinct indexes to select.
+ * @param random Random source that must return values in the range [0, 1).
+ * @returns The selected candidate indexes.
+ * @throws If the random source returns a value outside the valid range.
+ */
 const sampleIndexes = (
     rangeSize: number,
     sampleSize: number,
@@ -68,6 +83,13 @@ const sampleIndexes = (
     return [...selected];
 };
 
+/**
+ * Maps an index in an available-only range to its index in the original occupied range.
+ *
+ * @param availableIndex Index within the range after occupied indexes are removed.
+ * @param occupiedIndexes Sorted indexes that must be skipped.
+ * @returns The corresponding index in the original range.
+ */
 const findAvailableIndex = (availableIndex: number, occupiedIndexes: number[]): number => {
     let low = availableIndex;
     let high = availableIndex + occupiedIndexes.length;
@@ -91,6 +113,13 @@ const findAvailableIndex = (availableIndex: number, occupiedIndexes: number[]): 
     return low;
 };
 
+/**
+ * Returns the number of possible user/book pairs, rejecting unsafe integer results.
+ *
+ * @param userCount Number of distinct users in the candidate pool.
+ * @param bookCount Number of distinct books in the candidate pool.
+ * @returns The size of the user/book pair space.
+ */
 export const calculateWishlistCandidateSpaceSize = (
     userCount: number,
     bookCount: number,
@@ -101,6 +130,17 @@ export const calculateWishlistCandidateSpaceSize = (
     return totalPairs;
 };
 
+/**
+ * Selects an exact number of wishlist pairs not already present in the supplied entries.
+ *
+ * @param users Candidate users.
+ * @param books Candidate books.
+ * @param existingEntries Wishlist pairs to exclude from the plan.
+ * @param requestedCount Exact number of new pairs to plan.
+ * @param random Random source used to sample candidate pairs.
+ * @returns The planned user/book pairs.
+ * @throws If inputs are invalid or the available pair capacity is insufficient.
+ */
 export const planWishlistEntries = (
     users: readonly Pick<Database['public']['Tables']['users']['Row'], 'id'>[],
     books: readonly Pick<Database['public']['Tables']['books']['Row'], 'id'>[],
@@ -149,6 +189,13 @@ export const planWishlistEntries = (
     });
 };
 
+/**
+ * Returns a shuffled copy of the input without modifying the original array.
+ *
+ * @param values Values to shuffle.
+ * @param random Random source used to select swap indexes.
+ * @returns A shuffled copy of the values.
+ */
 export const shuffle = <T>(values: readonly T[], random: () => number = Math.random): T[] => {
     const shuffled = values.slice();
 
@@ -160,6 +207,15 @@ export const shuffle = <T>(values: readonly T[], random: () => number = Math.ran
     return shuffled;
 };
 
+/**
+ * Verifies an insert returned exactly the expected number of rows.
+ *
+ * @param result Safe query result from the insert.
+ * @param expectedCount Required number of inserted rows.
+ * @param stage Name used to identify the insert in any error.
+ * @returns The inserted rows.
+ * @throws If the query failed, returned no data, or returned an unexpected row count.
+ */
 export const assertInsertedCount = <T>(
     result: SafeQueryResult<T[]>,
     expectedCount: number,
@@ -174,14 +230,34 @@ export const assertInsertedCount = <T>(
     return result.data;
 };
 
+/**
+ * Produces a readable message for an unknown error value.
+ *
+ * @param error Error value to describe.
+ * @returns The Error message, or a generic message for non-Error values.
+ */
 export const describeError = (error: unknown): string =>
     error instanceof Error ? error.message : 'Unknown error';
 
+/**
+ * Lists cleanup stages that returned database errors.
+ *
+ * @param results Cleanup stage names paired with their query results.
+ * @returns Error descriptions for stages whose queries failed.
+ */
 export const assertCleanupSucceeded = (
     results: Array<[string, SafeQueryResult<unknown[]>]>,
 ): string[] =>
     results.flatMap(([stage, result]) => (result.error ? [`${stage}: ${result.error}`] : []));
 
+/**
+ * Maps planned cart contents to rows for the carts returned by the insert.
+ *
+ * @param carts Inserted carts, including their owning user IDs.
+ * @param plan Planned cart items keyed by user.
+ * @returns Cart-item rows linked to the inserted cart IDs.
+ * @throws If an inserted cart does not belong to a user in the plan.
+ */
 export const createCartItemRows = (
     carts: Array<{ id: string; user_id: string }>,
     plan: PlannedCart[],
@@ -201,6 +277,17 @@ export const createCartItemRows = (
     });
 };
 
+/**
+ * Validates generated order, item, and discount references and financial totals.
+ *
+ * @param orders Orders in the generated batch.
+ * @param items Order items in the generated batch.
+ * @param orderDiscounts Discount assignments in the generated batch.
+ * @param books Books referenced by the batch.
+ * @param users Users referenced by the batch.
+ * @param discounts Discounts referenced by the batch.
+ * @throws If any relationship, discount rule, item price, or order total is invalid.
+ */
 export const assertSalesBatchReferences = (
     orders: Order[],
     items: OrderItem[],
