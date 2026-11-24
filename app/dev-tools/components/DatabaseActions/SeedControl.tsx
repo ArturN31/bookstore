@@ -58,7 +58,7 @@ export function SeedControl({ type }: SeedControlProps) {
             stock_purge: 'Kill 50% of Stock?',
             review_bomb: 'Inject 50 Reviews?',
             add_carts: 'Inject 15 Carts?',
-            add_wishlists: 'Inject 50 Wishlists?',
+            add_wishlists: 'Inject 10 Wishlists?',
             add_books: 'Inject 50 Books?',
         };
 

@@ -37,7 +37,7 @@ export const DatabaseActions = () => {
                                 id="ADD_05"
                                 title="Wishlist_Fill"
                                 type="add_wishlists"
-                                description="Distribute 50 wishlist items across the user registry."
+                                description="Distribute 10 wishlist items across the user registry."
                             />
                             <ControlModule
                                 id="ADD_06"

@@ -88,6 +88,16 @@ describe('SeedControl', () => {
         confirmSpy.mockRestore();
     });
 
+    it('should confirm the configured wishlist count', () => {
+        const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+
+        render(<SeedControl type="add_wishlists" />);
+        fireEvent.click(screen.getByRole('button'));
+
+        expect(confirmSpy).toHaveBeenCalledWith('Inject 10 Wishlists?');
+        confirmSpy.mockRestore();
+    });
+
     it('should fall back to default message if confirmation type is unknown (covers line 62 fallback branch)', () => {
         const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
 

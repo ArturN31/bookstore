@@ -614,7 +614,7 @@ The roadmap lists remaining work based on the audited local checkout; implemente
 
 - [x] Bring Jest coverage for all `app/dev-tools/` production code to 100% statements, branches, functions, and lines. Coverage was explicitly collected across the full directory and all uncovered behavior was tested.
   - [x] Cover every DevTools repository query path, including order/cart rollback deletes (100% statements, branches, functions, and lines).
-- [ ] Add concise, accurate JSDoc to application functions where it adds useful context, documenting purpose, parameters, and return values so code is easier to revisit and maintain. Avoid duplicating information already clear from names and types.
+- [x] Add concise, accurate JSDoc to application functions where it adds useful context, documenting purpose, parameters, and return values so code is easier to revisit and maintain. Avoid duplicating information already clear from names and types.
 
 - [ ] Add structured logs, metrics, traces, alerts, and durable security audit delivery.
 

@@ -22,12 +22,23 @@ jest.mock('@/app/dev-tools/components/ConsoleSection', () => ({
 }));
 
 jest.mock('@/app/dev-tools/components/DatabaseActions/ControlModule', () => ({
-    ControlModule: ({ id, title, type }: { id: string; title: string; type: string }) => (
+    ControlModule: ({
+        id,
+        title,
+        type,
+        description,
+    }: {
+        id: string;
+        title: string;
+        type: string;
+        description: string;
+    }) => (
         <div
             data-testid="control-module"
             data-id={id}
             data-title={title}
             data-type={type}
+            data-description={description}
         >
             {title}
         </div>
@@ -109,6 +120,19 @@ describe('DatabaseActions', () => {
         render(<DatabaseActions />);
 
         expect(screen.getByText('Wishlist_Fill')).toBeInTheDocument();
+    });
+
+    it('should describe the configured wishlist count', () => {
+        render(<DatabaseActions />);
+
+        const wishlistModule = screen
+            .getAllByTestId('control-module')
+            .find((module: HTMLElement) => module.getAttribute('data-id') === 'ADD_05');
+
+        expect(wishlistModule).toHaveAttribute(
+            'data-description',
+            'Distribute 10 wishlist items across the user registry.',
+        );
     });
 
     it('should render Books_Expansion module', () => {
