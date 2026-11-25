@@ -6,6 +6,7 @@ import { createBackendClient } from '@/utils/db/server';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { verifyRateLimit } from '@/utils/network/rateLimiter';
+import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 
 jest.mock('@/utils/db/admin', () => ({
     createAdminClient: jest.fn(),
@@ -34,6 +35,10 @@ jest.mock('@/utils/network/getAppClientIp', () => ({
 jest.mock('@/utils/network/rateLimiter', () => ({
     limiters: { privileged: {} },
     verifyRateLimit: jest.fn(),
+}));
+
+jest.mock('@/utils/security/securityAuditLogger', () => ({
+    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
 }));
 
 describe('DevToolsActions', () => {
@@ -100,6 +105,11 @@ describe('DevToolsActions', () => {
                 message: 'Unauthorized: Dev tools are only available when running npm run dev.',
                 success: false,
             });
+            expect(recordSecurityAuditLog).toHaveBeenCalledWith(
+                'UNAUTHORIZED_ACCESS_ATTEMPT',
+                null,
+                { operation: 'dev_tools', reason: 'dev_tools_disabled' },
+            );
         });
 
         it('should reject commands outside development mode', async () => {
@@ -177,6 +187,33 @@ describe('DevToolsActions', () => {
                 success: false,
             });
             expect(service.addSales).toHaveBeenCalledTimes(1);
+            expect(recordSecurityAuditLog).toHaveBeenCalledWith(
+                'UNAUTHORIZED_ACCESS_ATTEMPT',
+                'user-1',
+                { operation: 'dev_tools', reason: 'rate_limit_exceeded' },
+            );
+        });
+
+        it('should audit a failed rate-limit check', async () => {
+            mockedVerifyRateLimit.mockRejectedValueOnce(new Error('Rate limiter unavailable'));
+            jest.mocked(service.addSales).mockImplementationOnce(
+                async (_supabase, authorizeWrite) => {
+                    await authorizeWrite?.();
+                    return { message: 'Success', success: true };
+                },
+            );
+            jest.mocked(createAdminClient).mockResolvedValueOnce({} as SupabaseClient);
+            const formData = new FormData();
+            formData.append('command', 'add_sales');
+
+            const result = await systemCommandAction(initialCommandResponse, formData);
+
+            expect(result).toEqual({ message: 'Rate limiter unavailable', success: false });
+            expect(recordSecurityAuditLog).toHaveBeenCalledWith(
+                'UNAUTHORIZED_ACCESS_ATTEMPT',
+                'user-1',
+                { operation: 'dev_tools', reason: 'rate_limit_check_failed' },
+            );
         });
 
         it('should fallback to default rate limit message when error is undefined', async () => {
@@ -275,6 +312,30 @@ describe('DevToolsActions', () => {
             expect(mockedVerifyRateLimit).toHaveBeenCalledTimes(1);
             expect(revalidatePath).toHaveBeenCalledWith('/');
             expect(runFullDatabaseSeed).not.toHaveBeenCalled();
+            expect(recordSecurityAuditLog).toHaveBeenCalledWith('ADMIN_ACTION', 'user-1', {
+                operation: 'system_command',
+                command: 'add_sales',
+                outcome: 'success',
+            });
+        });
+
+        it('should audit a command handler failure response', async () => {
+            jest.mocked(service.addSales).mockResolvedValueOnce({
+                message: 'Seed failed',
+                success: false,
+            });
+            jest.mocked(createAdminClient).mockResolvedValueOnce({} as SupabaseClient);
+            const formData = new FormData();
+            formData.append('command', 'add_sales');
+
+            const result = await systemCommandAction(initialCommandResponse, formData);
+
+            expect(result).toEqual({ message: 'Seed failed', success: false });
+            expect(recordSecurityAuditLog).toHaveBeenCalledWith('ADMIN_ACTION', null, {
+                operation: 'system_command',
+                command: 'add_sales',
+                outcome: 'failure',
+            });
         });
 
         it('should not rate limit an invalid command', async () => {
@@ -327,6 +388,11 @@ describe('DevToolsActions', () => {
             const result = await systemCommandAction(initialCommandResponse, formData);
 
             expect(result).toEqual({ message: 'Custom service error', success: false });
+            expect(recordSecurityAuditLog).toHaveBeenCalledWith('ADMIN_ACTION', null, {
+                operation: 'system_command',
+                command: 'add_sales',
+                outcome: 'failure',
+            });
         });
 
         it('should not rate limit when command preflight fails before the write gate', async () => {
@@ -429,6 +495,10 @@ describe('DevToolsActions', () => {
             expect(runFullDatabaseSeed).toHaveBeenCalled();
             expect(mockedVerifyRateLimit).toHaveBeenCalledTimes(1);
             expect(revalidatePath).toHaveBeenCalledWith('/');
+            expect(recordSecurityAuditLog).toHaveBeenCalledWith('ADMIN_ACTION', 'user-1', {
+                operation: 'full_reset',
+                outcome: 'success',
+            });
         });
 
         it('should block a reset when the active database differs from the allowed target', async () => {
@@ -449,6 +519,10 @@ describe('DevToolsActions', () => {
             const result = await fullResetAction(initialResetResponse, formData);
 
             expect(result).toEqual({ message: 'Reset Failed: Seed failed', success: false });
+            expect(recordSecurityAuditLog).toHaveBeenCalledWith('ADMIN_ACTION', null, {
+                operation: 'full_reset',
+                outcome: 'failure',
+            });
         });
 
         it('should use the fallback message when reset throws a non-Error value', async () => {

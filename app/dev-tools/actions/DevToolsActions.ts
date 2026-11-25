@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache';
 import * as service from './DevToolsService';
 import { verifyRateLimit, limiters } from '@/utils/network/rateLimiter';
 import { getAppClientIp } from '@/utils/network/getAppClientIp';
+import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
 import {
     DEV_TOOLS_DATABASE_TARGET_ERROR,
     DEV_TOOLS_UNAVAILABLE_MESSAGE,
@@ -24,21 +25,46 @@ const COMMAND_REGISTRY: Record<string, service.CommandHandler> = {
     add_books: service.addBooks,
 };
 
+function recordDevToolsAction(
+    action: string,
+    outcome: 'success' | 'failure',
+    userId: string | null,
+    command?: string,
+): void {
+    void recordSecurityAuditLog('ADMIN_ACTION', userId, {
+        operation: action,
+        ...(command ? { command } : {}),
+        outcome,
+    });
+}
+
+function recordUnauthorizedDevToolsAttempt(reason: string, userId: string | null = null): void {
+    void recordSecurityAuditLog('UNAUTHORIZED_ACCESS_ATTEMPT', userId, {
+        operation: 'dev_tools',
+        reason,
+    });
+}
+
 /**
  * Checks the privileged DevTools limiter using the client IP and authenticated user when available.
  *
+ * @returns The authenticated user ID when available after authorization succeeds.
  * @throws If the limiter rejects the request or fails closed.
  */
-async function checkDevToolsRateLimit(): Promise<void> {
+async function checkDevToolsRateLimit(): Promise<string | null> {
     const clientIp = await getAppClientIp();
     let identifiers: [string, ...string[]] = [`ip:${clientIp}`];
+    let userId: string | null = null;
 
     try {
         const supabase = await createBackendClient();
         const {
             data: { user },
         } = await supabase.auth.getUser();
-        if (user?.id) identifiers = [`ip:${clientIp}`, `user:${user.id}`];
+        if (user?.id) {
+            userId = user.id;
+            identifiers = [`ip:${clientIp}`, `user:${user.id}`];
+        }
     } catch {
         // Fall back to clientIp if session verification fails
     }
@@ -47,26 +73,39 @@ async function checkDevToolsRateLimit(): Promise<void> {
         identifiers,
         limiter: limiters.privileged,
         failClosed: true,
+    }).catch((error: unknown) => {
+        recordUnauthorizedDevToolsAttempt('rate_limit_check_failed', userId);
+        throw error;
     });
 
-    if (!rateLimit.success)
+    if (!rateLimit.success) {
+        recordUnauthorizedDevToolsAttempt('rate_limit_exceeded', userId);
         throw new Error(
             rateLimit.error ?? 'Unauthorized: Dev tools execution rate limit exceeded.',
         );
+    }
+
+    return userId;
 }
 
 /**
  * Creates a write-authorization callback that checks the rate limit at most once.
  *
- * @returns A callback that shares the same authorization result across repeated calls.
+ * @returns A write callback with access to the authorized user ID after it succeeds.
  */
-function createWriteAuthorization(): service.AuthorizeWrite {
-    let authorization: Promise<void> | undefined;
+function createWriteAuthorization(): {
+    authorizeWrite: service.AuthorizeWrite;
+    getUserId: () => string | null;
+} {
+    let authorization: Promise<string | null> | undefined;
+    let userId: string | null = null;
 
-    return () => {
+    const authorizeWrite = async (): Promise<void> => {
         if (!authorization) authorization = checkDevToolsRateLimit();
-        return authorization;
+        userId = await authorization;
     };
+
+    return { authorizeWrite, getUserId: () => userId };
 }
 
 /**
@@ -80,27 +119,50 @@ export async function systemCommandAction(
     prevState: service.CommandResponse,
     formData: FormData,
 ): Promise<service.CommandResponse> {
-    if (!isDevToolsEnabled()) return { message: DEV_TOOLS_UNAVAILABLE_MESSAGE, success: false };
+    if (!isDevToolsEnabled()) {
+        recordUnauthorizedDevToolsAttempt('dev_tools_disabled');
+        return { message: DEV_TOOLS_UNAVAILABLE_MESSAGE, success: false };
+    }
 
-    if (!isDevToolsDatabaseTargetAllowed())
+    if (!isDevToolsDatabaseTargetAllowed()) {
+        recordUnauthorizedDevToolsAttempt('database_target_not_allowed');
         return { message: DEV_TOOLS_DATABASE_TARGET_ERROR, success: false };
+    }
 
     const commandValue = formData.get('command');
-    if (typeof commandValue !== 'string')
+    if (typeof commandValue !== 'string') {
+        recordUnauthorizedDevToolsAttempt('invalid_command');
         return { message: 'A valid command is required.', success: false };
+    }
 
     const command = commandValue;
     const handler = COMMAND_REGISTRY[command];
 
-    if (!handler) return { message: `Unknown Command: ${command}`, success: false };
+    if (!handler) {
+        recordUnauthorizedDevToolsAttempt('unknown_command');
+        return { message: `Unknown Command: ${command}`, success: false };
+    }
 
+    const writeAuthorization = createWriteAuthorization();
     try {
         const supabase = await createAdminClient();
-        const result = await handler(supabase, createWriteAuthorization());
+        const result = await handler(supabase, writeAuthorization.authorizeWrite);
 
+        recordDevToolsAction(
+            'system_command',
+            result.success ? 'success' : 'failure',
+            writeAuthorization.getUserId(),
+            command,
+        );
         revalidatePath('/');
         return result;
     } catch (e: unknown) {
+        recordDevToolsAction(
+            'system_command',
+            'failure',
+            writeAuthorization.getUserId(),
+            command,
+        );
         console.error(`[DevTools] Command "${command}" failed:`, e);
         const errorMessage = e instanceof Error ? e.message : 'Operation Failed';
         return { message: errorMessage, success: false };
@@ -118,16 +180,24 @@ export async function fullResetAction(
     prevState: service.CommandResponse,
     formData: FormData,
 ): Promise<service.CommandResponse> {
-    if (!isDevToolsEnabled()) return { message: DEV_TOOLS_UNAVAILABLE_MESSAGE, success: false };
+    if (!isDevToolsEnabled()) {
+        recordUnauthorizedDevToolsAttempt('dev_tools_disabled');
+        return { message: DEV_TOOLS_UNAVAILABLE_MESSAGE, success: false };
+    }
 
-    if (!isDevToolsDatabaseTargetAllowed())
+    if (!isDevToolsDatabaseTargetAllowed()) {
+        recordUnauthorizedDevToolsAttempt('database_target_not_allowed');
         return { message: DEV_TOOLS_DATABASE_TARGET_ERROR, success: false };
+    }
 
+    const writeAuthorization = createWriteAuthorization();
     try {
-        await runFullDatabaseSeed(checkDevToolsRateLimit);
+        await runFullDatabaseSeed(writeAuthorization.authorizeWrite);
+        recordDevToolsAction('full_reset', 'success', writeAuthorization.getUserId());
         revalidatePath('/');
         return { message: 'Full Reset Complete', success: true };
     } catch (error: unknown) {
+        recordDevToolsAction('full_reset', 'failure', writeAuthorization.getUserId());
         console.error('[DevTools] Full reset failed:', error);
         const message = error instanceof Error ? error.message : 'Operation Failed';
         return { message: `Reset Failed: ${message}`, success: false };

@@ -617,6 +617,7 @@ The roadmap lists remaining work based on the audited local checkout; implemente
 - [x] Add concise, accurate JSDoc to application functions where it adds useful context, documenting purpose, parameters, and return values so code is easier to revisit and maintain. Avoid duplicating information already clear from names and types.
 
 - [ ] Add structured logs, metrics, traces, alerts, and durable security audit delivery.
+  - [x] Record DevTools admin actions and rejected access attempts through the existing security audit logger, with authenticated actor IDs where available and action/outcome metadata.
 
 ### 4. Experience and Accessibility
 
