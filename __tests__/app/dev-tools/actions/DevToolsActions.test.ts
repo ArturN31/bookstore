@@ -6,7 +6,11 @@ import { createBackendClient } from '@/utils/db/server';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { verifyRateLimit } from '@/utils/network/rateLimiter';
-import { recordSecurityAuditLog } from '@/utils/security/securityAuditLogger';
+import {
+    completeDevToolsAuditIntent,
+    persistDevToolsAuditIntent,
+    queueDevToolsAuditEvent,
+} from '@/utils/security/devToolsAuditOutbox';
 
 jest.mock('@/utils/db/admin', () => ({
     createAdminClient: jest.fn(),
@@ -37,8 +41,10 @@ jest.mock('@/utils/network/rateLimiter', () => ({
     verifyRateLimit: jest.fn(),
 }));
 
-jest.mock('@/utils/security/securityAuditLogger', () => ({
-    recordSecurityAuditLog: jest.fn().mockResolvedValue(undefined),
+jest.mock('@/utils/security/devToolsAuditOutbox', () => ({
+    completeDevToolsAuditIntent: jest.fn().mockResolvedValue(undefined),
+    persistDevToolsAuditIntent: jest.fn().mockResolvedValue('audit-intent-1'),
+    queueDevToolsAuditEvent: jest.fn().mockResolvedValue('audit-event-1'),
 }));
 
 describe('DevToolsActions', () => {
@@ -53,6 +59,9 @@ describe('DevToolsActions', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        jest.mocked(persistDevToolsAuditIntent).mockResolvedValue('audit-intent-1');
+        jest.mocked(queueDevToolsAuditEvent).mockResolvedValue('audit-event-1');
+        jest.mocked(completeDevToolsAuditIntent).mockResolvedValue();
         env.NODE_ENV = 'development';
         delete env.FORCE_PRODUCTION;
         env.NEXT_PUBLIC_SUPABASE_DB_URL = 'http://127.0.0.1:54321';
@@ -105,7 +114,7 @@ describe('DevToolsActions', () => {
                 message: 'Unauthorized: Dev tools are only available when running npm run dev.',
                 success: false,
             });
-            expect(recordSecurityAuditLog).toHaveBeenCalledWith(
+            expect(queueDevToolsAuditEvent).toHaveBeenCalledWith(
                 'UNAUTHORIZED_ACCESS_ATTEMPT',
                 null,
                 { operation: 'dev_tools', reason: 'dev_tools_disabled' },
@@ -123,6 +132,25 @@ describe('DevToolsActions', () => {
             expect(result.message).toContain('only available when running npm run dev');
             expect(createAdminClient).not.toHaveBeenCalled();
             expect(mockedVerifyRateLimit).not.toHaveBeenCalled();
+        });
+
+        it('should log when a rejected access event cannot be queued', async () => {
+            env.NODE_ENV = 'production';
+            jest.mocked(queueDevToolsAuditEvent).mockRejectedValueOnce(
+                new Error('audit storage unavailable'),
+            );
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const formData = new FormData();
+            formData.append('command', 'add_sales');
+
+            const result = await systemCommandAction(initialCommandResponse, formData);
+
+            expect(result.success).toBe(false);
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                '[SecurityAudit] Failed to queue rejected DevTools access attempt.',
+                expect.any(Error),
+            );
+            consoleErrorSpy.mockRestore();
         });
 
         it('should return unauthorized if FORCE_PRODUCTION is true', async () => {
@@ -187,7 +215,7 @@ describe('DevToolsActions', () => {
                 success: false,
             });
             expect(service.addSales).toHaveBeenCalledTimes(1);
-            expect(recordSecurityAuditLog).toHaveBeenCalledWith(
+            expect(queueDevToolsAuditEvent).toHaveBeenCalledWith(
                 'UNAUTHORIZED_ACCESS_ATTEMPT',
                 'user-1',
                 { operation: 'dev_tools', reason: 'rate_limit_exceeded' },
@@ -209,7 +237,7 @@ describe('DevToolsActions', () => {
             const result = await systemCommandAction(initialCommandResponse, formData);
 
             expect(result).toEqual({ message: 'Rate limiter unavailable', success: false });
-            expect(recordSecurityAuditLog).toHaveBeenCalledWith(
+            expect(queueDevToolsAuditEvent).toHaveBeenCalledWith(
                 'UNAUTHORIZED_ACCESS_ATTEMPT',
                 'user-1',
                 { operation: 'dev_tools', reason: 'rate_limit_check_failed' },
@@ -293,10 +321,16 @@ describe('DevToolsActions', () => {
         });
 
         it('should execute command successfully and revalidate path', async () => {
+            const writeSequence: string[] = [];
+            jest.mocked(persistDevToolsAuditIntent).mockImplementationOnce(async () => {
+                writeSequence.push('audit-intent');
+                return 'audit-intent-1';
+            });
             jest.mocked(service.addSales).mockImplementationOnce(
                 async (_supabase, authorizeWrite) => {
                     await authorizeWrite?.();
                     await authorizeWrite?.();
+                    writeSequence.push('database-mutation');
                     return { message: 'Success', success: true };
                 },
             );
@@ -309,14 +343,71 @@ describe('DevToolsActions', () => {
             const result = await systemCommandAction(initialCommandResponse, formData);
 
             expect(result).toEqual({ message: 'Success', success: true });
+            expect(writeSequence).toEqual(['audit-intent', 'database-mutation']);
             expect(mockedVerifyRateLimit).toHaveBeenCalledTimes(1);
             expect(revalidatePath).toHaveBeenCalledWith('/');
             expect(runFullDatabaseSeed).not.toHaveBeenCalled();
-            expect(recordSecurityAuditLog).toHaveBeenCalledWith('ADMIN_ACTION', 'user-1', {
+            expect(persistDevToolsAuditIntent).toHaveBeenCalledWith('ADMIN_ACTION', 'user-1', {
                 operation: 'system_command',
                 command: 'add_sales',
-                outcome: 'success',
+                phase: 'intent',
             });
+            expect(completeDevToolsAuditIntent).toHaveBeenCalledWith(
+                'audit-intent-1',
+                expect.objectContaining({
+                    operation: 'system_command',
+                    command: 'add_sales',
+                    phase: 'outcome',
+                    outcome: 'success',
+                }),
+            );
+        });
+
+        it('should preserve command success when queuing its outcome fails', async () => {
+            jest.mocked(completeDevToolsAuditIntent).mockRejectedValueOnce(
+                new Error('audit storage unavailable'),
+            );
+            jest.mocked(createAdminClient).mockResolvedValueOnce({} as SupabaseClient);
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const formData = new FormData();
+            formData.append('command', 'add_sales');
+
+            const result = await systemCommandAction(initialCommandResponse, formData);
+
+            expect(result).toEqual({ message: 'Success', success: true });
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                '[SecurityAudit] Failed to queue DevTools action outcome.',
+                expect.any(Error),
+            );
+            consoleErrorSpy.mockRestore();
+        });
+
+        it('should block command writes when the durable intent cannot be stored', async () => {
+            const mutation = jest.fn();
+            jest.mocked(persistDevToolsAuditIntent).mockRejectedValueOnce(
+                new Error('DevTools audit intent could not be stored'),
+            );
+            jest.mocked(service.addSales).mockImplementationOnce(
+                async (_supabase, authorizeWrite) => {
+                    await authorizeWrite?.();
+                    mutation();
+                    return { message: 'Success', success: true };
+                },
+            );
+            jest.mocked(createAdminClient).mockResolvedValueOnce({} as SupabaseClient);
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const formData = new FormData();
+            formData.append('command', 'add_sales');
+
+            const result = await systemCommandAction(initialCommandResponse, formData);
+
+            expect(result).toEqual({
+                message: 'DevTools audit intent could not be stored',
+                success: false,
+            });
+            expect(mutation).not.toHaveBeenCalled();
+            expect(completeDevToolsAuditIntent).not.toHaveBeenCalled();
+            consoleErrorSpy.mockRestore();
         });
 
         it('should audit a command handler failure response', async () => {
@@ -331,11 +422,15 @@ describe('DevToolsActions', () => {
             const result = await systemCommandAction(initialCommandResponse, formData);
 
             expect(result).toEqual({ message: 'Seed failed', success: false });
-            expect(recordSecurityAuditLog).toHaveBeenCalledWith('ADMIN_ACTION', null, {
-                operation: 'system_command',
-                command: 'add_sales',
-                outcome: 'failure',
-            });
+            expect(queueDevToolsAuditEvent).toHaveBeenCalledWith(
+                'ADMIN_ACTION',
+                null,
+                expect.objectContaining({
+                    operation: 'system_command',
+                    command: 'add_sales',
+                    outcome: 'failure',
+                }),
+            );
         });
 
         it('should not rate limit an invalid command', async () => {
@@ -388,11 +483,15 @@ describe('DevToolsActions', () => {
             const result = await systemCommandAction(initialCommandResponse, formData);
 
             expect(result).toEqual({ message: 'Custom service error', success: false });
-            expect(recordSecurityAuditLog).toHaveBeenCalledWith('ADMIN_ACTION', null, {
-                operation: 'system_command',
-                command: 'add_sales',
-                outcome: 'failure',
-            });
+            expect(queueDevToolsAuditEvent).toHaveBeenCalledWith(
+                'ADMIN_ACTION',
+                null,
+                expect.objectContaining({
+                    operation: 'system_command',
+                    command: 'add_sales',
+                    outcome: 'failure',
+                }),
+            );
         });
 
         it('should not rate limit when command preflight fails before the write gate', async () => {
@@ -495,10 +594,18 @@ describe('DevToolsActions', () => {
             expect(runFullDatabaseSeed).toHaveBeenCalled();
             expect(mockedVerifyRateLimit).toHaveBeenCalledTimes(1);
             expect(revalidatePath).toHaveBeenCalledWith('/');
-            expect(recordSecurityAuditLog).toHaveBeenCalledWith('ADMIN_ACTION', 'user-1', {
+            expect(persistDevToolsAuditIntent).toHaveBeenCalledWith('ADMIN_ACTION', 'user-1', {
                 operation: 'full_reset',
-                outcome: 'success',
+                phase: 'intent',
             });
+            expect(completeDevToolsAuditIntent).toHaveBeenCalledWith(
+                'audit-intent-1',
+                expect.objectContaining({
+                    operation: 'full_reset',
+                    phase: 'outcome',
+                    outcome: 'success',
+                }),
+            );
         });
 
         it('should block a reset when the active database differs from the allowed target', async () => {
@@ -513,16 +620,23 @@ describe('DevToolsActions', () => {
         });
 
         it('should return Reset Failed if running seed throws an error', async () => {
-            jest.mocked(runFullDatabaseSeed).mockRejectedValueOnce(new Error('Seed failed'));
+            jest.mocked(runFullDatabaseSeed).mockImplementationOnce(async (authorizeWrite) => {
+                await authorizeWrite?.();
+                throw new Error('Seed failed');
+            });
             const formData = new FormData();
 
             const result = await fullResetAction(initialResetResponse, formData);
 
             expect(result).toEqual({ message: 'Reset Failed: Seed failed', success: false });
-            expect(recordSecurityAuditLog).toHaveBeenCalledWith('ADMIN_ACTION', null, {
-                operation: 'full_reset',
-                outcome: 'failure',
-            });
+            expect(completeDevToolsAuditIntent).toHaveBeenCalledWith(
+                'audit-intent-1',
+                expect.objectContaining({
+                    operation: 'full_reset',
+                    phase: 'outcome',
+                    outcome: 'failure',
+                }),
+            );
         });
 
         it('should use the fallback message when reset throws a non-Error value', async () => {

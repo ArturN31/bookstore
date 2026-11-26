@@ -14,6 +14,11 @@ export type SecurityAuditMetadataValue =
     string | number | boolean | null | undefined | object | Array<unknown>;
 
 export type SecurityAuditMetadata = Record<string, SecurityAuditMetadataValue>;
+export type SecurityAuditRequestMetadata = {
+    ip: string;
+    userAgent: string;
+    timestamp: string;
+};
 
 const SENSITIVE_KEYS = ['password', 'token', 'secret', 'captchatoken', 'authorization', 'cookie'];
 
@@ -38,17 +43,15 @@ const sanitizeMetadata = (obj: SecurityAuditMetadata): SecurityAuditMetadata => 
     return sanitized;
 };
 
-export async function recordSecurityAuditLog(
-    eventType: SecurityAuditEventType,
-    userId: string | null,
-    metadata: SecurityAuditMetadata = {},
+/**
+ * Collects request context shared by synchronous and queued security audit writes.
+ *
+ * @param requestHeaders Optional request headers when available to the caller.
+ * @returns Request IP, user agent, and event timestamp.
+ */
+export async function getSecurityAuditRequestMetadata(
     requestHeaders?: Headers,
-): Promise<void> {
-    if (typeof process === 'undefined') {
-        console.warn('[SecurityAudit] Attempted to run security logger on the client.');
-        return;
-    }
-
+): Promise<SecurityAuditRequestMetadata> {
     let clientIp = 'unknown';
     let userAgent = 'unknown';
 
@@ -76,12 +79,25 @@ export async function recordSecurityAuditLog(
         }
     }
 
+    return { ip: clientIp, userAgent, timestamp: new Date().toISOString() };
+}
+
+export async function recordSecurityAuditLog(
+    eventType: SecurityAuditEventType,
+    userId: string | null,
+    metadata: SecurityAuditMetadata = {},
+    requestHeaders?: Headers,
+): Promise<void> {
+    if (typeof process === 'undefined') {
+        console.warn('[SecurityAudit] Attempted to run security logger on the client.');
+        return;
+    }
+
+    const requestMetadata = await getSecurityAuditRequestMetadata(requestHeaders);
     const cleanedMetadata = sanitizeMetadata(metadata);
     const enrichedMetadata: SecurityAuditMetadata = {
         ...cleanedMetadata,
-        ip: clientIp,
-        userAgent,
-        timestamp: new Date().toISOString(),
+        ...requestMetadata,
     };
 
     const executeLogging = async (): Promise<void> => {

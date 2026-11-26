@@ -38,6 +38,42 @@ export type Database = {
         }
         Relationships: []
       }
+      dev_tools_audit_outbox: {
+        Row: {
+          attempts: number
+          created_at: string
+          event_type: string
+          id: string
+          last_error: string | null
+          metadata: Json
+          next_attempt_at: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          event_type: string
+          id?: string
+          last_error?: string | null
+          metadata?: Json
+          next_attempt_at?: string
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          event_type?: string
+          id?: string
+          last_error?: string | null
+          metadata?: Json
+          next_attempt_at?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       book_reviews: {
         Row: {
           book_id: string

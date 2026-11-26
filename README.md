@@ -617,7 +617,21 @@ The roadmap lists remaining work based on the audited local checkout; implemente
 - [x] Add concise, accurate JSDoc to application functions where it adds useful context, documenting purpose, parameters, and return values so code is easier to revisit and maintain. Avoid duplicating information already clear from names and types.
 
 - [ ] Add structured logs, metrics, traces, alerts, and durable security audit delivery.
-  - [x] Record DevTools admin actions and rejected access attempts through the existing security audit logger, with authenticated actor IDs where available and action/outcome metadata.
+  - [x] Record DevTools admin actions and rejected access attempts with authenticated actor IDs where available and action/outcome metadata in `audit_logs`.
+  - [x] Define audit-delivery requirements: persist an audit intent before any privileged DevTools mutation and do not proceed if that intent cannot be stored; retry delivery of completion/outcome events; retain audit rows for 90 days, then delete older entries automatically.
+  - [x] Implement and validate the durable outbox, protected worker endpoint, retries, stale-intent recovery, and idempotent delivery; add tests for write failures and recovery.
+  - [ ] Configure and verify a deployment schedule for `/api/cron/security-audit` using `CRON_SECRET`.
+  - [ ] Implement and test automatic deletion of `audit_logs` entries older than 90 days.
+  - [ ] Add structured DevTools command lifecycle logs for start, completion, duration, and outcome; exclude sensitive data.
+  - [ ] Add DevTools command metrics for volume, duration, failures, and rate-limit rejections; test emitted measurements.
+  - [ ] Add traces for DevTools command execution and relevant database stages; verify timing and error capture.
+  - [ ] Configure and test alerts for agreed DevTools failure and audit-delivery conditions.
+
+- [ ] Complete DevTools accessibility and mobile verification.
+  - [ ] Assess DevTools keyboard navigation, focus behavior, accessible names, status announcements, and contrast; record actionable findings.
+  - [ ] Fix accessibility findings in focused changes and add automated checks where practical.
+  - [ ] Assess DevTools at target small-screen viewports for layout, overflow, controls, and touch targets.
+  - [ ] Fix mobile findings and verify the updated layouts at the same target viewports.
 
 ### 4. Experience and Accessibility
 
