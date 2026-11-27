@@ -10,6 +10,7 @@ import { getAppClientIp } from '@/utils/network/getAppClientIp';
 import {
     completeDevToolsAuditIntent,
     persistDevToolsAuditIntent,
+    processDevToolsAuditOutbox,
     queueDevToolsAuditEvent,
 } from '@/utils/security/devToolsAuditOutbox';
 import type { Json } from '@/database.types';
@@ -30,12 +31,29 @@ const COMMAND_REGISTRY: Record<string, service.CommandHandler> = {
     add_books: service.addBooks,
 };
 
+async function processDevToolsAuditOutboxBestEffort(): Promise<void> {
+    try {
+        await processDevToolsAuditOutbox();
+    } catch (error: unknown) {
+        console.error('[SecurityAudit] Failed to process DevTools audit outbox.', error);
+    }
+}
+
+async function queueDevToolsAuditEventAndProcess(
+    eventType: 'ADMIN_ACTION' | 'UNAUTHORIZED_ACCESS_ATTEMPT',
+    userId: string | null,
+    metadata: Json,
+): Promise<void> {
+    await queueDevToolsAuditEvent(eventType, userId, metadata);
+    await processDevToolsAuditOutboxBestEffort();
+}
+
 async function recordUnauthorizedDevToolsAttempt(
     reason: string,
     userId: string | null = null,
 ): Promise<void> {
     try {
-        await queueDevToolsAuditEvent('UNAUTHORIZED_ACCESS_ATTEMPT', userId, {
+        await queueDevToolsAuditEventAndProcess('UNAUTHORIZED_ACCESS_ATTEMPT', userId, {
             operation: 'dev_tools',
             reason,
         });
@@ -76,7 +94,7 @@ async function checkDevToolsRateLimit(): Promise<string | null> {
             failClosed: true,
         });
     } catch (error: unknown) {
-        await queueDevToolsAuditEvent('UNAUTHORIZED_ACCESS_ATTEMPT', userId, {
+        await queueDevToolsAuditEventAndProcess('UNAUTHORIZED_ACCESS_ATTEMPT', userId, {
             operation: 'dev_tools',
             reason: 'rate_limit_check_failed',
         });
@@ -84,7 +102,7 @@ async function checkDevToolsRateLimit(): Promise<string | null> {
     }
 
     if (!rateLimit.success) {
-        await queueDevToolsAuditEvent('UNAUTHORIZED_ACCESS_ATTEMPT', userId, {
+        await queueDevToolsAuditEventAndProcess('UNAUTHORIZED_ACCESS_ATTEMPT', userId, {
             operation: 'dev_tools',
             reason: 'rate_limit_exceeded',
         });
@@ -165,6 +183,7 @@ async function recordDevToolsActionOutcome(
     } catch (error: unknown) {
         console.error('[SecurityAudit] Failed to queue DevTools action outcome.', error);
     }
+    await processDevToolsAuditOutboxBestEffort();
 }
 
 /**

@@ -9,6 +9,7 @@ import { verifyRateLimit } from '@/utils/network/rateLimiter';
 import {
     completeDevToolsAuditIntent,
     persistDevToolsAuditIntent,
+    processDevToolsAuditOutbox,
     queueDevToolsAuditEvent,
 } from '@/utils/security/devToolsAuditOutbox';
 
@@ -44,6 +45,11 @@ jest.mock('@/utils/network/rateLimiter', () => ({
 jest.mock('@/utils/security/devToolsAuditOutbox', () => ({
     completeDevToolsAuditIntent: jest.fn().mockResolvedValue(undefined),
     persistDevToolsAuditIntent: jest.fn().mockResolvedValue('audit-intent-1'),
+    processDevToolsAuditOutbox: jest.fn().mockResolvedValue({
+        recoveredIntents: 0,
+        delivered: 0,
+        retryScheduled: 0,
+    }),
     queueDevToolsAuditEvent: jest.fn().mockResolvedValue('audit-event-1'),
 }));
 
@@ -62,6 +68,11 @@ describe('DevToolsActions', () => {
         jest.mocked(persistDevToolsAuditIntent).mockResolvedValue('audit-intent-1');
         jest.mocked(queueDevToolsAuditEvent).mockResolvedValue('audit-event-1');
         jest.mocked(completeDevToolsAuditIntent).mockResolvedValue();
+        jest.mocked(processDevToolsAuditOutbox).mockResolvedValue({
+            recoveredIntents: 0,
+            delivered: 0,
+            retryScheduled: 0,
+        });
         env.NODE_ENV = 'development';
         delete env.FORCE_PRODUCTION;
         env.NEXT_PUBLIC_SUPABASE_DB_URL = 'http://127.0.0.1:54321';
@@ -119,6 +130,7 @@ describe('DevToolsActions', () => {
                 null,
                 { operation: 'dev_tools', reason: 'dev_tools_disabled' },
             );
+            expect(processDevToolsAuditOutbox).toHaveBeenCalledTimes(1);
         });
 
         it('should reject commands outside development mode', async () => {
@@ -361,6 +373,31 @@ describe('DevToolsActions', () => {
                     outcome: 'success',
                 }),
             );
+            expect(processDevToolsAuditOutbox).toHaveBeenCalledTimes(1);
+            expect(
+                jest.mocked(processDevToolsAuditOutbox).mock.invocationCallOrder[0],
+            ).toBeGreaterThan(
+                jest.mocked(completeDevToolsAuditIntent).mock.invocationCallOrder[0],
+            );
+        });
+
+        it('should preserve command success when opportunistic outbox processing fails', async () => {
+            jest.mocked(processDevToolsAuditOutbox).mockRejectedValueOnce(
+                new Error('audit delivery unavailable'),
+            );
+            jest.mocked(createAdminClient).mockResolvedValueOnce({} as SupabaseClient);
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const formData = new FormData();
+            formData.append('command', 'add_sales');
+
+            const result = await systemCommandAction(initialCommandResponse, formData);
+
+            expect(result).toEqual({ message: 'Success', success: true });
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                '[SecurityAudit] Failed to process DevTools audit outbox.',
+                expect.any(Error),
+            );
+            consoleErrorSpy.mockRestore();
         });
 
         it('should preserve command success when queuing its outcome fails', async () => {

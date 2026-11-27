@@ -464,7 +464,7 @@ NEXT_PUBLIC_HCAPTCHA_SITE_KEY=<hcaptcha-site-key>
 
 `SUPABASE_SECRET_KEY`, `UPSTASH_REDIS_REST_TOKEN`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and `CRON_SECRET` are server-only secrets. Never prefix them with `NEXT_PUBLIC_` or expose them to the browser. The Supabase public key and Stripe publishable key are intended for browser use. Configure the matching hCaptcha secret in the Supabase Auth dashboard; application code consumes the site key/token.
 
-The reconciliation endpoint requires `CRON_SECRET`; configure the scheduler to send the matching authorization header. IP-based limiting reads edge-provided headers such as `cf-connecting-ip` or `x-real-ip`. Production must ensure the trusted edge overwrites these headers and that the origin cannot be reached directly by untrusted clients.
+The `/api/cron/reconcile` and `/api/cron/security-audit` endpoints require `CRON_SECRET`; configure any scheduler to send the matching authorization header. DevTools audit events are delivered opportunistically during development actions, with the security-audit endpoint available for manual recovery. Do not schedule that endpoint with Vercel Cron: Vercel invokes cron jobs only on production deployments, where DevTools is disabled. IP-based limiting reads edge-provided headers such as `cf-connecting-ip` or `x-real-ip`. Production must ensure the trusted edge overwrites these headers and that the origin cannot be reached directly by untrusted clients.
 
 `DEV_TOOLS_ALLOWED_SUPABASE_URL` is a server-only safety allowlist for destructive `/dev-tools` actions. Set it to the exact API origin of the intended development Supabase project; actions are blocked unless it matches `NEXT_PUBLIC_SUPABASE_DB_URL`. Do not point it at production or a customer database.
 
@@ -620,7 +620,7 @@ The roadmap lists remaining work based on the audited local checkout; implemente
   - [x] Record DevTools admin actions and rejected access attempts with authenticated actor IDs where available and action/outcome metadata in `audit_logs`.
   - [x] Define audit-delivery requirements: persist an audit intent before any privileged DevTools mutation and do not proceed if that intent cannot be stored; retry delivery of completion/outcome events; retain audit rows for 90 days, then delete older entries automatically.
   - [x] Implement and validate the durable outbox, protected worker endpoint, retries, stale-intent recovery, and idempotent delivery; add tests for write failures and recovery.
-  - [ ] Configure and verify a deployment schedule for `/api/cron/security-audit` using `CRON_SECRET`.
+  - [x] Attempt outbox delivery after DevTools audit events are queued and keep the protected endpoint for manual recovery. Do not configure Vercel Cron: it runs only on production deployments, where DevTools is disabled.
   - [ ] Implement and test automatic deletion of `audit_logs` entries older than 90 days.
   - [ ] Add structured DevTools command lifecycle logs for start, completion, duration, and outcome; exclude sensitive data.
   - [ ] Add DevTools command metrics for volume, duration, failures, and rate-limit rejections; test emitted measurements.
